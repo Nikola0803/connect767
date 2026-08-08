@@ -1,0 +1,17 @@
+{
+  "amara": {
+    "name": "Amara Joseph",
+    "role": "Owner, Cocoa Palm Bistro",
+    "avatar": "https://readdy.ai/api/search-image?query=Confident%20warm%20smiling%20Caribbean%20woman%20portrait%2C%20natural%20light%2C%20cream%20linen%20shirt%2C%20clean%20terracotta%20background%2C%20editorial%20headshot%2C%20soft%20shadows%2C%20highly%20detailed&width=200&height=200&seq=connect767-author-amara&orientation=squarish"
+  },
+  "team": {
+    "name": "The Connect767 Team",
+    "role": "Editorial",
+    "avatar": "https://readdy.ai/api/search-image?query=Minimalist%20green%20compass%20icon%20logo%20mark%20on%20cream%20background%2C%20flat%20design%2C%20simple%20geometric%2C%20clean%20editorial%20style&width=200&height=200&seq=connect767-author-team&orientation=squarish"
+  },
+  "marcus": {
+    "name": "Marcus Fontaine",
+    "role": "Print Ops Lead",
+    "avatar": "https://readdy.ai/api/search-image?query=Confident%20smiling%20Caribbean%20man%20portrait%2C%20natural%20light%2C%20cream%20shirt%2C%20clean%20warm%20background%2C%20editorial%20headshot%2C%20soft%20shadows%2C%20highly%20detailed&width=200&height=200&seq=connect767-author-marcus&orientation=squarish"
+  }
+}

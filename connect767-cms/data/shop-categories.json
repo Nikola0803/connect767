@@ -1,0 +1,32 @@
+[
+  {
+    "icon": "ri-t-shirt-line",
+    "label": "Apparel",
+    "slug": "apparel"
+  },
+  {
+    "icon": "ri-shopping-bag-3-line",
+    "label": "Accessories",
+    "slug": "accessories"
+  },
+  {
+    "icon": "ri-home-3-line",
+    "label": "Home & Living",
+    "slug": "home"
+  },
+  {
+    "icon": "ri-riding-line",
+    "label": "Outdoor",
+    "slug": "outdoor"
+  },
+  {
+    "icon": "ri-heart-pulse-line",
+    "label": "Wellness",
+    "slug": "wellness"
+  },
+  {
+    "icon": "ri-cup-line",
+    "label": "Food & Drink",
+    "slug": "food"
+  }
+]

@@ -1,0 +1,45 @@
+[
+  {
+    "icon": "ri-briefcase-4-line",
+    "name": "Services",
+    "count": "612 listings",
+    "href": "?category=services",
+    "active": true
+  },
+  {
+    "icon": "ri-price-tag-3-line",
+    "name": "Products",
+    "count": "184 listings",
+    "href": "?category=products"
+  },
+  {
+    "icon": "ri-key-2-line",
+    "name": "Rentals",
+    "count": "156 listings",
+    "href": "?category=rentals"
+  },
+  {
+    "icon": "ri-restaurant-2-line",
+    "name": "Eat & Drink",
+    "count": "428 listings",
+    "href": "?category=eat-and-drink"
+  },
+  {
+    "icon": "ri-calendar-event-line",
+    "name": "Events",
+    "count": "96 listings",
+    "href": "?category=events"
+  },
+  {
+    "icon": "ri-heart-pulse-line",
+    "name": "Fitness",
+    "count": "142 listings",
+    "href": "?category=fitness"
+  },
+  {
+    "icon": "ri-apps-2-line",
+    "name": "Other",
+    "count": "38 listings",
+    "href": "?category=other"
+  }
+]

@@ -1,0 +1,143 @@
+{
+  "kalinago-tours": {
+    "slug": "kalinago-tours",
+    "title": "Kalinago Tours",
+    "logo": "/uploads/kalinago-tours-logo.png",
+    "category": "Tour Operator · Cultural Heritage",
+    "categoryPath": "services",
+    "categoryLabel": "Services",
+    "badge": "Classified",
+    "badgeIcon": "ri-vip-crown-line",
+    "verified": true,
+    "rating": "5",
+    "reviewCount": "0",
+    "location": "Kalinago Territory, Dominica",
+    "price": "$$",
+    "description": "As the only tour service provider based in the Kalinago Territory, the home of Dominica's indigenous people, we pride ourselves on the fact that \"No one knows the Kalinago Territory like we do\" — our primary goal is to allow our valued clients the opportunity to experience our rich and unique cultural heritage. We also specialize in providing a variety of unparalleled quality tours to the most scenic and pristine sites in Dominica, including the Emerald Pool, Trafalgar Falls, and the world's second largest boiling lake. Our flexible packages cater for all ages, tastes and budgets, and tours can be modified to suit individual or group preferences. Our services include accommodation arrangements, taxi and tour services, and an opportunity to delve deeper into the Kalinago heritage with Kalinago families through our Kalinago Host Programme. Kalinago Tours — you deserve the experience!",
+    "tags": [
+      "kalinago heritage",
+      "cultural tours",
+      "hiking",
+      "boiling lake",
+      "emerald pool"
+    ],
+    "amenities": [
+      "Accommodation arrangements",
+      "Taxi service",
+      "Group & individual tours",
+      "Kalinago Host Programme",
+      "Flexible packages"
+    ],
+    "hours": [
+      "Contact for availability — tours run daily by arrangement"
+    ],
+    "gallery": [
+      {
+        "alt": "Kalinago Tours — guided walking tour through the territory",
+        "src": "/uploads/kalinago-tours-walking.jpeg"
+      }
+    ],
+    "reviews": [],
+    "contact": {
+      "phone": "",
+      "email": "",
+      "website": "kalinagotours.com",
+      "websiteUrl": "https://www.kalinagotours.com/",
+      "address": "Kalinago Territory, Dominica",
+      "instagram": "",
+      "facebook": ""
+    },
+    "mapEmbedUrl": null
+  },
+  "finance-focus-consultancy": {
+    "slug": "finance-focus-consultancy",
+    "title": "Finance Focus Consultancy",
+    "logo": "/uploads/finance-focus-logo.png",
+    "category": "Business & Personal Finance Consulting",
+    "categoryPath": "services",
+    "categoryLabel": "Services",
+    "badge": "Classified",
+    "badgeIcon": "ri-vip-crown-line",
+    "verified": true,
+    "rating": "5",
+    "reviewCount": "0",
+    "location": "Roseau, Dominica",
+    "price": "$$",
+    "description": "Finance Focus Consultancy — a higher financial altitude. Founded by Luana Laurent, MSc. IF in 2017, Finance Focus offers business plan preparation, financial projections, accounting services using QuickBooks Intuit, tutoring, and small business and personal finance guidance, along with financial statement and tax return preparation for small and medium businesses. Luana is an Examiner in the Financial Services Unit with 10+ years of progressive experience in taxation within the Public Service, previously a Revenue Officer at the Inland Revenue Division for 12 years. She's a postgraduate of the Arthur Lok Jack Global School of Business (Distinction Award, Programme Director Award, Top Academic Student Award in International Finance) and holds a Bachelor's in Accounting from UWI Open Campus Dominica. Finance Focus also runs a pro bono financial literacy page reaching approximately 3,000 followers on Facebook and Instagram, plus the \"Financial Fridays\" video series on YouTube. \"Finance Focus partners with individuals and businesses to create comfort when making difficult financial decisions as they aim to reach a higher financial altitude.\"",
+    "tags": [
+      "business consulting",
+      "personal finance",
+      "tax consulting",
+      "accounting",
+      "quickbooks"
+    ],
+    "amenities": [
+      "Business plan preparation",
+      "Financial projections",
+      "QuickBooks accounting services",
+      "Tax return preparation",
+      "Personal finance guidance",
+      "Small business tutoring"
+    ],
+    "hours": [
+      "By appointment"
+    ],
+    "gallery": [
+      {
+        "alt": "Luana Laurent, Founder of Finance Focus Consultancy",
+        "src": "/uploads/luana-laurent.jpg"
+      }
+    ],
+    "reviews": [],
+    "contact": {
+      "phone": "767-276-0347",
+      "email": "Focusonfinance767@gmail.com",
+      "website": "",
+      "websiteUrl": "",
+      "address": "Roseau, Dominica",
+      "instagram": "https://instagram.com/focusfinance767",
+      "facebook": "https://facebook.com/FinanceFocus"
+    },
+    "mapEmbedUrl": null
+  },
+  "catherine-lewis": {
+    "slug": "catherine-lewis",
+    "title": "Catherine Lewis",
+    "category": "Emergency Preparedness · Business Administration",
+    "categoryPath": "services",
+    "categoryLabel": "Services",
+    "badge": "Free",
+    "badgeIcon": "ri-price-tag-3-line",
+    "verified": true,
+    "rating": "0",
+    "reviewCount": "0",
+    "location": "Hempstead, New York (originally Dominica)",
+    "price": "$",
+    "description": "Catherine Lewis is a director in Con Edison's Emergency Preparedness group, responsible for acquiring outside workers to restore power in New York City and Westchester County when severe weather events cause customer outages, and for coordinating mutual aid requests between utilities. A Con Edison employee since 2001, she was part of the team that sent 400 workers to Puerto Rico after Hurricane Maria caused an island-wide outage, and helped secure more than 1,800 outside workers from as far away as California and Canada after a pair of devastating snow and wind storms in March 2018 — the second-largest customer-outage event in Con Edison's history. In 2019, Lewis was named a Black Achiever in Industry by the Harlem YMCA for her professional achievements and community contributions. A native of Dominica, she came to New York in the early 1990s for college, earning a bachelor's degree in business administration from Baruch College and a master's degree in organizational leadership from Mercy College. She volunteers with Big Brothers Big Sisters as a mentor and previously volunteered with the Urban League's Business Exchange Program, counseling college students.",
+    "tags": [
+      "emergency preparedness",
+      "business administration",
+      "community leadership",
+      "mentorship"
+    ],
+    "amenities": [],
+    "hours": [],
+    "gallery": [
+      {
+        "alt": "Catherine Lewis, Con Edison Emergency Preparedness Director",
+        "src": "/uploads/catherine-lewis.jpeg"
+      }
+    ],
+    "reviews": [],
+    "contact": {
+      "phone": "",
+      "email": "",
+      "website": "",
+      "websiteUrl": "",
+      "address": "Hempstead, Long Island, New York",
+      "instagram": "",
+      "facebook": ""
+    },
+    "mapEmbedUrl": null
+  }
+}
