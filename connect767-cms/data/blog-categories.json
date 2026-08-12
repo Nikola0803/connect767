@@ -1,0 +1,22 @@
+[
+  {
+    "slug": "all",
+    "label": "All Posts"
+  },
+  {
+    "slug": "playbook",
+    "label": "Playbook"
+  },
+  {
+    "slug": "shop",
+    "label": "Shop"
+  },
+  {
+    "slug": "uniforms",
+    "label": "Uniforms"
+  },
+  {
+    "slug": "community",
+    "label": "Community"
+  }
+]

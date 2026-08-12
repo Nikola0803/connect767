@@ -1,0 +1,47 @@
+[
+  {
+    "slug": "kalinago-tours",
+    "title": "Kalinago Tours",
+    "category": "Tour Operator · Cultural Heritage",
+    "categorySlug": "services",
+    "industrySlug": "tourism-services",
+    "price": "$$",
+    "location": "Kalinago Territory, Dominica",
+    "badge": "Classified",
+    "badgeIcon": "ri-vip-crown-line",
+    "verified": true,
+    "rating": "5",
+    "reviews": "(0)",
+    "image": "/uploads/kalinago-tours-walking.jpeg"
+  },
+  {
+    "slug": "finance-focus-consultancy",
+    "title": "Finance Focus Consultancy",
+    "category": "Business & Personal Finance Consulting",
+    "categorySlug": "services",
+    "industrySlug": "consulting-services",
+    "price": "$$",
+    "location": "Roseau, Dominica",
+    "badge": "Classified",
+    "badgeIcon": "ri-vip-crown-line",
+    "verified": true,
+    "rating": "5",
+    "reviews": "(0)",
+    "image": "/uploads/luana-laurent.jpg"
+  },
+  {
+    "slug": "catherine-lewis",
+    "title": "Catherine Lewis",
+    "category": "Emergency Preparedness · Business Administration",
+    "categorySlug": "services",
+    "industrySlug": "business-administration",
+    "price": "$",
+    "location": "Hempstead, New York (originally Dominica)",
+    "badge": "Free",
+    "badgeIcon": "ri-price-tag-3-line",
+    "verified": true,
+    "rating": "0",
+    "reviews": "(0)",
+    "image": "/uploads/catherine-lewis.jpeg"
+  }
+]

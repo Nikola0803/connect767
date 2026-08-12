@@ -1,0 +1,22 @@
+[
+  {
+    "slug": "soccer",
+    "icon": "ri-football-line",
+    "label": "Soccer"
+  },
+  {
+    "slug": "basketball",
+    "icon": "ri-basketball-line",
+    "label": "Basketball"
+  },
+  {
+    "slug": "baseball",
+    "icon": "ri-run-line",
+    "label": "Baseball"
+  },
+  {
+    "slug": "cricket",
+    "icon": "ri-trophy-line",
+    "label": "Cricket"
+  }
+]
