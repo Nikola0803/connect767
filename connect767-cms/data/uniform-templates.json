@@ -1,0 +1,50 @@
+[
+  {
+    "slug": "classic-crew",
+    "name": "Classic Crew",
+    "sportSlug": "soccer",
+    "description": "A round-neck jersey with a clean chest panel — the go-to starting point.",
+    "defaultCollar": "Crew",
+    "defaultSleeve": "Short"
+  },
+  {
+    "slug": "v-neck-pro",
+    "name": "V-Neck Pro",
+    "sportSlug": "soccer",
+    "description": "Tapered V-neck collar with raglan sleeves for a modern club look.",
+    "defaultCollar": "V-Neck",
+    "defaultSleeve": "Short"
+  },
+  {
+    "slug": "shooter-tank",
+    "name": "Shooter Tank",
+    "sportSlug": "basketball",
+    "description": "Classic sleeveless cut with side panel striping.",
+    "defaultCollar": "Crew",
+    "defaultSleeve": "Sleeveless"
+  },
+  {
+    "slug": "full-button",
+    "name": "Full Button",
+    "sportSlug": "baseball",
+    "description": "Traditional button-front jersey with piping trim.",
+    "defaultCollar": "Polo",
+    "defaultSleeve": "Short"
+  },
+  {
+    "slug": "raglan-tee",
+    "name": "Raglan Tee",
+    "sportSlug": "cricket",
+    "description": "Lightweight breathable cut built for long days on the pitch.",
+    "defaultCollar": "Crew",
+    "defaultSleeve": "Long"
+  },
+  {
+    "slug": "blank-canvas",
+    "name": "Blank Canvas",
+    "sportSlug": "soccer",
+    "description": "Start from nothing — every panel, color, and placement is yours.",
+    "defaultCollar": "Crew",
+    "defaultSleeve": "Short"
+  }
+]

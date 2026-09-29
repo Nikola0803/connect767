@@ -1,0 +1,460 @@
+[
+  {
+    "slug": "how-to-write-a-listing-that-gets-clicked",
+    "tag": "Playbook",
+    "categorySlug": "playbook",
+    "date": "May 24, 2026",
+    "readTime": "6 min read",
+    "title": "How to write a listing that actually gets clicked",
+    "excerpt": "The difference between a listing people scroll past and one they tap on usually comes down to five lines of text. Here's how to write those five lines.",
+    "image": "https://readdy.ai/api/search-image?query=Overhead%20flat%20lay%20of%20a%20cream%20notebook%20with%20handwritten%20marketing%20notes%2C%20a%20terracotta%20mug%20of%20coffee%2C%20eucalyptus%20sprig%2C%20warm%20natural%20light%2C%20editorial%20lifestyle%20photography%2C%20clean%20soft%20cream%20background%2C%20highly%20detailed%20composition&width=1000&height=700&seq=connect767-blog-listing-tips&orientation=landscape",
+    "author": "team",
+    "tags": [
+      "listings",
+      "photography",
+      "conversion"
+    ],
+    "body": [
+      {
+        "type": "p",
+        "text": "Every listing on Connect767 gets roughly the same three seconds of attention before someone decides to tap in or keep scrolling. That's not a lot of room — so the businesses that consistently get clicks aren't the ones with the biggest budgets, they're the ones who've figured out what to put in those three seconds."
+      },
+      {
+        "type": "h2",
+        "text": "Lead with the thing only you can say"
+      },
+      {
+        "type": "p",
+        "text": "\"Great food, friendly service\" could describe almost any restaurant on the island. It tells a browser nothing. Compare that to Cocoa Palm Bistro's actual line: \"Farm-to-table Caribbean dining in a restored colonial townhouse.\" That's specific, it's visual, and it immediately answers \"what makes this place different from the ten other places near it?\""
+      },
+      {
+        "type": "p",
+        "text": "Before you write a word, finish this sentence: people choose us over the alternative because ___. Whatever fills that blank is your first line."
+      },
+      {
+        "type": "h2",
+        "text": "Photos do more work than copy"
+      },
+      {
+        "type": "p",
+        "text": "Listings with a genuine, well-lit photo of the actual space or product get roughly triple the profile views of listings using a logo or a stock photo. It doesn't need to be professional — natural light and a clean background beat a expensive-looking shot with clutter in frame every time."
+      },
+      {
+        "type": "p",
+        "text": "If you can only take one photo, make it the thing a customer will actually experience: the dining room, not the sign outside; the product in use, not the product on a white background."
+      },
+      {
+        "type": "h2",
+        "text": "Answer the question before it's asked"
+      },
+      {
+        "type": "p",
+        "text": "The most common reason people bounce off a listing without contacting the business is an unanswered practical question — price range, parking, whether they take walk-ins. Your description should quietly answer two or three of these. It reduces the back-and-forth and it signals you've thought about the customer's side of the visit."
+      },
+      {
+        "type": "h2",
+        "text": "Keep it to one paragraph"
+      },
+      {
+        "type": "p",
+        "text": "Free listings get one photo and a short description for a reason — constraint forces clarity. Even on a Classified listing with room for more, resist the urge to write a full history of the business. Save the story for your profile's \"About\" section and keep the headline description to what a first-time visitor actually needs to decide."
+      },
+      {
+        "type": "h2",
+        "text": "Update it when something changes"
+      },
+      {
+        "type": "p",
+        "text": "Seasonal hours, a new menu item, a temporary closure — listings that go stale lose trust fast, especially with reviews attached. A two-minute edit every few weeks does more for your ranking and click-through than almost anything else on this list."
+      }
+    ]
+  },
+  {
+    "slug": "print-on-demand-vs-in-house",
+    "tag": "Shop",
+    "categorySlug": "shop",
+    "date": "May 10, 2026",
+    "readTime": "8 min read",
+    "title": "Print-on-demand vs. in-house: what actually pencils out",
+    "excerpt": "Print-on-demand looks cheaper on the spec sheet. In-house looks cheaper per unit. Here's the actual math, and where the break-even point usually lands.",
+    "image": "https://readdy.ai/api/search-image?query=Neatly%20folded%20cream%20and%20terracotta%20t-shirts%20on%20a%20warm%20wooden%20table%20next%20to%20a%20small%20printing%20press%2C%20soft%20window%20light%2C%20editorial%20product%20photography%2C%20minimalist%20composition%2C%20clean%20warm%20neutral%20background%2C%20highly%20detailed&width=1000&height=700&seq=connect767-blog-pod&orientation=landscape",
+    "author": "marcus",
+    "tags": [
+      "print-on-demand",
+      "operations",
+      "shop"
+    ],
+    "body": [
+      {
+        "type": "p",
+        "text": "Every shop owner asks the same question eventually: should I keep using print-on-demand, or is it time to buy a heat press and do this myself? The honest answer is \"it depends on your volume\" — but that's not useful without numbers, so here are the numbers."
+      },
+      {
+        "type": "h2",
+        "text": "The print-on-demand math"
+      },
+      {
+        "type": "p",
+        "text": "POD carries no upfront cost and no inventory risk, but the per-unit margin is thin — typically 30–40% after the printer's cut, versus 55–65% if you're printing in-house. On low volume (under roughly 40 units a month), POD wins outright: you're not carrying the fixed cost of equipment that sits idle most of the time."
+      },
+      {
+        "type": "h2",
+        "text": "The in-house math"
+      },
+      {
+        "type": "p",
+        "text": "A basic heat-press setup runs $800–1,500 depending on garment type. At a 20-point margin improvement per unit, that's a break-even somewhere between 150 and 300 units — which for most small shops means 4 to 8 months of steady orders before the equipment pays for itself."
+      },
+      {
+        "type": "p",
+        "text": "The number that changes this calculation more than any other is turnaround time. POD orders typically ship in 3–5 business days from a third-party facility. In-house, same-day is realistic. If your customers are ordering team kits ahead of a specific event date, that turnaround difference is often worth more than the margin difference."
+      },
+      {
+        "type": "h2",
+        "text": "The hybrid approach most shops land on"
+      },
+      {
+        "type": "p",
+        "text": "Almost nobody stays 100% one or the other. The common pattern: keep POD for one-off or low-volume items (think: a single custom mug order), and bring anything that repeats — team jerseys, event merch, a bestselling design — in-house once it's proven demand. That way the equipment investment is always backed by known volume, not a guess."
+      },
+      {
+        "type": "h2",
+        "text": "What this means if you're using the Uniform Studio"
+      },
+      {
+        "type": "p",
+        "text": "Fan jerseys and one-off orders route through print-on-demand by default — no minimums, no risk. Team orders of 12+ automatically qualify for in-house production pricing, which is where that margin difference actually shows up in your invoice."
+      }
+    ]
+  },
+  {
+    "slug": "designing-team-kits-fans-want-to-wear",
+    "tag": "Uniforms",
+    "categorySlug": "uniforms",
+    "date": "Apr 28, 2026",
+    "readTime": "7 min read",
+    "title": "Designing team kits fans actually want to wear",
+    "excerpt": "There's a difference between a jersey a fan buys because they have to, and one they'd wear on a random Tuesday. It comes down to four design decisions.",
+    "image": "https://readdy.ai/api/search-image?query=Studio%20flat%20lay%20of%20emerald%20green%20and%20cream%20soccer%20jerseys%20with%20numbers%2C%20on%20a%20warm%20sand-colored%20surface%2C%20soft%20directional%20studio%20light%2C%20editorial%20sportswear%20photography%2C%20clean%20minimal%20composition%2C%20highly%20detailed&width=1000&height=700&seq=connect767-blog-jerseys&orientation=landscape",
+    "author": "team",
+    "tags": [
+      "uniforms",
+      "design",
+      "sports"
+    ],
+    "body": [
+      {
+        "type": "p",
+        "text": "A team jersey has two jobs: identify the team on the field, and get worn off the field too. Most kit design effort goes entirely into the first job. The teams — and clubs — that build a real fan following usually nail the second one just as deliberately."
+      },
+      {
+        "type": "h2",
+        "text": "Pick one color to own"
+      },
+      {
+        "type": "p",
+        "text": "The most recognizable kits in the world are built around a single dominant color with a clear accent, not an even three-way split. Emerald Hills FC's green-and-cream kit works because green is unmistakably \"theirs\" from thirty feet away — the cream trim exists to frame it, not compete with it."
+      },
+      {
+        "type": "h2",
+        "text": "Design the fan jersey separately from the match kit"
+      },
+      {
+        "type": "p",
+        "text": "Match kits need to satisfy league rules, sponsor placement, and player comfort under real conditions. Fan jerseys don't carry any of those constraints — which means they can use a lighter fabric, a simplified crest, and a fit that works for someone who's never played a competitive minute. Treating them as the same design usually means the fan version ends up compromised by rules that don't apply to it."
+      },
+      {
+        "type": "h2",
+        "text": "Numbers and names sell more than logos"
+      },
+      {
+        "type": "p",
+        "text": "A jersey with a fan's own name and number on the back gets worn far more often than a blank one — it stops being merchandise and starts being something personal. This is the single biggest lever in the Uniform Studio's roster tool: enabling name-and-number customization on the fan jersey option typically outsells blank stock two to one."
+      },
+      {
+        "type": "h2",
+        "text": "Test it under real light, not studio light"
+      },
+      {
+        "type": "p",
+        "text": "Colors that look sharp in a rendered 3D preview can wash out under stadium floodlights or shift under phone camera flash. Before finalizing a design, pull the mockup up on a phone screen outdoors — it's the fastest gut-check for whether the contrast actually holds up where it'll be seen."
+      }
+    ]
+  },
+  {
+    "slug": "reading-your-listing-analytics",
+    "tag": "Playbook",
+    "categorySlug": "playbook",
+    "date": "Apr 12, 2026",
+    "readTime": "5 min read",
+    "title": "Reading your listing analytics without overthinking it",
+    "excerpt": "Classified comes with a dashboard full of numbers. Here are the three that actually predict whether you'll get a booking, and the ones you can safely ignore.",
+    "image": "https://readdy.ai/api/search-image?query=Laptop%20showing%20simple%20analytics%20dashboard%20graphs%20on%20a%20wooden%20desk%2C%20warm%20natural%20light%2C%20coffee%20cup%2C%20notebook%2C%20editorial%20workspace%20photography%2C%20clean%20minimalist%20composition%2C%20soft%20cream%20tones&width=1000&height=700&seq=connect767-blog-analytics&orientation=landscape",
+    "author": "team",
+    "tags": [
+      "analytics",
+      "classified",
+      "playbook"
+    ],
+    "body": [
+      {
+        "type": "p",
+        "text": "Classified listings unlock an analytics dashboard, and the instinct is to check all of it constantly. In practice, three numbers explain almost everything you need to know about how a listing is performing — and the rest is mostly noise."
+      },
+      {
+        "type": "h2",
+        "text": "Profile views vs. contact clicks"
+      },
+      {
+        "type": "p",
+        "text": "Views tell you whether people are finding you. Contact clicks (phone, message, or booking button) tell you whether what they see once they arrive is convincing. A listing with high views and low contact clicks doesn't have a visibility problem — it has a photos-or-description problem."
+      },
+      {
+        "type": "h2",
+        "text": "Save rate"
+      },
+      {
+        "type": "p",
+        "text": "The heart icon isn't just a vanity metric. A high save-to-view ratio usually means people are comparing you against competitors before deciding — which is a good sign, it means you made the shortlist. If saves are high but bookings are low, a follow-up message or a limited-time offer to saved users can close that gap."
+      },
+      {
+        "type": "h2",
+        "text": "What to ignore"
+      },
+      {
+        "type": "p",
+        "text": "Time-on-profile and scroll depth feel like they should matter, but they correlate weakly with actual bookings — someone reading every word of your profile is just as likely to be a competitor doing research as a customer. Don't optimize for them."
+      }
+    ]
+  },
+  {
+    "slug": "spotlight-kalinago-art-gallery",
+    "tag": "Community",
+    "categorySlug": "community",
+    "date": "Mar 30, 2026",
+    "readTime": "4 min read",
+    "title": "Community spotlight: Kalinago Art Gallery",
+    "excerpt": "A conversation with the team behind one of the directory's most-saved listings about building a gallery around indigenous Caribbean art — and what changed after going Classified.",
+    "image": "https://readdy.ai/api/search-image?query=Art%20gallery%20interior%20with%20indigenous%20Caribbean%20paintings%20on%20warm%20cream%20walls%2C%20wooden%20floor%2C%20soft%20gallery%20lighting%2C%20editorial%20interior%20photography%2C%20warm%20earth%20tones%2C%20cultural%20aesthetic%2C%20clean%20composition&width=1000&height=700&seq=connect767-blog-kalinago&orientation=landscape",
+    "author": "amara",
+    "tags": [
+      "community",
+      "spotlight",
+      "art"
+    ],
+    "body": [
+      {
+        "type": "p",
+        "text": "Kalinago Art Gallery sits in the Kalinago Territory on Dominica's east coast, showing work from indigenous Caribbean artists alongside pieces from the surrounding community. It's one of the most-saved listings in the directory's Local Shops category, and one of the earliest to upgrade to Classified."
+      },
+      {
+        "type": "h2",
+        "text": "Why the gallery joined the directory"
+      },
+      {
+        "type": "p",
+        "text": "\"We were relying entirely on word of mouth and people stumbling onto us while driving the coast road,\" the gallery's team told us. \"Being findable by category and location meant visitors could actually plan to come, instead of getting lucky.\""
+      },
+      {
+        "type": "h2",
+        "text": "What changed after Classified"
+      },
+      {
+        "type": "p",
+        "text": "The photo gallery feature made the biggest difference — being able to show the space itself, not just individual pieces, gave visitors a reason to make the trip out to the Territory specifically, rather than treating it as an afterthought on a longer drive."
+      },
+      {
+        "type": "h2",
+        "text": "Advice for other small galleries and studios"
+      },
+      {
+        "type": "p",
+        "text": "\"Don't just list the art — list the experience of visiting. People are looking for something to do with their afternoon, not just something to buy.\""
+      }
+    ]
+  },
+  {
+    "slug": "shipping-labels-and-you",
+    "tag": "Shop",
+    "categorySlug": "shop",
+    "date": "Mar 18, 2026",
+    "readTime": "6 min read",
+    "title": "Shipping labels and you: a small shop's survival guide",
+    "excerpt": "Shipping is the part of running a shop nobody warns you about. A practical walkthrough of rates, packaging, and the mistakes that quietly eat your margin.",
+    "image": "https://readdy.ai/api/search-image?query=Stack%20of%20shipping%20boxes%20and%20kraft%20paper%20packaging%20with%20a%20printed%20shipping%20label%2C%20twine%2C%20warm%20natural%20light%20on%20a%20wooden%20table%2C%20editorial%20flat%20lay%20photography%2C%20clean%20minimal%20composition&width=1000&height=700&seq=connect767-blog-shipping&orientation=landscape",
+    "author": "marcus",
+    "tags": [
+      "shipping",
+      "operations",
+      "shop"
+    ],
+    "body": [
+      {
+        "type": "p",
+        "text": "Shipping is rarely the reason someone starts a shop, and it's often the reason their margins disappear. A few practical fixes cover most of what goes wrong."
+      },
+      {
+        "type": "h2",
+        "text": "Weigh the box, not the product"
+      },
+      {
+        "type": "p",
+        "text": "Carriers bill on the packaged weight, not the item weight — and dimensional weight pricing means an oversized box can cost more to ship than a heavier, smaller one. Buy a $15 shipping scale before your first sale; guessing costs more than the scale within a week."
+      },
+      {
+        "type": "h2",
+        "text": "Flat-rate isn't always the flat rate you think"
+      },
+      {
+        "type": "p",
+        "text": "Flat-rate shipping only wins when your item is dense and heavy relative to its size. For light, bulky items — think a hammock chair or a canvas tote — calculated shipping by actual weight is almost always cheaper than a flat-rate box built for something denser."
+      },
+      {
+        "type": "h2",
+        "text": "Build the cost into the price, don't bolt it on"
+      },
+      {
+        "type": "p",
+        "text": "Customers abandon carts over shipping surprises at checkout far more than they abandon over a slightly higher sticker price with shipping already folded in. If your margins allow it, consider pricing shipping into the product and offering \"free shipping\" — the psychology matters more than the math suggests."
+      }
+    ]
+  },
+  {
+    "slug": "spotlight-kalinago-tours",
+    "tag": "Community",
+    "categorySlug": "community",
+    "date": "June 2, 2026",
+    "readTime": "4 min read",
+    "title": "Community Spotlight: Kalinago Tours brings the territory's story to visitors",
+    "excerpt": "As the only tour operator based inside the Kalinago Territory, Kalinago Tours built its business on a simple claim: no one knows this place like the people who live there.",
+    "image": "/uploads/kalinago-tours-walking.jpeg",
+    "author": "team",
+    "tags": [
+      "community spotlight",
+      "kalinago territory",
+      "tourism"
+    ],
+    "body": [
+      {
+        "type": "p",
+        "text": "\"No one knows the Kalinago Territory like we do.\" It's not just a slogan for Kalinago Tours — it's the whole business model. Based directly in the territory, the home of Dominica's indigenous Kalinago people, they're the only tour operator actually from the place they're showing visitors."
+      },
+      {
+        "type": "h2",
+        "text": "More than a tour"
+      },
+      {
+        "type": "p",
+        "text": "Kalinago Tours' packages range from the island's best-known sites — the Emerald Pool, Trafalgar Falls, and the world's second largest boiling lake — to something you won't find on a typical itinerary: the Kalinago Host Programme, which pairs visitors directly with Kalinago families for a deeper look at the culture than a guided walk-through can offer."
+      },
+      {
+        "type": "p",
+        "text": "Founded in 2015, the business has grown to cover the practical side of a visit too — accommodation arrangements and taxi service alongside the tours themselves — so a trip into the territory doesn't require piecing together three different bookings."
+      },
+      {
+        "type": "h2",
+        "text": "Find them on Connect767"
+      },
+      {
+        "type": "p",
+        "text": "Kalinago Tours is listed under Services → Tourism Services on the Connect767 directory, where you can see their full profile, photos, and get in touch directly."
+      }
+    ]
+  },
+  {
+    "slug": "spotlight-finance-focus-consultancy",
+    "tag": "Community",
+    "categorySlug": "community",
+    "date": "June 9, 2026",
+    "readTime": "5 min read",
+    "title": "Community Spotlight: Finance Focus Consultancy wants Dominicans talking about money",
+    "excerpt": "\"In our culture, we find it hard to talk about money, especially at home.\" Luana Laurent built Finance Focus to change that, one Financial Friday at a time.",
+    "image": "/uploads/luana-laurent.jpg",
+    "author": "team",
+    "tags": [
+      "community spotlight",
+      "personal finance",
+      "small business"
+    ],
+    "body": [
+      {
+        "type": "p",
+        "text": "Luana Laurent noticed something when she returned to Dominica after finishing her degree: a whole generation of young and middle-aged Dominicans who wanted help managing their money, and nowhere comfortable to ask for it. \"In our culture, we find it hard to talk about money, especially at home,\" she says. \"We also have a risk averse attitude towards investment.\""
+      },
+      {
+        "type": "h2",
+        "text": "A decade in taxation, then a business of her own"
+      },
+      {
+        "type": "p",
+        "text": "Before founding Finance Focus in 2017, Laurent spent over a decade in the Public Service, including 12 years as a Revenue Officer at the Inland Revenue Division. She's a postgraduate of the Arthur Lok Jack Global School of Business in Trinidad & Tobago and holds a Bachelor's in Accounting from UWI Open Campus Dominica."
+      },
+      {
+        "type": "p",
+        "text": "Finance Focus now offers business plan preparation, financial projections, QuickBooks accounting services, tax return preparation, and personal finance guidance for individuals and small businesses across Dominica."
+      },
+      {
+        "type": "h2",
+        "text": "Financial Fridays"
+      },
+      {
+        "type": "p",
+        "text": "Getting the conversation started took more than office hours. Finance Focus runs a free financial literacy page on Facebook and Instagram reaching roughly 3,000 followers, plus a YouTube series called Financial Fridays. \"It's hard to get the conversation started about financial management,\" Laurent says, \"but with the use of social media, it becomes so much easier and there has been significant engagement.\""
+      },
+      {
+        "type": "h2",
+        "text": "Find them on Connect767"
+      },
+      {
+        "type": "p",
+        "text": "Finance Focus Consultancy is listed under Services → Consulting Services on the Connect767 directory."
+      }
+    ]
+  },
+  {
+    "slug": "spotlight-catherine-lewis",
+    "tag": "Community",
+    "categorySlug": "community",
+    "date": "June 16, 2026",
+    "readTime": "4 min read",
+    "title": "Community Spotlight: Catherine Lewis, from Dominica to the front lines of storm recovery",
+    "excerpt": "A Dominica native who came to New York for college now leads emergency preparedness for one of the country's largest utilities — and was named a YMCA Black Achiever in Industry for it.",
+    "image": "/uploads/catherine-lewis.jpeg",
+    "author": "team",
+    "tags": [
+      "community spotlight",
+      "diaspora",
+      "leadership"
+    ],
+    "body": [
+      {
+        "type": "p",
+        "text": "Catherine Lewis came to New York from Dominica in the early 1990s for college. Today she's a director in Con Edison's Emergency Preparedness group — the person responsible for pulling together the outside workforce that restores power to New York City and Westchester County when severe weather knocks it out."
+      },
+      {
+        "type": "h2",
+        "text": "When the lights go out"
+      },
+      {
+        "type": "p",
+        "text": "The scale of that job is easy to underestimate until you see the numbers: after Hurricane Maria caused an island-wide outage in Puerto Rico, Lewis was part of the team that sent 400 workers to help restore power there. After a pair of devastating snow and wind storms in March 2018 — the second-largest customer-outage event in Con Edison's history — she helped secure more than 1,800 outside workers from as far away as California and Canada."
+      },
+      {
+        "type": "h2",
+        "text": "Recognized by the Harlem YMCA"
+      },
+      {
+        "type": "p",
+        "text": "In 2019, Lewis was named a Black Achiever in Industry by the Harlem YMCA, recognizing both her professional achievements and her community contributions — she volunteers with Big Brothers Big Sisters as a mentor and previously worked with the Urban League's Business Exchange Program counseling college students."
+      },
+      {
+        "type": "h2",
+        "text": "Find her on Connect767"
+      },
+      {
+        "type": "p",
+        "text": "Catherine Lewis is listed under Services → Business Administration on the Connect767 directory."
+      }
+    ]
+  }
+]

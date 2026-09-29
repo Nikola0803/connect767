@@ -1,0 +1,286 @@
+/*
+ * Connect767 branding for WooCommerce's own native pages — cart, checkout,
+ * my-account, and order-pay. These pages render through whatever WordPress
+ * theme is active on the backend, completely separate from the React
+ * frontend's Tailwind build, so without this they show fully unstyled
+ * default WooCommerce markup. This isn't a pixel-perfect recreation of the
+ * React app (that would mean rebuilding WooCommerce's templates in PHP) —
+ * it's real brand colors, fonts, and basic polish applied to WooCommerce's
+ * own layout, so the "hop out to pay" step doesn't look like a completely
+ * different, abandoned site.
+ *
+ * Color/font values match src/index.css in the React app exactly (same
+ * oklch tokens, converted to hex here since this loads outside that
+ * build).
+ */
+
+.woocommerce-page {
+  --c767-primary: #008651;
+  --c767-primary-dark: #006a38;
+  --c767-primary-tint: #e9faf2;
+  --c767-accent: #e4583a;
+  --c767-cream: #fefbf6;
+  --c767-cream-deep: #f2efe0;
+  --c767-border: #f1eadf;
+  --c767-ink: #030202;
+  --c767-body: #332c29;
+  --c767-muted: #48413b;
+
+  background-color: var(--c767-cream);
+  color: var(--c767-body);
+  font-family: "Manrope", "Inter", system-ui, sans-serif;
+}
+
+.woocommerce-page h1,
+.woocommerce-page h2,
+.woocommerce-page h3,
+.woocommerce-page .entry-title {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 400;
+  color: var(--c767-ink);
+}
+
+/* A simple branded header bar linking back to the real site — without
+   this, arriving at checkout from the React app feels like landing on an
+   unrelated, unbranded site with no way back. */
+.c767-checkout-bar {
+  background: var(--c767-ink);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.c767-checkout-bar a {
+  color: var(--c767-cream);
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 18px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.c767-checkout-bar a::before {
+  content: "←";
+  font-family: sans-serif;
+  font-size: 15px;
+  opacity: 0.7;
+}
+.c767-checkout-bar .c767-accent {
+  color: var(--c767-accent);
+}
+
+/* Buttons — checkout submit, pay button, cart update, coupon apply, etc. */
+.woocommerce-page .button,
+.woocommerce-page button.button,
+.woocommerce-page input.button,
+.woocommerce-page #place_order,
+.woocommerce-page .checkout-button {
+  background-color: var(--c767-primary) !important;
+  border: none !important;
+  color: #fefbf6 !important;
+  border-radius: 8px !important;
+  font-family: "Manrope", sans-serif !important;
+  font-weight: 600 !important;
+  padding: 12px 22px !important;
+  transition: background-color 0.15s ease;
+}
+.woocommerce-page .button:hover,
+.woocommerce-page button.button:hover,
+.woocommerce-page input.button:hover,
+.woocommerce-page #place_order:hover,
+.woocommerce-page .checkout-button:hover {
+  background-color: var(--c767-primary-dark) !important;
+  color: #fefbf6 !important;
+}
+.woocommerce-page a.remove {
+  color: var(--c767-accent) !important;
+}
+
+/* Form fields */
+.woocommerce-page input.input-text,
+.woocommerce-page select,
+.woocommerce-page textarea,
+.woocommerce-page .select2-selection {
+  border: 1px solid var(--c767-border) !important;
+  border-radius: 8px !important;
+  padding: 10px 12px !important;
+  font-family: "Manrope", sans-serif !important;
+  background-color: #fff !important;
+}
+.woocommerce-page input.input-text:focus,
+.woocommerce-page select:focus,
+.woocommerce-page textarea:focus {
+  border-color: var(--c767-primary) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px var(--c767-primary-tint) !important;
+}
+
+/* Order review / cart tables */
+.woocommerce-page table.shop_table,
+.woocommerce-page table.woocommerce-checkout-review-order-table {
+  border: 1px solid var(--c767-border);
+  border-radius: 12px;
+  overflow: hidden;
+  border-collapse: separate;
+  background: #fff;
+}
+.woocommerce-page table.shop_table th,
+.woocommerce-page table.woocommerce-checkout-review-order-table th {
+  background: var(--c767-cream-deep);
+  font-family: "Manrope", sans-serif;
+  font-weight: 700;
+  color: var(--c767-ink);
+}
+.woocommerce-page table.shop_table td,
+.woocommerce-page table.woocommerce-checkout-review-order-table td {
+  border-top: 1px solid var(--c767-border);
+}
+.woocommerce-page .order-total .amount,
+.woocommerce-page .woocommerce-Price-amount {
+  color: var(--c767-ink);
+  font-weight: 700;
+}
+
+/* Notices (coupon applied, form errors, etc.) */
+.woocommerce-page .woocommerce-message,
+.woocommerce-page .woocommerce-info {
+  border-top-color: var(--c767-primary) !important;
+  background-color: var(--c767-primary-tint) !important;
+}
+.woocommerce-page .woocommerce-error {
+  border-top-color: var(--c767-accent) !important;
+}
+
+/* My account nav */
+.woocommerce-page .woocommerce-MyAccount-navigation ul li.is-active a {
+  color: var(--c767-primary);
+  font-weight: 700;
+}
+
+/*
+ * Styling for the branded form-pay.php template override
+ * (templates/woocommerce/checkout/form-pay.php) — full control over this
+ * markup now, not fighting an unknown theme's own opinionated styling of
+ * WooCommerce's default template.
+ */
+.c767-pay-page {
+  max-width: 640px;
+  margin: 48px auto;
+  padding: 0 20px;
+}
+.c767-pay-card {
+  background: #fff;
+  border: 1px solid var(--c767-border);
+  border-radius: 16px;
+  padding: 36px 40px;
+  box-shadow: 0 20px 60px -15px rgba(0, 0, 0, 0.12);
+}
+.c767-pay-title {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 400;
+  font-size: 28px;
+  color: var(--c767-ink);
+  margin: 0 0 4px;
+}
+.c767-pay-subtitle {
+  font-family: "Manrope", sans-serif;
+  color: var(--c767-muted);
+  font-size: 14px;
+  margin: 0 0 28px;
+}
+.c767-pay-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 28px;
+}
+.c767-pay-table th,
+.c767-pay-table td {
+  padding: 12px 10px;
+  text-align: left;
+  font-family: "Manrope", sans-serif;
+  font-size: 14px;
+  border-bottom: 1px solid var(--c767-border);
+}
+.c767-pay-table thead th {
+  color: var(--c767-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid var(--c767-border);
+}
+.c767-align-right {
+  text-align: right !important;
+}
+.c767-grand-total th,
+.c767-grand-total td {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--c767-ink);
+  border-top: 2px solid var(--c767-ink);
+  border-bottom: none;
+}
+.c767-payment-methods {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+}
+.c767-payment-method {
+  border: 1px solid var(--c767-border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.c767-payment-method label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: "Manrope", sans-serif;
+  font-weight: 600;
+  color: var(--c767-ink);
+  cursor: pointer;
+}
+.c767-payment-radio {
+  accent-color: var(--c767-primary);
+  width: 18px;
+  height: 18px;
+}
+.c767-payment-fields {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--c767-border);
+  font-family: "Manrope", sans-serif;
+  font-size: 14px;
+  color: var(--c767-muted);
+}
+.c767-notice {
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-family: "Manrope", sans-serif;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+.c767-notice-info {
+  background: var(--c767-cream-deep);
+  color: var(--c767-body);
+}
+.c767-notice-success {
+  background: var(--c767-primary-tint);
+  color: var(--c767-primary-dark);
+}
+.c767-pay-actions {
+  text-align: right;
+}
+.c767-pay-button {
+  background: var(--c767-primary) !important;
+  color: #fefbf6 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 14px 28px !important;
+  font-family: "Manrope", sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+  cursor: pointer;
+}
+.c767-pay-button:hover {
+  background: var(--c767-primary-dark) !important;
+}
