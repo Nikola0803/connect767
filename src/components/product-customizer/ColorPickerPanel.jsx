@@ -13,7 +13,7 @@ export default function ColorPickerPanel({
       </p>
 
       {/* Preset color grid */}
-      <div className="grid grid-cols-4 gap-2 mb-4">
+      <div className="grid grid-cols-6 gap-1.5 mb-4">
         {colorPalette.map((c) => (
           <button
             key={c}

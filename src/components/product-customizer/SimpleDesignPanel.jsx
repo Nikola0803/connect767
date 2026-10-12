@@ -78,8 +78,8 @@ export default function SimpleDesignPanel({
           <p className="text-[10px] font-semibold text-background-400 uppercase tracking-wide mb-2">
             Or pick an icon
           </p>
-          <div className="grid grid-cols-4 gap-2">
-            {clipartLibrary.slice(0, 8).map((c) => (
+          <div className="grid grid-cols-5 gap-1.5">
+            {clipartLibrary.map((c) => (
               <button
                 key={c.key}
                 type="button"

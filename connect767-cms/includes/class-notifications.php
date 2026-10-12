@@ -42,7 +42,14 @@ class C767_Notifications
 
     private static function frontend_url($path = '/')
     {
-        return untrailingslashit(home_url()) . '/' . ltrim($path, '/');
+        // When WordPress runs on a separate admin subdomain (e.g.
+        // admin.connect767.com) the frontend lives elsewhere. Define
+        // C767_FRONTEND_URL in wp-config.php to point email links at the
+        // right place; defaults to home_url() for single-domain installs.
+        $base = defined('C767_FRONTEND_URL') && C767_FRONTEND_URL
+            ? untrailingslashit(C767_FRONTEND_URL)
+            : untrailingslashit(home_url());
+        return $base . '/' . ltrim($path, '/');
     }
 
     // ---------- Registration ----------

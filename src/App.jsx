@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 // Routes that own the entire viewport — the studio is a full-screen tool,
 // so the site header/footer/cart chrome would only be distraction there.
-const CHROMELESS_ROUTES = ["/uniforms"];
+const CHROMELESS_ROUTES = ["/uniforms", "/shop/customize"];
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import HomePage from "./pages/HomePage";

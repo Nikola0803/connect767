@@ -240,7 +240,12 @@ export default function ProductCustomizerPage() {
 
   if (!product) {
     return (
-      <div>
+      <div className="min-h-screen bg-background-50">
+        <div className="flex items-center gap-3 px-4 md:px-8 lg:px-12 py-4 border-b border-background-200/70 bg-background-50/95 backdrop-blur">
+          <Button to="/shop" variant="ghost" icon="ri-arrow-left-line" iconPosition="left" className="text-sm">
+            Back to Shop
+          </Button>
+        </div>
         <ProductGallery productTypes={productTypes} onSelect={selectProduct} />
       </div>
     );
@@ -334,7 +339,7 @@ export default function ProductCustomizerPage() {
           {/* Right: Layer controls & order button */}
           <div className="w-64 bg-background-900 border-l border-background-800 overflow-y-auto p-6 flex flex-col">
             <div className="flex-1">
-              {selectedLayer && stageMode === "edit" && (
+              {selectedLayer && stageMode === "edit" ? (
                 <div className="space-y-4">
                   <SelectedLayerBar
                     layer={selectedLayer}
@@ -344,6 +349,15 @@ export default function ProductCustomizerPage() {
                     onSleeveChange={setSleeveStyle}
                     productType={product}
                   />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-32 gap-2 rounded-xl border border-dashed border-background-700 text-background-500">
+                  <i className="ri-cursor-line text-xl" />
+                  <p className="text-xs text-center leading-relaxed px-2">
+                    {layers.length === 0
+                      ? "Add text or a logo\nfrom the left panel"
+                      : "Click a layer to select it"}
+                  </p>
                 </div>
               )}
             </div>

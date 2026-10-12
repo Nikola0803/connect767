@@ -107,6 +107,13 @@ class C767_CORS
             return $origin;
         }
 
+        // Allow Vercel preview deployments (*.vercel.app) for staging/testing.
+        // Pattern-matched here rather than in $default_origins since a wildcard
+        // subdomain can't be used as a static fallback value.
+        if (preg_match('#^https://[a-z0-9-]+\.vercel\.app$#i', $origin)) {
+            return $origin;
+        }
+
         // Fall back to the first configured origin rather than '*' so
         // credentialed requests still work for the known frontend.
         return $allowed[0] ?? $origin;

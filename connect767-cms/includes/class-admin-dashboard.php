@@ -159,6 +159,17 @@ class C767_Admin_Dashboard
             <h2>REST API</h2>
             <p>Base URL for the frontend's <code>VITE_WP_BASE_URL</code>:
                 <code><?php echo esc_url(home_url()); ?></code></p>
+            <?php
+            $frontend_url = defined('C767_FRONTEND_URL') && C767_FRONTEND_URL ? C767_FRONTEND_URL : null;
+            ?>
+            <p>Frontend URL (used in transactional emails):
+                <?php if ($frontend_url) : ?>
+                    <code><?php echo esc_url($frontend_url); ?></code>
+                    <span class="description"> — set via <code>C767_FRONTEND_URL</code> in wp-config.php</span>
+                <?php else : ?>
+                    <code><?php echo esc_url(home_url()); ?></code>
+                    <span class="description"> — falling back to <code>home_url()</code>. Define <code>C767_FRONTEND_URL</code> in wp-config.php if the frontend is on a different domain (e.g. Vercel).</span>
+                <?php endif; ?></p>
             <ul style="list-style:disc;padding-left:20px;">
                 <li><code>GET /wp-json/wp/v2/listing</code> — directory</li>
                 <li><code>GET /wp-json/wp/v2/posts</code> — blog</li>
