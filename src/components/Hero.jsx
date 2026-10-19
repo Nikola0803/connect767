@@ -31,7 +31,7 @@ export default function Hero() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-foreground-950/60 via-foreground-950/35 to-foreground-950/70" />
       </div>
-      <div className="relative z-10 w-full px-4 md:px-8 lg:px-12 pb-4 md:pb-6">
+      <div className="relative z-10 w-full px-4 md:px-8 lg:px-12 pb-24 md:pb-28">
         <div className="w-full max-w-6xl mx-auto text-center">
           <h1 className="font-heading text-background-50 text-2xl sm:text-3xl lg:text-4xl font-light leading-tight tracking-tight lg:whitespace-nowrap">
             Dominican Talent, Services, and Opportunity—<span className="italic text-accent-400">All in One Place.</span>
