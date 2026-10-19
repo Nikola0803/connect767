@@ -1,13 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { heroImage } from "../data/content";
-import { categoryTaxonomy } from "../data/industries";
-
 export default function Hero() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [location, setLocation] = useState("");
-  const [category, setCategory] = useState("");
   // The trending-category pills that used to sit under the search bar were
   // removed. Their getHomeCategories() fetch went with them — leaving it
   // would have been a request on every homepage load feeding nothing. The
@@ -22,8 +18,7 @@ export default function Hero() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const q = [query, location].filter(Boolean).join(" ").trim();
-    goToDirectory({ q, category });
+    goToDirectory({ q: query.trim() });
   };
 
   return (
@@ -51,53 +46,16 @@ export default function Hero() {
             the people who make our country feel like home.
           </p>
 
-          <form
-            onSubmit={handleSubmit}
-            className="mt-10 bg-background-50 rounded-2xl p-2 shadow-none max-w-4xl"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr_1fr_auto] gap-2">
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-background-50 md:border-r md:border-background-200">
-                <i className="ri-search-2-line text-foreground-500 text-lg w-5 h-5 flex items-center justify-center" />
-                <input
-                  className="flex-1 bg-transparent text-sm text-foreground-950 placeholder-foreground-400 focus:outline-none font-label"
-                  placeholder="What are you looking for?"
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-              </div>
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl md:border-r md:border-background-200">
-                <i className="ri-map-pin-line text-foreground-500 text-lg w-5 h-5 flex items-center justify-center" />
-                <input
-                  className="flex-1 bg-transparent text-sm text-foreground-950 placeholder-foreground-400 focus:outline-none font-label"
-                  placeholder="Where?"
-                  type="text"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                />
-              </div>
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl">
-                <i className="ri-price-tag-3-line text-foreground-500 text-lg w-5 h-5 flex items-center justify-center" />
-                <select
-                  className="flex-1 bg-transparent text-sm text-foreground-950 focus:outline-none font-label cursor-pointer pr-6"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                >
-                  <option value="">All categories</option>
-                  {categoryTaxonomy.map((cat) => (
-                    <option key={cat.slug} value={cat.slug}>
-                      {cat.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary-500 text-background-50 text-sm font-semibold hover:bg-primary-600 transition-colors cursor-pointer whitespace-nowrap"
-                type="submit"
-              >
-                Search
-                <i className="ri-arrow-right-line" />
-              </button>
+          <form onSubmit={handleSubmit} className="mt-10 max-w-2xl">
+            <div className="relative">
+              <i className="ri-search-line absolute left-5 top-1/2 -translate-y-1/2 text-foreground-400 text-xl pointer-events-none" />
+              <input
+                className="w-full pl-14 pr-5 py-4 rounded-full bg-background-50 text-foreground-950 placeholder-foreground-400 focus:outline-none focus:shadow-[0_4px_24px_rgba(0,0,0,0.18)] font-label text-base transition-shadow"
+                placeholder="Search businesses, services, locations..."
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
             </div>
           </form>
 
