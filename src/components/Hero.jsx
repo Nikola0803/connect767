@@ -32,11 +32,11 @@ export default function Hero() {
         <div className="absolute inset-0 bg-gradient-to-b from-foreground-950/60 via-foreground-950/35 to-foreground-950/70" />
       </div>
       <div className="relative z-10 w-full px-4 md:px-8 lg:px-12 pb-[12vh] md:pb-[14vh]">
-        <div className="w-full max-w-2xl mx-auto text-center">
-          <h1 className="font-heading text-background-50 text-3xl sm:text-4xl md:text-5xl font-light leading-tight tracking-tight">
+        <div className="w-full max-w-4xl mx-auto text-center">
+          <h1 className="font-heading text-background-50 text-3xl sm:text-4xl md:text-5xl font-light leading-tight tracking-tight md:whitespace-nowrap">
             Discover Dominica, <span className="italic text-accent-400">all in one place.</span>
           </h1>
-          <form onSubmit={handleSubmit} className="mt-5">
+          <form onSubmit={handleSubmit} className="mt-5 max-w-2xl mx-auto">
             <div className="relative">
               <i className="ri-search-line absolute left-5 top-1/2 -translate-y-1/2 text-foreground-400 text-xl pointer-events-none" />
               <input
