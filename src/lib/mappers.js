@@ -1,3 +1,5 @@
+import { createListingSearchText } from "./listingSearch";
+
 /**
  * Mappers between raw WordPress/WooCommerce REST API shapes and the flat
  * "view model" shapes the React components already consume. Keeping this
@@ -167,11 +169,54 @@ export function mapListingCpt(wp) {
   const categoryTerm = allCatTerms.find((t) => !t.parent) || allCatTerms[0];
   const industryTerm = allCatTerms.find((t) => t.parent);
 
+  const title = stripHtml(wp.title?.rendered || wp.title || "");
+  const category = decodeEntities(acf.category_label || categoryTerm?.name || "");
+  const publicProfile = {
+    title,
+    slug: wp.slug,
+    description: acf.description || htmlToText(wp.content?.rendered || ""),
+    category,
+    categorySlug: categoryTerm?.slug || acf.category_slug || "",
+    industry: industryTerm
+      ? { name: decodeEntities(industryTerm.name), slug: industryTerm.slug }
+      : null,
+    priceTier: acf.price_tier || "$",
+    tier: acf.tier || "Free",
+    verified: isTruthyMeta(acf.verified) ? "verified" : "",
+    rating: acf.rating || "0",
+    reviewCount: acf.review_count ?? 0,
+    location: {
+      display: acf.location || acf.location_display || "",
+      country: acf.location_country || "",
+      region: acf.location_region || "",
+      city: acf.location_city || "",
+      address: acf.address || "",
+    },
+    education: acf.education || "",
+    degreeType: acf.degree_type || "",
+    experienceLevel: acf.experience_level || "",
+    yearsExperience: acf.years_experience || "",
+    tags: acf.tags || [],
+    amenities: acf.amenities || [],
+    hours: acf.hours || [],
+    reviews: acf.reviews || [],
+    contact: {
+      phone: acf.phone || "",
+      email: acf.email || "",
+      website: acf.website || "",
+      instagram: acf.instagram || "",
+      facebook: acf.facebook || "",
+      youtube: acf.youtube || "",
+      twitter: acf.twitter || "",
+      whatsapp: acf.whatsapp || "",
+    },
+  };
+
   return {
     id: wp.id,
     slug: wp.slug,
-    title: stripHtml(wp.title?.rendered || wp.title || ""),
-    category: decodeEntities(acf.category_label || categoryTerm?.name || ""),
+    title,
+    category,
     categorySlug: categoryTerm?.slug || acf.category_slug || "",
     // Powers DirectoryPage's industry sub-filter (`l.industrySlug ===
     // industry`) — this was never populated before, so the sub-filter
@@ -223,6 +268,9 @@ export function mapListingCpt(wp) {
     logoZoom: Number(acf.logo_zoom) || 1,
     coverPosition: acf.cover_position || "center",
     coverZoom: Number(acf.cover_zoom) || 1,
+    // Precomputed from every public, user-visible profile value so the
+    // directory can search details that are not rendered on its cards.
+    searchText: createListingSearchText(publicProfile),
   };
 }
 

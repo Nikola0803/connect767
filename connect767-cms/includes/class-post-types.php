@@ -22,6 +22,7 @@ class C767_Post_Types
         // (default priority registers at 10, this at 20).
         add_action('init', [__CLASS__, 'cleanup_stray_industry_terms'], 20);
         add_action('rest_api_init', [__CLASS__, 'register_query_vars']);
+        add_filter('posts_search', [__CLASS__, 'expand_listing_search'], 10, 2);
     }
 
     /**
@@ -329,7 +330,87 @@ class C767_Post_Types
                     'compare' => '=',
                 ];
             }
+
+            // Core WordPress search only checks title/content/excerpt. Mark
+            // listing REST searches for the SQL expansion below so every
+            // public profile attribute and category term participates too.
+            $directory_search = sanitize_text_field((string) $request->get_param('search'));
+            if ($directory_search !== '') {
+                $args['c767_directory_search'] = $directory_search;
+                unset($args['s']);
+            }
             return $args;
         }, 10, 2);
+    }
+
+    /**
+     * Expand /wp/v2/listing?search=... to all public profile text stored in
+     * post meta plus listing-category names/slugs. Each word must occur
+     * somewhere in the profile, while punctuation in phones, email addresses,
+     * URLs, and other values is preserved and searchable.
+     */
+    public static function expand_listing_search($search_sql, $query)
+    {
+        global $wpdb;
+
+        $raw_search = $query->get('c767_directory_search');
+        if (!$raw_search || $query->get('post_type') !== 'listing') {
+            return $search_sql;
+        }
+
+        $searchable_meta = [
+            'price_tier', 'tier', 'rating', 'review_count',
+            'location_display', 'location_country', 'location_region', 'location_city',
+            'description', 'education', 'degree_type', 'experience_level', 'years_experience',
+            'tags', 'amenities', 'hours', 'reviews',
+            'phone', 'email', 'website', 'address',
+            'instagram', 'facebook', 'youtube', 'twitter', 'whatsapp',
+        ];
+        $meta_keys_sql = implode(', ', array_map(function ($key) {
+            return "'" . esc_sql($key) . "'";
+        }, $searchable_meta));
+
+        $terms = preg_split('/\s+/u', trim($raw_search), -1, PREG_SPLIT_NO_EMPTY);
+        $term_clauses = [];
+
+        foreach ($terms as $term) {
+            $like = '%' . $wpdb->esc_like($term) . '%';
+            $term_clauses[] = $wpdb->prepare(
+                "({$wpdb->posts}.post_title LIKE %s
+                    OR {$wpdb->posts}.post_content LIKE %s
+                    OR {$wpdb->posts}.post_excerpt LIKE %s
+                    OR {$wpdb->posts}.post_name LIKE %s
+                    OR EXISTS (
+                        SELECT 1 FROM {$wpdb->postmeta} c767_pm
+                        WHERE c767_pm.post_id = {$wpdb->posts}.ID
+                          AND c767_pm.meta_key IN ({$meta_keys_sql})
+                          AND c767_pm.meta_value LIKE %s
+                    )
+                    OR EXISTS (
+                        SELECT 1
+                        FROM {$wpdb->term_relationships} c767_tr
+                        INNER JOIN {$wpdb->term_taxonomy} c767_tt
+                            ON c767_tt.term_taxonomy_id = c767_tr.term_taxonomy_id
+                        INNER JOIN {$wpdb->terms} c767_t
+                            ON c767_t.term_id = c767_tt.term_id
+                        WHERE c767_tr.object_id = {$wpdb->posts}.ID
+                          AND c767_tt.taxonomy = 'listing_category'
+                          AND (c767_t.name LIKE %s OR c767_t.slug LIKE %s)
+                    ))",
+                $like,
+                $like,
+                $like,
+                $like,
+                $like,
+                $like,
+                $like
+            );
+        }
+
+        if (!$term_clauses) {
+            return $search_sql;
+        }
+
+        return ' AND ' . implode(' AND ', $term_clauses);
     }
 }

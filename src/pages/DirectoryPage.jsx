@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import DirectoryListingCard from "../components/DirectoryListingCard";
 import { CardSkeleton, EmptyState, ErrorState } from "../components/ui/States";
@@ -7,6 +7,7 @@ import { getListings, getDirectoryCategories } from "../data/repository";
 import { tierOptions, priceOptions, directorySortOptions, experienceRangeOptions, matchesExperienceRange } from "../data/directory";
 import { EDUCATION_CHOICES } from "../data/profileChoices";
 import { findCategory } from "../data/industries";
+import { listingMatchesSearch } from "../lib/listingSearch";
 
 const PAGE_SIZE = 12;
 const INDUSTRY_PREVIEW_COUNT = 14;
@@ -25,6 +26,12 @@ export default function DirectoryPage() {
   const [page, setPage] = useState(1);
   const [showAllIndustries, setShowAllIndustries] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [databaseSearch, setDatabaseSearch] = useState(search.trim());
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDatabaseSearch(search.trim()), 250);
+    return () => window.clearTimeout(timeout);
+  }, [search]);
 
   const activeFilterCount = [
     tier !== "all",
@@ -38,30 +45,13 @@ export default function DirectoryPage() {
     loading,
     error,
     reload,
-  } = useAsync(() => getListings(), []);
+  } = useAsync(() => getListings({ search: databaseSearch }), [databaseSearch]);
   const { data: directoryCategories } = useAsync(() => getDirectoryCategories(), []);
 
   const filtered = useMemo(() => {
     if (!directoryListings) return [];
-    const q = search.toLowerCase();
     let list = directoryListings.filter((l) => {
-      const matchesSearch =
-        !search ||
-        [
-          l.title,
-          l.category,
-          l.location,
-          l.badge,
-          l.education,
-          l.degreeType,
-          l.experienceLevel,
-          l.yearsExperience,
-          l.rating,
-          l.reviews,
-          l.price,
-        ]
-          .filter(Boolean)
-          .some((v) => String(v).toLowerCase().includes(q));
+      const matchesSearch = listingMatchesSearch(l, search);
       const matchesCategory = category === "all" || l.categorySlug === category;
       const matchesIndustry = industry === "all" || l.industrySlug === industry;
       const matchesTier = tier === "all" || l.badge === tier;

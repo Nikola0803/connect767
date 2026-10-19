@@ -11,6 +11,7 @@ import {
 } from "../lib/mappers";
 import { matchListingsLocally } from "../lib/matching";
 import { allIndustries } from "./industries";
+import { createListingSearchText } from "../lib/listingSearch";
 
 // Industry slugs from the canonical taxonomy. The Add Listing wizard submits
 // an *industry* slug (e.g. "accounting-and-bookkeeping"); a plugin bug
@@ -141,12 +142,69 @@ export async function captureCartPaypalOrder(orderId) {
 
 // ---------- Directory (WordPress `listing` CPT) ----------
 
-export async function getListings() {
+export async function getListings({ search = "" } = {}) {
   if (isLiveApi) {
-    const wp = await wpClient.get("/listing", { per_page: 100, _embed: 1, status: "publish" });
-    return wp.map(mapListingCpt);
+    const results = [];
+    let page = 1;
+
+    // WordPress caps REST collections at 100 records per request. Walk every
+    // page so an unfiltered directory—and a broad search—never silently omits
+    // profiles after the first hundred.
+    while (true) {
+      let wp;
+      try {
+        wp = await wpClient.get("/listing", {
+          per_page: 100,
+          page,
+          _embed: 1,
+          status: "publish",
+          search: search.trim() || undefined,
+        });
+      } catch (error) {
+        // An exact multiple of 100 makes WordPress reject the next page
+        // instead of returning an empty array. At least one prior page must
+        // have succeeded before that response can safely mean "we're done."
+        if (page > 1 && error?.status === 400 && error?.payload?.code === "rest_post_invalid_page_number") {
+          break;
+        }
+        throw error;
+      }
+      results.push(...wp.map(mapListingCpt));
+      if (wp.length < 100) break;
+      page += 1;
+    }
+
+    return results;
   }
-  return localListings;
+  return localListings.map((listing) => {
+    const detail = localListingDetails[listing.slug] || {};
+    return {
+      ...listing,
+      searchText: createListingSearchText({
+        title: listing.title,
+        slug: listing.slug,
+        category: listing.category,
+        categorySlug: listing.categorySlug,
+        industrySlug: listing.industrySlug,
+        price: listing.price,
+        location: listing.location,
+        tier: listing.badge,
+        verified: listing.verified ? "verified" : "",
+        rating: listing.rating,
+        reviews: detail.reviews || listing.reviews,
+        education: listing.education,
+        degreeType: listing.degreeType,
+        experienceLevel: listing.experienceLevel,
+        yearsExperience: listing.yearsExperience,
+        description: detail.description,
+        tags: detail.tags,
+        amenities: detail.amenities,
+        hours: detail.hours,
+        contact: detail.contact,
+        galleryText: (detail.gallery || []).map((image) => image.alt),
+      }),
+    };
+  });
 }
 
 export async function getListingBySlug(slug) {
