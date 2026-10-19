@@ -11,7 +11,7 @@ integration details and setup steps.
 
 ## Pages
 
-- `/` — Homepage (hero with an inline "AI Match" action inside the search bar,
+- `/` — Homepage (minimal hero with a centered lower search bar and inline "AI Match" action,
   a featured-listings carousel right below the hero, categories, how it works, pricing,
   testimonial, blog, partner marquee — the Uniform Studio teaser now lives on `/shop` instead)
 - `/match` — AI Matching (3-step quiz → ranked results with match %, à la truckdriverjobs.co's

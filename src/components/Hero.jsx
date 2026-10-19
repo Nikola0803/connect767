@@ -31,25 +31,19 @@ export default function Hero() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-foreground-950/60 via-foreground-950/35 to-foreground-950/70" />
       </div>
-      <div className="relative z-10 w-full px-4 md:px-8 lg:px-12 pb-16 md:pb-24 pt-32 md:pt-40">
-        <div className="max-w-5xl">
-          <h1 className="font-heading text-background-50 text-4xl sm:text-5xl md:text-7xl font-light leading-[1.05] tracking-tight">
-            The Directory.
-            <br />
-            The Shop.
-            <br />
-            <span className="italic font-medium">The Custom Kit. </span>
-            <span className="text-accent-400">One Place.</span>
+      <div className="relative z-10 w-full px-4 md:px-8 lg:px-12 pb-[12vh] md:pb-[14vh]">
+        <div className="w-full max-w-2xl mx-auto text-center">
+          <h1 className="font-heading text-background-50 text-3xl sm:text-4xl md:text-5xl font-light leading-tight tracking-tight">
+            Discover Dominica, <span className="italic text-accent-400">all in one place.</span>
           </h1>
-          <p className="mt-6 max-w-2xl text-background-50/85 text-base md:text-lg font-light">
-            Connect767 is a modern directory, a curated shop, and a 3D Uniform Studio — built for
-            the people who make our country feel like home.
+          <p className="mt-3 text-background-50/85 text-sm sm:text-base font-light">
+            Find local businesses, products, and services.
           </p>
-
-          <form onSubmit={handleSubmit} className="mt-10 max-w-2xl">
+          <form onSubmit={handleSubmit} className="mt-6">
             <div className="relative">
               <i className="ri-search-line absolute left-5 top-1/2 -translate-y-1/2 text-foreground-400 text-xl pointer-events-none" />
               <input
+                aria-label="Search the directory"
                 className="w-full pl-14 pr-28 sm:pr-36 py-4 rounded-full bg-background-50 text-foreground-950 placeholder-foreground-400 focus:outline-none focus:shadow-[0_4px_24px_rgba(0,0,0,0.18)] font-label text-base transition-shadow"
                 placeholder="Search businesses, services, locations..."
                 type="text"
@@ -67,33 +61,6 @@ export default function Hero() {
               </Link>
             </div>
           </form>
-
-          <div className="mt-10 flex flex-wrap items-center gap-6 text-background-50/85">
-            <div className="flex items-center gap-3">
-              <div className="flex -space-x-2">
-                <div className="w-9 h-9 rounded-full bg-accent-500 border-2 border-background-50 flex items-center justify-center text-xs font-bold">
-                  AJ
-                </div>
-                <div className="w-9 h-9 rounded-full bg-primary-500 border-2 border-background-50 flex items-center justify-center text-xs font-bold">
-                  RP
-                </div>
-                <div className="w-9 h-9 rounded-full bg-secondary-600 border-2 border-background-50 flex items-center justify-center text-xs font-bold">
-                  NF
-                </div>
-              </div>
-              <div className="text-xs">
-                <div className="font-semibold text-background-50">Loved by locals</div>
-                <div className="text-background-50/70">Featured in 4 island guides</div>
-              </div>
-            </div>
-            <Link
-              className="ml-auto md:ml-0 inline-flex items-center gap-2 text-sm font-medium text-background-50 hover:text-accent-400 cursor-pointer"
-              to="/listings/submit"
-            >
-              Post a listing — it's free
-              <i className="ri-arrow-right-up-line" />
-            </Link>
-          </div>
         </div>
       </div>
     </section>
