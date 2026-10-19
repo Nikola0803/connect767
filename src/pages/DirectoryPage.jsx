@@ -102,28 +102,16 @@ export default function DirectoryPage() {
       <div className="w-full px-4 md:px-8 lg:px-12 py-6 border-b border-background-200/70 bg-background-50/95 backdrop-blur sticky top-16 md:top-20 z-30">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col gap-4">
-            <form
-              className="relative flex gap-2"
-              onSubmit={(e) => e.preventDefault()}
-            >
-              <div className="relative flex-1">
-                <i className="ri-search-line absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground-500 text-sm" />
-                <input
-                  className="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border border-background-300 bg-background-50 text-foreground-950 placeholder-foreground-400 focus:outline-none focus:border-primary-400 font-label"
-                  placeholder="Search businesses, services, locations..."
-                  type="text"
-                  value={search}
-                  onChange={(e) => updateFilter(setSearch)(e.target.value)}
-                />
-              </div>
-              <button
-                type="submit"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary-500 text-background-50 text-sm font-semibold hover:bg-primary-600 transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
-              >
-                <i className="ri-search-line" />
-                <span className="hidden sm:inline">Search</span>
-              </button>
-            </form>
+            <div className="relative">
+              <i className="ri-search-line absolute left-4 top-1/2 -translate-y-1/2 text-foreground-400 text-base pointer-events-none" />
+              <input
+                className="w-full pl-11 pr-5 py-3 rounded-full border border-background-200 bg-white text-foreground-950 placeholder-foreground-400 focus:outline-none focus:border-primary-400 focus:shadow-[0_2px_12px_rgba(0,0,0,0.08)] font-label text-sm transition-shadow"
+                placeholder="Search businesses, services, locations..."
+                type="text"
+                value={search}
+                onChange={(e) => updateFilter(setSearch)(e.target.value)}
+              />
+            </div>
 
             <div className="flex items-center gap-1.5 overflow-x-auto pb-2 lg:pb-0 flex-1">
               {(directoryCategories || []).map((cat) => (
