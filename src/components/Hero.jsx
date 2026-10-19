@@ -50,23 +50,23 @@ export default function Hero() {
             <div className="relative">
               <i className="ri-search-line absolute left-5 top-1/2 -translate-y-1/2 text-foreground-400 text-xl pointer-events-none" />
               <input
-                className="w-full pl-14 pr-5 py-4 rounded-full bg-background-50 text-foreground-950 placeholder-foreground-400 focus:outline-none focus:shadow-[0_4px_24px_rgba(0,0,0,0.18)] font-label text-base transition-shadow"
+                className="w-full pl-14 pr-28 sm:pr-36 py-4 rounded-full bg-background-50 text-foreground-950 placeholder-foreground-400 focus:outline-none focus:shadow-[0_4px_24px_rgba(0,0,0,0.18)] font-label text-base transition-shadow"
                 placeholder="Search businesses, services, locations..."
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
+              <Link
+                to="/match"
+                aria-label="Open AI Matching"
+                className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center gap-1.5 h-11 px-3.5 sm:px-4 rounded-full bg-primary-500 text-background-50 text-sm font-semibold hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 transition-colors"
+              >
+                <i className="ri-sparkling-2-fill text-accent-400" aria-hidden="true" />
+                <span className="sm:hidden">AI</span>
+                <span className="hidden sm:inline">AI Match</span>
+              </Link>
             </div>
           </form>
-
-          <Link
-            to="/match"
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent-500/15 border border-accent-400/30 hover:bg-accent-500/25 text-background-50 text-xs font-medium cursor-pointer whitespace-nowrap transition-colors"
-          >
-            <i className="ri-sparkling-2-fill text-accent-400" />
-            Not sure where to start? Try our AI Matching
-            <i className="ri-arrow-right-line" />
-          </Link>
 
           <div className="mt-10 flex flex-wrap items-center gap-6 text-background-50/85">
             <div className="flex items-center gap-3">

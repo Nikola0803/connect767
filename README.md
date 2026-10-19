@@ -11,7 +11,7 @@ integration details and setup steps.
 
 ## Pages
 
-- `/` — Homepage (hero with an inline "Try our AI Matching" prompt under the trending tags,
+- `/` — Homepage (hero with an inline "AI Match" action inside the search bar,
   a featured-listings carousel right below the hero, categories, how it works, pricing,
   testimonial, blog, partner marquee — the Uniform Studio teaser now lives on `/shop` instead)
 - `/match` — AI Matching (3-step quiz → ranked results with match %, à la truckdriverjobs.co's
@@ -321,8 +321,8 @@ phone/email, Catherine Lewis has none of the three). Both are now conditionally 
 
 - `/match` is a new feature (not from the original export) — modeled on truckdriverjobs.co's "Try
   our AI Job Matching" flow: a few quick questions, then every listing ranked by a match
-  percentage instead of a flat list. On the homepage it's a compact prompt inside the hero search
-  card, right below the "Trending" tags (`src/components/Hero.jsx`) — not a separate section.
+  percentage instead of a flat list. On the homepage it's a compact action at the trailing edge
+  of the hero search bar (`src/components/Hero.jsx`) — not a separate section.
 - The 3 steps: category, budget + location, and what matters most (highest rated / best value /
   closest / top-tier only) — the last one changes how heavily each factor is weighted.
 - The scoring itself (`src/lib/matching.js`) is a transparent, documented weighted heuristic, not
