@@ -36,16 +36,13 @@ export default function Hero() {
           <h1 className="font-heading text-background-50 text-3xl sm:text-4xl md:text-5xl font-light leading-tight tracking-tight">
             Discover Dominica, <span className="italic text-accent-400">all in one place.</span>
           </h1>
-          <p className="mt-3 text-background-50/85 text-sm sm:text-base font-light">
-            Find local businesses, products, and services.
-          </p>
-          <form onSubmit={handleSubmit} className="mt-6">
+          <form onSubmit={handleSubmit} className="mt-5">
             <div className="relative">
               <i className="ri-search-line absolute left-5 top-1/2 -translate-y-1/2 text-foreground-400 text-xl pointer-events-none" />
               <input
                 aria-label="Search the directory"
                 className="w-full pl-14 pr-28 sm:pr-36 py-4 rounded-full bg-background-50 text-foreground-950 placeholder-foreground-400 focus:outline-none focus:shadow-[0_4px_24px_rgba(0,0,0,0.18)] font-label text-base transition-shadow"
-                placeholder="Search businesses, services, locations..."
+                placeholder="Find local businesses, products, and services"
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
