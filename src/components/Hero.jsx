@@ -34,7 +34,7 @@ export default function Hero() {
       <div className="relative z-10 w-full px-4 md:px-8 lg:px-12 pb-[12vh] md:pb-[14vh]">
         <div className="w-full max-w-4xl mx-auto text-center">
           <h1 className="font-heading text-background-50 text-3xl sm:text-4xl md:text-5xl font-light leading-tight tracking-tight md:whitespace-nowrap">
-            Discover Dominica, <span className="italic text-accent-400">all in one place.</span>
+            Explore Dominica’s <span className="italic text-accent-400">local business directory.</span>
           </h1>
           <form onSubmit={handleSubmit} className="mt-5 max-w-2xl mx-auto">
             <div className="relative">
