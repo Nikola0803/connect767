@@ -24,6 +24,14 @@ export default function DirectoryPage() {
   const [view, setView] = useState("grid");
   const [page, setPage] = useState(1);
   const [showAllIndustries, setShowAllIndustries] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+
+  const activeFilterCount = [
+    tier !== "all",
+    priceTier !== "all",
+    experienceRange !== "all",
+    educationFilter !== "all",
+  ].filter(Boolean).length;
 
   const {
     data: directoryListings,
@@ -195,66 +203,29 @@ export default function DirectoryPage() {
             </div>
           )}
 
-          {/* Filters + sort row */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
-            <div className="flex flex-wrap items-center gap-2 min-w-0">
-              <div className="inline-flex items-center gap-1 px-1 py-1 bg-background-100 rounded-full border border-background-200/70">
-                {tierOptions.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => updateFilter(setTier)(opt.value)}
-                    className={`px-3 py-1.5 text-[11px] font-semibold rounded-full cursor-pointer whitespace-nowrap transition-colors flex-shrink-0 ${
-                      tier === opt.value ? "bg-accent-500 text-background-50" : "text-foreground-600 hover:text-foreground-900"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              <div className="inline-flex items-center gap-1 px-1 py-1 bg-background-100 rounded-full border border-background-200/70">
-                {priceOptions.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => updateFilter(setPriceTier)(opt.value)}
-                    className={`px-3 py-1.5 text-[11px] font-semibold rounded-full cursor-pointer whitespace-nowrap transition-colors flex-shrink-0 ${
-                      priceTier === opt.value ? "bg-secondary-500 text-background-50" : "text-foreground-600 hover:text-foreground-900"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              <div className="inline-flex items-center gap-1 px-1 py-1 bg-background-100 rounded-full border border-background-200/70">
-                {experienceRangeOptions.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => updateFilter(setExperienceRange)(opt.value)}
-                    className={`px-3 py-1.5 text-[11px] font-semibold rounded-full cursor-pointer whitespace-nowrap transition-colors flex-shrink-0 ${
-                      experienceRange === opt.value ? "bg-primary-500 text-background-50" : "text-foreground-600 hover:text-foreground-900"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              <select
-                value={educationFilter}
-                onChange={(e) => updateFilter(setEducationFilter)(e.target.value)}
-                className="text-[11px] font-label px-3 py-1.5 rounded-full border border-background-200/70 bg-background-100 text-foreground-700 focus:outline-none focus:border-primary-400 cursor-pointer"
-              >
-                <option value="all">All Education</option>
-                {EDUCATION_CHOICES.map((choice) => (
-                  <option key={choice} value={choice}>{choice}</option>
-                ))}
-              </select>
-            </div>
-            <div className="sm:ml-auto flex items-center gap-3">
-              <span className="text-xs font-label text-foreground-500 whitespace-nowrap">
-                {filtered.length} listing{filtered.length === 1 ? "" : "s"}
-              </span>
+          {/* Toolbar: filters toggle + sort + view + count */}
+          <div className="flex items-center gap-3 mb-6">
+            <button
+              type="button"
+              onClick={() => setShowFilters((v) => !v)}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-full border transition-colors cursor-pointer ${
+                showFilters || activeFilterCount > 0
+                  ? "bg-primary-500 text-background-50 border-primary-500"
+                  : "bg-background-50 text-foreground-700 border-background-200/70 hover:border-background-300 hover:bg-background-100"
+              }`}
+            >
+              <i className="ri-equalizer-line" />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="inline-flex items-center justify-center w-4 h-4 text-[10px] rounded-full bg-background-50 text-primary-700 font-bold">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+            <span className="text-xs font-label text-foreground-500 whitespace-nowrap">
+              {filtered.length} listing{filtered.length === 1 ? "" : "s"}
+            </span>
+            <div className="ml-auto flex items-center gap-2">
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}
@@ -290,6 +261,64 @@ export default function DirectoryPage() {
               </div>
             </div>
           </div>
+
+          {/* Expanded filter panel */}
+          {showFilters && (
+            <div className="flex flex-wrap items-center gap-2 mb-6 p-4 rounded-2xl bg-background-100/60 border border-background-200/70">
+              <div className="inline-flex items-center gap-1 px-1 py-1 bg-background-50 rounded-full border border-background-200/70">
+                {tierOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => updateFilter(setTier)(opt.value)}
+                    className={`px-3 py-1.5 text-[11px] font-semibold rounded-full cursor-pointer whitespace-nowrap transition-colors flex-shrink-0 ${
+                      tier === opt.value ? "bg-accent-500 text-background-50" : "text-foreground-600 hover:text-foreground-900"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <div className="inline-flex items-center gap-1 px-1 py-1 bg-background-50 rounded-full border border-background-200/70">
+                {priceOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => updateFilter(setPriceTier)(opt.value)}
+                    className={`px-3 py-1.5 text-[11px] font-semibold rounded-full cursor-pointer whitespace-nowrap transition-colors flex-shrink-0 ${
+                      priceTier === opt.value ? "bg-secondary-500 text-background-50" : "text-foreground-600 hover:text-foreground-900"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <div className="inline-flex items-center gap-1 px-1 py-1 bg-background-50 rounded-full border border-background-200/70">
+                {experienceRangeOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => updateFilter(setExperienceRange)(opt.value)}
+                    className={`px-3 py-1.5 text-[11px] font-semibold rounded-full cursor-pointer whitespace-nowrap transition-colors flex-shrink-0 ${
+                      experienceRange === opt.value ? "bg-primary-500 text-background-50" : "text-foreground-600 hover:text-foreground-900"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <select
+                value={educationFilter}
+                onChange={(e) => updateFilter(setEducationFilter)(e.target.value)}
+                className="text-[11px] font-label px-3 py-1.5 rounded-full border border-background-200/70 bg-background-50 text-foreground-700 focus:outline-none focus:border-primary-400 cursor-pointer"
+              >
+                <option value="all">All Education</option>
+                {EDUCATION_CHOICES.map((choice) => (
+                  <option key={choice} value={choice}>{choice}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="mb-6">
             <h1 className="font-heading text-2xl md:text-3xl font-light text-foreground-950">
