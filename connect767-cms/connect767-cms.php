@@ -52,6 +52,7 @@ function c767_require_includes()
         'includes/class-listing-review.php',
         'includes/class-notifications.php',
         'includes/class-importer.php',
+        'includes/class-experience-cron.php',
     ];
 
     foreach ($includes as $file) {
@@ -90,6 +91,7 @@ function c767_init_plugin()
     C767_Listing_Review::init();
     C767_Notifications::init();
     C767_Importer::init();
+    C767_Experience_Cron::init();
 }
 add_action('plugins_loaded', 'c767_init_plugin');
 

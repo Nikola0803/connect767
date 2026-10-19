@@ -318,6 +318,7 @@ export async function submitListing(form) {
     "degreeType",
     "experienceLevel",
     "yearsExperience",
+    "amenities",
     "tier",
     "logoPosition",
     "logoZoom",
@@ -363,6 +364,14 @@ export async function submitBooking(slug, payload) {
     return { id: "local-preview", status: "pending" };
   }
   return customClient.post(`/listings/${slug}/bookings`, payload);
+}
+
+export async function submitReview(slug, { rating, name, text }) {
+  if (!isLiveApi) {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    return { id: "local-preview", status: "pending" };
+  }
+  return customClient.post(`/listings/${slug}/reviews`, { stars: rating, name, text });
 }
 
 /**
@@ -422,6 +431,7 @@ export async function updateListing(id, form) {
     "degreeType",
     "experienceLevel",
     "yearsExperience",
+    "amenities",
     "logoPosition",
     "logoZoom",
     "coverPosition",

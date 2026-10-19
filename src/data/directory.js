@@ -34,6 +34,25 @@ export const directorySortOptions = [
   { value: "price-high", label: "Price: High to Low" },
 ];
 
+export const experienceRangeOptions = [
+  { label: "Any Experience", value: "all" },
+  { label: "0–5 Yrs", value: "0-5" },
+  { label: "5–10 Yrs", value: "5-10" },
+  { label: "10–15 Yrs", value: "10-15" },
+  { label: "15+ Yrs", value: "15+" },
+];
+
+export function matchesExperienceRange(yearsExperience, range) {
+  if (range === "all") return true;
+  const yrs = Number(yearsExperience);
+  if (isNaN(yrs)) return range === "all";
+  if (range === "0-5") return yrs >= 0 && yrs < 5;
+  if (range === "5-10") return yrs >= 5 && yrs < 10;
+  if (range === "10-15") return yrs >= 10 && yrs < 15;
+  if (range === "15+") return yrs >= 15;
+  return true;
+}
+
 // Only real, client-provided listings — all placeholder/dummy businesses
 // from the original source export were removed.
 export const directoryListings = [

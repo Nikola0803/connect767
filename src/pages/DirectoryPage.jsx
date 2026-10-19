@@ -4,7 +4,8 @@ import DirectoryListingCard from "../components/DirectoryListingCard";
 import { CardSkeleton, EmptyState, ErrorState } from "../components/ui/States";
 import { useAsync } from "../hooks/useAsync";
 import { getListings, getDirectoryCategories } from "../data/repository";
-import { tierOptions, priceOptions, directorySortOptions } from "../data/directory";
+import { tierOptions, priceOptions, directorySortOptions, experienceRangeOptions, matchesExperienceRange } from "../data/directory";
+import { EDUCATION_CHOICES } from "../data/profileChoices";
 import { findCategory } from "../data/industries";
 
 const PAGE_SIZE = 12;
@@ -17,6 +18,8 @@ export default function DirectoryPage() {
   const [industry, setIndustry] = useState("all");
   const [tier, setTier] = useState("all");
   const [priceTier, setPriceTier] = useState("all");
+  const [educationFilter, setEducationFilter] = useState("all");
+  const [experienceRange, setExperienceRange] = useState("all");
   const [sort, setSort] = useState("rating");
   const [view, setView] = useState("grid");
   const [page, setPage] = useState(1);
@@ -32,17 +35,33 @@ export default function DirectoryPage() {
 
   const filtered = useMemo(() => {
     if (!directoryListings) return [];
+    const q = search.toLowerCase();
     let list = directoryListings.filter((l) => {
       const matchesSearch =
         !search ||
-        l.title.toLowerCase().includes(search.toLowerCase()) ||
-        l.category.toLowerCase().includes(search.toLowerCase()) ||
-        l.location.toLowerCase().includes(search.toLowerCase());
+        [
+          l.title,
+          l.category,
+          l.location,
+          l.badge,
+          l.education,
+          l.degreeType,
+          l.experienceLevel,
+          l.yearsExperience,
+          l.rating,
+          l.reviews,
+          l.price,
+        ]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(q));
       const matchesCategory = category === "all" || l.categorySlug === category;
       const matchesIndustry = industry === "all" || l.industrySlug === industry;
       const matchesTier = tier === "all" || l.badge === tier;
       const matchesPrice = priceTier === "all" || l.price === priceTier;
-      return matchesSearch && matchesCategory && matchesIndustry && matchesTier && matchesPrice;
+      const matchesEducation =
+        educationFilter === "all" || (l.education || "").toLowerCase() === educationFilter.toLowerCase();
+      const matchesExperience = matchesExperienceRange(l.yearsExperience, experienceRange);
+      return matchesSearch && matchesCategory && matchesIndustry && matchesTier && matchesPrice && matchesEducation && matchesExperience;
     });
 
     switch (sort) {
@@ -64,7 +83,7 @@ export default function DirectoryPage() {
         break;
     }
     return list;
-  }, [directoryListings, search, category, industry, tier, priceTier, sort]);
+  }, [directoryListings, search, category, industry, tier, priceTier, educationFilter, experienceRange, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -222,6 +241,32 @@ export default function DirectoryPage() {
                     </button>
                   ))}
                 </div>
+                <div className="inline-flex items-center gap-1 px-1 py-1 bg-background-100 rounded-full border border-background-200/70 overflow-x-auto max-w-full">
+                  {experienceRangeOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => updateFilter(setExperienceRange)(opt.value)}
+                      className={`px-3 py-1.5 text-[11px] font-semibold rounded-full cursor-pointer whitespace-nowrap transition-colors flex-shrink-0 ${
+                        experienceRange === opt.value
+                          ? "bg-primary-500 text-background-50"
+                          : "text-foreground-600 hover:text-foreground-900"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <select
+                  value={educationFilter}
+                  onChange={(e) => updateFilter(setEducationFilter)(e.target.value)}
+                  className="text-[11px] font-label px-3 py-1.5 rounded-full border border-background-200/70 bg-background-100 text-foreground-700 focus:outline-none focus:border-primary-400 cursor-pointer"
+                >
+                  <option value="all">All Education</option>
+                  {EDUCATION_CHOICES.map((choice) => (
+                    <option key={choice} value={choice}>{choice}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="sm:ml-auto flex items-center gap-3">

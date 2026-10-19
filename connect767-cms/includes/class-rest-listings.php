@@ -455,6 +455,9 @@ class C767_REST_Listings
             update_post_meta($post_id, 'tags', wp_json_encode(array_values($tags)));
         }
 
+        $amenities = array_filter(array_map('trim', explode(',', (string) $request->get_param('amenities'))));
+        update_post_meta($post_id, 'amenities', wp_json_encode(array_values($amenities)));
+
         self::handle_uploads($post_id, $request);
 
         do_action('c767_listing_submitted', $post_id, $user->ID, $tier);
@@ -531,6 +534,9 @@ class C767_REST_Listings
 
         $tags = array_filter(array_map('trim', explode(',', (string) $request->get_param('tags'))));
         update_post_meta($post_id, 'tags', wp_json_encode(array_values($tags)));
+
+        $amenities = array_filter(array_map('trim', explode(',', (string) $request->get_param('amenities'))));
+        update_post_meta($post_id, 'amenities', wp_json_encode(array_values($amenities)));
 
         self::handle_uploads($post_id, $request);
 

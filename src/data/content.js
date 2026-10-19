@@ -87,8 +87,7 @@ export const stats = [
 
 export const partners = ["Printful", "USPS", "UPS", "FedEx", "Amazon", "Meta", "Pinterest", "Stripe"];
 
-export const heroImage =
-  "https://readdy.ai/api/search-image?query=Editorial%20wide%20aerial%20view%20of%20a%20warm%20cream%20and%20emerald%20coastal%20town%20street%20at%20golden%20hour%2C%20colorful%20low-rise%20shopfronts%2C%20terracotta%20rooftops%2C%20people%20walking%20casually%2C%20tropical%20palm%20trees%2C%20soft%20warm%20light%2C%20muted%20color%20palette%2C%20highly%20detailed%20cinematic%20lifestyle%20photography&width=1800&height=1200&seq=connect767-hero-2026-main&orientation=landscape";
+export const heroImage = "/uploads/hero.webp";
 
 export const uniformImage =
   "https://readdy.ai/api/search-image?query=Editorial%203D%20render%20of%20a%20full%20soccer%20uniform%20floating%20mid-air%2C%20emerald%20green%20and%20cream%20jersey%20with%20number%2010%2C%20matching%20shorts%20and%20socks%2C%20soft%20studio%20lighting%2C%20warm%20terracotta%20backdrop%2C%20minimalist%20product%20photography%2C%20cinematic%20composition%2C%20highly%20detailed%20fabric%20textures&width=1200&height=1200&seq=connect767-uniform-studio-hero&orientation=squarish";

@@ -12,7 +12,6 @@ import { config } from "../lib/config";
 const WP_ORIGIN = config.wpBaseUrl || "https://admin.connect767.com";
 
 const navItems = [
-  { label: "Directory", href: "/listings" },
   { label: "Shop", href: "/shop" },
   { label: "Custom Uniforms", href: "/uniforms" },
   { label: "Blog", href: "/blog" },
@@ -201,7 +200,7 @@ export default function Header() {
               className="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-md bg-primary-500 text-background-50 hover:bg-primary-600 transition-colors cursor-pointer whitespace-nowrap"
               to="/auth/register"
             >
-              Sign In / Sign Up
+              Sign In | Register
             </Link>
           )}
 
@@ -293,7 +292,7 @@ export default function Header() {
                 to="/auth/register"
                 className="mt-2 inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold rounded-md bg-primary-500 text-background-50 hover:bg-primary-600 cursor-pointer"
               >
-                Sign In / Sign Up
+                Sign In | Register
               </Link>
             )}
           </nav>

@@ -7,6 +7,7 @@ import { useSavedListings } from "../hooks/useSavedListings";
 import { imageCropStyle } from "../lib/imagePosition";
 import BookingForm from "./BookingForm";
 import ShareMenu from "./ShareMenu";
+import { WriteReviewButton } from "./WriteReviewModal";
 
 /**
  * The actual listing profile presentation — used by both
@@ -102,13 +103,9 @@ export default function ListingProfile({ data, isPreview = false }) {
                   {gallery[activeImage]?.src ? (
                     <img
                       alt={gallery[activeImage]?.alt}
-                      className="w-full h-full object-cover"
+                      className={`w-full h-full ${activeImage === 0 ? "object-cover" : "object-contain"}`}
                       src={gallery[activeImage]?.src}
-                      style={
-                        activeImage === 0
-                          ? imageCropStyle(data.coverPosition, data.coverZoom)
-                          : { objectPosition: "center top" }
-                      }
+                      style={activeImage === 0 ? imageCropStyle(data.coverPosition, data.coverZoom) : undefined}
                     />
                   ) : (
                     <i className="ri-image-line text-4xl text-foreground-300" />
@@ -348,11 +345,16 @@ export default function ListingProfile({ data, isPreview = false }) {
                         ({data.reviewCount})
                       </span>
                     </h2>
-                    <div className="flex items-center gap-1">
-                      <i className="ri-star-fill text-accent-500" />
-                      <span className="text-lg font-semibold text-foreground-950">
-                        {data.rating}
-                      </span>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1">
+                        <i className="ri-star-fill text-accent-500" />
+                        <span className="text-lg font-semibold text-foreground-950">
+                          {data.rating}
+                        </span>
+                      </div>
+                      {!isPreview && (
+                        <WriteReviewButton listingSlug={data.slug} listingTitle={data.title} />
+                      )}
                     </div>
                   </div>
 

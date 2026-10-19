@@ -66,6 +66,7 @@ const initialForm = {
   galleryFiles: [],
   galleryPreviews: [],
   bookingEnabled: false,
+  amenities: "",
 };
 
 /**
@@ -111,7 +112,9 @@ function buildPreviewData(form) {
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean),
-    amenities: [],
+    amenities: form.amenities
+      ? form.amenities.split(",").map((a) => a.trim()).filter(Boolean)
+      : [],
     hours: [],
     gallery: form.photoPreview
       ? [
@@ -229,6 +232,7 @@ export default function AddListingPage() {
           priceTier: data.price || "",
           description: data.description || "",
           tags: (data.tags || []).join(", "),
+          amenities: (data.amenities || []).join(", "),
           location: data.location || "",
           education: data.education || "",
           degreeType: data.degreeType || "",
@@ -631,6 +635,14 @@ export default function AddListingPage() {
                     placeholder="comma-separated, e.g. farm-to-table, date night"
                     value={form.tags}
                     onChange={update("tags")}
+                  />
+                </FormField>
+                <FormField label="Amenities" htmlFor="amenities" hint="comma-separated, e.g. Parking, WiFi, Wheelchair Accessible">
+                  <Input
+                    id="amenities"
+                    placeholder="e.g. Parking, WiFi, Outdoor Seating"
+                    value={form.amenities}
+                    onChange={update("amenities")}
                   />
                 </FormField>
                 <FormField label="Location" htmlFor="location" required>

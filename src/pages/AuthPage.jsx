@@ -193,7 +193,7 @@ function RegisterForm() {
         </div>
       )}
 
-      <FormField label="Account/User Name" htmlFor="name" required>
+      <FormField label="Account Name" htmlFor="name" required>
         <Input
           id="name"
           icon="ri-user-line"

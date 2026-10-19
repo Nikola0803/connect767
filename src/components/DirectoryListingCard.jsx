@@ -1,6 +1,10 @@
 import { Link } from "react-router-dom";
 import TierBadge from "./ui/TierBadge";
 import { imageCropStyle } from "../lib/imagePosition";
+import { directoryCategories } from "../data/directory";
+
+const getCategoryLabel = (slug) =>
+  directoryCategories.find((c) => c.slug === slug)?.label || "";
 
 export default function DirectoryListingCard({ listing, view = "grid", matchScore }) {
   if (view === "list") {
@@ -23,7 +27,14 @@ export default function DirectoryListingCard({ listing, view = "grid", matchScor
         </div>
         <div className="p-4 flex flex-col flex-1">
           <div className="flex items-center justify-between text-xs text-foreground-600 mb-1.5">
-            <span className="font-label">{listing.badge || "Free"}</span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-label">{listing.badge || "Free"}</span>
+              {listing.categorySlug && listing.categorySlug !== "all" && (
+                <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-label rounded-full bg-primary-50 text-primary-800 border border-primary-100">
+                  {getCategoryLabel(listing.categorySlug) || listing.category.split("·")[0].trim()}
+                </span>
+              )}
+            </div>
             <span className="font-label font-semibold text-foreground-800">{listing.price}</span>
           </div>
           <div className="flex items-start justify-between gap-3 mb-1.5">
@@ -49,11 +60,33 @@ export default function DirectoryListingCard({ listing, view = "grid", matchScor
               </div>
             )}
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-foreground-600 mb-3">
+          <div className="flex items-center gap-1.5 text-xs text-foreground-600 mb-2">
             <i className="ri-map-pin-line text-xs" />
             <span className="font-label truncate">{listing.location}</span>
           </div>
-          {(listing.education || listing.degreeType || listing.experienceLevel || listing.yearsExperience) && (
+          {(listing.yearsExperience || listing.experienceLevel || listing.category) && (
+            <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+              {(listing.yearsExperience || listing.experienceLevel) && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-label rounded-full bg-secondary-50 text-secondary-800 border border-secondary-200">
+                  <i className="ri-briefcase-line" />
+                  {listing.yearsExperience
+                    ? `${listing.yearsExperience} ${Number(listing.yearsExperience) === 1 ? "Yr" : "Yrs"} Exp.`
+                    : listing.experienceLevel}
+                </span>
+              )}
+              {listing.category && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-label rounded-full bg-background-100 text-foreground-600 border border-background-200">
+                  <i className="ri-building-line" />
+                  <span className="truncate max-w-[110px]">
+                    {listing.category.includes("·")
+                      ? listing.category.split("·").slice(1).join("·").trim()
+                      : listing.category}
+                  </span>
+                </span>
+              )}
+            </div>
+          )}
+          {(listing.education || listing.degreeType) && (
             <div className="flex flex-wrap items-center gap-1.5 mb-3">
               {listing.education && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-label rounded-full bg-secondary-50 text-secondary-800 border border-secondary-200">
@@ -65,16 +98,6 @@ export default function DirectoryListingCard({ listing, view = "grid", matchScor
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-label rounded-full bg-secondary-50 text-secondary-800 border border-secondary-200">
                   <i className="ri-book-open-line" />
                   {listing.degreeType}
-                </span>
-              )}
-              {(listing.yearsExperience || listing.experienceLevel) && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-label rounded-full bg-secondary-50 text-secondary-800 border border-secondary-200">
-                  <i className="ri-briefcase-line" />
-                  {listing.yearsExperience
-                    ? `${listing.yearsExperience} ${
-                        Number(listing.yearsExperience) === 1 ? "Yr" : "Yrs"
-                      } Exp.`
-                    : listing.experienceLevel}
                 </span>
               )}
             </div>
@@ -114,7 +137,14 @@ export default function DirectoryListingCard({ listing, view = "grid", matchScor
       </div>
       <div className="p-4 flex flex-col flex-1">
         <div className="flex items-center justify-between text-xs text-foreground-600 mb-1.5">
-          <span className="font-label">{listing.badge || "Free"}</span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-label">{listing.badge || "Free"}</span>
+            {listing.categorySlug && listing.categorySlug !== "all" && (
+              <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-label rounded-full bg-primary-50 text-primary-800 border border-primary-100">
+                {getCategoryLabel(listing.categorySlug) || listing.category.split("·")[0].trim()}
+              </span>
+            )}
+          </div>
           <span className="font-label font-semibold text-foreground-800">{listing.price}</span>
         </div>
         {/* Checkmark sits after the name rather than floating over the photo,
@@ -130,11 +160,33 @@ export default function DirectoryListingCard({ listing, view = "grid", matchScor
             />
           )}
         </h3>
-        <div className="flex items-center gap-1.5 text-xs text-foreground-600 mb-3">
+        <div className="flex items-center gap-1.5 text-xs text-foreground-600 mb-2">
           <i className="ri-map-pin-line text-xs" />
           <span className="font-label truncate">{listing.location}</span>
         </div>
-        {(listing.education || listing.degreeType || listing.experienceLevel || listing.yearsExperience) && (
+        {(listing.yearsExperience || listing.experienceLevel || listing.category) && (
+          <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+            {(listing.yearsExperience || listing.experienceLevel) && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-label rounded-full bg-secondary-50 text-secondary-800 border border-secondary-200">
+                <i className="ri-briefcase-line" />
+                {listing.yearsExperience
+                  ? `${listing.yearsExperience} ${Number(listing.yearsExperience) === 1 ? "Yr" : "Yrs"} Exp.`
+                  : listing.experienceLevel}
+              </span>
+            )}
+            {listing.category && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-label rounded-full bg-background-100 text-foreground-600 border border-background-200">
+                <i className="ri-building-line" />
+                <span className="truncate max-w-[110px]">
+                  {listing.category.includes("·")
+                    ? listing.category.split("·").slice(1).join("·").trim()
+                    : listing.category}
+                </span>
+              </span>
+            )}
+          </div>
+        )}
+        {(listing.education || listing.degreeType) && (
           <div className="flex flex-wrap items-center gap-1.5 mb-3">
             {listing.education && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-label rounded-full bg-secondary-50 text-secondary-800 border border-secondary-200">
@@ -146,16 +198,6 @@ export default function DirectoryListingCard({ listing, view = "grid", matchScor
               <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-label rounded-full bg-secondary-50 text-secondary-800 border border-secondary-200">
                 <i className="ri-book-open-line" />
                 {listing.degreeType}
-              </span>
-            )}
-            {(listing.yearsExperience || listing.experienceLevel) && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-label rounded-full bg-secondary-50 text-secondary-800 border border-secondary-200">
-                <i className="ri-briefcase-line" />
-                {listing.yearsExperience
-                  ? `${listing.yearsExperience} ${
-                      Number(listing.yearsExperience) === 1 ? "Yr" : "Yrs"
-                    } Exp.`
-                  : listing.experienceLevel}
               </span>
             )}
           </div>
