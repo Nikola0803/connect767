@@ -123,7 +123,7 @@ export default function DirectoryPage() {
           <div className="mb-6 max-w-2xl">
             <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-primary-700 mb-2">
               <span className="w-7 h-px bg-accent-500" />
-              Dominica Directory
+              <span><span className="text-primary-700">CONNECT</span><span className="text-accent-500">767</span>{" "}<span className="text-primary-700">Dominica’s Online Directory</span></span>
             </div>
             <h1 className="font-heading text-3xl md:text-4xl font-light leading-tight text-foreground-950">
               Find The Right Local <span className="italic text-accent-500">Service Provider.</span>
