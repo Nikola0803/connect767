@@ -234,6 +234,11 @@ export function mapListingCpt(wp) {
     // industry`) — this was never populated before, so the sub-filter
     // silently matched nothing on live data.
     industrySlug: industryTerm?.slug || "",
+    industryLabel: industryTerm ? decodeEntities(industryTerm.name) : "",
+    description: acf.description || htmlToText(wp.content?.rendered || ""),
+    logo: acf.logo || "",
+    tags: (acf.tags || []).map((tag) => decodeEntities(tag)),
+    amenities: (acf.amenities || []).map((amenity) => decodeEntities(amenity)),
     price: acf.price_tier || "$",
     location: acf.location || "",
     badge: acf.tier || "Free",

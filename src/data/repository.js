@@ -180,6 +180,14 @@ export async function getListings({ search = "" } = {}) {
     const detail = localListingDetails[listing.slug] || {};
     return {
       ...listing,
+      logo: detail.logo || "",
+      description: detail.description || "",
+      tags: detail.tags || [],
+      amenities: detail.amenities || [],
+      industryLabel:
+        listing.industryLabel || (listing.category?.includes("·")
+          ? listing.category.split("·").slice(1).join("·").trim()
+          : listing.category),
       searchText: createListingSearchText({
         title: listing.title,
         slug: listing.slug,

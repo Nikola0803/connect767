@@ -139,6 +139,34 @@ describe("mapListingCpt", () => {
     expect(mapped).not.toHaveProperty("bookingMeetingUrl");
   });
 
+  it("maps the concise profile information used by directory cards", () => {
+    const mapped = mapListingCpt({
+      id: 5,
+      slug: "island-advisor",
+      title: "Island Advisor",
+      content: { rendered: "<p>Strategy for growing Dominican businesses.</p>" },
+      acf: {
+        logo: "https://example.com/logo.png",
+        years_experience: "12",
+        tags: ["Business strategy", "Mentoring"],
+        amenities: ["Virtual appointments"],
+      },
+      _embedded: {
+        "wp:term": [[
+          { taxonomy: "listing_category", id: 10, parent: 0, slug: "services", name: "Services" },
+          { taxonomy: "listing_category", id: 11, parent: 10, slug: "consulting", name: "Business &amp; Consulting" },
+        ]],
+      },
+    });
+
+    expect(mapped.description).toBe("Strategy for growing Dominican businesses.");
+    expect(mapped.industryLabel).toBe("Business & Consulting");
+    expect(mapped.logo).toBe("https://example.com/logo.png");
+    expect(mapped.yearsExperience).toBe("12");
+    expect(mapped.tags).toEqual(["Business strategy", "Mentoring"]);
+    expect(mapped.amenities).toEqual(["Virtual appointments"]);
+  });
+
   it("strips HTML from a rendered title", () => {
     const mapped = mapListingCpt({ id: 1, slug: "a", title: { rendered: "<strong>Acme</strong> Co" }, acf: {} });
     expect(mapped.title).toBe("Acme Co");
