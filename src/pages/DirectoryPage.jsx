@@ -10,7 +10,6 @@ import { findCategory } from "../data/industries";
 import { listingMatchesSearch } from "../lib/listingSearch";
 
 const PAGE_SIZE = 12;
-const INDUSTRY_PREVIEW_COUNT = 14;
 
 export default function DirectoryPage() {
   const [searchParams] = useSearchParams();
@@ -24,7 +23,6 @@ export default function DirectoryPage() {
   const [sort, setSort] = useState("rating");
   const [view, setView] = useState("grid");
   const [page, setPage] = useState(1);
-  const [showAllIndustries, setShowAllIndustries] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [databaseSearch, setDatabaseSearch] = useState(search.trim());
 
@@ -34,11 +32,24 @@ export default function DirectoryPage() {
   }, [search]);
 
   const activeFilterCount = [
+    category !== "all",
+    industry !== "all",
     tier !== "all",
     priceTier !== "all",
     experienceRange !== "all",
     educationFilter !== "all",
   ].filter(Boolean).length;
+
+  const selectedCategory = category !== "all" ? findCategory(category) : null;
+  const industryOptions = useMemo(() => {
+    if (!selectedCategory) return [];
+    const seen = new Set();
+    return selectedCategory.industries.filter((item) => {
+      if (seen.has(item.label)) return false;
+      seen.add(item.label);
+      return true;
+    });
+  }, [selectedCategory]);
 
   const {
     data: directoryListings,
@@ -95,137 +106,185 @@ export default function DirectoryPage() {
     setPage(1);
   };
 
+  const clearAll = () => {
+    setSearch("");
+    setCategory("all");
+    setIndustry("all");
+    setTier("all");
+    setPriceTier("all");
+    setEducationFilter("all");
+    setExperienceRange("all");
+    setPage(1);
+  };
+
   return (
-    <div className="pt-16 md:pt-20">
-      {/* Sticky: search only */}
-      <div className="w-full px-4 md:px-8 lg:px-12 py-4 border-b border-background-200/70 bg-background-50/95 backdrop-blur sticky top-16 md:top-20 z-30">
-        <div className="max-w-2xl mx-auto">
-          <div className="relative">
-            <i className="ri-search-line absolute left-4 top-1/2 -translate-y-1/2 text-foreground-400 text-lg pointer-events-none" />
-            <input
-              className="w-full pl-12 pr-5 py-3.5 rounded-full border border-background-200 bg-white text-foreground-950 placeholder-foreground-400 focus:outline-none focus:border-primary-300 focus:shadow-[0_2px_20px_rgba(0,0,0,0.1)] font-label text-base transition-shadow"
-              placeholder="Search businesses, services, locations..."
-              type="text"
-              value={search}
-              onChange={(e) => updateFilter(setSearch)(e.target.value)}
-            />
+    <div className="pt-16 md:pt-20 min-h-screen bg-background-50">
+      <div className="border-b border-background-200/70 bg-background-100/60">
+        <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-8 md:py-10">
+          <div className="mb-6 max-w-2xl">
+            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-primary-700 mb-2">
+              <span className="w-7 h-px bg-accent-500" />
+              Dominica Directory
+            </div>
+            <h1 className="font-heading text-3xl md:text-4xl font-light leading-tight text-foreground-950">
+              Find the right local <span className="italic text-accent-500">connection.</span>
+            </h1>
+            <p className="mt-2 text-sm md:text-base text-foreground-600">
+              Search trusted talent, businesses, products and services across Dominica.
+            </p>
+          </div>
+
+          <div className="rounded-[1.4rem] border border-background-200/80 bg-background-50 shadow-[0_18px_50px_rgba(35,45,38,0.08)] overflow-hidden">
+            <div className="p-3 md:p-4 border-b border-background-200/70">
+              <div className="flex flex-col sm:flex-row gap-2.5">
+                <div className="relative flex-1">
+                  <i className="ri-search-line absolute left-4 top-1/2 -translate-y-1/2 text-primary-600 text-lg pointer-events-none" />
+                  <input
+                    aria-label="Search directory listings"
+                    className="w-full h-12 pl-12 pr-11 rounded-xl border border-background-300/80 bg-white text-foreground-950 placeholder-foreground-400 focus:outline-none focus:border-primary-400 focus:ring-4 focus:ring-primary-100/70 font-label text-sm md:text-base transition-all"
+                    placeholder="Search businesses, services, skills or locations"
+                    type="search"
+                    value={search}
+                    onChange={(e) => updateFilter(setSearch)(e.target.value)}
+                  />
+                  {search && (
+                    <button
+                      type="button"
+                      aria-label="Clear search"
+                      onClick={() => updateFilter(setSearch)("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full text-foreground-400 hover:text-foreground-800 hover:bg-background-100 cursor-pointer transition-colors"
+                    >
+                      <i className="ri-close-line" />
+                    </button>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowFilters((value) => !value)}
+                  aria-expanded={showFilters}
+                  className={`h-12 inline-flex items-center justify-center gap-2 px-5 rounded-xl border font-semibold text-sm cursor-pointer transition-all ${
+                    showFilters || activeFilterCount > 0
+                      ? "bg-primary-600 text-background-50 border-primary-600 shadow-sm"
+                      : "bg-background-50 text-foreground-800 border-background-300 hover:border-primary-300 hover:bg-primary-50/50"
+                  }`}
+                >
+                  <i className="ri-equalizer-2-line text-base" />
+                  Filters
+                  {activeFilterCount > 0 && (
+                    <span className="min-w-5 h-5 px-1 inline-flex items-center justify-center rounded-full bg-background-50 text-primary-700 text-[10px] font-bold">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                  <i className={`text-base ${showFilters ? "ri-arrow-up-s-line" : "ri-arrow-down-s-line"}`} />
+                </button>
+              </div>
+            </div>
+
+            <div className="px-3 md:px-4 py-3 flex items-center gap-2 overflow-x-auto">
+              <span className="hidden md:inline text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-400 mr-1 whitespace-nowrap">
+                Browse
+              </span>
+              {(directoryCategories || []).map((cat) => (
+                <button
+                  key={cat.slug}
+                  type="button"
+                  onClick={() => {
+                    const next = cat.slug === "all" ? "all" : category === cat.slug ? "all" : cat.slug;
+                    updateFilter(setCategory)(next);
+                    setIndustry("all");
+                  }}
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg border transition-all whitespace-nowrap cursor-pointer flex-shrink-0 ${
+                    (cat.slug === "all" ? category === "all" : category === cat.slug)
+                      ? "bg-primary-100 text-primary-800 border-primary-200"
+                      : "bg-transparent text-foreground-600 border-transparent hover:text-foreground-950 hover:bg-background-100"
+                  }`}
+                >
+                  {cat.icon && <i className={`${cat.icon} text-sm`} />}
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            {showFilters && (
+              <div className="px-4 md:px-5 py-5 border-t border-background-200/70 bg-white/70">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                  <label className="block">
+                    <span className="block mb-1.5 text-[10px] font-bold uppercase tracking-[0.13em] text-foreground-500">Industry</span>
+                    <select
+                      value={industry}
+                      onChange={(e) => updateFilter(setIndustry)(e.target.value)}
+                      disabled={!selectedCategory}
+                      className="w-full h-10 px-3 rounded-lg border border-background-300 bg-background-50 text-xs text-foreground-800 focus:outline-none focus:border-primary-400 disabled:text-foreground-400 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <option value="all">{selectedCategory ? `All ${selectedCategory.label}` : "Choose a category first"}</option>
+                      {industryOptions.map((item) => <option key={item.slug} value={item.slug}>{item.label}</option>)}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="block mb-1.5 text-[10px] font-bold uppercase tracking-[0.13em] text-foreground-500">Listing type</span>
+                    <select value={tier} onChange={(e) => updateFilter(setTier)(e.target.value)} className="w-full h-10 px-3 rounded-lg border border-background-300 bg-background-50 text-xs text-foreground-800 focus:outline-none focus:border-primary-400 cursor-pointer">
+                      {tierOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="block mb-1.5 text-[10px] font-bold uppercase tracking-[0.13em] text-foreground-500">Price</span>
+                    <select value={priceTier} onChange={(e) => updateFilter(setPriceTier)(e.target.value)} className="w-full h-10 px-3 rounded-lg border border-background-300 bg-background-50 text-xs text-foreground-800 focus:outline-none focus:border-primary-400 cursor-pointer">
+                      {priceOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="block mb-1.5 text-[10px] font-bold uppercase tracking-[0.13em] text-foreground-500">Experience</span>
+                    <select value={experienceRange} onChange={(e) => updateFilter(setExperienceRange)(e.target.value)} className="w-full h-10 px-3 rounded-lg border border-background-300 bg-background-50 text-xs text-foreground-800 focus:outline-none focus:border-primary-400 cursor-pointer">
+                      {experienceRangeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="block mb-1.5 text-[10px] font-bold uppercase tracking-[0.13em] text-foreground-500">Education</span>
+                    <select value={educationFilter} onChange={(e) => updateFilter(setEducationFilter)(e.target.value)} className="w-full h-10 px-3 rounded-lg border border-background-300 bg-background-50 text-xs text-foreground-800 focus:outline-none focus:border-primary-400 cursor-pointer">
+                      <option value="all">All education</option>
+                      {EDUCATION_CHOICES.map((choice) => <option key={choice} value={choice}>{choice}</option>)}
+                    </select>
+                  </label>
+                </div>
+                {(activeFilterCount > 0 || search) && (
+                  <div className="mt-4 pt-4 border-t border-background-200/70 flex items-center justify-between gap-4">
+                    <span className="text-xs text-foreground-500">Refine your results using any combination of filters.</span>
+                    <button type="button" onClick={clearAll} className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent-700 hover:text-accent-800 cursor-pointer whitespace-nowrap">
+                      <i className="ri-refresh-line" />
+                      Clear all
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       <div className="w-full px-4 md:px-8 lg:px-12 py-8">
         <div className="max-w-7xl mx-auto">
-
-          {/* Category pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-3 mb-2">
-            {(directoryCategories || []).map((cat) => (
-              <button
-                key={cat.slug}
-                type="button"
-                onClick={() => {
-                  const next = cat.slug === "all" ? "all" : category === cat.slug ? "all" : cat.slug;
-                  updateFilter(setCategory)(next);
-                  setIndustry("all");
-                  setShowAllIndustries(false);
-                }}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-full border transition-all whitespace-nowrap cursor-pointer flex-shrink-0 ${
-                  (cat.slug === "all" ? category === "all" : category === cat.slug)
-                    ? "bg-primary-500 text-background-50 border-primary-500"
-                    : "bg-background-50 text-foreground-700 border-background-200/70 hover:border-background-300 hover:bg-background-100"
-                }`}
-              >
-                {cat.icon && (
-                  <div className="w-4 h-4 flex items-center justify-center">
-                    <i className={`${cat.icon} text-xs`} />
-                  </div>
-                )}
-                {cat.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Industry sub-pills */}
-          {category !== "all" && findCategory(category) && (
-            <div className="flex flex-wrap items-center gap-2 pl-3 border-l-2 border-primary-200 mb-4">
-              <button
-                type="button"
-                onClick={() => updateFilter(setIndustry)("all")}
-                className={`px-3 py-1 text-[11px] font-semibold rounded-full cursor-pointer whitespace-nowrap transition-colors ${
-                  industry === "all"
-                    ? "bg-accent-500 text-background-50"
-                    : "bg-background-50 text-foreground-600 hover:bg-background-100 border border-background-200/70"
-                }`}
-              >
-                All {findCategory(category).label}
-              </button>
-              {(() => {
-                const seen = new Set();
-                const unique = findCategory(category).industries.filter((ind) => {
-                  if (seen.has(ind.label)) return false;
-                  seen.add(ind.label);
-                  return true;
-                });
-                return (showAllIndustries ? unique : unique.slice(0, INDUSTRY_PREVIEW_COUNT)).map((ind) => (
-                  <button
-                    key={ind.slug}
-                    type="button"
-                    onClick={() => updateFilter(setIndustry)(ind.slug)}
-                    className={`px-3 py-1 text-[11px] font-semibold rounded-full cursor-pointer whitespace-nowrap transition-colors ${
-                      industry === ind.slug
-                        ? "bg-accent-500 text-background-50"
-                        : "bg-background-50 text-foreground-600 hover:bg-background-100 border border-background-200/70"
-                    }`}
-                  >
-                    {ind.label}
-                  </button>
-                ));
-              })()}
-              {findCategory(category).industries.length > INDUSTRY_PREVIEW_COUNT && (
-                <button
-                  type="button"
-                  onClick={() => setShowAllIndustries((v) => !v)}
-                  className="inline-flex items-center gap-1 px-3 py-1 text-[11px] font-semibold rounded-full cursor-pointer whitespace-nowrap text-primary-700 hover:text-primary-800"
-                >
-                  {showAllIndustries ? "Show less" : "View more"}
-                  <i className={showAllIndustries ? "ri-arrow-up-s-line" : "ri-arrow-down-s-line"} />
-                </button>
-              )}
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-6">
+            <div>
+              <h2 className="font-heading text-2xl md:text-3xl font-light text-foreground-950">
+                Browse <span className="text-accent-500 italic">Directory</span>
+              </h2>
+              <p className="mt-1 text-xs text-foreground-500">
+                {loading ? "Finding listings…" : `${filtered.length} listing${filtered.length === 1 ? "" : "s"} found`}
+              </p>
             </div>
-          )}
-
-          {/* Toolbar: filters toggle + sort + view + count */}
-          <div className="flex items-center gap-3 mb-6">
-            <button
-              type="button"
-              onClick={() => setShowFilters((v) => !v)}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-full border transition-colors cursor-pointer ${
-                showFilters || activeFilterCount > 0
-                  ? "bg-primary-500 text-background-50 border-primary-500"
-                  : "bg-background-50 text-foreground-700 border-background-200/70 hover:border-background-300 hover:bg-background-100"
-              }`}
-            >
-              <i className="ri-equalizer-line" />
-              Filters
-              {activeFilterCount > 0 && (
-                <span className="inline-flex items-center justify-center w-4 h-4 text-[10px] rounded-full bg-background-50 text-primary-700 font-bold">
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
-            <span className="text-xs font-label text-foreground-500 whitespace-nowrap">
-              {filtered.length} listing{filtered.length === 1 ? "" : "s"}
-            </span>
-            <div className="ml-auto flex items-center gap-2">
+            <div className="sm:ml-auto flex items-center gap-2">
+              <label className="sr-only" htmlFor="directory-sort">Sort listings</label>
               <select
+                id="directory-sort"
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}
-                className="text-xs font-label px-3 py-1.5 rounded-lg border border-background-300 bg-background-50 text-foreground-800 focus:outline-none focus:border-primary-400 cursor-pointer"
+                className="h-9 text-xs font-label px-3 rounded-lg border border-background-300 bg-background-50 text-foreground-800 focus:outline-none focus:border-primary-400 cursor-pointer"
               >
                 {directorySortOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
-              <div className="flex items-center gap-1 px-1 py-1 bg-background-100 rounded-lg border border-background-200/70">
+              <div className="flex items-center gap-1 p-1 bg-background-100 rounded-lg border border-background-200/70">
                 <button
                   aria-label="Grid view"
                   type="button"
@@ -250,70 +309,6 @@ export default function DirectoryPage() {
                 </button>
               </div>
             </div>
-          </div>
-
-          {/* Expanded filter panel */}
-          {showFilters && (
-            <div className="flex flex-wrap items-center gap-2 mb-6 p-4 rounded-2xl bg-background-100/60 border border-background-200/70">
-              <div className="inline-flex items-center gap-1 px-1 py-1 bg-background-50 rounded-full border border-background-200/70">
-                {tierOptions.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => updateFilter(setTier)(opt.value)}
-                    className={`px-3 py-1.5 text-[11px] font-semibold rounded-full cursor-pointer whitespace-nowrap transition-colors flex-shrink-0 ${
-                      tier === opt.value ? "bg-accent-500 text-background-50" : "text-foreground-600 hover:text-foreground-900"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              <div className="inline-flex items-center gap-1 px-1 py-1 bg-background-50 rounded-full border border-background-200/70">
-                {priceOptions.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => updateFilter(setPriceTier)(opt.value)}
-                    className={`px-3 py-1.5 text-[11px] font-semibold rounded-full cursor-pointer whitespace-nowrap transition-colors flex-shrink-0 ${
-                      priceTier === opt.value ? "bg-secondary-500 text-background-50" : "text-foreground-600 hover:text-foreground-900"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              <div className="inline-flex items-center gap-1 px-1 py-1 bg-background-50 rounded-full border border-background-200/70">
-                {experienceRangeOptions.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => updateFilter(setExperienceRange)(opt.value)}
-                    className={`px-3 py-1.5 text-[11px] font-semibold rounded-full cursor-pointer whitespace-nowrap transition-colors flex-shrink-0 ${
-                      experienceRange === opt.value ? "bg-primary-500 text-background-50" : "text-foreground-600 hover:text-foreground-900"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              <select
-                value={educationFilter}
-                onChange={(e) => updateFilter(setEducationFilter)(e.target.value)}
-                className="text-[11px] font-label px-3 py-1.5 rounded-full border border-background-200/70 bg-background-50 text-foreground-700 focus:outline-none focus:border-primary-400 cursor-pointer"
-              >
-                <option value="all">All Education</option>
-                {EDUCATION_CHOICES.map((choice) => (
-                  <option key={choice} value={choice}>{choice}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div className="mb-6">
-            <h1 className="font-heading text-2xl md:text-3xl font-light text-foreground-950">
-              Browse <span className="text-accent-500 italic">Directory</span>
-            </h1>
           </div>
 
           {loading && (
