@@ -21,6 +21,13 @@ class C767_Notifications
 {
     public static function init()
     {
+        // Keep every transactional message on the public Connect767 domain.
+        // Without these filters WordPress defaults to
+        // wordpress@admin.connect767.com, which can make Brevo replace the
+        // visible sender with its own brevosend.com relay address.
+        add_filter('wp_mail_from', [__CLASS__, 'mail_from'], PHP_INT_MAX);
+        add_filter('wp_mail_from_name', [__CLASS__, 'mail_from_name'], PHP_INT_MAX);
+
         add_action('c767_user_registered', [__CLASS__, 'on_user_registered'], 10, 2);
         add_action('c767_listing_submitted', [__CLASS__, 'on_listing_submitted'], 10, 3);
         add_action('c767_listing_approved', [__CLASS__, 'on_listing_approved']);
@@ -28,6 +35,20 @@ class C767_Notifications
         add_action('c767_listing_payment_confirmed', [__CLASS__, 'on_listing_payment_confirmed']);
         add_action('c767_booking_submitted', [__CLASS__, 'on_booking_submitted'], 10, 2);
         add_action('c767_booking_confirmed', [__CLASS__, 'on_booking_confirmed']);
+    }
+
+    public static function mail_from()
+    {
+        $email = defined('C767_MAIL_FROM') && C767_MAIL_FROM
+            ? C767_MAIL_FROM
+            : 'info@connect767.com';
+
+        return is_email($email) ? $email : 'info@connect767.com';
+    }
+
+    public static function mail_from_name()
+    {
+        return 'Connect767';
     }
 
     private static function site_name()
