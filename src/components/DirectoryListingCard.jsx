@@ -134,8 +134,8 @@ function Cover({ listing, listView = false, saved = false, onToggleSaved }) {
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-foreground-950/35 via-transparent to-transparent pointer-events-none" />
       <TierBadge tier={listing.badge} className="absolute top-3 left-3" />
-      <div className="absolute top-3 right-3 flex flex-col items-end gap-2">
-        {onToggleSaved && (
+      {onToggleSaved && (
+        <div className="absolute top-3 right-3">
           <button
             aria-label={saved ? "Remove from saved" : "Save listing"}
             type="button"
@@ -144,14 +144,8 @@ function Cover({ listing, listView = false, saved = false, onToggleSaved }) {
           >
             <i className={saved ? "ri-heart-fill text-accent-500" : "ri-heart-line"} />
           </button>
-        )}
-        {listing.bookingEnabled && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-background-50/95 backdrop-blur px-2.5 py-1 text-[10px] font-semibold text-primary-800 shadow-sm">
-            <i className="ri-calendar-check-fill" />
-            Bookable
-          </span>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

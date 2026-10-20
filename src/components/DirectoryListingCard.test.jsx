@@ -75,4 +75,22 @@ describe("DirectoryListingCard parent category", () => {
 
     expect(screen.getByText("Other")).toBeInTheDocument();
   });
+
+  it("keeps booking details without showing a Bookable cover badge", () => {
+    render(
+      <MemoryRouter>
+        <DirectoryListingCard
+          listing={{
+            ...listing,
+            bookingEnabled: true,
+            bookingPriceCents: 0,
+            bookingDurationMinutes: 30,
+          }}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByText("Bookable")).not.toBeInTheDocument();
+    expect(screen.getByText("Book · Free · 30 min")).toBeInTheDocument();
+  });
 });
