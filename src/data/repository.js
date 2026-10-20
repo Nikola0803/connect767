@@ -180,6 +180,7 @@ export async function getListings({ search = "" } = {}) {
     const detail = localListingDetails[listing.slug] || {};
     return {
       ...listing,
+      parentCategorySlug: listing.categorySlug,
       logo: detail.logo || "",
       description: detail.description || "",
       tags: detail.tags || [],

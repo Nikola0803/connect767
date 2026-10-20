@@ -2,9 +2,21 @@ import { Link } from "react-router-dom";
 import TierBadge from "./ui/TierBadge";
 import { imageCropStyle } from "../lib/imagePosition";
 import { directoryCategories } from "../data/directory";
+import { findIndustry } from "../data/industries";
 
 const getCategoryLabel = (slug) =>
   directoryCategories.find((category) => category.slug === slug)?.label || "";
+
+const mainCategoryLabel = (listing) => {
+  const industryParent = findIndustry(listing.industrySlug || listing.categorySlug)?.categorySlug;
+  return (
+    getCategoryLabel(listing.parentCategorySlug) ||
+    getCategoryLabel(listing.categoryPath) ||
+    getCategoryLabel(listing.categorySlug) ||
+    getCategoryLabel(industryParent) ||
+    "Other"
+  );
+};
 
 const reviewCount = (listing) =>
   Number(listing.reviewCount ?? String(listing.reviews || "").replace(/\D/g, "")) || 0;
@@ -56,7 +68,7 @@ function ListingIdentity({ listing, compact = false }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary-700 truncate">
-            {getCategoryLabel(listing.categorySlug) || "Directory profile"}
+            {mainCategoryLabel(listing)}
           </p>
           <h3 className={`${compact ? "text-xl" : "text-lg"} font-heading font-medium text-foreground-950 group-hover:text-primary-700 transition-colors leading-snug flex items-center gap-1.5 mt-1`}>
             <span className="line-clamp-2">{listing.title}</span>

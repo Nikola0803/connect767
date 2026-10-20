@@ -100,6 +100,7 @@ function buildPreviewData(form) {
       ? `${industry.label}${form.priceTier ? ` · ${form.priceTier}` : ""}`
       : "Industry",
     categoryPath: industry?.categorySlug || "",
+    parentCategorySlug: industry?.categorySlug || "",
     categoryLabel: industry?.categoryLabel || "",
     badge: form.tier === "classified" ? "Classified" : "Free",
     verified: false,

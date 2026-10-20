@@ -1,5 +1,6 @@
 import { createListingSearchText } from "./listingSearch";
 import { currentYearsExperience } from "./experience";
+import { findCategory, findIndustry } from "../data/industries";
 
 /**
  * Mappers between raw WordPress/WooCommerce REST API shapes and the flat
@@ -169,6 +170,12 @@ export function mapListingCpt(wp) {
   );
   const categoryTerm = allCatTerms.find((t) => !t.parent) || allCatTerms[0];
   const industryTerm = allCatTerms.find((t) => t.parent);
+  const parentCategorySlug =
+    findCategory(categoryTerm?.slug)?.slug ||
+    findIndustry(industryTerm?.slug)?.categorySlug ||
+    findCategory(acf.category_slug)?.slug ||
+    findIndustry(acf.category_slug)?.categorySlug ||
+    "";
 
   const title = stripHtml(wp.title?.rendered || wp.title || "");
   const category = decodeEntities(acf.category_label || categoryTerm?.name || "");
@@ -182,6 +189,7 @@ export function mapListingCpt(wp) {
     description: acf.description || htmlToText(wp.content?.rendered || ""),
     category,
     categorySlug: categoryTerm?.slug || acf.category_slug || "",
+    parentCategorySlug,
     industry: industryTerm
       ? { name: decodeEntities(industryTerm.name), slug: industryTerm.slug }
       : null,
@@ -235,6 +243,7 @@ export function mapListingCpt(wp) {
     title,
     category,
     categorySlug: categoryTerm?.slug || acf.category_slug || "",
+    parentCategorySlug,
     // Powers DirectoryPage's industry sub-filter (`l.industrySlug ===
     // industry`) — this was never populated before, so the sub-filter
     // silently matched nothing on live data.

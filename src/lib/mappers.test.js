@@ -160,11 +160,35 @@ describe("mapListingCpt", () => {
     });
 
     expect(mapped.description).toBe("Strategy for growing Dominican businesses.");
+    expect(mapped.parentCategorySlug).toBe("services");
     expect(mapped.industryLabel).toBe("Business & Consulting");
     expect(mapped.logo).toBe("https://example.com/logo.png");
     expect(mapped.yearsExperience).toBe("12");
     expect(mapped.tags).toEqual(["Business strategy", "Mentoring"]);
     expect(mapped.amenities).toEqual(["Virtual appointments"]);
+  });
+
+  it("adds the form parent category without rewriting legacy category fields", () => {
+    const mapped = mapListingCpt({
+      id: 8,
+      slug: "island-bookkeeper",
+      title: "Island Bookkeeper",
+      acf: {},
+      _embedded: {
+        "wp:term": [[
+          {
+            taxonomy: "listing_category",
+            id: 81,
+            parent: 10,
+            slug: "accounting-and-bookkeeping",
+            name: "Accounting &amp; Bookkeeping",
+          },
+        ]],
+      },
+    });
+
+    expect(mapped.parentCategorySlug).toBe("services");
+    expect(mapped.industrySlug).toBe("accounting-and-bookkeeping");
   });
 
   it("advances years of experience from the year in which it was recorded", () => {
