@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import TierBadge from "./ui/TierBadge";
+import { imageCropStyle } from "../lib/imagePosition";
 import { directoryCategories } from "../data/directory";
 
 const getCategoryLabel = (slug) =>
@@ -112,8 +113,11 @@ function Cover({ listing, listView = false }) {
         <img
           alt={`${listing.title} — ${industryLabel(listing)}`}
           title={`${listing.title} — ${industryLabel(listing)}`}
-          className="w-full h-full object-contain"
+          className={`w-full h-full transition-transform duration-500 ${
+            listing.coverFit === "contain" ? "object-contain" : "object-cover group-hover:scale-[1.03]"
+          }`}
           src={listing.image}
+          style={imageCropStyle(listing.coverPosition, listing.coverZoom, listing.coverFit)}
         />
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-foreground-950/35 via-transparent to-transparent pointer-events-none" />
