@@ -119,7 +119,8 @@ export default function DirectoryPage() {
   return (
     <div className="pt-16 md:pt-20 min-h-screen bg-background-50">
       <div className="border-b border-background-200/70 bg-background-100/60">
-        <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-8 md:py-10">
+        <div className="w-full px-4 md:px-8 lg:px-12 py-8 md:py-10">
+          <div className="max-w-7xl mx-auto">
           <div className="mb-6 max-w-2xl">
             <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-primary-700 mb-2">
               <span className="w-7 h-px bg-accent-500" />
@@ -231,6 +232,7 @@ export default function DirectoryPage() {
               )}
             </div>
           </div>
+        </div>
         </div>
       </div>
 
