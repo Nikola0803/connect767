@@ -1,8 +1,9 @@
 /**
  * Shared crop-anchor + zoom helper for the logo/cover photo position picker
  * (AddListingPage.jsx's PositionPicker) and wherever those images are
- * actually rendered (ListingProfile.jsx, DirectoryListingCard.jsx,
- * Featured.jsx, ListingsGrid.jsx). A full 3x3 grid (not just vertical
+ * actually rendered (ListingProfile.jsx, Featured.jsx, ListingsGrid.jsx).
+ * Directory listing cards intentionally use `object-fit: contain` so the
+ * complete cover photo is always visible. A full 3x3 grid (not just vertical
  * top/center/bottom) plus a zoom scale — still a closed/clamped set rather
  * than a free-form drag-to-reposition editor, kept simple on purpose. See
  * class-rest-listings.php's sanitize_position()/sanitize_zoom() for the
