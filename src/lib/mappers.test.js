@@ -167,6 +167,43 @@ describe("mapListingCpt", () => {
     expect(mapped.amenities).toEqual(["Virtual appointments"]);
   });
 
+  it("derives the form's top-level category when WordPress embeds only the selected industry", () => {
+    const mapped = mapListingCpt({
+      id: 8,
+      slug: "island-bookkeeper",
+      title: "Island Bookkeeper",
+      acf: {},
+      _embedded: {
+        "wp:term": [[
+          {
+            taxonomy: "listing_category",
+            id: 81,
+            parent: 10,
+            slug: "accounting-and-bookkeeping",
+            name: "Accounting &amp; Bookkeeping",
+          },
+        ]],
+      },
+    });
+
+    expect(mapped.categorySlug).toBe("services");
+    expect(mapped.category).toBe("Services");
+    expect(mapped.industrySlug).toBe("accounting-and-bookkeeping");
+    expect(mapped.industryLabel).toBe("Accounting & Bookkeeping");
+  });
+
+  it("uses Other when legacy data has no valid category from the listing form", () => {
+    const mapped = mapListingCpt({
+      id: 9,
+      slug: "legacy-listing",
+      title: "Legacy Listing",
+      acf: { category_slug: "unrecognized-category" },
+    });
+
+    expect(mapped.categorySlug).toBe("other");
+    expect(mapped.category).toBe("Other");
+  });
+
   it("advances years of experience from the year in which it was recorded", () => {
     const thisYear = new Date().getUTCFullYear();
     const mapped = mapListingCpt({

@@ -1,5 +1,6 @@
 import { createListingSearchText } from "./listingSearch";
 import { currentYearsExperience } from "./experience";
+import { findCategory, findIndustry } from "../data/industries";
 
 /**
  * Mappers between raw WordPress/WooCommerce REST API shapes and the flat
@@ -167,11 +168,25 @@ export function mapListingCpt(wp) {
   const allCatTerms = (wp?._embedded?.["wp:term"]?.flat() || []).filter(
     (t) => t.taxonomy === "listing_category"
   );
-  const categoryTerm = allCatTerms.find((t) => !t.parent) || allCatTerms[0];
+  const categoryTerm = allCatTerms.find((t) => !t.parent);
   const industryTerm = allCatTerms.find((t) => t.parent);
+  const formIndustry =
+    findIndustry(industryTerm?.slug) ||
+    findIndustry(acf.category_slug) ||
+    null;
+  const formCategory =
+    findCategory(categoryTerm?.slug) ||
+    findCategory(acf.category_slug) ||
+    findCategory(formIndustry?.categorySlug) ||
+    findCategory("other");
+  const categorySlug = formCategory.slug;
+  const category = formCategory.label;
+  const industrySlug = industryTerm?.slug || formIndustry?.slug || "";
+  const industryLabel = industryTerm
+    ? decodeEntities(industryTerm.name)
+    : formIndustry?.label || "";
 
   const title = stripHtml(wp.title?.rendered || wp.title || "");
-  const category = decodeEntities(acf.category_label || categoryTerm?.name || "");
   const yearsExperience = currentYearsExperience(
     acf.years_experience,
     acf.years_experience_as_of_year,
@@ -181,9 +196,9 @@ export function mapListingCpt(wp) {
     slug: wp.slug,
     description: acf.description || htmlToText(wp.content?.rendered || ""),
     category,
-    categorySlug: categoryTerm?.slug || acf.category_slug || "",
-    industry: industryTerm
-      ? { name: decodeEntities(industryTerm.name), slug: industryTerm.slug }
+    categorySlug,
+    industry: industrySlug
+      ? { name: industryLabel, slug: industrySlug }
       : null,
     priceTier: acf.price_tier || "$",
     tier: acf.tier || "Free",
@@ -234,12 +249,12 @@ export function mapListingCpt(wp) {
     slug: wp.slug,
     title,
     category,
-    categorySlug: categoryTerm?.slug || acf.category_slug || "",
+    categorySlug,
     // Powers DirectoryPage's industry sub-filter (`l.industrySlug ===
     // industry`) — this was never populated before, so the sub-filter
     // silently matched nothing on live data.
-    industrySlug: industryTerm?.slug || "",
-    industryLabel: industryTerm ? decodeEntities(industryTerm.name) : "",
+    industrySlug,
+    industryLabel,
     description: acf.description || htmlToText(wp.content?.rendered || ""),
     logo: acf.logo || "",
     tags: (acf.tags || []).map((tag) => decodeEntities(tag)),
