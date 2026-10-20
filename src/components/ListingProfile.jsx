@@ -103,9 +103,17 @@ export default function ListingProfile({ data, isPreview = false }) {
                   {gallery[activeImage]?.src ? (
                     <img
                       alt={gallery[activeImage]?.alt}
-                      className={`w-full h-full ${activeImage === 0 ? "object-cover" : "object-contain"}`}
+                      className={`w-full h-full ${
+                        activeImage === 0 && data.coverFit !== "contain"
+                          ? "object-cover"
+                          : "object-contain"
+                      }`}
                       src={gallery[activeImage]?.src}
-                      style={activeImage === 0 ? imageCropStyle(data.coverPosition, data.coverZoom) : undefined}
+                      style={
+                        activeImage === 0
+                          ? imageCropStyle(data.coverPosition, data.coverZoom, data.coverFit)
+                          : undefined
+                      }
                     />
                   ) : (
                     <i className="ri-image-line text-4xl text-foreground-300" />

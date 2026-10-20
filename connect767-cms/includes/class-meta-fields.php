@@ -159,6 +159,7 @@ class C767_Meta_Fields
             'logo_zoom' => ['label' => 'Logo zoom (1.0-2.5)', 'type' => 'string'],
             'cover_position' => ['label' => 'Cover photo crop position (e.g. "50% 50%", set by dragging in the listing form)', 'type' => 'string'],
             'cover_zoom' => ['label' => 'Cover photo zoom (1.0-2.5)', 'type' => 'string'],
+            'cover_fit' => ['label' => 'Cover photo fit mode (contain or cover)', 'type' => 'string'],
             'fallback_image' => ['label' => 'Fallback image URL (used when no featured image / gallery is set)', 'type' => 'string'],
         ];
     }
@@ -179,6 +180,7 @@ class C767_Meta_Fields
             'logo_zoom',
             'cover_position',
             'cover_zoom',
+            'cover_fit',
         ];
 
         return array_values(array_diff(array_keys(self::listing_fields()), $excluded));

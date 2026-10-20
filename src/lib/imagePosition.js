@@ -23,6 +23,11 @@ export const POSITION_CHOICES = [
 export const ZOOM_MIN = 1;
 export const ZOOM_MAX = 2.5;
 
+/** Only these two values are persisted by the listing editor/CMS. */
+export function normalizeImageFit(value, fallback = "cover") {
+  return value === "contain" || value === "cover" ? value : fallback;
+}
+
 /** Matches a free-form "37% 62%" position produced by dragging. */
 const PERCENT_POSITION = /^(-?\d{1,3}(?:\.\d+)?)%\s+(-?\d{1,3}(?:\.\d+)?)%$/;
 
@@ -84,7 +89,10 @@ export function clampZoom(value) {
  * no zoom set — an inline `transform` would otherwise permanently
  * override that class regardless of hover state.
  */
-export function imageCropStyle(position, zoom) {
+export function imageCropStyle(position, zoom, fit = "cover") {
+  if (normalizeImageFit(fit) === "contain") {
+    return { objectPosition: "center" };
+  }
   const z = clampZoom(zoom ?? 1);
   return {
     objectPosition: cssObjectPosition(position),

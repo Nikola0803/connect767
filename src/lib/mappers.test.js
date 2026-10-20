@@ -126,6 +126,16 @@ describe("mapListingCpt", () => {
     expect(mapped.title).toBe("Acme Co");
   });
 
+  it("preserves legacy crops while honoring full-image fit on new listings", () => {
+    expect(mapListingCpt({ id: 1, slug: "legacy", title: "Legacy", acf: {} }).coverFit).toBe("cover");
+    expect(
+      mapListingCpt({ id: 2, slug: "new", title: "New", acf: { cover_fit: "contain" } }).coverFit,
+    ).toBe("contain");
+    expect(
+      mapListingCpt({ id: 3, slug: "bad", title: "Bad", acf: { cover_fit: "stretch" } }).coverFit,
+    ).toBe("cover");
+  });
+
   it("indexes nested profile text, media attributes, and visible boolean attributes", () => {
     const mapped = mapListingCpt({
       id: 7,

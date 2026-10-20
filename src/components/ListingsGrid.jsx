@@ -86,13 +86,17 @@ export default function ListingsGrid() {
                 className="group bg-background-50 rounded-2xl border border-background-200/70 overflow-hidden hover:border-primary-300 transition-colors flex flex-col cursor-pointer"
               >
                 <div className="relative">
-                  <div className="w-full h-56 overflow-hidden">
+                  <div className="w-full h-56 overflow-hidden bg-background-100">
                     <img
                       alt={`${item.title} — ${item.category}`}
                       title={`${item.title} — ${item.category}`}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className={`w-full h-full transition-transform duration-500 ${
+                        item.coverFit === "contain"
+                          ? "object-contain"
+                          : "object-cover group-hover:scale-105"
+                      }`}
                       src={item.image}
-                      style={imageCropStyle(item.coverPosition, item.coverZoom)}
+                      style={imageCropStyle(item.coverPosition, item.coverZoom, item.coverFit)}
                     />
                   </div>
                   <TierBadge tier={item.badge} className="absolute top-4 left-4" />

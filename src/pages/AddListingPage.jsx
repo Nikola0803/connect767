@@ -63,6 +63,7 @@ const initialForm = {
   photoPreview: "",
   coverPosition: "center",
   coverZoom: 1,
+  coverFit: "contain",
   galleryFiles: [],
   galleryPreviews: [],
   bookingEnabled: false,
@@ -153,6 +154,7 @@ function buildPreviewData(form) {
     logoZoom: form.logoZoom || 1,
     coverPosition: form.coverPosition || "center",
     coverZoom: form.coverZoom || 1,
+    coverFit: form.coverFit || "contain",
   };
 }
 
@@ -257,6 +259,8 @@ export default function AddListingPage() {
           photoPreview: data.coverPhoto || "",
           coverPosition: data.coverPosition || "center",
           coverZoom: data.coverZoom || 1,
+          // Existing listings predate coverFit and keep their historical crop.
+          coverFit: data.coverFit || "cover",
           // gallery[0] is the cover once mapListingDetail prepends it, so the
           // gallery previews start after it.
           galleryPreviews: (data.gallery || [])
@@ -840,8 +844,8 @@ export default function AddListingPage() {
                           <img
                             src={form.photoPreview}
                             alt="Cover photo preview"
-                            className="absolute inset-0 w-full h-full object-cover"
-                            style={imageCropStyle(form.coverPosition, form.coverZoom)}
+                            className={`absolute inset-0 w-full h-full ${form.coverFit === "contain" ? "object-contain" : "object-cover"}`}
+                            style={imageCropStyle(form.coverPosition, form.coverZoom, form.coverFit)}
                           />
                         ) : (
                           <>
@@ -862,6 +866,9 @@ export default function AddListingPage() {
                               ...f,
                               photoFile: file,
                               photoPreview: URL.createObjectURL(file),
+                              coverFit: "contain",
+                              coverPosition: "center",
+                              coverZoom: 1,
                             }));
                           }}
                         />
@@ -886,10 +893,12 @@ export default function AddListingPage() {
                         shape="cover"
                         position={form.coverPosition}
                         zoom={form.coverZoom}
+                        fit={form.coverFit}
                         onPositionChange={(value) =>
                           setForm((f) => ({ ...f, coverPosition: value }))
                         }
                         onZoomChange={(value) => setForm((f) => ({ ...f, coverZoom: value }))}
+                        onFitChange={(value) => setForm((f) => ({ ...f, coverFit: value }))}
                       />
                     )}
                   </FormField>
@@ -1070,8 +1079,8 @@ export default function AddListingPage() {
                           <img
                             src={form.photoPreview}
                             alt="Cover"
-                            className="w-full h-full object-cover"
-                            style={imageCropStyle(form.coverPosition, form.coverZoom)}
+                            className={`w-full h-full ${form.coverFit === "contain" ? "object-contain" : "object-cover"}`}
+                            style={imageCropStyle(form.coverPosition, form.coverZoom, form.coverFit)}
                           />
                         </div>
                       ) : (

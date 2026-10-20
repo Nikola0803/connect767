@@ -14,13 +14,17 @@ export default function DirectoryListingCard({ listing, view = "grid", matchScor
         className="group bg-background-50 rounded-2xl border border-background-200/70 overflow-hidden hover:border-primary-300 transition-colors flex flex-col sm:flex-row cursor-pointer"
       >
         <div className="relative sm:w-56 flex-shrink-0">
-          <div className="w-full h-52 sm:h-full overflow-hidden">
+          <div className="w-full h-52 sm:h-full overflow-hidden bg-background-100">
             <img
               alt={`${listing.title} — ${listing.category}`}
               title={`${listing.title} — ${listing.category}`}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              className={`w-full h-full transition-transform duration-500 ${
+                listing.coverFit === "contain"
+                  ? "object-contain"
+                  : "object-cover group-hover:scale-105"
+              }`}
               src={listing.image}
-              style={imageCropStyle(listing.coverPosition, listing.coverZoom)}
+              style={imageCropStyle(listing.coverPosition, listing.coverZoom, listing.coverFit)}
             />
           </div>
           <TierBadge tier={listing.badge} className="absolute top-3 left-3" />
@@ -124,13 +128,17 @@ export default function DirectoryListingCard({ listing, view = "grid", matchScor
       className="group bg-background-50 rounded-2xl border border-background-200/70 overflow-hidden hover:border-primary-300 transition-colors flex flex-col cursor-pointer"
     >
       <div className="relative">
-        <div className="w-full h-52 overflow-hidden">
+        <div className="w-full h-52 overflow-hidden bg-background-100">
           <img
             alt={`${listing.title} — ${listing.category}`}
             title={`${listing.title} — ${listing.category}`}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className={`w-full h-full transition-transform duration-500 ${
+              listing.coverFit === "contain"
+                ? "object-contain"
+                : "object-cover group-hover:scale-105"
+            }`}
             src={listing.image}
-            style={imageCropStyle(listing.coverPosition, listing.coverZoom)}
+            style={imageCropStyle(listing.coverPosition, listing.coverZoom, listing.coverFit)}
           />
         </div>
         <TierBadge tier={listing.badge} className="absolute top-3 left-3" />

@@ -280,6 +280,10 @@ export function mapListingCpt(wp) {
     logoZoom: Number(acf.logo_zoom) || 1,
     coverPosition: acf.cover_position || "center",
     coverZoom: Number(acf.cover_zoom) || 1,
+    // Legacy listings were always cropped. New submissions explicitly save
+    // "contain" so the full image remains visible unless the owner chooses
+    // the Reposition tool.
+    coverFit: acf.cover_fit === "contain" ? "contain" : "cover",
     // Precomputed from every public, user-visible profile value so the
     // directory can search details that are not rendered on its cards.
     searchText: createListingSearchText(publicProfile),

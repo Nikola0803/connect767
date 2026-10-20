@@ -319,6 +319,12 @@ class C767_REST_Listings
         return (string) $zoom;
     }
 
+    /** Full-image fit is the safe default for new listings; cover enables repositioning/cropping. */
+    private static function sanitize_cover_fit($value)
+    {
+        return sanitize_key((string) $value) === 'cover' ? 'cover' : 'contain';
+    }
+
     /**
      * Per-listing (not per-account) — a Classified owner running several
      * businesses can show different credentials on each one. Used to live
@@ -437,6 +443,7 @@ class C767_REST_Listings
             'logo_zoom' => self::sanitize_zoom($request->get_param('logoZoom') ?: 1),
             'cover_position' => self::sanitize_position($request->get_param('coverPosition')),
             'cover_zoom' => self::sanitize_zoom($request->get_param('coverZoom') ?: 1),
+            'cover_fit' => self::sanitize_cover_fit($request->get_param('coverFit')),
             'education' => self::sanitize_education($request->get_param('education')),
             'degree_type' => sanitize_text_field((string) $request->get_param('degreeType')),
             'experience_level' => self::sanitize_experience_level($request->get_param('experienceLevel')),
@@ -523,6 +530,7 @@ class C767_REST_Listings
             'logo_zoom' => self::sanitize_zoom($request->get_param('logoZoom') ?: 1),
             'cover_position' => self::sanitize_position($request->get_param('coverPosition')),
             'cover_zoom' => self::sanitize_zoom($request->get_param('coverZoom') ?: 1),
+            'cover_fit' => self::sanitize_cover_fit($request->get_param('coverFit')),
             'education' => self::sanitize_education($request->get_param('education')),
             'degree_type' => sanitize_text_field((string) $request->get_param('degreeType')),
             'experience_level' => self::sanitize_experience_level($request->get_param('experienceLevel')),

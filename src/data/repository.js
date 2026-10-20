@@ -382,6 +382,7 @@ export async function submitListing(form) {
     "logoZoom",
     "coverPosition",
     "coverZoom",
+    "coverFit",
   ];
   textFields.forEach((key) => {
     if (form[key]) payload.append(key, form[key]);
@@ -494,6 +495,7 @@ export async function updateListing(id, form) {
     "logoZoom",
     "coverPosition",
     "coverZoom",
+    "coverFit",
   ];
   textFields.forEach((key) => {
     if (form[key]) payload.append(key, form[key]);

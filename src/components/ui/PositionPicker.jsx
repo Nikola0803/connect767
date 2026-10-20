@@ -28,6 +28,8 @@ export default function PositionPicker({
   label,
   src,
   shape = "cover", // 'cover' (16:9) | 'logo' (circle)
+  fit = "cover",
+  onFitChange,
 }) {
   const frameRef = useRef(null);
   const dragRef = useRef(null);
@@ -92,6 +94,16 @@ export default function PositionPicker({
   }, [dragging, onMove]);
 
   const isLogo = shape === "logo";
+  const canChooseFit = !isLogo && onFitChange;
+  const isContained = canChooseFit && fit === "contain";
+
+  const chooseFit = () => {
+    onFitChange("contain");
+    onPositionChange(formatPosition(50, 50));
+    onZoomChange(1);
+  };
+
+  const chooseReposition = () => onFitChange("cover");
 
   return (
     <div className="mt-3">
@@ -100,15 +112,17 @@ export default function PositionPicker({
       <div className="flex items-start gap-4">
         <div
           ref={frameRef}
-          onMouseDown={beginDrag}
-          onTouchStart={beginDrag}
+          onMouseDown={isContained ? undefined : beginDrag}
+          onTouchStart={isContained ? undefined : beginDrag}
           className={`relative overflow-hidden bg-background-100 border-2 flex-shrink-0 select-none ${
             isLogo ? "w-24 h-24 rounded-full" : "w-40 aspect-[16/9] rounded-lg"
           } ${
-            src
+            src && !isContained
               ? dragging
                 ? "border-primary-500 cursor-grabbing"
                 : "border-background-300 cursor-grab hover:border-primary-400"
+              : src
+              ? "border-background-300"
               : "border-dashed border-background-300"
           }`}
           style={{ touchAction: "none" }}
@@ -119,9 +133,17 @@ export default function PositionPicker({
                 src={src}
                 alt="Position preview"
                 draggable={false}
-                className="w-full h-full object-cover pointer-events-none"
-                style={imageCropStyle(position, zoom)}
+                className={`w-full h-full pointer-events-none ${isContained ? "object-contain" : "object-cover"}`}
+                style={imageCropStyle(position, zoom, isContained ? "contain" : "cover")}
               />
+              {!isContained && !dragging && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-foreground-950/70 text-background-50 text-[10px] font-semibold shadow-sm">
+                    <i className="ri-drag-move-2-line text-sm" />
+                    Drag to reposition
+                  </span>
+                </div>
+              )}
               {/* Only while dragging — a permanent grid would read as part of
                   the picture rather than a tool. */}
               {dragging && (
@@ -141,11 +163,43 @@ export default function PositionPicker({
         </div>
 
         <div className="flex-1 min-w-0 pt-0.5">
+          {canChooseFit && (
+            <div className="grid grid-cols-2 gap-2 mb-3" aria-label="Cover photo display">
+              <button
+                type="button"
+                onClick={chooseFit}
+                className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-2.5 py-2 text-[11px] font-semibold transition-colors cursor-pointer ${
+                  isContained
+                    ? "border-primary-500 bg-primary-50 text-primary-800"
+                    : "border-background-300 text-foreground-600 hover:border-primary-300"
+                }`}
+              >
+                <i className="ri-aspect-ratio-line text-sm" />
+                Fit full image
+              </button>
+              <button
+                type="button"
+                onClick={chooseReposition}
+                className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-2.5 py-2 text-[11px] font-semibold transition-colors cursor-pointer ${
+                  !isContained
+                    ? "border-primary-500 bg-primary-50 text-primary-800"
+                    : "border-background-300 text-foreground-600 hover:border-primary-300"
+                }`}
+              >
+                <i className="ri-drag-move-2-line text-sm" />
+                Reposition
+              </button>
+            </div>
+          )}
           <p className="text-[11px] font-label text-foreground-500 mb-2">
-            {src ? "Drag the image to reposition it." : "Upload an image to position it."}
+            {src
+              ? isContained
+                ? "The entire photo will be visible. Choose Reposition to crop and move it."
+                : "Drag the image freely inside the frame."
+              : "Upload an image to position it."}
           </p>
 
-          <div className="flex items-center justify-between mb-1">
+          <div className={`flex items-center justify-between mb-1 ${isContained ? "opacity-45" : ""}`}>
             <span className="text-[11px] font-label text-foreground-500">Zoom</span>
             <span className="text-[11px] font-label text-foreground-500">
               {Math.round(z * 100)}%
@@ -157,7 +211,7 @@ export default function PositionPicker({
             max={ZOOM_MAX}
             step={0.05}
             value={z}
-            disabled={!src}
+            disabled={!src || isContained}
             onChange={(e) => onZoomChange(Number(e.target.value))}
             className="w-full cursor-pointer accent-primary-500 disabled:opacity-40"
           />

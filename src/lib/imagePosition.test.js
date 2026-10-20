@@ -1,5 +1,24 @@
 import { describe, it, expect } from "vitest";
-import { cssObjectPosition, clampZoom, imageCropStyle, ZOOM_MIN, ZOOM_MAX } from "./imagePosition";
+import {
+  cssObjectPosition,
+  clampZoom,
+  imageCropStyle,
+  normalizeImageFit,
+  ZOOM_MIN,
+  ZOOM_MAX,
+} from "./imagePosition";
+
+describe("normalizeImageFit", () => {
+  it("accepts the two supported fit modes", () => {
+    expect(normalizeImageFit("contain")).toBe("contain");
+    expect(normalizeImageFit("cover")).toBe("cover");
+  });
+
+  it("uses the requested fallback for an invalid value", () => {
+    expect(normalizeImageFit("stretch")).toBe("cover");
+    expect(normalizeImageFit(undefined, "contain")).toBe("contain");
+  });
+});
 
 describe("cssObjectPosition", () => {
   it("maps a known position value to its CSS object-position", () => {
@@ -54,5 +73,9 @@ describe("imageCropStyle", () => {
   it("defaults zoom to 1x when not provided", () => {
     const style = imageCropStyle("left", undefined);
     expect(style).not.toHaveProperty("transform");
+  });
+
+  it("centers a contained image and never applies a crop zoom", () => {
+    expect(imageCropStyle("top-left", 2.5, "contain")).toEqual({ objectPosition: "center" });
   });
 });
