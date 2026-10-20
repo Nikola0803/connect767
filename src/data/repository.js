@@ -31,7 +31,7 @@ import {
 } from "./directory";
 import { listingDetails as localListingDetails } from "./listingDetails";
 import { productTypes as localProductTypes } from "./customizer";
-import { listings as localFeaturedListings, categories as localHomeCategories } from "./content";
+import { categories as localHomeCategories } from "./content";
 import { blogPosts as localBlogPosts, blogCategories as localBlogCategories, getRelatedPosts } from "./blog";
 
 /**
@@ -279,7 +279,11 @@ export async function getFeaturedListings() {
     const wp = await wpClient.get("/listing", { per_page: 6, featured: true, _embed: 1 });
     return wp.map(mapListingCpt);
   }
-  return localFeaturedListings;
+  // Use the same enriched listing models as Browse Directory. The legacy
+  // homepage fixture omitted descriptions, exact experience, industry labels,
+  // booking state, and image positioning, so the shared redesigned card could
+  // only render a stripped-down version of itself on the homepage.
+  return (await getListings()).slice(0, 6);
 }
 
 export async function getHomeCategories() {

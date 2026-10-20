@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import TierBadge from "./ui/TierBadge";
+import DirectoryListingCard from "./DirectoryListingCard";
 import { CardSkeleton, ErrorState } from "./ui/States";
 import { useAsync } from "../hooks/useAsync";
 import { getFeaturedListings } from "../data/repository";
-import { imageCropStyle } from "../lib/imagePosition";
 
 const tabs = ["All", "Classified", "Featured", "Free"];
 
@@ -141,74 +140,18 @@ export default function Featured() {
               className="flex gap-5 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 -mx-4 px-4 md:mx-0 md:px-0 no-scrollbar"
             >
               {visibleListings.map((item) => (
-                <Link
+                <div
                   key={item.slug}
-                  to={`/listings/${item.slug}`}
                   data-carousel-card
-                  className="group snap-start flex-shrink-0 w-[82%] sm:w-[46%] lg:w-[31.5%] bg-background-50 rounded-2xl border border-background-200/70 overflow-hidden hover:border-primary-300 transition-colors flex flex-col cursor-pointer"
+                  className="snap-start flex-shrink-0 w-[82%] sm:w-[46%] lg:w-[31.5%]"
                 >
-                  <div className="relative">
-                    <div className="w-full h-56 overflow-hidden bg-background-100">
-                      <img
-                        alt={`${item.title} — ${item.category}`}
-                        title={`${item.title} — ${item.category}`}
-                        className={`w-full h-full transition-transform duration-500 ${
-                          item.coverFit === "contain"
-                            ? "object-contain"
-                            : "object-cover group-hover:scale-105"
-                        }`}
-                        src={item.image}
-                        style={imageCropStyle(item.coverPosition, item.coverZoom, item.coverFit)}
-                      />
-                    </div>
-                    <TierBadge tier={item.badge} className="absolute top-4 left-4" />
-                    <button
-                      aria-label={savedSlugs.has(item.slug) ? "Remove from saved" : "Save listing"}
-                      type="button"
-                      onClick={(e) => toggleSave(e, item.slug)}
-                      className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-background-50/95 backdrop-blur text-foreground-700 hover:text-accent-500 cursor-pointer"
-                    >
-                      <i className={savedSlugs.has(item.slug) ? "ri-heart-fill text-accent-500" : "ri-heart-line"} />
-                    </button>
-                  </div>
-                  <div className="p-5 flex flex-col flex-1">
-                    <div className="flex items-center justify-between text-xs text-foreground-600 mb-2">
-                      <span className="font-label">{item.category}</span>
-                      <span className="font-label">{item.price}</span>
-                    </div>
-                    {/* Same verified treatment as the directory cards and the
-                        profile page — a mark after the name. This card was
-                        missing it entirely, so a verified business looked
-                        unverified on the homepage and verified everywhere
-                        else. */}
-                    <h3 className="font-heading text-xl font-medium text-foreground-950 mb-2 group-hover:text-primary-700 transition-colors flex items-center gap-1.5">
-                      {item.title}
-                      {item.verified && (
-                        <i
-                          className="ri-verified-badge-fill text-primary-600 text-base flex-shrink-0"
-                          title="Verified business"
-                          aria-label="Verified business"
-                          role="img"
-                        />
-                      )}
-                    </h3>
-                    <div className="flex items-center gap-2 text-xs text-foreground-600 mb-4">
-                      <i className="ri-map-pin-line" />
-                      <span className="font-label">{item.location}</span>
-                    </div>
-                    <div className="mt-auto flex items-center justify-between pt-4 border-t border-background-200/70">
-                      <div className="flex items-center gap-1.5">
-                        <i className="ri-star-fill text-accent-500 text-sm" />
-                        <span className="text-sm font-semibold text-foreground-950">{item.rating}</span>
-                        <span className="text-xs text-foreground-500 font-label">{item.reviews}</span>
-                      </div>
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary-700 group-hover:text-primary-800 whitespace-nowrap">
-                        View profile
-                        <i className="ri-arrow-right-line" />
-                      </span>
-                    </div>
-                  </div>
-                </Link>
+                  <DirectoryListingCard
+                    listing={item}
+                    saved={savedSlugs.has(item.slug)}
+                    onToggleSaved={(event, listing) => toggleSave(event, listing.slug)}
+                    className="h-full"
+                  />
+                </div>
               ))}
             </div>
 
