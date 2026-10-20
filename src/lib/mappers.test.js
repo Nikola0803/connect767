@@ -125,6 +125,27 @@ describe("mapListingCpt", () => {
     const mapped = mapListingCpt({ id: 1, slug: "a", title: { rendered: "<strong>Acme</strong> Co" }, acf: {} });
     expect(mapped.title).toBe("Acme Co");
   });
+
+  it("indexes nested profile text, media attributes, and visible boolean attributes", () => {
+    const mapped = mapListingCpt({
+      id: 7,
+      slug: "island-guide",
+      title: "Island Guide",
+      acf: {
+        verified: true,
+        booking_enabled: "1",
+        gallery: [{ url: "https://example.com/waitukubuli.jpg", alt: "Waitukubuli trail guide" }],
+        reviews: [{ name: "Élodie", text: "Knowledgeable & friendly" }],
+        map_embed_url: "https://maps.example.com/roseau",
+      },
+    });
+
+    expect(mapped.searchText).toContain("waitukubuli trail guide");
+    expect(mapped.searchText).toContain("elodie");
+    expect(mapped.searchText).toContain("verified");
+    expect(mapped.searchText).toContain("accepts bookings");
+    expect(mapped.searchText).toContain("maps.example.com/roseau");
+  });
 });
 
 describe("mapListingDetail", () => {

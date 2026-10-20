@@ -199,6 +199,7 @@ export function mapListingCpt(wp) {
     tags: acf.tags || [],
     amenities: acf.amenities || [],
     hours: acf.hours || [],
+    gallery: acf.gallery || [],
     reviews: acf.reviews || [],
     contact: {
       phone: acf.phone || "",
@@ -209,6 +210,17 @@ export function mapListingCpt(wp) {
       youtube: acf.youtube || "",
       twitter: acf.twitter || "",
       whatsapp: acf.whatsapp || "",
+    },
+    attributes: [
+      isTruthyMeta(acf.verified) ? "verified" : "",
+      isTruthyMeta(acf.featured) ? "featured" : "",
+      isTruthyMeta(acf.booking_enabled) ? "booking available accepts bookings" : "",
+    ],
+    map: acf.map_embed_url || "",
+    media: {
+      logo: acf.logo || "",
+      fallbackImage: acf.fallback_image || "",
+      featuredImage: featuredImage(wp),
     },
   };
 

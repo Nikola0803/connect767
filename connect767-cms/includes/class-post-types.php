@@ -358,14 +358,10 @@ class C767_Post_Types
             return $search_sql;
         }
 
-        $searchable_meta = [
-            'price_tier', 'tier', 'rating', 'review_count',
-            'location_display', 'location_country', 'location_region', 'location_city',
-            'description', 'education', 'degree_type', 'experience_level', 'years_experience',
-            'tags', 'amenities', 'hours', 'reviews',
-            'phone', 'email', 'website', 'address',
-            'instagram', 'facebook', 'youtube', 'twitter', 'whatsapp',
-        ];
+        // One source of truth with the registered listing-profile fields.
+        // This includes nested JSON text such as gallery alt text and review
+        // content, and automatically covers public fields added in future.
+        $searchable_meta = C767_Meta_Fields::searchable_listing_fields();
         $meta_keys_sql = implode(', ', array_map(function ($key) {
             return "'" . esc_sql($key) . "'";
         }, $searchable_meta));
@@ -375,6 +371,30 @@ class C767_Post_Types
 
         foreach ($terms as $term) {
             $like = '%' . $wpdb->esc_like($term) . '%';
+
+            // Boolean values are stored as 1/0, but visitors search for the
+            // visible meaning of those attributes rather than the digit 1.
+            $semantic_attributes = [
+                'verified' => 'verified',
+                'featured' => 'featured',
+                'booking_enabled' => 'booking available accepts bookings',
+            ];
+            $semantic_keys = [];
+            foreach ($semantic_attributes as $key => $label) {
+                if (stripos($label, $term) !== false) {
+                    $semantic_keys[] = "'" . esc_sql($key) . "'";
+                }
+            }
+            $semantic_sql = '';
+            if ($semantic_keys) {
+                $semantic_sql = " OR EXISTS (
+                    SELECT 1 FROM {$wpdb->postmeta} c767_attr
+                    WHERE c767_attr.post_id = {$wpdb->posts}.ID
+                      AND c767_attr.meta_key IN (" . implode(', ', $semantic_keys) . ")
+                      AND LOWER(c767_attr.meta_value) IN ('1', 'true', 'yes', 'on')
+                )";
+            }
+
             $term_clauses[] = $wpdb->prepare(
                 "({$wpdb->posts}.post_title LIKE %s
                     OR {$wpdb->posts}.post_content LIKE %s
@@ -396,7 +416,7 @@ class C767_Post_Types
                         WHERE c767_tr.object_id = {$wpdb->posts}.ID
                           AND c767_tt.taxonomy = 'listing_category'
                           AND (c767_t.name LIKE %s OR c767_t.slug LIKE %s)
-                    ))",
+                    ){$semantic_sql})",
                 $like,
                 $like,
                 $like,

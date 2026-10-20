@@ -163,6 +163,27 @@ class C767_Meta_Fields
         ];
     }
 
+    /**
+     * Public listing metadata that participates in directory search.
+     *
+     * Derive this from the canonical field registry so new profile fields
+     * become searchable automatically. Only private billing state and
+     * image-layout implementation values are excluded; neither is profile
+     * content a visitor should be able to discover through search.
+     */
+    public static function searchable_listing_fields()
+    {
+        $excluded = [
+            'payment_status',
+            'logo_position',
+            'logo_zoom',
+            'cover_position',
+            'cover_zoom',
+        ];
+
+        return array_values(array_diff(array_keys(self::listing_fields()), $excluded));
+    }
+
     public static function uniform_template_fields()
     {
         return [
