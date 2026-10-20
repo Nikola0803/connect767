@@ -27,6 +27,7 @@ class C767_Notifications
         add_action('c767_listing_rejected', [__CLASS__, 'on_listing_rejected']);
         add_action('c767_listing_payment_confirmed', [__CLASS__, 'on_listing_payment_confirmed']);
         add_action('c767_booking_submitted', [__CLASS__, 'on_booking_submitted'], 10, 2);
+        add_action('c767_booking_confirmed', [__CLASS__, 'on_booking_confirmed']);
     }
 
     private static function site_name()
@@ -224,12 +225,13 @@ class C767_Notifications
         $preferred_date = get_post_meta($booking_id, 'preferred_date', true);
         $preferred_time = get_post_meta($booking_id, 'preferred_time', true);
         $notes = get_post_meta($booking_id, 'notes', true);
+        $amount_cents = (int) get_post_meta($booking_id, 'amount_cents', true);
 
         // Business owner: a customer wants to book them.
         if ($owner) {
             $subject = sprintf('New booking request — %s', $listing->post_title);
             $body = sprintf(
-                "Hi %s,\n\n%s just requested a booking for \"%s\":\n\nPreferred date: %s\nPreferred time: %s\nEmail: %s\nPhone: %s\nNotes: %s\n\nReach out to them directly to confirm — you can also track this from your dashboard:\n%s",
+                "Hi %s,\n\n%s just requested a booking for \"%s\":\n\nPreferred date: %s\nPreferred time: %s\nEmail: %s\nPhone: %s\nNotes: %s\nPayment: %s\n\nTrack and manage this booking from your dashboard:\n%s",
                 $owner->display_name ?: $owner->user_login,
                 $name ?: 'Someone',
                 $listing->post_title,
@@ -238,6 +240,7 @@ class C767_Notifications
                 $email ?: 'not provided',
                 $phone ?: 'not provided',
                 $notes ?: '—',
+                $amount_cents > 0 ? 'Awaiting online payment of $' . number_format($amount_cents / 100, 2) : 'No payment required',
                 self::frontend_url('/dashboard')
             );
             wp_mail($owner->user_email, $subject, $body, self::reply_to($email));
@@ -247,12 +250,61 @@ class C767_Notifications
         if ($email && is_email($email)) {
             $subject = sprintf('Your booking request to %s', $listing->post_title);
             $body = sprintf(
-                "Hi %s,\n\nYour booking request to \"%s\" was sent. They'll reach out to you directly at this email or the phone number you provided to confirm.\n\n— %s",
+                $amount_cents > 0
+                    ? "Hi %s,\n\nYour appointment request to \"%s\" was created. Complete payment on the booking screen to confirm it and receive the meeting link.\n\n— %s"
+                    : "Hi %s,\n\nYour booking request to \"%s\" was sent. They'll reach out to you directly at this email or the phone number you provided to confirm.\n\n— %s",
                 $name ?: 'there',
                 $listing->post_title,
                 self::site_name()
             );
             wp_mail($email, $subject, $body);
+        }
+    }
+
+    public static function on_booking_confirmed($booking_id)
+    {
+        $listing_id = (int) get_post_meta($booking_id, 'listing_id', true);
+        $listing = get_post($listing_id);
+        if (!$listing) {
+            return;
+        }
+
+        $name = get_post_meta($booking_id, 'name', true);
+        $email = get_post_meta($booking_id, 'email', true);
+        $date = get_post_meta($booking_id, 'preferred_date', true);
+        $time = get_post_meta($booking_id, 'preferred_time', true);
+        $duration = (int) (get_post_meta($booking_id, 'duration_minutes', true) ?: 30);
+        $meeting_url = get_post_meta($listing_id, 'booking_meeting_url', true);
+        $owner = get_userdata($listing->post_author);
+
+        if ($email && is_email($email)) {
+            $subject = sprintf('Booking confirmed — %s', $listing->post_title);
+            $body = sprintf(
+                "Hi %s,\n\nYour booking with \"%s\" is confirmed.\n\nDate: %s\nTime: %s\nDuration: %d minutes\nMeeting link: %s\n\nKeep this email private; the meeting link is intended for you.\n\n— %s",
+                $name ?: 'there',
+                $listing->post_title,
+                $date ?: 'To be arranged',
+                $time ?: 'To be arranged',
+                $duration,
+                $meeting_url ?: 'The business will send this separately.',
+                self::site_name()
+            );
+            wp_mail($email, $subject, $body);
+        }
+
+        if ($owner) {
+            wp_mail(
+                $owner->user_email,
+                sprintf('Booking confirmed — %s', $listing->post_title),
+                sprintf(
+                    "%s's booking is confirmed for %s at %s. Manage it from your dashboard:\n%s",
+                    $name ?: 'A customer',
+                    $date ?: 'a date to be arranged',
+                    $time ?: 'a time to be arranged',
+                    self::frontend_url('/dashboard')
+                ),
+                self::reply_to($email)
+            );
         }
     }
 }

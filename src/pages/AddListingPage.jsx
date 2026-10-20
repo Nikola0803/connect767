@@ -7,6 +7,7 @@ import {
   submitListing,
   updateListing,
   getListingBySlug,
+  getBookingSettings,
   getCheckoutConfig,
   createListingPaymentIntent,
   confirmListingPayment,
@@ -67,6 +68,9 @@ const initialForm = {
   galleryFiles: [],
   galleryPreviews: [],
   bookingEnabled: false,
+  bookingPrice: "0",
+  bookingDurationMinutes: "30",
+  bookingMeetingUrl: "",
   amenities: "",
 };
 
@@ -155,6 +159,9 @@ function buildPreviewData(form) {
     coverPosition: form.coverPosition || "center",
     coverZoom: form.coverZoom || 1,
     coverFit: form.coverFit || "contain",
+    bookingEnabled: form.bookingEnabled,
+    bookingPriceCents: Math.max(0, Math.round((Number(form.bookingPrice) || 0) * 100)),
+    bookingDurationMinutes: Number(form.bookingDurationMinutes) || 30,
   };
 }
 
@@ -256,6 +263,8 @@ export default function AddListingPage() {
           // cover slot and the owner had to re-upload it every single time,
           // while the logo (which does have its own field) survived fine.
           bookingEnabled: Boolean(data.bookingEnabled),
+          bookingPrice: ((data.bookingPriceCents || 0) / 100).toFixed(2),
+          bookingDurationMinutes: String(data.bookingDurationMinutes || 30),
           photoPreview: data.coverPhoto || "",
           coverPosition: data.coverPosition || "center",
           coverZoom: data.coverZoom || 1,
@@ -267,6 +276,21 @@ export default function AddListingPage() {
             .filter((g) => g.src && g.src !== data.coverPhoto)
             .map((g) => g.src),
         }));
+        getBookingSettings(data.id)
+          .then((settings) => {
+            if (cancelled) return;
+            setForm((f) => ({
+              ...f,
+              bookingEnabled: Boolean(settings.bookingEnabled),
+              bookingPrice: ((settings.bookingPriceCents || 0) / 100).toFixed(2),
+              bookingDurationMinutes: String(settings.bookingDurationMinutes || 30),
+              bookingMeetingUrl: settings.bookingMeetingUrl || "",
+            }));
+          })
+          .catch(() => {
+            // Public listing data still contains enabled/price/duration;
+            // only the private meeting URL is unavailable if this fails.
+          });
         // Tier is fixed once a listing exists — start straight on Business Info.
         setStep(2);
       })
@@ -763,16 +787,64 @@ export default function AddListingPage() {
                     />
                     <span>
                       <span className="block text-sm font-semibold text-foreground-900">
-                        Accept booking requests
+                        Accept bookings and appointments
                       </span>
                       <span className="block text-xs text-foreground-600 font-label mt-0.5">
-                        Adds a &ldquo;Request a booking&rdquo; form to your profile. Requests arrive
-                        by email and in your dashboard — nothing is charged or confirmed
-                        automatically.
+                        Adds a secure booking form to your profile. Set a price for automatic
+                        Stripe/PayPal confirmation, or leave it at $0 for owner approval.
                       </span>
                     </span>
                   </label>
                 </FormField>
+                {form.bookingEnabled && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 rounded-xl border border-primary-200 bg-primary-50/30 p-4">
+                    <FormField
+                      label="Booking price (USD)"
+                      htmlFor="bookingPrice"
+                      hint="Enter 0 for a free booking request"
+                    >
+                      <Input
+                        id="bookingPrice"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={form.bookingPrice}
+                        onChange={update("bookingPrice")}
+                        placeholder="0.00"
+                      />
+                    </FormField>
+                    <FormField label="Meeting duration" htmlFor="bookingDurationMinutes">
+                      <Select
+                        id="bookingDurationMinutes"
+                        value={form.bookingDurationMinutes}
+                        onChange={update("bookingDurationMinutes")}
+                      >
+                        <option value="15">15 minutes</option>
+                        <option value="30">30 minutes</option>
+                        <option value="45">45 minutes</option>
+                        <option value="60">60 minutes</option>
+                        <option value="90">90 minutes</option>
+                        <option value="120">2 hours</option>
+                      </Select>
+                    </FormField>
+                    <div className="sm:col-span-2">
+                      <FormField
+                        label="Private meeting link"
+                        htmlFor="bookingMeetingUrl"
+                        hint="Zoom, Google Meet, Microsoft Teams, or another HTTPS meeting room. Customers receive it only after payment or confirmation."
+                      >
+                        <Input
+                          id="bookingMeetingUrl"
+                          type="url"
+                          icon="ri-video-chat-line"
+                          value={form.bookingMeetingUrl}
+                          onChange={update("bookingMeetingUrl")}
+                          placeholder="https://meet.google.com/..."
+                        />
+                      </FormField>
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-5 items-start">
                   <FormField label="Logo / profile picture" hint="This will be the Account Profile Photo. It will be the same for every listing if there are multiple listings">
                     <div className="relative w-32 h-32 group">

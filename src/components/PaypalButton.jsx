@@ -58,7 +58,10 @@ export default function PaypalButton({ clientId, disabled, createOrder, captureO
               try {
                 const result = await stateRef.current.captureOrder(localOrderId);
                 if (result.status === "paid") {
-                  currentOnSuccess(localOrderId);
+                  // Preserve the historical first argument (local id) while
+                  // exposing the verified server response to flows such as
+                  // bookings that need a private meeting URL after capture.
+                  currentOnSuccess(localOrderId, result);
                 } else {
                   currentOnError("Payment is still processing — check your email for confirmation shortly.");
                 }

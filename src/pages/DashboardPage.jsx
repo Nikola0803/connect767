@@ -2,7 +2,12 @@ import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useAsync } from "../hooks/useAsync";
-import { getMyListings, setListingTier } from "../data/repository";
+import {
+  getMyBookings,
+  getMyListings,
+  setBookingStatus,
+  setListingTier,
+} from "../data/repository";
 import { isLiveApi } from "../lib/config";
 import Button from "../components/ui/Button";
 import TierBadge from "../components/ui/TierBadge";
@@ -17,9 +22,30 @@ const statusMeta = {
 export default function DashboardPage() {
   const { isAuthenticated, name, email } = useAuth();
   const { data: listings, loading, error, reload } = useAsync(() => getMyListings(), []);
+  const {
+    data: bookings,
+    loading: bookingsLoading,
+    error: bookingsError,
+    reload: reloadBookings,
+  } = useAsync(() => getMyBookings(), []);
   const navigate = useNavigate();
   const [tierBusy, setTierBusy] = useState(null);
   const [tierError, setTierError] = useState(null);
+  const [bookingBusy, setBookingBusy] = useState(null);
+  const [bookingError, setBookingError] = useState(null);
+
+  const changeBookingStatus = async (booking, status) => {
+    setBookingBusy(booking.id);
+    setBookingError(null);
+    try {
+      await setBookingStatus(booking.id, status);
+      reloadBookings();
+    } catch (err) {
+      setBookingError(err.message || "Couldn't update this booking.");
+    } finally {
+      setBookingBusy(null);
+    }
+  };
 
   /**
    * Switch a listing between Free and Classified.
@@ -204,6 +230,124 @@ export default function DashboardPage() {
               })}
             </div>
           )}
+
+          <div className="mt-12 pt-10 border-t border-background-200/70">
+            <div className="flex items-end justify-between gap-4 mb-5">
+              <div>
+                <h2 className="font-heading text-xl font-medium text-foreground-950">
+                  Booking appointments
+                </h2>
+                <p className="text-xs text-foreground-500 font-label mt-1">
+                  Paid appointments confirm automatically. Free requests need your approval.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={reloadBookings}
+                className="text-xs font-semibold text-primary-700 hover:text-primary-800 cursor-pointer"
+              >
+                <i className="ri-refresh-line mr-1" /> Refresh
+              </button>
+            </div>
+
+            {bookingError && (
+              <p className="mb-4 text-xs text-accent-600 font-label">{bookingError}</p>
+            )}
+            {bookingsLoading && <CardSkeleton count={2} className="space-y-3" />}
+            {bookingsError && (
+              <ErrorState message="Couldn't load booking appointments." onRetry={reloadBookings} />
+            )}
+            {!bookingsLoading && !bookingsError && bookings.length === 0 && (
+              <div className="rounded-2xl border border-dashed border-background-300 p-8 text-center">
+                <i className="ri-calendar-event-line text-2xl text-foreground-300" />
+                <p className="text-sm text-foreground-600 font-label mt-2">
+                  No booking requests yet.
+                </p>
+              </div>
+            )}
+            {!bookingsLoading && !bookingsError && bookings.length > 0 && (
+              <div className="space-y-3">
+                {bookings.map((booking) => {
+                  const paid = booking.paymentStatus === "paid";
+                  const requiresPayment = booking.amountCents > 0;
+                  return (
+                    <div
+                      key={booking.id}
+                      className="rounded-xl border border-background-200/70 bg-background-50 p-4 sm:p-5"
+                    >
+                      <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-2">
+                            <h3 className="font-heading text-base font-medium text-foreground-950">
+                              {booking.name} · {booking.listingTitle}
+                            </h3>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                              booking.status === "confirmed"
+                                ? "bg-primary-100 text-primary-800"
+                                : booking.status === "declined"
+                                ? "bg-accent-100 text-accent-800"
+                                : "bg-secondary-100 text-secondary-900"
+                            }`}>
+                              {booking.status}
+                            </span>
+                            {requiresPayment && (
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                paid ? "bg-primary-100 text-primary-800" : "bg-background-200 text-foreground-700"
+                              }`}>
+                                {paid ? "Paid" : `Awaiting $${(booking.amountCents / 100).toFixed(2)}`}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground-600 font-label">
+                            <span><i className="ri-calendar-line mr-1" />{booking.preferredDate || "Date not specified"}</span>
+                            <span><i className="ri-time-line mr-1" />{booking.preferredTime || "Time not specified"}</span>
+                            <span>{booking.durationMinutes} minutes</span>
+                            {booking.email && <a href={`mailto:${booking.email}`} className="hover:text-primary-700">{booking.email}</a>}
+                            {booking.phone && <a href={`tel:${booking.phone}`} className="hover:text-primary-700">{booking.phone}</a>}
+                          </div>
+                          {booking.notes && (
+                            <p className="text-xs text-foreground-600 font-label mt-2">{booking.notes}</p>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {booking.status === "confirmed" && booking.meetingUrl && (
+                            <a
+                              href={booking.meetingUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md bg-primary-600 text-background-50 text-xs font-semibold"
+                            >
+                              <i className="ri-video-chat-line" /> Join meeting
+                            </a>
+                          )}
+                          {booking.status === "pending" && (!requiresPayment || paid) && (
+                            <button
+                              type="button"
+                              onClick={() => changeBookingStatus(booking, "confirmed")}
+                              disabled={bookingBusy === booking.id}
+                              className="px-3 py-2 rounded-md bg-primary-500 text-background-50 text-xs font-semibold cursor-pointer disabled:opacity-50"
+                            >
+                              Confirm
+                            </button>
+                          )}
+                          {booking.status === "pending" && (
+                            <button
+                              type="button"
+                              onClick={() => changeBookingStatus(booking, "declined")}
+                              disabled={bookingBusy === booking.id}
+                              className="px-3 py-2 rounded-md border border-background-300 text-xs font-semibold text-foreground-700 cursor-pointer disabled:opacity-50"
+                            >
+                              Decline
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

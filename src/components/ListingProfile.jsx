@@ -563,7 +563,12 @@ export default function ListingProfile({ data, isPreview = false }) {
                     book it. Hidden in the wizard's Preview step, where there's
                     no saved listing to submit a booking against yet. */}
                 {data.bookingEnabled && !isPreview && data.slug && (
-                  <BookingForm slug={data.slug} businessName={data.title} />
+                  <BookingForm
+                    slug={data.slug}
+                    businessName={data.title}
+                    priceCents={data.bookingPriceCents}
+                    durationMinutes={data.bookingDurationMinutes}
+                  />
                 )}
 
                 {/* Falls back to a keyless embed built from the location text

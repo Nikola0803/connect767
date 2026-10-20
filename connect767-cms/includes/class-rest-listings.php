@@ -134,6 +134,12 @@ class C767_REST_Listings
             'permission_callback' => [__CLASS__, 'check_auth'],
         ]);
 
+        register_rest_route(self::NAMESPACE_, '/listings/(?P<id>\d+)/booking', [
+            'methods' => 'GET',
+            'callback' => [__CLASS__, 'get_booking_settings'],
+            'permission_callback' => [__CLASS__, 'check_auth'],
+        ]);
+
         register_rest_route(self::NAMESPACE_, '/listings/(?P<id>\d+)/tier', [
             'methods' => 'POST',
             'callback' => [__CLASS__, 'set_tier'],
@@ -195,7 +201,7 @@ class C767_REST_Listings
      * own listing's switch regardless of tier; there's no plan requirement
      * on this, unlike Classified's paid Stripe gate.
      */
-    public static function set_booking_enabled(WP_REST_Request $request)
+    private static function owned_listing_for_booking(WP_REST_Request $request)
     {
         $user = C767_REST_Auth::user_from_request($request);
         if (is_wp_error($user)) {
@@ -211,10 +217,57 @@ class C767_REST_Listings
             return new WP_Error('c767_not_owner', 'This listing does not belong to you.', ['status' => 403]);
         }
 
-        $enabled = filter_var($request->get_param('enabled'), FILTER_VALIDATE_BOOLEAN);
-        update_post_meta($post_id, 'booking_enabled', $enabled ? '1' : '0');
+        return $post;
+    }
 
-        return rest_ensure_response(['id' => $post_id, 'bookingEnabled' => $enabled]);
+    public static function get_booking_settings(WP_REST_Request $request)
+    {
+        $post = self::owned_listing_for_booking($request);
+        if (is_wp_error($post)) {
+            return $post;
+        }
+
+        return rest_ensure_response([
+            'id' => $post->ID,
+            'bookingEnabled' => get_post_meta($post->ID, 'booking_enabled', true) === '1',
+            'bookingPriceCents' => (int) get_post_meta($post->ID, 'booking_price_cents', true),
+            'bookingDurationMinutes' => (int) (get_post_meta($post->ID, 'booking_duration_minutes', true) ?: 30),
+            // Owner-authenticated endpoint only. This value is deliberately
+            // absent from public listing REST metadata.
+            'bookingMeetingUrl' => (string) get_post_meta($post->ID, 'booking_meeting_url', true),
+        ]);
+    }
+
+    public static function set_booking_enabled(WP_REST_Request $request)
+    {
+        $post = self::owned_listing_for_booking($request);
+        if (is_wp_error($post)) {
+            return $post;
+        }
+
+        $post_id = $post->ID;
+
+        $enabled = filter_var($request->get_param('enabled'), FILTER_VALIDATE_BOOLEAN);
+        $price_cents = max(0, min(10000000, (int) $request->get_param('bookingPriceCents')));
+        $duration = max(15, min(480, (int) ($request->get_param('bookingDurationMinutes') ?: 30)));
+        $meeting_url_raw = trim((string) $request->get_param('bookingMeetingUrl'));
+        $meeting_url = $meeting_url_raw === '' ? '' : esc_url_raw($meeting_url_raw, ['https']);
+        if ($meeting_url_raw !== '' && $meeting_url === '') {
+            return new WP_Error('c767_bad_meeting_url', 'Meeting link must be a valid HTTPS URL.', ['status' => 400]);
+        }
+
+        update_post_meta($post_id, 'booking_enabled', $enabled ? '1' : '0');
+        update_post_meta($post_id, 'booking_price_cents', $price_cents);
+        update_post_meta($post_id, 'booking_duration_minutes', $duration);
+        update_post_meta($post_id, 'booking_meeting_url', $meeting_url);
+
+        return rest_ensure_response([
+            'id' => $post_id,
+            'bookingEnabled' => $enabled,
+            'bookingPriceCents' => $price_cents,
+            'bookingDurationMinutes' => $duration,
+            'bookingMeetingUrl' => $meeting_url,
+        ]);
     }
 
     /**
@@ -259,6 +312,8 @@ class C767_REST_Listings
                 'rating' => get_post_meta($post->ID, 'rating', true) ?: '0',
                 'reviewCount' => get_post_meta($post->ID, 'review_count', true) ?: '0',
                 'bookingEnabled' => get_post_meta($post->ID, 'booking_enabled', true) === '1',
+                'bookingPriceCents' => (int) get_post_meta($post->ID, 'booking_price_cents', true),
+                'bookingDurationMinutes' => (int) (get_post_meta($post->ID, 'booking_duration_minutes', true) ?: 30),
                 'submittedAt' => $post->post_date,
                 'viewUrl' => $post->post_status === 'publish' ? get_permalink($post->ID) : null,
             ];

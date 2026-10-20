@@ -102,6 +102,8 @@ class C767_Meta_Fields
             'verified' => ['label' => 'Verified badge', 'type' => 'boolean'],
             'featured' => ['label' => 'Show in homepage Featured section', 'type' => 'boolean'],
             'booking_enabled' => ['label' => 'Accept booking requests (owner-toggled from their dashboard)', 'type' => 'boolean'],
+            'booking_price_cents' => ['label' => 'Booking price (USD cents; 0 for free)', 'type' => 'integer'],
+            'booking_duration_minutes' => ['label' => 'Booking duration (minutes)', 'type' => 'integer'],
             'rating' => ['label' => 'Rating (0–5)', 'type' => 'number'],
             'review_count' => ['label' => 'Review count', 'type' => 'integer'],
             'location_display' => ['label' => 'Location (display text, e.g. "Roseau, Dominica")', 'type' => 'string'],

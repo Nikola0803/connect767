@@ -402,7 +402,7 @@ export async function submitListing(form) {
   (form.galleryFiles || []).forEach((file) => payload.append("gallery[]", file));
 
   const created = await customClient.post("/listings", payload);
-  await setBookingEnabled(created?.id, form.bookingEnabled);
+  await saveBookingSettings(created?.id, form);
   return created;
 }
 
@@ -433,6 +433,22 @@ export async function submitBooking(slug, payload) {
   return customClient.post(`/listings/${slug}/bookings`, payload);
 }
 
+export async function createBookingCheckout(bookingId, accessToken) {
+  return customClient.post(`/bookings/${bookingId}/checkout`, { accessToken });
+}
+
+export async function confirmBookingPayment(bookingId, accessToken) {
+  return customClient.post(`/bookings/${bookingId}/confirm`, { accessToken });
+}
+
+export async function createBookingPaypalOrder(bookingId, accessToken) {
+  return customClient.post(`/bookings/${bookingId}/paypal-order`, { accessToken });
+}
+
+export async function captureBookingPaypalOrder(bookingId, accessToken) {
+  return customClient.post(`/bookings/${bookingId}/paypal-capture`, { accessToken });
+}
+
 export async function submitReview(slug, { rating, name, text }) {
   if (!isLiveApi) {
     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -456,13 +472,22 @@ export async function setListingTier(listingId, tier) {
   return customClient.post(`/listings/${listingId}/tier`, { tier });
 }
 
-async function setBookingEnabled(listingId, enabled) {
+async function saveBookingSettings(listingId, form) {
   if (!listingId) return;
-  try {
-    await customClient.post(`/listings/${listingId}/booking`, { enabled: enabled ? 1 : 0 });
-  } catch {
-    /* listing itself saved fine — surfacing this would be more alarming than useful */
+  const dollars = Number(form.bookingPrice || 0);
+  return customClient.post(`/listings/${listingId}/booking`, {
+    enabled: form.bookingEnabled ? 1 : 0,
+    bookingPriceCents: Number.isFinite(dollars) ? Math.max(0, Math.round(dollars * 100)) : 0,
+    bookingDurationMinutes: Number(form.bookingDurationMinutes) || 30,
+    bookingMeetingUrl: form.bookingMeetingUrl || "",
+  });
+}
+
+export async function getBookingSettings(listingId) {
+  if (!isLiveApi) {
+    return { bookingEnabled: false, bookingPriceCents: 0, bookingDurationMinutes: 30, bookingMeetingUrl: "" };
   }
+  return customClient.get(`/listings/${listingId}/booking`);
 }
 
 /**
@@ -515,7 +540,7 @@ export async function updateListing(id, form) {
   (form.galleryFiles || []).forEach((file) => payload.append("gallery[]", file));
 
   const updated = await customClient.post(`/listings/${id}`, payload);
-  await setBookingEnabled(id, form.bookingEnabled);
+  await saveBookingSettings(id, form);
   return updated;
 }
 
@@ -531,6 +556,16 @@ export async function getMyListings() {
     return [];
   }
   return customClient.get("/listings/mine");
+}
+
+export async function getMyBookings() {
+  if (!isLiveApi) return [];
+  return customClient.get("/bookings/mine");
+}
+
+export async function setBookingStatus(bookingId, status) {
+  if (!isLiveApi) return { id: bookingId, status };
+  return customClient.post(`/bookings/${bookingId}/status`, { status });
 }
 
 // ---------- Vendor marketplace ("Buy" cards on a Classified listing) ----------

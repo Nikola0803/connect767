@@ -121,6 +121,24 @@ describe("mapListingCpt", () => {
     expect(free.badge).toBe("Free");
   });
 
+  it("maps public booking price and duration without exposing a meeting link", () => {
+    const mapped = mapListingCpt({
+      id: 4,
+      slug: "consultation",
+      title: "Consultation",
+      acf: {
+        booking_enabled: "1",
+        booking_price_cents: "7500",
+        booking_duration_minutes: "60",
+        booking_meeting_url: "https://meet.example.com/private",
+      },
+    });
+    expect(mapped.bookingEnabled).toBe(true);
+    expect(mapped.bookingPriceCents).toBe(7500);
+    expect(mapped.bookingDurationMinutes).toBe(60);
+    expect(mapped).not.toHaveProperty("bookingMeetingUrl");
+  });
+
   it("strips HTML from a rendered title", () => {
     const mapped = mapListingCpt({ id: 1, slug: "a", title: { rendered: "<strong>Acme</strong> Co" }, acf: {} });
     expect(mapped.title).toBe("Acme Co");
