@@ -1,86 +1,61 @@
 <?php
 /**
- * Annually increments every listing's `years_experience` meta on January 1st.
- * Registered as a WP-Cron event; fires once per year via the custom
- * `c767_yearly` schedule added here.
+ * Migrates legacy experience values to the date-based model.
  *
- * The cron fires at midnight UTC on Jan 1st (WP stores timestamps as UTC).
- * Only listings with a numeric `years_experience` value are touched — listings
- * that left the field blank stay blank so the profile keeps showing nothing
- * rather than an incorrect "1 Yr Exp." badge after the first increment.
+ * Older plugin versions incremented `years_experience` with a yearly
+ * WP-Cron event. The current value is now a baseline and the public total is
+ * calculated from `years_experience_as_of_year` whenever a listing is read.
+ * This stays correct even when WP-Cron is late or disabled.
  */
 class C767_Experience_Cron
 {
-    const HOOK     = 'c767_increment_years_experience';
-    const SCHEDULE = 'c767_yearly';
+    const LEGACY_HOOK = 'c767_increment_years_experience';
+    const MIGRATION_OPTION = 'c767_experience_baseline_v1';
 
     public static function init(): void
     {
-        add_filter('cron_schedules', [__CLASS__, 'add_yearly_schedule']);
-        add_action('wp', [__CLASS__, 'schedule_event']);
-        add_action(self::HOOK, [__CLASS__, 'run']);
+        add_action('init', [__CLASS__, 'migrate_legacy_values'], 20);
+        add_action(self::LEGACY_HOOK, [__CLASS__, 'migrate_legacy_values']);
     }
 
-    public static function add_yearly_schedule(array $schedules): array
+    public static function migrate_legacy_values(): void
     {
-        if (!isset($schedules[self::SCHEDULE])) {
-            $schedules[self::SCHEDULE] = [
-                'interval' => YEAR_IN_SECONDS,
-                'display'  => __('Once a year', 'connect767-cms'),
-            ];
+        // Stop the former annual increment from double-counting now that the
+        // displayed value is derived from a dated baseline.
+        if (wp_next_scheduled(self::LEGACY_HOOK)) {
+            wp_clear_scheduled_hook(self::LEGACY_HOOK);
         }
-        return $schedules;
-    }
 
-    /**
-     * Schedule the first event at the next January 1st 00:00 UTC, then let
-     * WP-Cron repeat it annually via the interval above.
-     */
-    public static function schedule_event(): void
-    {
-        if (wp_next_scheduled(self::HOOK)) {
+        if (get_option(self::MIGRATION_OPTION)) {
             return;
         }
 
-        // Find the next Jan 1st midnight UTC from now.
-        $now  = current_time('timestamp', true); // UTC
-        $year = (int) gmdate('Y', $now);
-        $next = mktime(0, 0, 0, 1, 1, $year + 1); // Jan 1 next year, UTC
-
-        wp_schedule_event($next, self::SCHEDULE, self::HOOK);
-    }
-
-    /**
-     * Query all published listings that have a numeric years_experience and
-     * increment each one by 1. Runs in batches of 200 to stay within
-     * typical PHP memory limits even on large directories.
-     */
-    public static function run(): void
-    {
-        $offset = 0;
-        $batch  = 200;
+        $current_year = (int) gmdate('Y');
 
         do {
             $posts = get_posts([
                 'post_type'      => 'listing',
-                'post_status'    => 'publish',
-                'posts_per_page' => $batch,
-                'offset'         => $offset,
+                'post_status'    => 'any',
+                'posts_per_page' => 200,
                 'fields'         => 'ids',
-                'meta_query'     => [[
-                    'key'     => 'years_experience',
-                    'compare' => 'EXISTS',
-                ]],
+                'meta_query'     => [
+                    'relation' => 'AND',
+                    [
+                        'key'     => 'years_experience',
+                        'compare' => 'EXISTS',
+                    ],
+                    [
+                        'key'     => 'years_experience_as_of_year',
+                        'compare' => 'NOT EXISTS',
+                    ],
+                ],
             ]);
 
             foreach ($posts as $id) {
-                $current = get_post_meta($id, 'years_experience', true);
-                if (is_numeric($current)) {
-                    update_post_meta($id, 'years_experience', (string)((int) $current + 1));
-                }
+                update_post_meta($id, 'years_experience_as_of_year', $current_year);
             }
+        } while (count($posts) === 200);
 
-            $offset += $batch;
-        } while (count($posts) === $batch);
+        update_option(self::MIGRATION_OPTION, $current_year, false);
     }
 }

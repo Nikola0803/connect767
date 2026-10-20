@@ -138,6 +138,7 @@ class C767_Meta_Fields
                 'options' => ['', '0-5 years', '5-10 years', '10-15 years', '15-20 years', '20+ years'],
             ],
             'years_experience' => ['label' => 'Years of experience (exact number, shown on the profile)', 'type' => 'string'],
+            'years_experience_as_of_year' => ['label' => 'Experience recorded in year (managed automatically)', 'type' => 'integer'],
             'tags' => ['label' => 'Tags (one per line)', 'type' => 'array'],
             'amenities' => ['label' => 'Amenities (one per line)', 'type' => 'array'],
             'hours' => ['label' => 'Hours (one per line, e.g. "Mon–Sat 9am–6pm")', 'type' => 'array'],
@@ -183,6 +184,7 @@ class C767_Meta_Fields
             'cover_position',
             'cover_zoom',
             'cover_fit',
+            'years_experience_as_of_year',
         ];
 
         return array_values(array_diff(array_keys(self::listing_fields()), $excluded));
@@ -688,7 +690,17 @@ class C767_Meta_Fields
 
     public static function save_listing_meta($post_id)
     {
+        if (!isset($_POST['c767_meta_nonce']) || !wp_verify_nonce($_POST['c767_meta_nonce'], 'c767_save_meta')) {
+            return;
+        }
+        if (!current_user_can('edit_post', $post_id)) {
+            return;
+        }
         self::save_fields($post_id, self::listing_fields());
+        if (isset($_POST['c767_years_experience'])) {
+            $years = trim((string) wp_unslash($_POST['c767_years_experience']));
+            update_post_meta($post_id, 'years_experience_as_of_year', $years === '' ? '' : (int) gmdate('Y'));
+        }
     }
 
     public static function save_uniform_template_meta($post_id)

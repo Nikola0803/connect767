@@ -629,7 +629,7 @@ export default function AddListingPage() {
                   <FormField
                     label="Years of Experience"
                     htmlFor="yearsExperience"
-                    hint="Shown on your profile, e.g. 12 Years of Experience"
+                    hint="Enter the current total once. It will increase automatically each calendar year."
                     required
                   >
                     <Input

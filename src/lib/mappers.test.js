@@ -167,6 +167,21 @@ describe("mapListingCpt", () => {
     expect(mapped.amenities).toEqual(["Virtual appointments"]);
   });
 
+  it("advances years of experience from the year in which it was recorded", () => {
+    const thisYear = new Date().getUTCFullYear();
+    const mapped = mapListingCpt({
+      id: 6,
+      slug: "experienced-advisor",
+      title: "Experienced Advisor",
+      acf: {
+        years_experience: "12",
+        years_experience_as_of_year: String(thisYear - 2),
+      },
+    });
+
+    expect(mapped.yearsExperience).toBe("14");
+  });
+
   it("strips HTML from a rendered title", () => {
     const mapped = mapListingCpt({ id: 1, slug: "a", title: { rendered: "<strong>Acme</strong> Co" }, acf: {} });
     expect(mapped.title).toBe("Acme Co");

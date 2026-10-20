@@ -1,4 +1,5 @@
 import { createListingSearchText } from "./listingSearch";
+import { currentYearsExperience } from "./experience";
 
 /**
  * Mappers between raw WordPress/WooCommerce REST API shapes and the flat
@@ -171,6 +172,10 @@ export function mapListingCpt(wp) {
 
   const title = stripHtml(wp.title?.rendered || wp.title || "");
   const category = decodeEntities(acf.category_label || categoryTerm?.name || "");
+  const yearsExperience = currentYearsExperience(
+    acf.years_experience,
+    acf.years_experience_as_of_year,
+  );
   const publicProfile = {
     title,
     slug: wp.slug,
@@ -195,7 +200,7 @@ export function mapListingCpt(wp) {
     education: acf.education || "",
     degreeType: acf.degree_type || "",
     experienceLevel: acf.experience_level || "",
-    yearsExperience: acf.years_experience || "",
+    yearsExperience,
     tags: acf.tags || [],
     amenities: acf.amenities || [],
     hours: acf.hours || [],
@@ -279,7 +284,7 @@ export function mapListingCpt(wp) {
     education: acf.education || "",
     degreeType: acf.degree_type || "",
     experienceLevel: acf.experience_level || "",
-    yearsExperience: acf.years_experience ? String(acf.years_experience) : "",
+    yearsExperience,
     // Crop anchor + zoom the owner picked in AddListingPage.jsx's
     // PositionPicker — see src/lib/imagePosition.js's imageCropStyle(),
     // applied wherever these images render (cards, full profile).

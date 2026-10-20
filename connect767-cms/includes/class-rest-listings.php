@@ -469,6 +469,7 @@ class C767_REST_Listings
         }
 
         $tier = $request->get_param('tier') === 'classified' ? 'Classified' : 'Free';
+        $years_experience = self::sanitize_years_experience($request->get_param('yearsExperience'));
         $meta = [
             'tier' => $tier,
             // Classified used to be recorded as a fully-formed paid tier
@@ -502,7 +503,8 @@ class C767_REST_Listings
             'education' => self::sanitize_education($request->get_param('education')),
             'degree_type' => sanitize_text_field((string) $request->get_param('degreeType')),
             'experience_level' => self::sanitize_experience_level($request->get_param('experienceLevel')),
-            'years_experience' => self::sanitize_years_experience($request->get_param('yearsExperience')),
+            'years_experience' => $years_experience,
+            'years_experience_as_of_year' => $years_experience === '' ? '' : (int) gmdate('Y'),
             'verified' => '0',
             'featured' => '0',
             'rating' => '0',
@@ -570,6 +572,7 @@ class C767_REST_Listings
             self::assign_category($post_id, $category);
         }
 
+        $years_experience = self::sanitize_years_experience($request->get_param('yearsExperience'));
         $meta = [
             'price_tier' => sanitize_text_field((string) $request->get_param('priceTier')),
             'location_display' => sanitize_text_field((string) $request->get_param('location')),
@@ -589,7 +592,8 @@ class C767_REST_Listings
             'education' => self::sanitize_education($request->get_param('education')),
             'degree_type' => sanitize_text_field((string) $request->get_param('degreeType')),
             'experience_level' => self::sanitize_experience_level($request->get_param('experienceLevel')),
-            'years_experience' => self::sanitize_years_experience($request->get_param('yearsExperience')),
+            'years_experience' => $years_experience,
+            'years_experience_as_of_year' => $years_experience === '' ? '' : (int) gmdate('Y'),
         ];
         foreach ($meta as $key => $value) {
             update_post_meta($post_id, $key, $value);
