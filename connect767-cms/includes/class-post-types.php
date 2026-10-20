@@ -35,16 +35,16 @@ class C767_Post_Types
      * sitting next to Services/Products/Rentals, which then showed up as a
      * major category on the directory page and the homepage pills.
      *
-     * This walks data/category-taxonomy.json and, for every top-level
-     * listing_category term whose slug is actually an industry slug,
-     * moves it under its canonical parent category and restores its proper
+     * This walks data/category-taxonomy.json and, for every
+     * listing_category term whose slug is an industry slug, moves it under
+     * its canonical parent category and restores its proper
      * label ("Accounting & Bookkeeping" instead of the raw slug). Existing
      * listing assignments are preserved — the term keeps its ID, only its
      * parent and name change.
      */
     public static function cleanup_stray_industry_terms()
     {
-        if (get_option('c767_stray_industry_cleanup_1')) {
+        if (get_option('c767_stray_industry_cleanup_2')) {
             return;
         }
         // Don't burn the one-shot flag before the taxonomy JSON is readable.
@@ -71,18 +71,17 @@ class C767_Post_Types
             }
         }
 
-        $top_level = get_terms([
+        $terms = get_terms([
             'taxonomy' => 'listing_category',
             'hide_empty' => false,
-            'parent' => 0,
         ]);
-        if (is_wp_error($top_level)) {
+        if (is_wp_error($terms)) {
             return; // Taxonomy not ready yet; retry on the next request.
         }
 
-        foreach ($top_level as $term) {
+        foreach ($terms as $term) {
             if (!isset($industry_map[$term->slug])) {
-                continue; // A legitimate top-level category — leave it alone.
+                continue; // A parent category or non-canonical term — leave it alone.
             }
             $info = $industry_map[$term->slug];
 
@@ -120,7 +119,7 @@ class C767_Post_Types
         // so the very next term query already sees the new parents.
         delete_option('listing_category_children');
 
-        update_option('c767_stray_industry_cleanup_1', 1);
+        update_option('c767_stray_industry_cleanup_2', 1);
     }
 
     public static function register_post_types()

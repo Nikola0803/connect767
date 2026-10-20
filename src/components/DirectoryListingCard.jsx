@@ -12,8 +12,8 @@ const mainCategoryLabel = (listing) => {
   return (
     getCategoryLabel(listing.parentCategorySlug) ||
     getCategoryLabel(listing.categoryPath) ||
-    getCategoryLabel(listing.categorySlug) ||
     getCategoryLabel(industryParent) ||
+    getCategoryLabel(listing.categorySlug) ||
     "Other"
   );
 };

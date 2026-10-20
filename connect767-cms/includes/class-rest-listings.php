@@ -38,11 +38,6 @@ class C767_REST_Listings
      */
     private static function resolve_category_term($slug)
     {
-        $existing = get_term_by('slug', $slug, 'listing_category');
-        if ($existing && !is_wp_error($existing)) {
-            return (int) $existing->term_id;
-        }
-
         $taxonomy_file = C767_PLUGIN_DIR . 'data/category-taxonomy.json';
         if (!file_exists($taxonomy_file)) {
             return 0;
@@ -55,6 +50,10 @@ class C767_REST_Listings
         foreach ($taxonomy as $cat) {
             // The submitted slug can also be a top-level category slug.
             if (($cat['slug'] ?? '') === $slug) {
+                $existing = get_term_by('slug', $slug, 'listing_category');
+                if ($existing && !is_wp_error($existing)) {
+                    return (int) $existing->term_id;
+                }
                 $created = wp_insert_term($cat['label'], 'listing_category', ['slug' => $cat['slug']]);
                 return is_wp_error($created) ? 0 : (int) $created['term_id'];
             }
@@ -73,6 +72,25 @@ class C767_REST_Listings
                     }
                     $parent_id = (int) $created_parent['term_id'];
                 }
+
+                // Repair an existing canonical industry if an older plugin
+                // version created it as a top-level term. Reusing it without
+                // fixing the parent leaves cards and category filters with no
+                // trustworthy parent-category relationship.
+                $existing = get_term_by('slug', $slug, 'listing_category');
+                if ($existing && !is_wp_error($existing)) {
+                    if ((int) $existing->parent !== $parent_id || $existing->name !== $industry['label']) {
+                        $updated = wp_update_term($existing->term_id, 'listing_category', [
+                            'parent' => $parent_id,
+                            'name' => $industry['label'],
+                        ]);
+                        if (is_wp_error($updated)) {
+                            return 0;
+                        }
+                    }
+                    return (int) $existing->term_id;
+                }
+
                 $created = wp_insert_term($industry['label'], 'listing_category', [
                     'slug' => $industry['slug'],
                     'parent' => $parent_id,

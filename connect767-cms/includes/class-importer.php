@@ -235,8 +235,8 @@ class C767_Importer
     // ---------- Listings ----------
 
     /**
-     * Builds the full hierarchical taxonomy — 26 top-level categories with
-     * 191 industries nested under them — from category-taxonomy.json (the
+     * Builds the full hierarchical taxonomy — 7 top-level categories with
+     * 192 industries nested under them — from category-taxonomy.json (the
      * same canonical list src/data/industries.js in the frontend ships
      * with). Returns a lookup of slug => term_id for both categories and
      * industries so import_listings() can assign the right terms by ID

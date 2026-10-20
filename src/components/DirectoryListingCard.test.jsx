@@ -27,4 +27,52 @@ describe("DirectoryListingCard parent category", () => {
     expect(screen.getByText("Services")).toBeInTheDocument();
     expect(screen.queryByText("Directory profile")).not.toBeInTheDocument();
   });
+
+  it("uses a known industry's parent before stale legacy category data", () => {
+    render(
+      <MemoryRouter>
+        <DirectoryListingCard
+          listing={{
+            ...listing,
+            parentCategorySlug: "",
+            categorySlug: "other",
+          }}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Services")).toBeInTheDocument();
+  });
+
+  it("uses Other only when no industry can be associated with a parent", () => {
+    render(
+      <MemoryRouter>
+        <DirectoryListingCard
+          listing={{
+            ...listing,
+            parentCategorySlug: "",
+            categorySlug: "",
+            industrySlug: "unknown-industry",
+          }}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Other")).toBeInTheDocument();
+  });
+
+  it("keeps Other when it is explicitly selected as the parent category", () => {
+    render(
+      <MemoryRouter>
+        <DirectoryListingCard
+          listing={{
+            ...listing,
+            parentCategorySlug: "other",
+          }}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Other")).toBeInTheDocument();
+  });
 });

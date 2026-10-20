@@ -181,6 +181,10 @@
         "label": "Electronic/Phone Repair Service"
       },
       {
+        "slug": "engineering-management",
+        "label": "Engineering Management"
+      },
+      {
         "slug": "entertainment",
         "label": "Entertainment"
       },
@@ -604,7 +608,7 @@
         "label": "Craftsmanship"
       },
       {
-        "slug": "culinary-arts",
+        "slug": "culinary-arts-products",
         "label": "Culinary Arts"
       },
       {
@@ -737,7 +741,7 @@
         "label": "Cultural"
       },
       {
-        "slug": "dancing",
+        "slug": "dancing-events",
         "label": "Dancing"
       },
       {
@@ -745,7 +749,7 @@
         "label": "Education"
       },
       {
-        "slug": "fitness",
+        "slug": "fitness-events",
         "label": "Fitness"
       },
       {
@@ -780,7 +784,7 @@
         "label": "Exercise"
       },
       {
-        "slug": "fitness-training",
+        "slug": "fitness-training-fitness",
         "label": "Fitness Training"
       },
       {

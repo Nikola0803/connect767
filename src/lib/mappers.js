@@ -171,10 +171,10 @@ export function mapListingCpt(wp) {
   const categoryTerm = allCatTerms.find((t) => !t.parent) || allCatTerms[0];
   const industryTerm = allCatTerms.find((t) => t.parent);
   const parentCategorySlug =
-    findCategory(categoryTerm?.slug)?.slug ||
     findIndustry(industryTerm?.slug)?.categorySlug ||
-    findCategory(acf.category_slug)?.slug ||
     findIndustry(acf.category_slug)?.categorySlug ||
+    findCategory(categoryTerm?.slug)?.slug ||
+    findCategory(acf.category_slug)?.slug ||
     "";
 
   const title = stripHtml(wp.title?.rendered || wp.title || "");
