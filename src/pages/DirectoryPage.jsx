@@ -126,7 +126,7 @@ export default function DirectoryPage() {
               Dominica Directory
             </div>
             <h1 className="font-heading text-3xl md:text-4xl font-light leading-tight text-foreground-950">
-              Find the right local <span className="italic text-accent-500">connection.</span>
+              Find the right local <span className="italic text-accent-500">Service Provider</span>
             </h1>
             <p className="mt-2 text-sm md:text-base text-foreground-600">
               Search trusted talent, businesses, products and services across Dominica.
