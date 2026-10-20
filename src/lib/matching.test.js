@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { matchListingsLocally } from "./matching";
+import { hydrateMatchedListings, matchListingsLocally } from "./matching";
 
 const listings = [
   { id: 1, categorySlug: "tours", price: "$$", rating: "4.8", badge: "Classified", location: "Roseau, Dominica" },
@@ -64,5 +64,34 @@ describe("matchListingsLocally", () => {
     const original = JSON.parse(JSON.stringify(listings));
     matchListingsLocally(listings, { categorySlug: "tours", priority: "location", location: "Roseau" });
     expect(listings).toEqual(original);
+  });
+});
+
+describe("hydrateMatchedListings", () => {
+  it("adds the mapped cover photo data without changing rank order or scores", () => {
+    const ranked = [
+      { id: 2, slug: "second", title: "Second", matchScore: 93 },
+      { id: 1, slug: "first", title: "First", matchScore: 81 },
+    ];
+    const mapped = [
+      { id: 1, slug: "first", image: "first.jpg", coverFit: "contain", coverPosition: "center" },
+      { id: 2, slug: "second", image: "second.jpg", coverFit: "cover", coverPosition: "40% 60%" },
+    ];
+
+    const hydrated = hydrateMatchedListings(ranked, mapped);
+
+    expect(hydrated.map((item) => item.slug)).toEqual(["second", "first"]);
+    expect(hydrated.map((item) => item.matchScore)).toEqual([93, 81]);
+    expect(hydrated[0]).toMatchObject({
+      image: "second.jpg",
+      coverFit: "cover",
+      coverPosition: "40% 60%",
+    });
+    expect(hydrated[1]).toMatchObject({ image: "first.jpg", coverFit: "contain" });
+  });
+
+  it("keeps a compact match row when its full listing cannot be found", () => {
+    const ranked = [{ id: 99, slug: "missing", matchScore: 55 }];
+    expect(hydrateMatchedListings(ranked, [])).toEqual(ranked);
   });
 });

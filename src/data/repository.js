@@ -9,7 +9,7 @@ import {
   mapProductTypeCpt,
   decodeEntities,
 } from "../lib/mappers";
-import { matchListingsLocally } from "../lib/matching";
+import { hydrateMatchedListings, matchListingsLocally } from "../lib/matching";
 import { allIndustries } from "./industries";
 import { createListingSearchText } from "../lib/listingSearch";
 
@@ -250,7 +250,15 @@ export async function getDirectoryCategories() {
  */
 export async function matchListings(criteria) {
   if (isLiveApi) {
-    return customClient.post("/match", criteria);
+    // `/match` returns ranking metadata, not complete WordPress listing
+    // records. Hydrate its rows from the same mapper-backed collection used
+    // by Browse Directory so AI results include the real featured cover photo
+    // and its saved fit/position settings.
+    const [rankedMatches, listings] = await Promise.all([
+      customClient.post("/match", criteria),
+      getListings(),
+    ]);
+    return hydrateMatchedListings(rankedMatches, listings);
   }
   const listings = await getListings();
   return matchListingsLocally(listings, criteria);

@@ -69,3 +69,21 @@ export function matchListingsLocally(listings, criteria) {
     .map((listing) => ({ ...listing, matchScore: scoreListing(listing, criteria) }))
     .sort((a, b) => b.matchScore - a.matchScore);
 }
+
+/**
+ * The live match endpoint intentionally returns a compact ranked row, while
+ * directory cards need the fully mapped WordPress listing (featured image,
+ * cover fit/position, credentials, category labels, etc.). Merge without
+ * changing the server's ranking order or score.
+ */
+export function hydrateMatchedListings(rankedMatches, listings) {
+  const byId = new Map(listings.map((listing) => [String(listing.id), listing]));
+  const bySlug = new Map(listings.map((listing) => [listing.slug, listing]));
+
+  return rankedMatches.map((match) => {
+    const listing = byId.get(String(match.id)) || bySlug.get(match.slug);
+    return listing
+      ? { ...match, ...listing, matchScore: match.matchScore }
+      : match;
+  });
+}
