@@ -16,6 +16,13 @@ const industryLabel = (listing) =>
     : listing.category) ||
   getCategoryLabel(listing.categorySlug);
 
+const cardCategoryLabel = (listing) =>
+  getCategoryLabel(listing.categorySlug) ||
+  listing.categoryLabel ||
+  String(listing.category || "").split("·")[0].trim() ||
+  listing.industryLabel ||
+  "Listing";
+
 function BookingSignal({ listing }) {
   if (!listing.bookingEnabled) return null;
   const price = Number(listing.bookingPriceCents) > 0
@@ -56,7 +63,7 @@ function ListingIdentity({ listing, compact = false }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary-700 truncate">
-            {getCategoryLabel(listing.categorySlug) || "Directory profile"}
+            {cardCategoryLabel(listing)}
           </p>
           <h3 className={`${compact ? "text-xl" : "text-lg"} font-heading font-medium text-foreground-950 group-hover:text-primary-700 transition-colors leading-snug flex items-center gap-1.5 mt-1`}>
             <span className="line-clamp-2">{listing.title}</span>
