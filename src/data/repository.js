@@ -28,6 +28,7 @@ import { products as localProducts, shopCategories as localShopCategories } from
 import {
   directoryListings as localListings,
   directoryCategories as localDirectoryCategories,
+  canonicalDirectoryCategories,
 } from "./directory";
 import { listingDetails as localListingDetails } from "./listingDetails";
 import { productTypes as localProductTypes } from "./customizer";
@@ -239,15 +240,15 @@ export async function getListingBySlug(slug) {
 export async function getDirectoryCategories() {
   if (isLiveApi) {
     const wp = await wpClient.get("/listing_category", { per_page: 50, parent: 0 });
-    return [
-      { slug: "all", label: "All Categories", icon: "ri-apps-2-line" },
-      // Drop industry slugs that ended up at the top level (see
-      // industrySlugSet above) — they belong under a parent category, not
-      // next to Services/Products/Rentals in the main filter.
-      ...wp
+    // Drop industry slugs that ended up at the top level, then reconcile the
+    // remaining terms with the canonical seven categories. This removes stale
+    // duplicate parents such as `eat-drink` while keeping the functional
+    // `eat-and-drink` category used by the industry selector.
+    return canonicalDirectoryCategories(
+      wp
         .filter((t) => !industrySlugSet.has(t.slug))
         .map((t) => ({ slug: t.slug, label: decodeEntities(t.name), icon: t.acf?.icon })),
-    ];
+    );
   }
   return localDirectoryCategories;
 }

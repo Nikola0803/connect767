@@ -11,6 +11,33 @@ export const directoryCategories = [
   ...categoryTaxonomy.map((c) => ({ label: c.label, slug: c.slug, icon: c.icon })),
 ];
 
+/**
+ * Keep the directory's main filter aligned with the canonical taxonomy even
+ * when WordPress contains legacy duplicate terms. For example, the live site
+ * currently has both `eat-drink` and `eat-and-drink` named "Eat & Drink";
+ * only the latter is wired to the site's industry taxonomy. Matching by slug
+ * first and label second lets us retain any CMS-provided icon without exposing
+ * the stale, nonfunctional term.
+ */
+export function canonicalDirectoryCategories(wordPressCategories = []) {
+  const cmsTerms = wordPressCategories.map((term) => ({
+    slug: term.slug,
+    label: term.label,
+    icon: term.icon,
+  }));
+
+  return directoryCategories.map((category) => {
+    if (category.slug === "all") return category;
+
+    const normalizedLabel = category.label.trim().toLowerCase();
+    const cmsMatch =
+      cmsTerms.find((term) => term.slug === category.slug) ||
+      cmsTerms.find((term) => term.label?.trim().toLowerCase() === normalizedLabel);
+
+    return cmsMatch?.icon ? { ...category, icon: cmsMatch.icon } : category;
+  });
+}
+
 export const tierOptions = [
   { label: "All Tiers", value: "all" },
   { label: "Classified", value: "Classified" },
