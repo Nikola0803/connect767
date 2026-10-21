@@ -120,17 +120,15 @@ export default function DirectoryPage() {
     <div className="pt-16 md:pt-20 min-h-screen bg-background-50">
       <div className="border-b border-background-200/70 bg-background-100/60">
         <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-8 md:py-10">
-          <div className="mb-6 max-w-2xl">
+          <div className="mb-4 max-w-2xl">
             <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-primary-700 mb-2">
               <span className="w-7 h-px bg-accent-500" />
-              <span><span className="text-primary-700">CONNECT</span><span className="text-accent-500">767</span>{" "}<span className="text-primary-700">Dominica’s Online Directory</span></span>
+              <span>
+                <span className="text-primary-700">CONNECT</span>
+                <span className="text-accent-500">767</span>{" "}
+                <span className="text-primary-700">Dominica’s Online Directory</span>
+              </span>
             </div>
-            <h1 className="font-heading text-3xl md:text-4xl font-light leading-tight text-foreground-950">
-              Find The Right Local <span className="italic text-accent-500">Service Provider.</span>
-            </h1>
-            <p className="mt-2 text-sm md:text-base text-foreground-600">
-              Search trusted talent, businesses, products and services across Dominica.
-            </p>
           </div>
 
           <div className="rounded-[1.4rem] border border-background-200/80 bg-background-50 shadow-[0_18px_50px_rgba(35,45,38,0.08)] overflow-hidden">
