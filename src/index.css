@@ -72,10 +72,38 @@
   --color-foreground-950: oklch(.09 .006 36);
 }
 
+html {
+  min-width: 320px;
+  min-height: 100%;
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+}
+
+body, #root {
+  min-height: 100%;
+}
+
 html, body {
   font-family: var(--font-body);
   background-color: var(--color-background-50);
   color: var(--color-foreground-950);
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+}
+
+img, picture, video, canvas, svg {
+  max-width: 100%;
+}
+
+img, video, canvas {
+  display: block;
+}
+
+button, a, input, select, textarea {
+  touch-action: manipulation;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -98,4 +126,28 @@ h1, h2, h3, h4, h5, h6 {
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+@media (max-width: 767px) {
+  input, select, textarea {
+    /* Prevent Safari from zooming the page when a form control receives focus. */
+    font-size: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .marquee-track {
+    animation: none;
+  }
 }

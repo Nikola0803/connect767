@@ -1,34 +1,49 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 // Routes that own the entire viewport — the studio is a full-screen tool,
 // so the site header/footer/cart chrome would only be distraction there.
 const CHROMELESS_ROUTES = ["/uniforms", "/shop/customize"];
 import Header from "./components/Header";
 import Footer from "./components/Footer";
-import HomePage from "./pages/HomePage";
-import ShopPage from "./pages/ShopPage";
-import ProductDetailPage from "./pages/ProductDetailPage";
-import CheckoutPage from "./pages/CheckoutPage";
-import CheckoutThankYouPage from "./pages/CheckoutThankYouPage";
-import DirectoryPage from "./pages/DirectoryPage";
-import ListingDetailPage from "./pages/ListingDetailPage";
-import AddListingPage from "./pages/AddListingPage";
-import MatchPage from "./pages/MatchPage";
-import AuthPage from "./pages/AuthPage";
-import DashboardPage from "./pages/DashboardPage";
-import BlogPage from "./pages/BlogPage";
-import BlogPostPage from "./pages/BlogPostPage";
-import UniformStudioPage from "./pages/UniformStudioPage";
-import ProductCustomizerPage from "./pages/ProductCustomizerPage";
-import AboutPage from "./pages/AboutPage";
-import HelpPage from "./pages/HelpPage";
-import PrivacyPage from "./pages/PrivacyPage";
-import SavedListingsPage from "./pages/SavedListingsPage";
-import NotFoundPage from "./pages/NotFoundPage";
 import { CartProvider } from "./hooks/useCart";
 import { SavedListingsProvider } from "./hooks/useSavedListings";
 import CartDrawer from "./components/CartDrawer";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ScrollToTop from "./components/ScrollToTop";
+
+// Keep each route in its own chunk. This prevents the 3D design studios and
+// dashboard code from slowing down the homepage on mobile connections.
+const HomePage = lazy(() => import("./pages/HomePage"));
+const ShopPage = lazy(() => import("./pages/ShopPage"));
+const ProductDetailPage = lazy(() => import("./pages/ProductDetailPage"));
+const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
+const CheckoutThankYouPage = lazy(() => import("./pages/CheckoutThankYouPage"));
+const DirectoryPage = lazy(() => import("./pages/DirectoryPage"));
+const ListingDetailPage = lazy(() => import("./pages/ListingDetailPage"));
+const AddListingPage = lazy(() => import("./pages/AddListingPage"));
+const MatchPage = lazy(() => import("./pages/MatchPage"));
+const AuthPage = lazy(() => import("./pages/AuthPage"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const BlogPage = lazy(() => import("./pages/BlogPage"));
+const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
+const UniformStudioPage = lazy(() => import("./pages/UniformStudioPage"));
+const ProductCustomizerPage = lazy(() => import("./pages/ProductCustomizerPage"));
+const AboutPage = lazy(() => import("./pages/AboutPage"));
+const HelpPage = lazy(() => import("./pages/HelpPage"));
+const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
+const SavedListingsPage = lazy(() => import("./pages/SavedListingsPage"));
+const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
+
+function RouteLoading() {
+  return (
+    <div className="min-h-[60dvh] flex items-center justify-center px-4" role="status">
+      <div className="flex items-center gap-3 text-sm font-semibold text-foreground-600">
+        <span className="h-5 w-5 rounded-full border-2 border-primary-200 border-t-primary-600 animate-spin" />
+        Loading…
+      </div>
+    </div>
+  );
+}
 
 function RouteBoundary({ children }) {
   // Keyed by pathname so navigating to a different page always gets a
@@ -43,7 +58,7 @@ function Chrome({ children }) {
   const bare = CHROMELESS_ROUTES.includes(pathname);
 
   if (bare) {
-    return <main className="w-full h-screen overflow-hidden bg-background-50">{children}</main>;
+    return <main className="w-full h-[100dvh] overflow-hidden bg-background-50">{children}</main>;
   }
 
   return (
@@ -63,7 +78,8 @@ function App() {
         <SavedListingsProvider>
           <ScrollToTop />
           <Chrome>
-              <RouteBoundary>
+            <RouteBoundary>
+              <Suspense fallback={<RouteLoading />}>
                 <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/shop" element={<ShopPage />} />
@@ -88,7 +104,8 @@ function App() {
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
-              </RouteBoundary>
+              </Suspense>
+            </RouteBoundary>
           </Chrome>
         </SavedListingsProvider>
       </CartProvider>
