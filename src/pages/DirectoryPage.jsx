@@ -123,14 +123,14 @@ export default function DirectoryPage() {
         <div className="absolute -bottom-36 left-1/4 h-80 w-80 rounded-full bg-accent-500/15 blur-3xl pointer-events-none" />
         <div className="relative w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12 pt-10 pb-20 md:pt-14 md:pb-24">
           <div>
-            <div className="max-w-3xl">
+            <div className="max-w-5xl">
               <div className="inline-flex items-center rounded-full border border-background-50/15 bg-background-50/5 px-3 py-1.5 text-[10px] font-bold tracking-[0.12em]">
                 <span className="w-1.5 h-1.5 rounded-full bg-accent-400" />
                 <span className="ml-2 text-primary-200">CONNECT</span>
                 <span className="text-accent-400">767</span>
                 <span className="ml-1 text-background-50/85 tracking-[0.08em]">Dominica’s Online Directory</span>
               </div>
-              <h1 className="mt-4 font-heading text-[clamp(2.35rem,5vw,4.5rem)] font-medium leading-[0.98] tracking-[-0.04em]">
+              <h1 className="mt-4 whitespace-nowrap font-heading text-[clamp(1.1rem,5vw,4.5rem)] font-medium leading-[0.98] tracking-[-0.04em]">
                 Find your next <span className="italic text-accent-400">service provider</span>
               </h1>
             </div>
