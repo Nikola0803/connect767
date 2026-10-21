@@ -120,7 +120,6 @@ function ListingHighlights({ listing }) {
 
 function Cover({ listing, listView = false, saved = false, onToggleSaved }) {
   const coverPosition = listing.coverPosition || "top";
-  const hasFreeBooking = listing.bookingEnabled && Number(listing.bookingPriceCents) <= 0;
 
   return (
     <div className={`relative flex-shrink-0 ${listView ? "sm:w-64" : ""}`}>
@@ -139,24 +138,16 @@ function Cover({ listing, listView = false, saved = false, onToggleSaved }) {
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-foreground-950/35 via-transparent to-transparent pointer-events-none" />
       <TierBadge tier={listing.badge} className="absolute top-3 left-3" />
-      {(onToggleSaved || listing.bookingEnabled) && (
+      {onToggleSaved && (
         <div className="absolute top-3 right-3 flex flex-col items-end gap-2">
-          {onToggleSaved && (
-            <button
-              aria-label={saved ? "Remove from saved" : "Save listing"}
-              type="button"
-              onClick={(event) => onToggleSaved(event, listing)}
-              className="w-9 h-9 flex items-center justify-center rounded-full bg-background-50/95 backdrop-blur text-foreground-700 hover:text-accent-500 shadow-sm cursor-pointer"
-            >
-              <i className={saved ? "ri-heart-fill text-accent-500" : "ri-heart-line"} />
-            </button>
-          )}
-          {listing.bookingEnabled && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-background-50/95 backdrop-blur px-2.5 py-1 text-[10px] font-semibold text-primary-800 shadow-sm">
-              <i className="ri-calendar-check-fill text-xs" aria-hidden="true" />
-              {hasFreeBooking ? "Free booking" : "Booking"}
-            </span>
-          )}
+          <button
+            aria-label={saved ? "Remove from saved" : "Save listing"}
+            type="button"
+            onClick={(event) => onToggleSaved(event, listing)}
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-background-50/95 backdrop-blur text-foreground-700 hover:text-accent-500 shadow-sm cursor-pointer"
+          >
+            <i className={saved ? "ri-heart-fill text-accent-500" : "ri-heart-line"} />
+          </button>
         </div>
       )}
     </div>
