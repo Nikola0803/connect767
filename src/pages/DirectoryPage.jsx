@@ -278,7 +278,7 @@ export default function DirectoryPage() {
           {loading && (
             <CardSkeleton
               count={8}
-              className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3"
+              className="directory-card-grid"
             />
           )}
 
@@ -296,7 +296,7 @@ export default function DirectoryPage() {
             <div
               className={
                 view === "grid"
-                  ? "grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3"
+                  ? "directory-card-grid"
                   : "flex flex-col gap-5"
               }
             >
