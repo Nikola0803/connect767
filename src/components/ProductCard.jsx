@@ -10,6 +10,8 @@ export default function ProductCard({ product, onAddToCart }) {
       <div className="relative overflow-hidden">
         <div className="aspect-square w-full overflow-hidden">
           <img
+            loading="lazy"
+            decoding="async"
             alt={product.title}
             title={`${product.title} — Connect767 Shop`}
             className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"

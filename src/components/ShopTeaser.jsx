@@ -90,10 +90,12 @@ export default function ShopTeaser() {
 
           <div className="lg:col-span-6 order-1 lg:order-2 relative">
             <div className="relative rounded-3xl overflow-hidden bg-background-50/5 border border-background-50/10">
-              <div className="w-full h-[520px]">
+              <div className="w-full h-[340px] sm:h-[420px] lg:h-[520px]">
                 <img
                   alt="Curated island-made goods from the Connect767 Shop"
                   title="Connect767 Shop — island-made goods"
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover object-top"
                   src={shopHeroImage}
                 />

@@ -79,7 +79,7 @@ export default function WriteReviewModal({ listingSlug, listingTitle, onClose })
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground-950/50 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-background-50 rounded-2xl shadow-xl w-full max-w-md p-6">
+      <div className="bg-background-50 rounded-2xl shadow-xl w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto p-4 sm:p-6">
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-heading text-xl font-medium text-foreground-950">
             Review <span className="text-primary-700">{listingTitle}</span>

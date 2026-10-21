@@ -6,10 +6,12 @@ export default function Testimonial() {
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
           <div className="lg:col-span-5">
-            <div className="relative rounded-3xl overflow-hidden bg-accent-100 h-[520px]">
+            <div className="relative rounded-3xl overflow-hidden bg-accent-100 h-[360px] sm:h-[440px] lg:h-[520px]">
               <img
                 alt="Amara Joseph portrait"
                 title="Amara Joseph — Owner, Cocoa Palm Bistro"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover object-top"
                 src={testimonialImage}
               />

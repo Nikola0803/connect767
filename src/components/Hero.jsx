@@ -22,16 +22,18 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative w-full min-h-[720px] md:min-h-[820px] flex items-center overflow-hidden">
+    <section className="relative w-full min-h-[640px] sm:min-h-[720px] md:min-h-[820px] flex items-center overflow-hidden">
       <div className="absolute inset-0">
         <img
           alt="Local town street at golden hour"
+          fetchPriority="high"
+          decoding="async"
           className="w-full h-full object-cover object-top"
           src={heroImage}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-foreground-950/60 via-foreground-950/35 to-foreground-950/70" />
       </div>
-      <div className="relative z-10 w-full translate-y-20 md:translate-y-28 px-4 md:px-8 lg:px-12 pt-16 md:pt-20 pb-12">
+      <div className="relative z-10 w-full translate-y-12 sm:translate-y-20 md:translate-y-28 px-4 md:px-8 lg:px-12 pt-16 md:pt-20 pb-12">
         <div className="w-full max-w-7xl mx-auto text-center">
           <h1 className="font-heading text-background-50 text-[clamp(2.05rem,4.15vw,4.05rem)] font-semibold leading-[0.98] tracking-[-0.035em]">
             Dominica’s <span className="italic text-accent-400">Online Directory</span>
