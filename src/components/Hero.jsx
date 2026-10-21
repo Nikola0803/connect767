@@ -53,19 +53,12 @@ export default function Hero() {
                 />
               </div>
               <div className="flex items-center gap-2 pt-2 sm:pt-0 sm:pl-2 border-t sm:border-t-0 border-background-200">
-                <button
-                  type="submit"
-                  className="flex-1 sm:flex-none inline-flex h-11 sm:h-12 min-w-24 items-center justify-center gap-2 rounded-full bg-primary-600 px-4 text-sm font-semibold text-background-50 transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2"
-                >
-                  <i className="ri-search-line text-lg" aria-hidden="true" />
-                  Search
-                </button>
                 <Link
                   to="/match"
                   aria-label="Open AI Matching"
-                  className="flex-1 sm:flex-none inline-flex h-11 sm:h-12 min-w-24 items-center justify-center gap-2 rounded-full bg-foreground-950 px-4 text-sm font-semibold text-background-50 transition-colors hover:bg-foreground-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2"
+                  className="flex-1 sm:flex-none inline-flex h-11 sm:h-12 min-w-28 items-center justify-center gap-2 rounded-full bg-primary-600 px-5 text-sm font-semibold text-background-50 transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2"
                 >
-                  <i className="ri-sparkling-2-fill text-accent-400" aria-hidden="true" />
+                  <i className="ri-sparkling-2-fill text-background-50" aria-hidden="true" />
                   AI Match
                 </Link>
               </div>
