@@ -23,7 +23,7 @@ export default function CartDrawer() {
         />
       )}
       <div
-        className={`fixed top-0 right-0 h-full w-full sm:w-[420px] z-50 bg-background-50 shadow-lg transform transition-transform duration-300 ${
+        className={`fixed top-0 right-0 h-[100dvh] w-full sm:w-[420px] z-50 bg-background-50 shadow-lg transform transition-transform duration-300 ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -86,7 +86,7 @@ export default function CartDrawer() {
                   </div>
                 ))}
               </div>
-              <div className="px-5 py-4 border-t border-background-200/70">
+              <div className="px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-background-200/70">
                 <div className="flex items-center justify-between mb-4 text-sm">
                   <span className="text-foreground-600 font-label">Subtotal</span>
                   <span className="font-semibold text-foreground-950">${total.toFixed(2)}</span>

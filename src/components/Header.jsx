@@ -90,8 +90,8 @@ export default function Header() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${wrapClass}`}
     >
-      <div className="w-full px-4 md:px-8 lg:px-12 flex items-center h-16 md:h-20">
-        <Link className="flex items-center gap-2 cursor-pointer" to="/">
+      <div className="w-full px-3 sm:px-4 md:px-8 lg:px-12 flex items-center h-16 md:h-20 pt-[env(safe-area-inset-top)]">
+        <Link className="flex min-w-0 items-center gap-1.5 sm:gap-2 cursor-pointer" to="/">
           <img
             src={
               transparent
@@ -99,10 +99,11 @@ export default function Header() {
                 : `${WP_ORIGIN}/wp-content/uploads/2026/06/cropped-ChatGPT-Image-Jun-22-2026-11_54_52-AM.png`
             }
             alt="Connect767"
-            className="h-9 w-auto"
+            decoding="async"
+            className="h-8 sm:h-9 w-auto flex-shrink-0"
           />
           <span
-            className={`font-heading text-xl md:text-2xl font-semibold tracking-tight ${logoText}`}
+            className={`hidden min-[350px]:inline font-heading text-lg sm:text-xl md:text-2xl font-semibold tracking-tight ${logoText}`}
           >
             Connect<span className="text-accent-500">767</span>
           </span>
@@ -124,7 +125,7 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2 md:gap-3">
+        <div className="ml-auto flex items-center gap-1 sm:gap-2 md:gap-3">
           <Link
             to="/saved"
             aria-label="Saved listings"
@@ -218,8 +219,8 @@ export default function Header() {
 
       {/* Mobile menu panel */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-background-200/70 bg-background-50 max-h-[calc(100vh-4rem)] overflow-y-auto">
-          <nav className="flex flex-col p-4 gap-1">
+        <div className="md:hidden border-t border-background-200/70 bg-background-50 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain">
+          <nav className="flex flex-col p-4 pb-[max(1rem,env(safe-area-inset-bottom))] gap-1">
             {navItems.map((item) => (
               <NavLink
                 key={item.href}

@@ -27,14 +27,16 @@ const socials = [
 
 export default function Footer() {
   return (
-    <footer className="px-4 md:px-8 pb-8 pt-16 bg-background-50">
-      <div className="rounded-3xl bg-primary-950 text-background-50 px-6 md:px-12 py-12 md:py-16">
+    <footer className="px-3 sm:px-4 md:px-8 pb-4 sm:pb-8 pt-12 md:pt-16 bg-background-50">
+      <div className="rounded-2xl sm:rounded-3xl bg-primary-950 text-background-50 px-5 sm:px-6 md:px-12 py-10 sm:py-12 md:py-16 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <div className="lg:col-span-5">
             <div className="flex items-center gap-2 mb-6">
               <img
                 src={`${WP_ORIGIN}/wp-content/uploads/2026/07/logo-white.png`}
                 alt="Connect767"
+                loading="lazy"
+                decoding="async"
                 className="h-10 w-auto"
               />
               <span className="font-heading text-2xl font-semibold">

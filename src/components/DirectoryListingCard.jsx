@@ -123,6 +123,8 @@ function Cover({ listing, listView = false, saved = false, onToggleSaved }) {
     <div className={`relative flex-shrink-0 ${listView ? "sm:w-64" : ""}`}>
       <div className={`w-full overflow-hidden bg-background-100 ${listView ? "h-52 sm:h-full" : "h-48"}`}>
         <img
+          loading="lazy"
+          decoding="async"
           alt={`${listing.title} — ${industryLabel(listing)}`}
           title={`${listing.title} — ${industryLabel(listing)}`}
           className={`w-full h-full transition-transform duration-500 ${

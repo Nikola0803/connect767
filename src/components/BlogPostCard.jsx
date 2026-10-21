@@ -8,6 +8,8 @@ export default function BlogPostCard({ post }) {
     >
       <div className="w-full h-52 overflow-hidden">
         <img
+          loading="lazy"
+          decoding="async"
           alt={`${post.title} — ${post.tag}`}
           title={`${post.title} — ${post.tag}`}
           className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
