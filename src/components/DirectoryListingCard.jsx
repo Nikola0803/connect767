@@ -120,10 +120,11 @@ function ListingHighlights({ listing }) {
 
 function Cover({ listing, listView = false, saved = false, onToggleSaved }) {
   const coverPosition = listing.coverPosition || "top";
+  const hasFreeBooking = listing.bookingEnabled && Number(listing.bookingPriceCents) <= 0;
 
   return (
     <div className={`relative flex-shrink-0 ${listView ? "sm:w-64" : ""}`}>
-      <div className={`w-full overflow-hidden bg-background-100 ${listView ? "h-52 sm:h-full" : "aspect-[3/2]"}`}>
+      <div className={`w-full overflow-hidden bg-background-100 ${listView ? "h-52 sm:h-full" : "aspect-[4/3]"}`}>
         <img
           loading="lazy"
           decoding="async"
@@ -138,16 +139,24 @@ function Cover({ listing, listView = false, saved = false, onToggleSaved }) {
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-foreground-950/35 via-transparent to-transparent pointer-events-none" />
       <TierBadge tier={listing.badge} className="absolute top-3 left-3" />
-      {onToggleSaved && (
-        <div className="absolute top-3 right-3">
-          <button
-            aria-label={saved ? "Remove from saved" : "Save listing"}
-            type="button"
-            onClick={(event) => onToggleSaved(event, listing)}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-background-50/95 backdrop-blur text-foreground-700 hover:text-accent-500 shadow-sm cursor-pointer"
-          >
-            <i className={saved ? "ri-heart-fill text-accent-500" : "ri-heart-line"} />
-          </button>
+      {(onToggleSaved || listing.bookingEnabled) && (
+        <div className="absolute top-3 right-3 flex flex-col items-end gap-2">
+          {onToggleSaved && (
+            <button
+              aria-label={saved ? "Remove from saved" : "Save listing"}
+              type="button"
+              onClick={(event) => onToggleSaved(event, listing)}
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-background-50/95 backdrop-blur text-foreground-700 hover:text-accent-500 shadow-sm cursor-pointer"
+            >
+              <i className={saved ? "ri-heart-fill text-accent-500" : "ri-heart-line"} />
+            </button>
+          )}
+          {listing.bookingEnabled && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-background-50/95 backdrop-blur px-2.5 py-1 text-[10px] font-semibold text-primary-800 shadow-sm">
+              <i className="ri-calendar-check-fill text-xs" aria-hidden="true" />
+              {hasFreeBooking ? "Free booking" : "Booking"}
+            </span>
+          )}
         </div>
       )}
     </div>
@@ -197,7 +206,7 @@ export default function DirectoryListingCard({
   return (
     <Link
       to={`/listings/${listing.slug}`}
-      className={`group bg-background-50 rounded-2xl border border-background-200/70 overflow-hidden hover:border-primary-300 hover:shadow-sm transition-all flex flex-col cursor-pointer ${className}`}
+      className={`group bg-background-50 rounded-xl border border-background-200/70 overflow-hidden hover:border-background-300/80 transition-all duration-200 flex flex-col cursor-pointer ${className}`}
     >
       <Cover listing={listing} saved={saved} onToggleSaved={onToggleSaved} />
       <div className="p-4 flex flex-col flex-1 min-w-0">
