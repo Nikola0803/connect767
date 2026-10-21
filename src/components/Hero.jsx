@@ -39,7 +39,7 @@ export default function Hero() {
             Dominica’s <span className="italic text-accent-400">Online Directory</span>
           </h1>
           <p className="mt-1.5 font-heading text-background-50 text-[clamp(1.05rem,1.75vw,1.6rem)] font-medium leading-tight tracking-[-0.015em]">
-            Connecting Dominica to the <span className="italic text-accent-400">World.</span>
+            Dominica’s Trusted Directory for Talent, Services &amp; Opportunities.
           </p>
           <form onSubmit={handleSubmit} className="mt-4 max-w-4xl mx-auto">
             <div className="flex flex-col sm:flex-row sm:items-center overflow-hidden rounded-[2rem] sm:rounded-full bg-background-50 p-1.5 shadow-[0_10px_35px_rgba(0,0,0,0.22)] focus-within:shadow-[0_12px_42px_rgba(0,0,0,0.3)] transition-shadow">
