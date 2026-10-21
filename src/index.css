@@ -128,6 +128,24 @@ h1, h2, h3, h4, h5, h6 {
   display: none;
 }
 
+/* Keep profile cards crisp and comfortably sized while their first and last
+   edges stay aligned with the directory/search container. Auto-fit lets the
+   layout step down cleanly without stretching a short row into oversized
+   cards. */
+.directory-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 20rem));
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+
+@media (max-width: 639px) {
+  .directory-card-grid {
+    justify-content: center;
+  }
+}
+
 @media (max-width: 767px) {
   input, select, textarea {
     /* Prevent Safari from zooming the page when a form control receives focus. */
