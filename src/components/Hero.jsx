@@ -22,7 +22,7 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative w-full min-h-[720px] md:min-h-[820px] flex items-end overflow-hidden">
+    <section className="relative w-full min-h-[720px] md:min-h-[820px] flex items-center overflow-hidden">
       <div className="absolute inset-0">
         <img
           alt="Local town street at golden hour"
@@ -31,31 +31,44 @@ export default function Hero() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-foreground-950/60 via-foreground-950/35 to-foreground-950/70" />
       </div>
-      <div className="relative z-10 w-full px-4 md:px-8 lg:px-12 pb-24 md:pb-28">
-        <div className="w-full max-w-6xl mx-auto text-center">
-          <h1 className="font-heading text-background-50 text-[clamp(0.55rem,2.8vw,2.25rem)] font-light leading-tight tracking-[-0.02em] whitespace-nowrap">
-            Dominica’s Trusted Directory for Talent, Services &amp; Opportunities.
+      <div className="relative z-10 w-full translate-y-20 md:translate-y-28 px-4 md:px-8 lg:px-12 pt-16 md:pt-20 pb-12">
+        <div className="w-full max-w-7xl mx-auto text-center">
+          <h1 className="font-heading text-background-50 text-[clamp(2.05rem,4.15vw,4.05rem)] font-semibold leading-[0.98] tracking-[-0.035em]">
+            Dominica’s <span className="italic text-accent-400">Online Directory</span>
           </h1>
-          <form onSubmit={handleSubmit} className="mt-5 max-w-2xl mx-auto">
-            <div className="relative">
-              <i className="ri-search-line absolute left-5 top-1/2 -translate-y-1/2 text-foreground-400 text-xl pointer-events-none" />
-              <input
-                aria-label="Search the directory"
-                className="w-full pl-14 pr-28 sm:pr-36 py-4 rounded-full bg-background-50 text-foreground-950 placeholder-foreground-400 focus:outline-none focus:shadow-[0_4px_24px_rgba(0,0,0,0.18)] font-label text-base transition-shadow"
-                placeholder="Find local businesses, products, and services"
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-              <Link
-                to="/match"
-                aria-label="Open AI Matching"
-                className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center gap-1.5 h-11 px-3.5 sm:px-4 rounded-full bg-primary-500 text-background-50 text-sm font-semibold hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 transition-colors"
-              >
-                <i className="ri-sparkling-2-fill text-accent-400" aria-hidden="true" />
-                <span className="sm:hidden">AI</span>
-                <span className="hidden sm:inline">AI Match</span>
-              </Link>
+          <p className="mt-1.5 font-heading text-background-50 text-[clamp(1.05rem,1.75vw,1.6rem)] font-medium leading-tight tracking-[-0.015em]">
+            Connecting Dominica to the <span className="italic text-accent-400">World.</span>
+          </p>
+          <form onSubmit={handleSubmit} className="mt-4 max-w-4xl mx-auto">
+            <div className="flex flex-col sm:flex-row sm:items-center overflow-hidden rounded-[2rem] sm:rounded-full bg-background-50 p-1.5 shadow-[0_10px_35px_rgba(0,0,0,0.22)] focus-within:shadow-[0_12px_42px_rgba(0,0,0,0.3)] transition-shadow">
+              <div className="relative flex-1 min-w-0">
+                <i className="ri-search-line absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-primary-800 text-xl pointer-events-none" />
+                <input
+                  aria-label="Search the directory"
+                  className="w-full h-12 sm:h-14 pl-12 sm:pl-14 pr-4 bg-transparent text-foreground-950 placeholder-foreground-500 focus:outline-none font-label text-sm"
+                  placeholder="Discover Dominican businesses, professionals and service providers worldwide"
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-2 pt-2 sm:pt-0 sm:pl-2 border-t sm:border-t-0 border-background-200">
+                <button
+                  type="submit"
+                  className="flex-1 sm:flex-none inline-flex h-11 sm:h-12 min-w-24 items-center justify-center gap-2 rounded-full bg-primary-600 px-4 text-sm font-semibold text-background-50 transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2"
+                >
+                  <i className="ri-search-line text-lg" aria-hidden="true" />
+                  Search
+                </button>
+                <Link
+                  to="/match"
+                  aria-label="Open AI Matching"
+                  className="flex-1 sm:flex-none inline-flex h-11 sm:h-12 min-w-24 items-center justify-center gap-2 rounded-full bg-foreground-950 px-4 text-sm font-semibold text-background-50 transition-colors hover:bg-foreground-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2"
+                >
+                  <i className="ri-sparkling-2-fill text-accent-400" aria-hidden="true" />
+                  AI Match
+                </Link>
+              </div>
             </div>
           </form>
         </div>
