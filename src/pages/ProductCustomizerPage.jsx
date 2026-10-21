@@ -211,8 +211,8 @@ export default function ProductCustomizerPage() {
 
   if (submitted) {
     return (
-      <div className="fixed inset-0 h-screen bg-gradient-to-b from-background-50 to-primary-50/20 flex items-center justify-center z-50">
-        <div className="text-center max-w-lg">
+      <div className="fixed inset-0 h-[100dvh] overflow-y-auto bg-gradient-to-b from-background-50 to-primary-50/20 flex items-center justify-center p-4 z-50">
+        <div className="text-center max-w-lg py-8">
           {previewImg && (
             <img
               src={previewImg}
@@ -240,7 +240,7 @@ export default function ProductCustomizerPage() {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-background-50">
+      <div className="min-h-[100dvh] bg-background-50">
         <div className="flex items-center gap-3 px-4 md:px-8 lg:px-12 py-4 border-b border-background-200/70 bg-background-50/95 backdrop-blur">
           <Button to="/shop" variant="ghost" icon="ri-arrow-left-line" iconPosition="left" className="text-sm">
             Back to Shop
@@ -254,9 +254,9 @@ export default function ProductCustomizerPage() {
   // Design customization — FULL SCREEN MODE
   if (step === "design") {
     return (
-      <div className="fixed inset-0 h-screen w-screen bg-background-950 overflow-hidden flex flex-col z-40">
+      <div className="fixed inset-0 h-[100dvh] w-screen bg-background-950 overflow-hidden flex flex-col z-40">
         {/* Top bar with back button and product info */}
-        <div className="flex items-center justify-between px-6 py-4 bg-background-900 border-b border-background-800">
+        <div className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 bg-background-900 border-b border-background-800 pt-[max(.75rem,env(safe-area-inset-top))]">
           <button
             type="button"
             onClick={backToGallery}
@@ -265,14 +265,14 @@ export default function ProductCustomizerPage() {
             <i className="ri-arrow-left-line" />
             Back
           </button>
-          <h2 className="font-heading text-lg font-medium text-background-50">{product.label}</h2>
+          <h2 className="min-w-0 truncate px-2 font-heading text-base sm:text-lg font-medium text-background-50">{product.label}</h2>
           <div className="w-12" />
         </div>
 
         {/* Main content area */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden overscroll-contain">
           {/* Left: Color & text/logo options */}
-          <div className="w-64 bg-background-900 border-r border-background-800 overflow-y-auto p-6">
+          <div className="order-2 md:order-1 w-full md:w-64 flex-shrink-0 bg-background-900 border-t md:border-t-0 md:border-r border-background-800 overflow-visible md:overflow-y-auto p-4 md:p-6">
             <SimpleDesignPanel
               colorPalette={colorPalette}
               color={color}
@@ -288,7 +288,7 @@ export default function ProductCustomizerPage() {
           </div>
 
           {/* Center: Canvas */}
-          <div className="flex-1 flex flex-col items-center justify-center gap-4 p-6">
+          <div className="order-1 md:order-2 w-full md:flex-1 min-h-[500px] md:min-h-0 flex flex-col items-center justify-center gap-3 sm:gap-4 p-3 sm:p-5 md:p-6">
             {product.placements.length > 1 && (
               <div className="flex items-center gap-1.5">
                 {product.placements.map((p) => (
@@ -337,7 +337,7 @@ export default function ProductCustomizerPage() {
           </div>
 
           {/* Right: Layer controls & order button */}
-          <div className="w-64 bg-background-900 border-l border-background-800 overflow-y-auto p-6 flex flex-col">
+          <div className="order-3 w-full md:w-64 flex-shrink-0 bg-background-900 border-t md:border-t-0 md:border-l border-background-800 overflow-visible md:overflow-y-auto p-4 md:p-6 pb-[max(1rem,env(safe-area-inset-bottom))] flex flex-col">
             <div className="flex-1">
               {selectedLayer && stageMode === "edit" ? (
                 <div className="space-y-4">
@@ -385,8 +385,8 @@ export default function ProductCustomizerPage() {
   // Order details
   if (step === "order") {
     return (
-      <div className="fixed inset-0 h-screen w-screen bg-background-950 overflow-y-auto flex items-center justify-center z-40">
-        <div className="w-full max-w-md p-6">
+      <div className="fixed inset-0 h-[100dvh] w-screen bg-background-950 overflow-y-auto flex items-start sm:items-center justify-center z-40">
+        <div className="w-full max-w-md p-4 sm:p-6 py-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={() => setStep("design")}

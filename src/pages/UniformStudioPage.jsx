@@ -689,7 +689,7 @@ export default function UniformStudioPage() {
 
   if (submitted) {
     return (
-      <div className="h-screen flex items-center justify-center px-4">
+      <div className="h-[100dvh] flex items-center justify-center px-4">
         <div className="text-center max-w-lg">
           {previewImg && (
             <img
@@ -724,7 +724,7 @@ export default function UniformStudioPage() {
   // was competing with it for the screen.
   if (!selectedTemplate) {
     return (
-      <div className="h-screen flex flex-col bg-background-50">
+      <div className="h-[100dvh] flex flex-col bg-background-50">
         <div className="flex items-center justify-between gap-4 px-5 md:px-8 py-4 border-b border-background-200/70 flex-shrink-0">
           <Button to="/" variant="ghost" size="sm" icon="ri-arrow-left-line" iconPosition="left">
             Back to site
@@ -791,8 +791,8 @@ export default function UniformStudioPage() {
 
   // ---------- The studio itself: one full viewport, nothing else ----------
   return (
-    <div className="h-screen flex flex-col bg-[#14110d] overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-4 md:px-6 py-3 border-b border-white/[0.06] flex-shrink-0">
+    <div className="h-[100dvh] flex flex-col bg-[#14110d] overflow-hidden">
+      <div className="flex items-center justify-between gap-3 px-3 sm:px-4 md:px-6 py-3 pt-[max(.75rem,env(safe-area-inset-top))] border-b border-white/[0.06] flex-shrink-0">
         <button
           type="button"
           onClick={handleExit}
@@ -1107,7 +1107,7 @@ export default function UniformStudioPage() {
       </div>
 
       {/* Mobile: the fields panel docks to the bottom instead of the side */}
-      <div className="md:hidden flex-shrink-0 max-h-[45vh] overflow-y-auto border-t border-background-200/60 bg-background-50 p-4">
+      <div className="md:hidden flex-shrink-0 max-h-[42dvh] overflow-y-auto overscroll-contain border-t border-background-200/60 bg-background-50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <SelectedItemPanel
           layer={selectedLayer}
           placement={selectedLayerId ? placements3d[selectedLayerId] : null}
