@@ -77,7 +77,7 @@ export default function ListingsGrid() {
         )}
 
         {!loading && !error && visibleListings.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+          <div className="directory-card-grid">
             {visibleListings.map((item) => (
               <DirectoryListingCard
                 key={item.slug}
