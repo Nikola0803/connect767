@@ -23,6 +23,21 @@ import { createListingSearchText } from "../lib/listingSearch";
 // keeps them out of the top-level category UI regardless of backend state.
 const industrySlugSet = new Set(allIndustries.map((i) => i.slug));
 
+// Storefront-only archive rules. The WooCommerce records remain intact in
+// WordPress so they can be restored later, but hidden categories and every
+// product assigned to them are excluded from all public shop surfaces.
+const hiddenShopCategorySlugs = new Set(["shy-guy-dominica-tours"]);
+
+function isHiddenShopCategory(category) {
+  const slug = String(category?.slug || category?.categorySlug || "").toLowerCase();
+  const name = String(category?.name || category?.label || category?.category || "").toLowerCase();
+  return hiddenShopCategorySlugs.has(slug) || name === "shy guy dominica tours";
+}
+
+function isHiddenShopProduct(product) {
+  return isHiddenShopCategory(product) || (product?.categories || []).some(isHiddenShopCategory);
+}
+
 // Local fixtures — used until the WordPress/WooCommerce plugin is live.
 import { products as localProducts, shopCategories as localShopCategories } from "./shop";
 import {
@@ -48,17 +63,17 @@ import { blogPosts as localBlogPosts, blogCategories as localBlogCategories, get
 export async function getProducts() {
   if (isLiveApi) {
     const wc = await customClient.get("/shop/products");
-    return wc.map(mapWcProduct);
+    return wc.filter((product) => !isHiddenShopProduct(product)).map(mapWcProduct);
   }
-  return localProducts;
+  return localProducts.filter((product) => !isHiddenShopProduct(product));
 }
 
 export async function getProductBySlug(slug) {
   if (isLiveApi) {
     const wc = await customClient.get("/shop/products", { slug });
-    return wc[0] ? mapWcProduct(wc[0]) : null;
+    return wc[0] && !isHiddenShopProduct(wc[0]) ? mapWcProduct(wc[0]) : null;
   }
-  return localProducts.find((p) => p.slug === slug) || null;
+  return localProducts.find((product) => product.slug === slug && !isHiddenShopProduct(product)) || null;
 }
 
 export async function getShopCategories() {
@@ -71,10 +86,12 @@ export async function getShopCategories() {
       // category — showing it as its own filter pill next to real
       // categories reads as a broken/empty category to a shopper, so it's
       // excluded here the same way local fixtures never included it.
-      ...wc.filter((c) => c.slug !== "uncategorized").map(mapWcCategory),
+      ...wc
+        .filter((category) => category.slug !== "uncategorized" && !isHiddenShopCategory(category))
+        .map(mapWcCategory),
     ];
   }
-  return localShopCategories;
+  return localShopCategories.filter((category) => !isHiddenShopCategory(category));
 }
 
 /**
