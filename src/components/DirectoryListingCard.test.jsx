@@ -76,7 +76,7 @@ describe("DirectoryListingCard parent category", () => {
     expect(screen.getByText("Other")).toBeInTheDocument();
   });
 
-  it("shows the free booking cover badge and booking details", () => {
+  it("keeps booking details on the card and removes the cover badge", () => {
     render(
       <MemoryRouter>
         <DirectoryListingCard
@@ -90,7 +90,7 @@ describe("DirectoryListingCard parent category", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Free booking")).toBeInTheDocument();
+    expect(screen.queryByText("Free booking")).not.toBeInTheDocument();
     expect(screen.getByText("Book · Free · 30 min")).toBeInTheDocument();
   });
 });
