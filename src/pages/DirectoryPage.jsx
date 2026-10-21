@@ -131,7 +131,7 @@ export default function DirectoryPage() {
                 <span className="ml-1 text-background-50/85 tracking-[0.08em]">Dominica’s Online Directory</span>
               </div>
               <h1 className="mt-4 font-heading text-[clamp(2.35rem,5vw,4.5rem)] font-medium leading-[0.98] tracking-[-0.04em]">
-                Find your next <span className="italic text-accent-400">connection.</span>
+                Find your next <span className="italic text-accent-400">service provider</span>
               </h1>
             </div>
           </div>
