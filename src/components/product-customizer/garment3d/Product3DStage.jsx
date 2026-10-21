@@ -86,7 +86,7 @@ export default function Product3DStage({
   // moving target.
   const autoRotate = spinning && !interactive;
 
-  const containerHeight = fullscreen ? "calc(100vh - 180px)" : "70vh";
+  const containerHeight = fullscreen ? "calc(100dvh - 180px)" : "70dvh";
 
   return (
     <div className={`relative w-full ${fullscreen ? "" : "rounded-2xl"} overflow-hidden`} style={{background:"#14110d", height: containerHeight}}>
