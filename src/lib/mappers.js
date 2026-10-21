@@ -299,7 +299,9 @@ export function mapListingCpt(wp) {
     // applied wherever these images render (cards, full profile).
     logoPosition: acf.logo_position || "center",
     logoZoom: Number(acf.logo_zoom) || 1,
-    coverPosition: acf.cover_position || "center",
+    // A top-biased fallback keeps faces visible on portrait photography.
+    // Any crop selected by the listing owner still takes precedence.
+    coverPosition: acf.cover_position || "top",
     coverZoom: Number(acf.cover_zoom) || 1,
     // Legacy listings were always cropped. New submissions explicitly save
     // "contain" so the full image remains visible unless the owner chooses
