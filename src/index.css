@@ -128,21 +128,30 @@ h1, h2, h3, h4, h5, h6 {
   display: none;
 }
 
-/* Keep profile cards crisp and comfortably sized while their first and last
-   edges stay aligned with the directory/search container. Auto-fit lets the
-   layout step down cleanly without stretching a short row into oversized
-   cards. */
+/* Match the shop's compact 1/2/3/4-column rhythm so profile cards stay crisp,
+   proportional, and aligned with the directory/search container. */
 .directory-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 20rem));
+  grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
-  justify-content: space-between;
   gap: 1.25rem;
 }
 
-@media (max-width: 639px) {
+@media (min-width: 640px) {
   .directory-card-grid {
-    justify-content: center;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .directory-card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .directory-card-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
