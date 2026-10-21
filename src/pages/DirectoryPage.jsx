@@ -118,27 +118,12 @@ export default function DirectoryPage() {
 
   return (
     <div className="pt-16 md:pt-20 min-h-screen bg-background-50">
-      <section className="relative overflow-hidden bg-primary-950 text-background-50">
+      <section aria-hidden="true" className="relative h-28 overflow-hidden bg-primary-950 md:h-32">
         <div className="absolute -top-28 right-0 h-72 w-72 rounded-full bg-primary-500/20 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-36 left-1/4 h-80 w-80 rounded-full bg-accent-500/15 blur-3xl pointer-events-none" />
-        <div className="relative w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12 pt-10 pb-20 md:pt-14 md:pb-24">
-          <div>
-            <div className="max-w-5xl">
-              <div className="inline-flex items-center rounded-full border border-background-50/15 bg-background-50/5 px-3 py-1.5 text-[10px] font-bold tracking-[0.12em]">
-                <span className="w-1.5 h-1.5 rounded-full bg-accent-400" />
-                <span className="ml-2 text-primary-200">CONNECT</span>
-                <span className="text-accent-400">767</span>
-                <span className="ml-1 text-background-50/85 tracking-[0.08em]">Dominica’s Online Directory</span>
-              </div>
-              <h1 className="mt-4 whitespace-nowrap font-heading text-[clamp(1.1rem,5vw,4.5rem)] font-medium leading-[0.98] tracking-[-0.04em]">
-                Find your next <span className="italic text-accent-400">service provider</span>
-              </h1>
-            </div>
-          </div>
-        </div>
       </section>
 
-      <section className="relative z-10 -mt-10 w-full px-4 md:px-8 lg:px-12">
+      <section className="relative z-10 -mt-5 w-full px-4 md:-mt-7 md:px-8 lg:px-12">
         <div className="max-w-7xl mx-auto rounded-[1.6rem] border border-background-200/80 bg-background-50 p-3 md:p-4 shadow-[0_24px_70px_rgba(24,48,36,0.14)]">
           <div className="relative">
             <i className="ri-search-line absolute left-4 top-1/2 -translate-y-1/2 text-primary-700 text-lg pointer-events-none" />
@@ -246,9 +231,6 @@ export default function DirectoryPage() {
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-7">
             <div>
-              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-700 mb-2">
-                Discover Dominican Service providers worldwide
-              </div>
               <h2 className="font-heading text-2xl md:text-4xl font-light text-foreground-950">
                 Browse the <span className="text-accent-500 italic">directory</span>
               </h2>
@@ -296,7 +278,7 @@ export default function DirectoryPage() {
           {loading && (
             <CardSkeleton
               count={8}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+              className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3"
             />
           )}
 
@@ -314,12 +296,17 @@ export default function DirectoryPage() {
             <div
               className={
                 view === "grid"
-                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+                  ? "grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3"
                   : "flex flex-col gap-5"
               }
             >
               {pageItems.map((listing) => (
-                <DirectoryListingCard key={listing.slug} listing={listing} view={view} />
+                <DirectoryListingCard
+                  key={listing.slug}
+                  listing={listing}
+                  view={view}
+                  className={view === "grid" ? "h-full" : ""}
+                />
               ))}
             </div>
           )}
