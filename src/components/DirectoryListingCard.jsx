@@ -119,9 +119,11 @@ function ListingHighlights({ listing }) {
 }
 
 function Cover({ listing, listView = false, saved = false, onToggleSaved }) {
+  const coverPosition = listing.coverPosition || "top";
+
   return (
     <div className={`relative flex-shrink-0 ${listView ? "sm:w-64" : ""}`}>
-      <div className={`w-full overflow-hidden bg-background-100 ${listView ? "h-52 sm:h-full" : "h-48"}`}>
+      <div className={`w-full overflow-hidden bg-background-100 ${listView ? "h-52 sm:h-full" : "aspect-[3/2]"}`}>
         <img
           loading="lazy"
           decoding="async"
@@ -131,7 +133,7 @@ function Cover({ listing, listView = false, saved = false, onToggleSaved }) {
             listing.coverFit === "contain" ? "object-contain" : "object-cover group-hover:scale-[1.03]"
           }`}
           src={listing.image}
-          style={imageCropStyle(listing.coverPosition, listing.coverZoom, listing.coverFit)}
+          style={imageCropStyle(coverPosition, listing.coverZoom, listing.coverFit)}
         />
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-foreground-950/35 via-transparent to-transparent pointer-events-none" />
