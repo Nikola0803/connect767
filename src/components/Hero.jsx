@@ -4,6 +4,7 @@ import { heroImage } from "../data/content";
 export default function Hero() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const [searchScope, setSearchScope] = useState("directory");
   // The trending-category pills that used to sit under the search bar were
   // removed. Their getHomeCategories() fetch went with them — leaving it
   // would have been a request on every homepage load feeding nothing. The
@@ -18,8 +19,17 @@ export default function Hero() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    goToDirectory({ q: query.trim() });
+    const value = query.trim();
+    if (searchScope === "shop") {
+      navigate(`/shop${value ? `?q=${encodeURIComponent(value)}` : ""}`);
+      return;
+    }
+    goToDirectory({ q: value });
   };
+
+  const placeholder = searchScope === "shop"
+    ? "Search Dominican products, apparel and gifts"
+    : "Discover Dominican businesses, professionals and service providers worldwide";
 
   return (
     <section className="relative w-full min-h-[640px] sm:min-h-[720px] md:min-h-[820px] flex items-center overflow-hidden">
@@ -39,22 +49,43 @@ export default function Hero() {
             Dominica’s <span className="italic text-accent-400">Online Directory</span>
           </h1>
           <p className="mt-1.5 font-heading text-background-50 text-[clamp(1.05rem,1.75vw,1.6rem)] font-medium leading-tight tracking-[-0.015em]">
-            Dominica’s Trusted Directory for Talent, Services &amp; Opportunities.
+            Connecting Dominica to the <span className="italic text-accent-400">World.</span>
           </p>
-          <form onSubmit={handleSubmit} className="mt-4 max-w-4xl mx-auto">
-            <div className="flex flex-col sm:flex-row sm:items-center overflow-hidden rounded-[2rem] sm:rounded-full bg-background-50 p-1.5 shadow-[0_10px_35px_rgba(0,0,0,0.22)] focus-within:shadow-[0_12px_42px_rgba(0,0,0,0.3)] transition-shadow">
+          <form onSubmit={handleSubmit} className="mt-5 max-w-5xl mx-auto">
+            <div className="flex flex-col lg:flex-row lg:items-center overflow-hidden rounded-[1.75rem] lg:rounded-full bg-background-50 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.25)] focus-within:shadow-[0_18px_55px_rgba(0,0,0,0.34)] transition-shadow">
+              <div className="flex items-center gap-1 rounded-full bg-background-100 p-1 lg:mr-1 flex-shrink-0">
+                {[
+                  { value: "directory", label: "Directory", icon: "ri-map-pin-2-line" },
+                  { value: "shop", label: "Shop", icon: "ri-shopping-bag-3-line" },
+                ].map((scope) => (
+                  <button
+                    key={scope.value}
+                    type="button"
+                    aria-pressed={searchScope === scope.value}
+                    onClick={() => setSearchScope(scope.value)}
+                    className={`flex-1 lg:flex-none inline-flex h-10 items-center justify-center gap-1.5 rounded-full px-3.5 text-xs font-bold transition-all cursor-pointer ${
+                      searchScope === scope.value
+                        ? "bg-background-50 text-primary-800 shadow-sm"
+                        : "text-foreground-500 hover:text-foreground-800"
+                    }`}
+                  >
+                    <i className={scope.icon} aria-hidden="true" />
+                    {scope.label}
+                  </button>
+                ))}
+              </div>
               <div className="relative flex-1 min-w-0">
                 <i className="ri-search-line absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-primary-800 text-xl pointer-events-none" />
                 <input
-                  aria-label="Search the directory"
+                  aria-label={`Search the ${searchScope}`}
                   className="w-full h-12 sm:h-14 pl-12 sm:pl-14 pr-4 bg-transparent text-foreground-950 placeholder-foreground-500 focus:outline-none font-label text-sm"
-                  placeholder="Discover Dominican businesses, professionals and service providers worldwide"
+                  placeholder={placeholder}
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                 />
               </div>
-              <div className="flex items-center gap-2 pt-2 sm:pt-0 sm:pl-2 border-t sm:border-t-0 border-background-200">
+              <div className="flex items-center gap-2 pt-2 lg:pt-0 lg:pl-2 border-t lg:border-t-0 border-background-200">
                 <Link
                   to="/match"
                   aria-label="Open AI Matching"
@@ -66,6 +97,11 @@ export default function Hero() {
               </div>
             </div>
           </form>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] font-semibold text-background-50/85">
+            <span className="inline-flex items-center gap-1.5"><i className="ri-verified-badge-line text-accent-300" /> Verified profiles</span>
+            <span className="inline-flex items-center gap-1.5"><i className="ri-calendar-check-line text-accent-300" /> Free booking options</span>
+            <span className="inline-flex items-center gap-1.5"><i className="ri-compass-3-line text-accent-300" /> Browse directory</span>
+          </div>
         </div>
       </div>
     </section>
