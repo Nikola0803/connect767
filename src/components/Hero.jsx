@@ -105,7 +105,7 @@ export default function Hero() {
               <i className="ri-t-shirt-line text-accent-300" aria-hidden="true" /> Connect767 Clothing
             </Link>
             <Link to="/listings" className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-colors hover:bg-background-50/15 hover:text-background-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300">
-              <i className="ri-compass-3-line text-accent-300" aria-hidden="true" /> Browse directory
+              <i className="ri-compass-3-line text-accent-300" aria-hidden="true" /> Browse Directory
             </Link>
           </div>
         </div>
