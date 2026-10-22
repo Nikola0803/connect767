@@ -24,11 +24,26 @@ export default function DirectoryPage() {
   const [view, setView] = useState("grid");
   const [page, setPage] = useState(1);
   const [databaseSearch, setDatabaseSearch] = useState(search.trim());
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setDatabaseSearch(search.trim()), 250);
     return () => window.clearTimeout(timeout);
   }, [search]);
+
+  useEffect(() => {
+    if (!filtersOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setFiltersOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [filtersOpen]);
 
   const activeFilterCount = [
     category !== "all",
@@ -57,6 +72,31 @@ export default function DirectoryPage() {
     reload,
   } = useAsync(() => getListings({ search: databaseSearch }), [databaseSearch]);
   const { data: directoryCategories } = useAsync(() => getDirectoryCategories(), []);
+
+  const activeFilterChips = [
+    search.trim() && { key: "search", label: `Search: ${search.trim()}` },
+    category !== "all" && {
+      key: "category",
+      label: (directoryCategories || []).find((item) => item.slug === category)?.label || category,
+    },
+    industry !== "all" && {
+      key: "industry",
+      label: industryOptions.find((item) => item.slug === industry)?.label || industry,
+    },
+    experienceRange !== "all" && {
+      key: "experience",
+      label: experienceRangeOptions.find((item) => item.value === experienceRange)?.label || experienceRange,
+    },
+    educationFilter !== "all" && { key: "education", label: educationFilter },
+    priceTier !== "all" && {
+      key: "price",
+      label: priceOptions.find((item) => item.value === priceTier)?.label || priceTier,
+    },
+    tier !== "all" && {
+      key: "tier",
+      label: tierOptions.find((item) => item.value === tier)?.label || tier,
+    },
+  ].filter(Boolean);
 
   const filtered = useMemo(() => {
     if (!directoryListings) return [];
@@ -116,6 +156,20 @@ export default function DirectoryPage() {
     setPage(1);
   };
 
+  const clearFilter = (key) => {
+    if (key === "search") setSearch("");
+    if (key === "category") {
+      setCategory("all");
+      setIndustry("all");
+    }
+    if (key === "industry") setIndustry("all");
+    if (key === "experience") setExperienceRange("all");
+    if (key === "education") setEducationFilter("all");
+    if (key === "price") setPriceTier("all");
+    if (key === "tier") setTier("all");
+    setPage(1);
+  };
+
   return (
     <div className="pt-16 md:pt-20 min-h-screen bg-background-50">
       <section aria-hidden="true" className="relative h-28 overflow-hidden bg-primary-950 md:h-32">
@@ -147,7 +201,24 @@ export default function DirectoryPage() {
             )}
           </div>
 
-          <div className="mt-3 pt-3 border-t border-background-200/70 flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <div className="mt-3 pt-3 border-t border-background-200/70 flex items-center gap-2 md:hidden">
+            <button
+              type="button"
+              onClick={() => setFiltersOpen(true)}
+              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 text-sm font-bold text-background-50 cursor-pointer"
+            >
+              <i className="ri-equalizer-2-line" />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-background-50 px-1 text-[10px] text-primary-800">{activeFilterCount}</span>
+              )}
+            </button>
+            <span className="inline-flex h-11 items-center rounded-xl border border-background-300 bg-background-100 px-3 text-xs font-semibold text-foreground-600">
+              {filtered.length} results
+            </span>
+          </div>
+
+          <div className="mt-3 pt-3 border-t border-background-200/70 hidden md:flex items-center gap-2 overflow-x-auto no-scrollbar">
             <span className="inline-flex h-9 items-center gap-2 px-3 rounded-full bg-primary-50 text-[10px] font-bold uppercase tracking-[0.13em] text-primary-800 whitespace-nowrap flex-shrink-0">
               <i className="ri-equalizer-2-line text-sm" />
               Filters
@@ -224,8 +295,85 @@ export default function DirectoryPage() {
                 </button>
               )}
           </div>
+
+          {activeFilterChips.length > 0 && (
+            <div className="mt-3 flex items-center gap-2 overflow-x-auto no-scrollbar" aria-label="Active filters">
+              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-foreground-400 flex-shrink-0">Active</span>
+              {activeFilterChips.map((filter) => (
+                <button
+                  key={filter.key}
+                  type="button"
+                  onClick={() => clearFilter(filter.key)}
+                  aria-label={`Remove ${filter.label} filter`}
+                  className="inline-flex h-8 flex-shrink-0 items-center gap-1.5 rounded-full bg-primary-50 px-3 text-[11px] font-semibold text-primary-800 hover:bg-primary-100 cursor-pointer transition-colors"
+                >
+                  {filter.label}
+                  <i className="ri-close-line" />
+                </button>
+              ))}
+              <button type="button" onClick={clearAll} className="h-8 flex-shrink-0 px-2 text-[11px] font-bold text-accent-700 cursor-pointer">Clear all</button>
+            </div>
+          )}
         </div>
       </section>
+
+      {filtersOpen && (
+        <div className="fixed inset-0 z-[80] md:hidden" role="dialog" aria-modal="true" aria-label="Directory filters">
+          <button type="button" aria-label="Close filters" onClick={() => setFiltersOpen(false)} className="absolute inset-0 bg-foreground-950/50 backdrop-blur-sm cursor-default" />
+          <div className="absolute inset-x-0 bottom-0 max-h-[86vh] overflow-y-auto rounded-t-[2rem] bg-background-50 px-5 pb-6 pt-4 shadow-2xl">
+            <div className="mx-auto mb-4 h-1 w-12 rounded-full bg-background-300" />
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary-700">Refine results</p>
+                <h2 className="mt-1 font-heading text-2xl text-foreground-950">Find the right provider</h2>
+              </div>
+              <button type="button" aria-label="Close filters" onClick={() => setFiltersOpen(false)} className="h-10 w-10 rounded-full bg-background-100 text-foreground-700 cursor-pointer"><i className="ri-close-line text-lg" /></button>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 gap-4">
+              <label className="text-xs font-bold text-foreground-700">Category
+                <select value={category} onChange={(e) => { updateFilter(setCategory)(e.target.value); setIndustry("all"); }} className="mt-2 h-12 w-full rounded-xl border border-background-300 bg-white px-3 text-sm font-semibold text-foreground-800">
+                  {(directoryCategories || []).map((cat) => <option key={cat.slug} value={cat.slug}>{cat.slug === "all" ? "All Categories" : cat.label}</option>)}
+                </select>
+              </label>
+              <label className="text-xs font-bold text-foreground-700">Industry
+                <select value={industry} onChange={(e) => updateFilter(setIndustry)(e.target.value)} disabled={!selectedCategory} className="mt-2 h-12 w-full rounded-xl border border-background-300 bg-white px-3 text-sm font-semibold text-foreground-800 disabled:bg-background-100 disabled:text-foreground-400">
+                  <option value="all">All industries</option>
+                  {industryOptions.map((item) => <option key={item.slug} value={item.slug}>{item.label}</option>)}
+                </select>
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="text-xs font-bold text-foreground-700">Experience
+                  <select value={experienceRange} onChange={(e) => updateFilter(setExperienceRange)(e.target.value)} className="mt-2 h-12 w-full rounded-xl border border-background-300 bg-white px-3 text-sm font-semibold text-foreground-800">
+                    {experienceRangeOptions.map((option) => <option key={option.value} value={option.value}>{option.value === "all" ? "Any" : option.label}</option>)}
+                  </select>
+                </label>
+                <label className="text-xs font-bold text-foreground-700">Education
+                  <select value={educationFilter} onChange={(e) => updateFilter(setEducationFilter)(e.target.value)} className="mt-2 h-12 w-full rounded-xl border border-background-300 bg-white px-3 text-sm font-semibold text-foreground-800">
+                    <option value="all">Any</option>
+                    {EDUCATION_CHOICES.map((choice) => <option key={choice} value={choice}>{choice}</option>)}
+                  </select>
+                </label>
+                <label className="text-xs font-bold text-foreground-700">Price
+                  <select value={priceTier} onChange={(e) => updateFilter(setPriceTier)(e.target.value)} className="mt-2 h-12 w-full rounded-xl border border-background-300 bg-white px-3 text-sm font-semibold text-foreground-800">
+                    {priceOptions.map((option) => <option key={option.value} value={option.value}>{option.value === "all" ? "Any" : option.label}</option>)}
+                  </select>
+                </label>
+                <label className="text-xs font-bold text-foreground-700">Listing type
+                  <select value={tier} onChange={(e) => updateFilter(setTier)(e.target.value)} className="mt-2 h-12 w-full rounded-xl border border-background-300 bg-white px-3 text-sm font-semibold text-foreground-800">
+                    {tierOptions.map((option) => <option key={option.value} value={option.value}>{option.value === "all" ? "Any" : option.label}</option>)}
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 mt-6 flex gap-3 bg-background-50 pt-3">
+              <button type="button" onClick={clearAll} className="h-12 flex-1 rounded-full border border-background-300 text-sm font-bold text-foreground-700 cursor-pointer">Clear</button>
+              <button type="button" onClick={() => setFiltersOpen(false)} className="h-12 flex-[1.5] rounded-full bg-primary-700 text-sm font-bold text-background-50 cursor-pointer">Show {filtered.length} results</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="w-full px-4 md:px-8 lg:px-12 pt-14 pb-12 md:pt-16">
         <div className="max-w-7xl mx-auto">
