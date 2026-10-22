@@ -97,10 +97,16 @@ export default function Hero() {
               </div>
             </div>
           </form>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] font-semibold text-background-50/85">
-            <span className="inline-flex items-center gap-1.5"><i className="ri-verified-badge-line text-accent-300" /> Verified profiles</span>
-            <span className="inline-flex items-center gap-1.5"><i className="ri-calendar-check-line text-accent-300" /> Free booking options</span>
-            <span className="inline-flex items-center gap-1.5"><i className="ri-compass-3-line text-accent-300" /> Browse directory</span>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-background-50/85">
+            <Link to="/listings?tier=Classified" className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-colors hover:bg-background-50/15 hover:text-background-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300">
+              <i className="ri-award-line text-accent-300" aria-hidden="true" /> Classified Listings
+            </Link>
+            <Link to="/shop" className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-colors hover:bg-background-50/15 hover:text-background-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300">
+              <i className="ri-t-shirt-line text-accent-300" aria-hidden="true" /> Connect767 Clothing
+            </Link>
+            <Link to="/listings" className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-colors hover:bg-background-50/15 hover:text-background-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300">
+              <i className="ri-compass-3-line text-accent-300" aria-hidden="true" /> Browse directory
+            </Link>
           </div>
         </div>
       </div>
