@@ -16,7 +16,7 @@ export default function DirectoryPage() {
   const [search, setSearch] = useState(searchParams.get("q") || "");
   const [category, setCategory] = useState(searchParams.get("category") || "all");
   const [industry, setIndustry] = useState("all");
-  const [tier, setTier] = useState("all");
+  const [tier, setTier] = useState(searchParams.get("tier") || "all");
   const [priceTier, setPriceTier] = useState("all");
   const [educationFilter, setEducationFilter] = useState("all");
   const [experienceRange, setExperienceRange] = useState("all");
