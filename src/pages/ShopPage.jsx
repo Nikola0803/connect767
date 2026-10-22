@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import PromoBanner from "../components/PromoBanner";
 import ProductCard from "../components/ProductCard";
 import Studio from "../components/Studio";
+import { shopHeroImage } from "../components/ShopTeaser";
 import { CardSkeleton, EmptyState, ErrorState } from "../components/ui/States";
 import { useAsync } from "../hooks/useAsync";
 import { useCart } from "../hooks/useCart";
@@ -11,7 +12,7 @@ import { sortOptions } from "../data/shop";
 
 export default function ShopPage() {
   const [searchParams] = useSearchParams();
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(searchParams.get("q") || "");
   const [activeCategory, setActiveCategory] = useState(searchParams.get("category") || "all");
   const [sort, setSort] = useState("featured");
   const { count: cartCount, addItem, setIsOpen: setCartOpen } = useCart();
@@ -68,45 +69,57 @@ export default function ShopPage() {
       <section className="relative overflow-hidden bg-primary-950 text-background-50">
         <div className="absolute -top-32 -right-24 w-80 h-80 rounded-full bg-primary-500/20 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-40 left-1/4 w-96 h-96 rounded-full bg-accent-500/15 blur-3xl pointer-events-none" />
-        <div className="relative w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12 pt-12 pb-20 md:pt-16 md:pb-24">
-          <div className="flex flex-col lg:flex-row lg:items-end gap-8">
+        <div className="relative w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12 pt-10 pb-16 md:pt-12 md:pb-20">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.85fr)] lg:items-center gap-8 lg:gap-12">
             <div className="max-w-3xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-background-50/15 bg-background-50/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-primary-200">
                 <span className="w-1.5 h-1.5 rounded-full bg-accent-400" />
                 The Connect767 Shop
               </div>
-              <h1 className="mt-5 font-heading text-[clamp(2.7rem,6vw,5.4rem)] font-medium leading-[0.95] tracking-[-0.045em]">
-                Island-made.<br />
-                <span className="italic text-accent-400">World-ready.</span>
+              <h1 className="mt-4 font-heading text-[clamp(2.6rem,5vw,4.8rem)] font-medium leading-[0.95] tracking-[-0.045em]">
+                Island-made. <span className="italic text-accent-400">World-ready.</span>
               </h1>
-              <p className="mt-5 max-w-xl text-sm md:text-base leading-relaxed text-background-200">
+              <p className="mt-4 max-w-xl text-sm md:text-base leading-relaxed text-background-200">
                 Discover apparel, essentials and experiences from Dominican brands and creators—at home and around the world.
               </p>
+              <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                <Link
+                  to="/shop/customize"
+                  className="inline-flex items-center justify-center gap-2 h-12 px-5 rounded-full bg-background-50 text-primary-950 text-sm font-bold hover:bg-background-100 transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  <i className="ri-magic-line text-lg" />
+                  Design custom gear
+                  <i className="ri-arrow-right-line" />
+                </Link>
+                <button
+                  aria-label="Open cart"
+                  type="button"
+                  onClick={() => setCartOpen(true)}
+                  className="relative inline-flex items-center justify-center gap-2 h-12 px-5 rounded-full border border-background-50/20 bg-background-50/5 text-sm font-semibold hover:bg-background-50/10 cursor-pointer transition-colors"
+                >
+                  <i className="ri-shopping-bag-3-line text-lg" />
+                  Cart
+                  {cartCount > 0 && (
+                    <span className="min-w-[20px] h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-accent-500 text-background-50 text-[10px] font-bold">
+                      {cartCount}
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
 
-            <div className="lg:ml-auto flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-3">
-              <Link
-                to="/shop/customize"
-                className="inline-flex items-center justify-center gap-2 h-12 px-5 rounded-full bg-background-50 text-primary-950 text-sm font-bold hover:bg-background-100 transition-colors cursor-pointer whitespace-nowrap"
-              >
-                <i className="ri-magic-line text-lg" />
-                Design custom gear
-                <i className="ri-arrow-right-line" />
-              </Link>
-              <button
-                aria-label="Open cart"
-                type="button"
-                onClick={() => setCartOpen(true)}
-                className="relative inline-flex items-center justify-center gap-2 h-12 px-5 rounded-full border border-background-50/20 bg-background-50/5 text-sm font-semibold hover:bg-background-50/10 cursor-pointer transition-colors"
-              >
-                <i className="ri-shopping-bag-3-line text-lg" />
-                Cart
-                {cartCount > 0 && (
-                  <span className="min-w-[20px] h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-accent-500 text-background-50 text-[10px] font-bold">
-                    {cartCount}
-                  </span>
-                )}
-              </button>
+            <div className="relative hidden sm:block">
+              <div className="relative h-64 md:h-72 overflow-hidden rounded-[2rem] border border-background-50/15 bg-background-50/5 shadow-[0_24px_70px_rgba(0,0,0,0.28)]">
+                <img fetchPriority="high" decoding="async" src={shopHeroImage} alt="Dominican-made products in the Connect767 Shop" className="h-full w-full object-cover object-center" />
+                <div className="absolute inset-0 bg-gradient-to-t from-primary-950/75 via-transparent to-transparent" />
+                <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-100">Curated in Dominica</p>
+                    <p className="mt-1 font-heading text-2xl text-background-50">Made with island character.</p>
+                  </div>
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-accent-500 text-background-50"><i className="ri-arrow-right-up-line" /></span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -114,7 +127,7 @@ export default function ShopPage() {
 
       <section className="relative z-10 -mt-10 w-full px-4 md:px-8 lg:px-12">
         <div className="max-w-7xl mx-auto rounded-[1.6rem] border border-background-200/80 bg-background-50 p-3 md:p-4 shadow-[0_24px_70px_rgba(24,48,36,0.14)]">
-          <form className="flex flex-col md:flex-row gap-3" onSubmit={(e) => e.preventDefault()}>
+          <form onSubmit={(e) => e.preventDefault()}>
             <div className="relative flex-1 min-w-0">
               <i className="ri-search-line absolute left-4 top-1/2 -translate-y-1/2 text-primary-700 text-lg pointer-events-none" />
               <input
@@ -137,21 +150,6 @@ export default function ShopPage() {
               )}
             </div>
 
-            <label className="relative md:w-64 flex-shrink-0">
-              <span className="sr-only">Product category</span>
-              <select
-                value={activeCategory}
-                onChange={(e) => setActiveCategory(e.target.value)}
-                className="appearance-none w-full h-12 pl-4 pr-10 rounded-xl border border-background-300/80 bg-white text-sm font-semibold text-foreground-700 focus:outline-none focus:border-primary-400 cursor-pointer"
-              >
-                {(shopCategories || []).map((cat) => (
-                  <option key={cat.slug} value={cat.slug}>
-                    {cat.slug === "all" ? "All product categories" : cat.label}
-                  </option>
-                ))}
-              </select>
-              <i className="ri-arrow-down-s-line absolute right-3.5 top-1/2 -translate-y-1/2 text-foreground-400 pointer-events-none" />
-            </label>
           </form>
 
           <div className="mt-3 pt-3 border-t border-background-200/70 flex items-center gap-2 overflow-x-auto no-scrollbar">
