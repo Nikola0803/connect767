@@ -23,6 +23,8 @@ const ListingDetailPage = lazy(() => import("./pages/ListingDetailPage"));
 const AddListingPage = lazy(() => import("./pages/AddListingPage"));
 const MatchPage = lazy(() => import("./pages/MatchPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const BlogPage = lazy(() => import("./pages/BlogPage"));
 const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
@@ -94,6 +96,8 @@ function App() {
                   <Route path="/saved" element={<SavedListingsPage />} />
                   <Route path="/auth/login" element={<AuthPage />} />
                   <Route path="/auth/register" element={<AuthPage />} />
+                  <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/blog" element={<BlogPage />} />
                   <Route path="/blog/:slug" element={<BlogPostPage />} />
