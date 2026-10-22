@@ -8,6 +8,8 @@
  * Matches src/lib/authClient.js in the frontend:
  *   POST /connect767/v1/auth/register  { name, email, password, accountType }
  *   POST /connect767/v1/auth/login     { email, password }
+ *   POST /connect767/v1/auth/forgot-password { email }
+ *   POST /connect767/v1/auth/reset-password  { login, key, password }
  *   GET  /connect767/v1/auth/me        (Authorization: Bearer <token>)
  */
 
@@ -35,6 +37,18 @@ class C767_REST_Auth
         register_rest_route(self::NAMESPACE_, '/auth/login', [
             'methods' => 'POST',
             'callback' => [__CLASS__, 'login'],
+            'permission_callback' => '__return_true',
+        ]);
+
+        register_rest_route(self::NAMESPACE_, '/auth/forgot-password', [
+            'methods' => 'POST',
+            'callback' => [__CLASS__, 'forgot_password'],
+            'permission_callback' => '__return_true',
+        ]);
+
+        register_rest_route(self::NAMESPACE_, '/auth/reset-password', [
+            'methods' => 'POST',
+            'callback' => [__CLASS__, 'reset_password'],
             'permission_callback' => '__return_true',
         ]);
 
@@ -112,6 +126,75 @@ class C767_REST_Auth
         return rest_ensure_response([
             'token' => C767_JWT::issue(['user_id' => $result->ID]),
             'user' => self::format_user($result),
+        ]);
+    }
+
+    /**
+     * Sends a password-reset email without revealing whether an address is
+     * registered. Keeping the response identical prevents account discovery.
+     */
+    public static function forgot_password(WP_REST_Request $request)
+    {
+        $email = sanitize_email((string) $request->get_param('email'));
+        $response = [
+            'message' => 'If an account exists for that email, a password reset link is on its way.',
+        ];
+
+        if (!$email || !is_email($email)) {
+            return rest_ensure_response($response);
+        }
+
+        // Limit repeated requests without storing the email address itself.
+        $rate_key = 'c767_password_reset_' . md5(strtolower($email));
+        if (get_transient($rate_key)) {
+            return rest_ensure_response($response);
+        }
+        set_transient($rate_key, 1, MINUTE_IN_SECONDS);
+
+        $user = get_user_by('email', $email);
+        if (!$user) {
+            return rest_ensure_response($response);
+        }
+
+        $key = get_password_reset_key($user);
+        if (is_wp_error($key)) {
+            error_log('Connect767 password reset key error for user ' . $user->ID . ': ' . $key->get_error_message());
+            return rest_ensure_response($response);
+        }
+
+        if (!C767_Notifications::send_password_reset($user, $key)) {
+            error_log('Connect767 password reset email could not be sent for user ' . $user->ID . '.');
+        }
+
+        return rest_ensure_response($response);
+    }
+
+    public static function reset_password(WP_REST_Request $request)
+    {
+        $login = sanitize_user((string) $request->get_param('login'), true);
+        $key = sanitize_text_field((string) $request->get_param('key'));
+        $password = (string) $request->get_param('password');
+
+        if (!$login || !$key || !$password) {
+            return new WP_Error('c767_missing_reset_fields', 'The reset link and new password are required.', ['status' => 400]);
+        }
+        if (strlen($password) < 8) {
+            return new WP_Error('c767_weak_password', 'Password must be at least 8 characters.', ['status' => 400]);
+        }
+
+        $user = check_password_reset_key($key, $login);
+        if (is_wp_error($user)) {
+            return new WP_Error(
+                'c767_invalid_reset_key',
+                'This password reset link is invalid or has expired. Please request a new one.',
+                ['status' => 400]
+            );
+        }
+
+        reset_password($user, $password);
+
+        return rest_ensure_response([
+            'message' => 'Your password has been reset. You can now sign in.',
         ]);
     }
 

@@ -19,6 +19,9 @@ if (!defined('ABSPATH')) {
 
 class C767_Notifications
 {
+    /** Avoid duplicate approval emails when the review screen and the status transition fire together. */
+    private static $approved_notifications_sent = [];
+
     public static function init()
     {
         // Keep every transactional message on the public Connect767 domain.
@@ -31,6 +34,7 @@ class C767_Notifications
         add_action('c767_user_registered', [__CLASS__, 'on_user_registered'], 10, 2);
         add_action('c767_listing_submitted', [__CLASS__, 'on_listing_submitted'], 10, 3);
         add_action('c767_listing_approved', [__CLASS__, 'on_listing_approved']);
+        add_action('transition_post_status', [__CLASS__, 'on_listing_status_changed'], 10, 3);
         add_action('c767_listing_rejected', [__CLASS__, 'on_listing_rejected']);
         add_action('c767_listing_payment_confirmed', [__CLASS__, 'on_listing_payment_confirmed']);
         add_action('c767_booking_submitted', [__CLASS__, 'on_booking_submitted'], 10, 2);
@@ -98,7 +102,9 @@ class C767_Notifications
                 $user->display_name ?: $user->user_login,
                 self::frontend_url('/listings')
             );
-        wp_mail($user->user_email, $subject, $body);
+        if (!wp_mail($user->user_email, $subject, $body)) {
+            error_log('Connect767 welcome email could not be sent for user ' . $user_id . '.');
+        }
 
         // Admin heads-up.
         $admin_subject = sprintf('[Connect767] New %s account — %s', $is_business ? 'business' : 'customer', $user->user_email);
@@ -110,7 +116,35 @@ class C767_Notifications
             current_time('mysql'),
             admin_url('user-edit.php?user_id=' . $user_id)
         );
-        wp_mail(get_option('admin_email'), $admin_subject, $admin_body, self::reply_to($user->user_email));
+        if (!wp_mail(get_option('admin_email'), $admin_subject, $admin_body, self::reply_to($user->user_email))) {
+            error_log('Connect767 new-account admin email could not be sent for user ' . $user_id . '.');
+        }
+    }
+
+    /**
+     * Sends the account owner to the headless frontend instead of exposing
+     * the WordPress admin-domain reset screen.
+     */
+    public static function send_password_reset($user, $key)
+    {
+        if (!$user instanceof WP_User || !$key) {
+            return false;
+        }
+
+        $reset_url = add_query_arg([
+            'login' => $user->user_login,
+            'key' => $key,
+        ], self::frontend_url('/auth/reset-password'));
+
+        $subject = sprintf('Reset your %s password', self::site_name());
+        $body = sprintf(
+            "Hi %s,\n\nWe received a request to reset your Connect767 password. Use the secure link below to choose a new password:\n%s\n\nThis link expires automatically. If you did not request a reset, you can safely ignore this email.\n\n— %s",
+            $user->display_name ?: $user->user_login,
+            $reset_url,
+            self::site_name()
+        );
+
+        return wp_mail($user->user_email, $subject, $body);
     }
 
     // ---------- Listing submitted (pending review) ----------
@@ -151,8 +185,31 @@ class C767_Notifications
 
     // ---------- Listing approved / rejected ----------
 
+    /**
+     * Covers approvals made through either the Connect767 review queue or
+     * WordPress's regular listing editor. New imports are excluded because
+     * they were never submitted for administrator approval.
+     */
+    public static function on_listing_status_changed($new_status, $old_status, $post)
+    {
+        if (
+            !$post instanceof WP_Post
+            || $post->post_type !== 'listing'
+            || $new_status !== 'publish'
+            || !in_array($old_status, ['pending', 'draft', 'private', 'future'], true)
+        ) {
+            return;
+        }
+
+        do_action('c767_listing_approved', $post->ID);
+    }
+
     public static function on_listing_approved($post_id)
     {
+        if (isset(self::$approved_notifications_sent[$post_id])) {
+            return;
+        }
+
         $post = get_post($post_id);
         if (!$post) {
             return;
@@ -162,15 +219,19 @@ class C767_Notifications
             return;
         }
 
-        $subject = sprintf('Your listing is live — %s', $post->post_title);
+        self::$approved_notifications_sent[$post_id] = true;
+
+        $subject = sprintf('Your Connect767 listing has been approved — %s', $post->post_title);
         $body = sprintf(
-            "Hi %s,\n\nGood news — \"%s\" has been approved and is now live in the Connect767 directory:\n%s\n\nYou can manage it any time from your dashboard:\n%s",
+            "Hi %s,\n\nGood news — the website administrator approved \"%s\" and it is now live in the Connect767 directory.\n\nView your live listing:\n%s\n\nYou can update and manage it any time from your dashboard:\n%s\n\nThank you for being part of Connect767.",
             $owner->display_name ?: $owner->user_login,
             $post->post_title,
             self::frontend_url('/listings/' . $post->post_name),
             self::frontend_url('/dashboard')
         );
-        wp_mail($owner->user_email, $subject, $body);
+        if (!wp_mail($owner->user_email, $subject, $body, self::reply_to(get_option('admin_email')))) {
+            error_log('Connect767 listing-approval email could not be sent for listing ' . $post_id . '.');
+        }
     }
 
     public static function on_listing_rejected($post_id)
