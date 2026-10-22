@@ -12,7 +12,7 @@ const WP_ORIGIN = config.wpBaseUrl || "https://admin.connect767.com";
 // path like this silently 404s the moment the underlying file changes.
 // Confirmed via /wp-json/wp/v2/media?search=DSC_8707 that this is the
 // current real attachment.
-const shopHeroImage = `${WP_ORIGIN}/wp-content/uploads/2026/07/DSC_8707-Edit_17fdb17b-ddd5-4c9b-857b-83c9d142516a-scaled.jpg`;
+export const shopHeroImage = `${WP_ORIGIN}/wp-content/uploads/2026/07/DSC_8707-Edit_17fdb17b-ddd5-4c9b-857b-83c9d142516a-scaled.jpg`;
 
 const checklist = [
   "Curated goods from verified local makers",
