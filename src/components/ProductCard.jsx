@@ -25,6 +25,17 @@ export default function ProductCard({ product, onAddToCart }) {
         )}
       </div>
       <div className="p-4">
+        <div className="mb-1 flex items-center justify-between gap-3">
+          <span className="truncate text-[10px] font-bold uppercase tracking-[0.13em] text-primary-700">
+            {product.category || "Connect767 Shop"}
+          </span>
+          {Number(product.rating) > 0 && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-foreground-700">
+              <i className="ri-star-fill text-accent-500" />
+              {Number(product.rating).toFixed(1)}
+            </span>
+          )}
+        </div>
         <h3 className="text-sm font-medium text-foreground-950 leading-snug mb-2 mt-1 group-hover:text-primary-700 transition-colors line-clamp-2">
           {product.title}
         </h3>
