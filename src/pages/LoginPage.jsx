@@ -81,9 +81,9 @@ export default function LoginPage() {
             <input type="checkbox" className="rounded border-background-300" />
             Remember me
           </label>
-          <a href="#forgot-password" className="text-primary-700 hover:text-primary-800 font-semibold">
+          <Link to="/auth/forgot-password" className="text-primary-700 hover:text-primary-800 font-semibold">
             Forgot password?
-          </a>
+          </Link>
         </div>
 
         <Button type="submit" variant="primary" className="w-full" disabled={submitting}>
