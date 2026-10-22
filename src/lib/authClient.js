@@ -53,6 +53,36 @@ export async function register({ name, email, password, accountType }) {
   }
 }
 
+export async function requestPasswordReset(email) {
+  if (!isLiveApi) {
+    await simulateLatency();
+    return {
+      message: "If an account exists for that email, a password reset link is on its way.",
+    };
+  }
+
+  try {
+    return await customClient.post("/auth/forgot-password", { email });
+  } catch (err) {
+    throw new AuthError(err.payload?.message || "We couldn't send the reset email. Please try again.");
+  }
+}
+
+export async function resetPassword({ login: userLogin, key, password }) {
+  if (!isLiveApi) {
+    await simulateLatency();
+    if (!userLogin || !key) throw new AuthError("This password reset link is invalid or incomplete.");
+    if (!password || password.length < 8) throw new AuthError("Password must be at least 8 characters.");
+    return { message: "Your password has been reset. You can now sign in." };
+  }
+
+  try {
+    return await customClient.post("/auth/reset-password", { login: userLogin, key, password });
+  } catch (err) {
+    throw new AuthError(err.payload?.message || "This reset link is invalid or has expired.");
+  }
+}
+
 export function logout() {
   setStoredToken(null);
   setStoredUser(null);
