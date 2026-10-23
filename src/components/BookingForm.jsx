@@ -78,16 +78,12 @@ export default function BookingForm({
 
   const update = (field) => (event) => setForm((current) => ({ ...current, [field]: event.target.value }));
   const isPaid = Number(priceCents) > 0;
-  const valid = form.name.trim() && (form.email.trim() || form.phone.trim());
+  const valid = Object.values(form).every((value) => value.trim());
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!valid) {
-      setError("Add your name and either an email or a phone number.");
-      return;
-    }
-    if (isPaid && !form.email.trim()) {
-      setError("Add your email so we can send your receipt and private meeting link.");
+      setError("Complete every required field before submitting your appointment request.");
       return;
     }
     setError(null);
@@ -187,26 +183,26 @@ export default function BookingForm({
         <form onSubmit={handleSubmit}>
           <div className="space-y-3">
             <FormField label="Your name" htmlFor="booking-name" required>
-              <Input id="booking-name" value={form.name} onChange={update("name")} placeholder="Full name" />
+              <Input id="booking-name" value={form.name} onChange={update("name")} placeholder="Full name" required />
             </FormField>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <FormField label="Email" htmlFor="booking-email" required={isPaid}>
-                <Input id="booking-email" type="email" value={form.email} onChange={update("email")} placeholder="you@email.com" />
+              <FormField label="Email" htmlFor="booking-email" required>
+                <Input id="booking-email" type="email" value={form.email} onChange={update("email")} placeholder="you@email.com" required />
               </FormField>
-              <FormField label="Phone" htmlFor="booking-phone">
-                <Input id="booking-phone" value={form.phone} onChange={update("phone")} placeholder="+1 (767) 555-0100" />
+              <FormField label="Phone" htmlFor="booking-phone" required>
+                <Input id="booking-phone" type="tel" value={form.phone} onChange={update("phone")} placeholder="+1 (767) 555-0100" required />
               </FormField>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <FormField label="Preferred date" htmlFor="booking-date">
-                <Input id="booking-date" type="date" value={form.preferredDate} onChange={update("preferredDate")} />
+              <FormField label="Preferred date" htmlFor="booking-date" required>
+                <Input id="booking-date" type="date" value={form.preferredDate} onChange={update("preferredDate")} required />
               </FormField>
-              <FormField label="Preferred time" htmlFor="booking-time">
-                <Input id="booking-time" type="time" value={form.preferredTime} onChange={update("preferredTime")} />
+              <FormField label="Preferred time" htmlFor="booking-time" required>
+                <Input id="booking-time" type="time" value={form.preferredTime} onChange={update("preferredTime")} required />
               </FormField>
             </div>
-            <FormField label="Anything else?" htmlFor="booking-notes">
-              <Textarea id="booking-notes" rows={3} value={form.notes} onChange={update("notes")} placeholder="What do you need, how many people, or anything that helps them prepare…" />
+            <FormField label="Anything else?" htmlFor="booking-notes" required>
+              <Textarea id="booking-notes" rows={3} value={form.notes} onChange={update("notes")} placeholder="What do you need, how many people, or anything that helps them prepare…" required />
             </FormField>
           </div>
           {error && <p className="text-xs text-accent-600 font-label mt-3">{error}</p>}

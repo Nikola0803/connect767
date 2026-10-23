@@ -31,4 +31,23 @@ describe("BookingForm", () => {
     expect(screen.getByText("Free")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /send booking request/i })).toBeInTheDocument();
   });
+
+  it("marks every appointment field as required", () => {
+    render(
+      <BookingForm
+        slug="consultation"
+        businessName="Island Consulting"
+        priceCents={0}
+        durationMinutes={30}
+      />,
+    );
+
+    expect(screen.getAllByLabelText("required")).toHaveLength(6);
+    expect(screen.getByLabelText(/your name/i)).toBeRequired();
+    expect(screen.getByLabelText(/email/i)).toBeRequired();
+    expect(screen.getByLabelText(/phone/i)).toBeRequired();
+    expect(screen.getByLabelText(/preferred date/i)).toBeRequired();
+    expect(screen.getByLabelText(/preferred time/i)).toBeRequired();
+    expect(screen.getByLabelText(/anything else/i)).toBeRequired();
+  });
 });
