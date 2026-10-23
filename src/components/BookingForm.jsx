@@ -14,6 +14,12 @@ import Button from "./ui/Button";
 import { FormField, Input, Textarea } from "./ui/FormField";
 
 const formatPrice = (cents) => `$${(Number(cents || 0) / 100).toFixed(2)}`;
+const nightsBetween = (checkIn, checkOut) => {
+  if (!checkIn || !checkOut) return 0;
+  const start = Date.parse(`${checkIn}T00:00:00Z`);
+  const end = Date.parse(`${checkOut}T00:00:00Z`);
+  return Number.isFinite(start) && Number.isFinite(end) ? Math.max(0, Math.round((end - start) / 86400000)) : 0;
+};
 
 function BookingCardPayment({ booking, onSuccess }) {
   const stripe = useStripe();
@@ -57,6 +63,7 @@ function BookingCardPayment({ booking, onSuccess }) {
 export default function BookingForm({
   slug,
   businessName,
+  bookingType = "appointment",
   priceCents = 0,
   durationMinutes = 30,
 }) {
@@ -66,6 +73,8 @@ export default function BookingForm({
     phone: "",
     preferredDate: "",
     preferredTime: "",
+    checkIn: "",
+    checkOut: "",
     notes: "",
   });
   const [step, setStep] = useState("details");
@@ -77,13 +86,21 @@ export default function BookingForm({
   const [error, setError] = useState(null);
 
   const update = (field) => (event) => setForm((current) => ({ ...current, [field]: event.target.value }));
+  const isRental = bookingType === "rental";
+  const nights = nightsBetween(form.checkIn, form.checkOut);
+  const totalCents = isRental ? Number(priceCents) * nights : Number(priceCents);
   const isPaid = Number(priceCents) > 0;
-  const valid = Object.values(form).every((value) => value.trim());
+  const commonValid = [form.name, form.email, form.phone, form.notes].every((value) => value.trim());
+  const valid = commonValid && (isRental
+    ? Boolean(form.checkIn && form.checkOut && nights > 0)
+    : Boolean(form.preferredDate && form.preferredTime));
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!valid) {
-      setError("Complete every required field before submitting your appointment request.");
+      setError(isRental
+        ? "Complete every required field and choose a check-out date after check-in."
+        : "Complete every required field before submitting your appointment request.");
       return;
     }
     setError(null);
@@ -96,7 +113,7 @@ export default function BookingForm({
           throw new Error("Online payment is temporarily unavailable. Please contact the business.");
         }
       }
-      const result = await submitBooking(slug, form);
+      const result = await submitBooking(slug, { ...form, bookingType });
       setBooking(result);
       if (result.paymentRequired) {
         setPaymentConfig(config);
@@ -142,10 +159,14 @@ export default function BookingForm({
         </h3>
         <p className="text-sm text-foreground-600 font-label">
           {confirmed
-            ? `Your ${durationMinutes}-minute appointment with ${businessName} is confirmed.`
-            : `${businessName} will review your preferred time and confirm with you directly.`}
+            ? isRental
+              ? `Your ${nights}-night stay with ${businessName} is confirmed.`
+              : `Your ${durationMinutes}-minute appointment with ${businessName} is confirmed.`
+            : isRental
+              ? `${businessName} will review your requested stay and confirm with you directly.`
+              : `${businessName} will review your preferred time and confirm with you directly.`}
         </p>
-        {confirmed && meetingUrl && (
+        {confirmed && !isRental && meetingUrl && (
           <a
             href={meetingUrl}
             target="_blank"
@@ -156,7 +177,7 @@ export default function BookingForm({
             Join meeting
           </a>
         )}
-        {confirmed && !meetingUrl && (
+        {confirmed && !isRental && !meetingUrl && (
           <p className="text-xs text-foreground-500 font-label mt-3">
             The business will send the meeting details separately. A confirmation was emailed to you.
           </p>
@@ -168,15 +189,15 @@ export default function BookingForm({
   return (
     <div className="rounded-2xl border border-background-200/70 bg-background-50 p-5 md:p-6">
       <div className="flex items-start justify-between gap-4 mb-1">
-        <h3 className="font-heading text-lg font-medium text-foreground-950">Book an appointment</h3>
+        <h3 className="font-heading text-lg font-medium text-foreground-950">{isRental ? "Book this rental" : "Book an appointment"}</h3>
         <span className="text-sm font-semibold text-primary-800 whitespace-nowrap">
-          {isPaid ? formatPrice(priceCents) : "Free"}
+          {isPaid ? `${formatPrice(priceCents)}${isRental ? " / night" : ""}` : "Free"}
         </span>
       </div>
       <p className="text-xs text-foreground-600 font-label mb-5">
-        {durationMinutes}-minute appointment. {isPaid
-          ? "Choose a preferred time, then pay securely to confirm and receive the private meeting link."
-          : "Choose a preferred time; the business will confirm it with you."}
+        {isRental ? "Select your check-in and check-out dates. " : `${durationMinutes}-minute appointment. `}{isPaid
+          ? isRental ? "Your total is calculated by the number of nights and paid securely online." : "Choose a preferred time, then pay securely to confirm and receive the private meeting link."
+          : isRental ? "Send a request and the host will confirm availability." : "Choose a preferred time; the business will confirm it with you."}
       </p>
 
       {step === "details" && (
@@ -193,21 +214,34 @@ export default function BookingForm({
                 <Input id="booking-phone" type="tel" value={form.phone} onChange={update("phone")} placeholder="+1 (767) 555-0100" required />
               </FormField>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {isRental ? <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FormField label="Check-in" htmlFor="booking-check-in" required>
+                <Input id="booking-check-in" type="date" min={new Date().toISOString().slice(0, 10)} value={form.checkIn} onChange={update("checkIn")} required />
+              </FormField>
+              <FormField label="Check-out" htmlFor="booking-check-out" required>
+                <Input id="booking-check-out" type="date" min={form.checkIn || new Date().toISOString().slice(0, 10)} value={form.checkOut} onChange={update("checkOut")} required />
+              </FormField>
+            </div> : <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FormField label="Preferred date" htmlFor="booking-date" required>
                 <Input id="booking-date" type="date" value={form.preferredDate} onChange={update("preferredDate")} required />
               </FormField>
               <FormField label="Preferred time" htmlFor="booking-time" required>
                 <Input id="booking-time" type="time" value={form.preferredTime} onChange={update("preferredTime")} required />
               </FormField>
-            </div>
+            </div>}
+            {isRental && nights > 0 && (
+              <div className="flex items-center justify-between rounded-lg bg-primary-50 px-4 py-3 text-sm font-label">
+                <span>{nights} {nights === 1 ? "night" : "nights"} × {formatPrice(priceCents)}</span>
+                <strong className="text-primary-900">Total {formatPrice(totalCents)}</strong>
+              </div>
+            )}
             <FormField label="Anything else?" htmlFor="booking-notes" required>
               <Textarea id="booking-notes" rows={3} value={form.notes} onChange={update("notes")} placeholder="What do you need, how many people, or anything that helps them prepare…" required />
             </FormField>
           </div>
           {error && <p className="text-xs text-accent-600 font-label mt-3">{error}</p>}
           <Button type="submit" variant="primary" icon="ri-calendar-check-line" iconPosition="left" disabled={sending} className="w-full mt-4">
-            {sending ? "Starting…" : isPaid ? `Continue to payment · ${formatPrice(priceCents)}` : "Send booking request"}
+            {sending ? "Starting…" : isPaid && isRental && nights === 0 ? "Select stay dates" : isPaid ? `Continue to payment · ${formatPrice(totalCents)}` : "Send booking request"}
           </Button>
         </form>
       )}
@@ -215,7 +249,7 @@ export default function BookingForm({
       {step === "choosePayment" && paymentConfig && (
         <div>
           <p className="text-sm text-foreground-700 font-label mb-4">
-            Your requested time is held pending payment. Choose how to pay.
+            {isRental ? "Your selected stay is held pending payment." : "Your requested time is held pending payment."} Choose how to pay.
           </p>
           {error && <p className="text-xs text-accent-600 font-label mb-3">{error}</p>}
           {paymentConfig.stripeEnabled && (
