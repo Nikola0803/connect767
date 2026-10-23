@@ -60,9 +60,9 @@ export default function Header() {
   const wordmarkText = transparent
     ? "text-background-50 [text-shadow:0_2px_5px_rgba(0,0,0,0.5)]"
     : "text-primary-950";
-  // Alternate the brand colors across the wordmark so the favicon-shaped C
-  // stays distinct over both the homepage hero and light interior headers.
-  const logoMark = transparent ? "bg-primary-400" : "bg-primary-700";
+  // Keep the favicon-shaped C black while the light edge treatment preserves
+  // its definition over both the homepage hero and light interior headers.
+  const logoMark = "bg-black";
   const logoMarkFilter = transparent
     ? "drop-shadow(1px 0 0 rgba(255,255,255,0.72)) drop-shadow(-1px 0 0 rgba(255,255,255,0.72)) drop-shadow(0 1px 3px rgba(0,0,0,0.48))"
     : "drop-shadow(0 1px 1px rgba(255,255,255,0.55))";
