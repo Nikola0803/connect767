@@ -33,6 +33,7 @@ const ProductCustomizerPage = lazy(() => import("./pages/ProductCustomizerPage")
 const AboutPage = lazy(() => import("./pages/AboutPage"));
 const HelpPage = lazy(() => import("./pages/HelpPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
+const TermsPage = lazy(() => import("./pages/TermsPage"));
 const SavedListingsPage = lazy(() => import("./pages/SavedListingsPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 
@@ -106,6 +107,7 @@ function App() {
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/help" element={<HelpPage />} />
                   <Route path="/privacy" element={<PrivacyPage />} />
+                  <Route path="/terms" element={<TermsPage />} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </Suspense>

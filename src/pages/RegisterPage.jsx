@@ -164,11 +164,11 @@ export default function RegisterPage() {
           />
           <span>
             I agree to the{" "}
-            <a href="#terms" className="text-primary-700 hover:text-primary-800 font-semibold">
+            <a href="/terms" target="_blank" rel="noreferrer" className="text-primary-700 hover:text-primary-800 font-semibold">
               Terms
             </a>{" "}
             and{" "}
-            <a href="#privacy" className="text-primary-700 hover:text-primary-800 font-semibold">
+            <a href="/privacy" target="_blank" rel="noreferrer" className="text-primary-700 hover:text-primary-800 font-semibold">
               Privacy Policy
             </a>
           </span>

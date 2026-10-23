@@ -10,6 +10,7 @@ import {
   decodeEntities,
 } from "../lib/mappers";
 import { hydrateMatchedListings, matchListingsLocally } from "../lib/matching";
+import { normalizeBookingType } from "../lib/bookingTypes";
 import { allIndustries } from "./industries";
 import { createListingSearchText } from "../lib/listingSearch";
 
@@ -508,7 +509,7 @@ async function saveBookingSettings(listingId, form) {
   const dollars = Number(form.bookingPrice || 0);
   return customClient.post(`/listings/${listingId}/booking`, {
     enabled: form.bookingEnabled ? 1 : 0,
-    bookingType: form.bookingType === "rental" ? "rental" : "appointment",
+    bookingType: normalizeBookingType(form.bookingType),
     bookingPriceCents: Number.isFinite(dollars) ? Math.max(0, Math.round(dollars * 100)) : 0,
     bookingDurationMinutes: Number(form.bookingDurationMinutes) || 30,
     bookingMeetingUrl: form.bookingMeetingUrl || "",

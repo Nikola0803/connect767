@@ -1,6 +1,7 @@
 import { createListingSearchText } from "./listingSearch";
 import { currentYearsExperience } from "./experience";
 import { findCategory, findIndustry } from "../data/industries";
+import { normalizeBookingType } from "./bookingTypes";
 
 /**
  * Mappers between raw WordPress/WooCommerce REST API shapes and the flat
@@ -268,7 +269,7 @@ export function mapListingCpt(wp) {
     // simply never read or wrote it, so the owner had no way to turn bookings
     // on despite it being advertised as a Classified feature.
     bookingEnabled: isTruthyMeta(acf.booking_enabled),
-    bookingType: acf.booking_type === "rental" ? "rental" : "appointment",
+    bookingType: normalizeBookingType(acf.booking_type),
     bookingPriceCents: Math.max(0, Number(acf.booking_price_cents) || 0),
     bookingDurationMinutes: Math.max(15, Number(acf.booking_duration_minutes) || 30),
     rating: acf.rating || "0",

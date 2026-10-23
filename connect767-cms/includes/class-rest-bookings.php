@@ -20,6 +20,14 @@ if (!defined('ABSPATH')) {
 class C767_Rest_Bookings
 {
     const NAMESPACE_ = 'connect767/v1';
+    const PAID_TERMS_VERSION = '2026-10-23';
+    const PLATFORM_FEE_PERCENT = 10;
+    const RENTAL_BOOKING_TYPES = [
+        'rental', 'apartments', 'audio-equipment', 'boats', 'electronics',
+        'heavy-equipment', 'hotels', 'jet-ski', 'long-term-rental-housing',
+        'musical-equipment', 'short-term-rental-housing', 'tools', 'vehicles',
+        'video-equipment', 'video-games',
+    ];
 
     public static function init()
     {
@@ -85,6 +93,30 @@ class C767_Rest_Bookings
         return checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1]);
     }
 
+    private static function normalize_booking_type($value)
+    {
+        $type = sanitize_key((string) $value);
+        return $type === 'appointment' || in_array($type, self::RENTAL_BOOKING_TYPES, true)
+            ? $type
+            : 'appointment';
+    }
+
+    private static function is_rental($type)
+    {
+        return in_array($type, self::RENTAL_BOOKING_TYPES, true);
+    }
+
+    private static function rate_unit($type)
+    {
+        if ($type === 'long-term-rental-housing') {
+            return 'month';
+        }
+        if (in_array($type, ['rental', 'apartments', 'hotels', 'short-term-rental-housing'], true)) {
+            return 'night';
+        }
+        return self::is_rental($type) ? 'day' : 'booking';
+    }
+
     private static function rental_conflict($listing_id, $check_in, $check_out, $exclude_booking_id = 0)
     {
         $ids = get_posts([
@@ -94,7 +126,7 @@ class C767_Rest_Bookings
             'fields' => 'ids',
             'meta_query' => [
                 ['key' => 'listing_id', 'value' => (int) $listing_id, 'compare' => '='],
-                ['key' => 'booking_type', 'value' => 'rental', 'compare' => '='],
+                ['key' => 'booking_type', 'value' => self::RENTAL_BOOKING_TYPES, 'compare' => 'IN'],
             ],
         ]);
 
@@ -120,7 +152,7 @@ class C767_Rest_Bookings
 
     private static function ensure_rental_available($booking_id)
     {
-        if (get_post_meta($booking_id, 'booking_type', true) !== 'rental') {
+        if (!self::is_rental(self::normalize_booking_type(get_post_meta($booking_id, 'booking_type', true)))) {
             return true;
         }
         $listing_id = (int) get_post_meta($booking_id, 'listing_id', true);
@@ -153,7 +185,8 @@ class C767_Rest_Bookings
         $name = sanitize_text_field((string) $request->get_param('name'));
         $email = sanitize_email((string) $request->get_param('email'));
         $phone = sanitize_text_field((string) $request->get_param('phone'));
-        $booking_type = get_post_meta($listing->ID, 'booking_type', true) === 'rental' ? 'rental' : 'appointment';
+        $booking_type = self::normalize_booking_type(get_post_meta($listing->ID, 'booking_type', true));
+        $rate_unit = self::rate_unit($booking_type);
         $preferred_date = sanitize_text_field((string) $request->get_param('preferredDate'));
         $preferred_time = sanitize_text_field((string) $request->get_param('preferredTime'));
         $check_in = sanitize_text_field((string) $request->get_param('checkIn'));
@@ -171,23 +204,33 @@ class C767_Rest_Bookings
             );
         }
 
-        $nights = 0;
-        if ($booking_type === 'rental') {
+        $units = 0;
+        if (self::is_rental($booking_type)) {
             if (!self::valid_date($check_in) || !self::valid_date($check_out) || $check_in < wp_date('Y-m-d')) {
                 return new WP_Error('c767_bad_stay_dates', 'Choose valid check-in and check-out dates that are not in the past.', ['status' => 400]);
             }
-            $nights = (int) ((strtotime($check_out . ' UTC') - strtotime($check_in . ' UTC')) / DAY_IN_SECONDS);
-            if ($nights < 1 || $nights > 365) {
-                return new WP_Error('c767_bad_stay_length', 'Check-out must be after check-in, with a maximum stay of 365 nights.', ['status' => 400]);
+            $days = (int) ((strtotime($check_out . ' UTC') - strtotime($check_in . ' UTC')) / DAY_IN_SECONDS);
+            $units = $rate_unit === 'month' ? (int) ceil($days / 30) : $days;
+            if ($days < 1 || $days > 3650) {
+                return new WP_Error('c767_bad_rental_length', 'The end date must be after the start date, with a maximum rental period of 10 years.', ['status' => 400]);
             }
             if (self::rental_conflict($listing->ID, $check_in, $check_out)) {
                 return new WP_Error('c767_rental_unavailable', 'Those dates are already booked. Please choose another stay.', ['status' => 409]);
             }
-            $amount_cents = min(100000000, $rate_cents * $nights);
+            $amount_cents = min(100000000, $rate_cents * $units);
             $preferred_date = $check_in;
             $preferred_time = '';
         } elseif ($preferred_date === '' || $preferred_time === '') {
             return new WP_Error('c767_missing_fields', 'Preferred date and time are required for an appointment.', ['status' => 400]);
+        }
+
+        $terms_accepted = rest_sanitize_boolean($request->get_param('termsAccepted'));
+        if ($amount_cents > 0 && !$terms_accepted) {
+            return new WP_Error(
+                'c767_paid_terms_required',
+                'You must accept the Paid Booking Terms, including Connect767\'s 10% transaction fee, before continuing.',
+                ['status' => 400]
+            );
         }
 
         $booking_id = wp_insert_post([
@@ -210,12 +253,18 @@ class C767_Rest_Bookings
             'booking_type' => $booking_type,
             'check_in' => $check_in,
             'check_out' => $check_out,
-            'nights' => $nights,
+            'nights' => $rate_unit === 'night' ? $units : 0,
+            'units' => $units,
+            'rate_unit' => $rate_unit,
             'rate_cents' => $rate_cents,
             'status' => 'pending',
             'amount_cents' => $amount_cents,
             'duration_minutes' => $duration_minutes,
             'payment_status' => $amount_cents > 0 ? 'unpaid' : 'not_required',
+            'paid_terms_accepted' => $amount_cents > 0 ? '1' : '0',
+            'paid_terms_version' => $amount_cents > 0 ? self::PAID_TERMS_VERSION : '',
+            'paid_terms_accepted_at' => $amount_cents > 0 ? current_time('mysql', true) : '',
+            'platform_fee_percent' => $amount_cents > 0 ? self::PLATFORM_FEE_PERCENT : 0,
             // Possession of this high-entropy token is required for every
             // public payment/confirmation call, so guessing a numeric booking
             // ID can never reveal a private meeting URL.
@@ -233,14 +282,18 @@ class C767_Rest_Bookings
             'status' => 'pending',
             'paymentRequired' => $amount_cents > 0,
             'amountCents' => $amount_cents,
+            'platformFeePercent' => $amount_cents > 0 ? self::PLATFORM_FEE_PERCENT : 0,
+            'termsVersion' => $amount_cents > 0 ? self::PAID_TERMS_VERSION : '',
             'durationMinutes' => $duration_minutes,
             'bookingType' => $booking_type,
+            'rateUnit' => $rate_unit,
+            'units' => $units,
             'checkIn' => $check_in,
             'checkOut' => $check_out,
-            'nights' => $nights,
+            'nights' => $rate_unit === 'night' ? $units : 0,
             'accessToken' => $meta['access_token'],
             'message' => $amount_cents > 0
-                ? ($booking_type === 'rental' ? 'Your stay is reserved pending payment.' : 'Your appointment is reserved pending payment.')
+                ? (self::is_rental($booking_type) ? 'Your rental is reserved pending payment.' : 'Your appointment is reserved pending payment.')
                 : 'Your booking request was sent — the business will reach out to confirm.',
         ]);
     }
@@ -258,6 +311,21 @@ class C767_Rest_Bookings
             return new WP_Error('c767_booking_forbidden', 'Invalid booking access token.', ['status' => 403]);
         }
         return $booking;
+    }
+
+    private static function ensure_paid_terms_accepted($booking)
+    {
+        if ((int) get_post_meta($booking->ID, 'amount_cents', true) <= 0) {
+            return true;
+        }
+        if (get_post_meta($booking->ID, 'paid_terms_accepted', true) !== '1') {
+            return new WP_Error(
+                'c767_paid_terms_required',
+                'Paid Booking Terms must be accepted before payment can begin.',
+                ['status' => 400]
+            );
+        }
+        return true;
     }
 
     private static function meeting_url($booking_id)
@@ -292,6 +360,10 @@ class C767_Rest_Bookings
         $amount_cents = (int) get_post_meta($booking->ID, 'amount_cents', true);
         if ($amount_cents <= 0) {
             return new WP_Error('c767_booking_free', 'This booking does not require payment.', ['status' => 400]);
+        }
+        $terms = self::ensure_paid_terms_accepted($booking);
+        if (is_wp_error($terms)) {
+            return $terms;
         }
         $available = self::ensure_rental_available($booking->ID);
         if (is_wp_error($available)) {
@@ -351,6 +423,10 @@ class C767_Rest_Bookings
         $amount_cents = (int) get_post_meta($booking->ID, 'amount_cents', true);
         if ($amount_cents <= 0) {
             return new WP_Error('c767_booking_free', 'This booking does not require payment.', ['status' => 400]);
+        }
+        $terms = self::ensure_paid_terms_accepted($booking);
+        if (is_wp_error($terms)) {
+            return $terms;
         }
         $available = self::ensure_rental_available($booking->ID);
         if (is_wp_error($available)) {
@@ -447,10 +523,12 @@ class C767_Rest_Bookings
                 'preferredDate' => get_post_meta($post->ID, 'preferred_date', true),
                 'preferredTime' => get_post_meta($post->ID, 'preferred_time', true),
                 'notes' => get_post_meta($post->ID, 'notes', true),
-                'bookingType' => get_post_meta($post->ID, 'booking_type', true) === 'rental' ? 'rental' : 'appointment',
+                'bookingType' => self::normalize_booking_type(get_post_meta($post->ID, 'booking_type', true)),
                 'checkIn' => get_post_meta($post->ID, 'check_in', true),
                 'checkOut' => get_post_meta($post->ID, 'check_out', true),
                 'nights' => (int) get_post_meta($post->ID, 'nights', true),
+                'units' => (int) (get_post_meta($post->ID, 'units', true) ?: get_post_meta($post->ID, 'nights', true)),
+                'rateUnit' => (string) (get_post_meta($post->ID, 'rate_unit', true) ?: 'night'),
                 'rateCents' => (int) get_post_meta($post->ID, 'rate_cents', true),
                 'status' => get_post_meta($post->ID, 'status', true) ?: 'pending',
                 'paymentStatus' => get_post_meta($post->ID, 'payment_status', true) ?: 'not_required',

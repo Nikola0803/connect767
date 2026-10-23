@@ -25,6 +25,13 @@ import PositionPicker from "../components/ui/PositionPicker";
 import { Spinner, ErrorState } from "../components/ui/States";
 import { isLiveApi } from "../lib/config";
 import { imageCropStyle } from "../lib/imagePosition";
+import {
+  bookingRateUnit,
+  bookingRateLabel,
+  bookingTypeOptions,
+  isRentalBookingType,
+  normalizeBookingType,
+} from "../lib/bookingTypes";
 
 const steps = [
   { n: 1, label: "Choose Tier" },
@@ -266,7 +273,7 @@ export default function AddListingPage() {
           // cover slot and the owner had to re-upload it every single time,
           // while the logo (which does have its own field) survived fine.
           bookingEnabled: Boolean(data.bookingEnabled),
-          bookingType: data.bookingType === "rental" ? "rental" : "appointment",
+          bookingType: normalizeBookingType(data.bookingType),
           bookingPrice: ((data.bookingPriceCents || 0) / 100).toFixed(2),
           bookingDurationMinutes: String(data.bookingDurationMinutes || 30),
           photoPreview: data.coverPhoto || "",
@@ -286,7 +293,7 @@ export default function AddListingPage() {
             setForm((f) => ({
               ...f,
               bookingEnabled: Boolean(settings.bookingEnabled),
-              bookingType: settings.bookingType === "rental" ? "rental" : "appointment",
+              bookingType: normalizeBookingType(settings.bookingType),
               bookingPrice: ((settings.bookingPriceCents || 0) / 100).toFixed(2),
               bookingDurationMinutes: String(settings.bookingDurationMinutes || 30),
               bookingMeetingUrl: settings.bookingMeetingUrl || "",
@@ -807,18 +814,24 @@ export default function AddListingPage() {
                       <FormField
                         label="Booking type"
                         htmlFor="bookingType"
-                        hint="Rental bookings charge for each night between check-in and check-out."
+                        hint="Choose the service or exact rental industry. The correct rate period is applied automatically."
                       >
                         <Select id="bookingType" value={form.bookingType} onChange={update("bookingType")}>
-                          <option value="appointment">Appointment or service</option>
-                          <option value="rental">Rental stay</option>
+                          {form.bookingType === "rental" && <option value="rental">Rental stay (existing listing)</option>}
+                          {bookingTypeOptions.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
                         </Select>
                       </FormField>
                     </div>
                     <FormField
-                      label={form.bookingType === "rental" ? "Nightly rate (USD)" : "Booking price (USD)"}
+                      label={isRentalBookingType(form.bookingType)
+                        ? `${bookingRateLabel(form.bookingType)} rate (USD)`
+                        : "Booking price (USD)"}
                       htmlFor="bookingPrice"
-                      hint={form.bookingType === "rental" ? "The total is calculated from the number of nights" : "Enter 0 for a free booking request"}
+                      hint={isRentalBookingType(form.bookingType)
+                        ? `The total is calculated from the number of ${bookingRateUnit(form.bookingType)}s`
+                        : "Enter 0 for a free booking request"}
                     >
                       <Input
                         id="bookingPrice"
@@ -830,7 +843,7 @@ export default function AddListingPage() {
                         placeholder="0.00"
                       />
                     </FormField>
-                    {form.bookingType !== "rental" && <FormField label="Meeting duration" htmlFor="bookingDurationMinutes">
+                    {!isRentalBookingType(form.bookingType) && <FormField label="Meeting duration" htmlFor="bookingDurationMinutes">
                       <Select
                         id="bookingDurationMinutes"
                         value={form.bookingDurationMinutes}
@@ -844,7 +857,7 @@ export default function AddListingPage() {
                         <option value="120">2 hours</option>
                       </Select>
                     </FormField>}
-                    {form.bookingType !== "rental" && <div className="sm:col-span-2">
+                    {!isRentalBookingType(form.bookingType) && <div className="sm:col-span-2">
                       <FormField
                         label="Private meeting link"
                         htmlFor="bookingMeetingUrl"
