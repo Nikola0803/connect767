@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import BookingForm from "./BookingForm";
 
@@ -49,5 +49,25 @@ describe("BookingForm", () => {
     expect(screen.getByLabelText(/preferred date/i)).toBeRequired();
     expect(screen.getByLabelText(/preferred time/i)).toBeRequired();
     expect(screen.getByLabelText(/anything else/i)).toBeRequired();
+  });
+
+  it("calculates a rental total from check-in and check-out dates", () => {
+    render(
+      <BookingForm
+        slug="island-villa"
+        businessName="Island Villa"
+        bookingType="rental"
+        priceCents={12500}
+      />,
+    );
+
+    expect(screen.getByText("$125.00 / night")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/check-in/i), { target: { value: "2030-06-10" } });
+    fireEvent.change(screen.getByLabelText(/check-out/i), { target: { value: "2030-06-13" } });
+
+    expect(screen.getByText(/3 nights × \$125.00/i)).toBeInTheDocument();
+    expect(screen.getByText(/total \$375.00/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /continue to payment · \$375.00/i })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/preferred time/i)).not.toBeInTheDocument();
   });
 });
