@@ -308,17 +308,24 @@ class C767_Notifications
         $preferred_time = get_post_meta($booking_id, 'preferred_time', true);
         $notes = get_post_meta($booking_id, 'notes', true);
         $amount_cents = (int) get_post_meta($booking_id, 'amount_cents', true);
+        $booking_type = get_post_meta($booking_id, 'booking_type', true) === 'rental' ? 'rental' : 'appointment';
+        $check_in = get_post_meta($booking_id, 'check_in', true);
+        $check_out = get_post_meta($booking_id, 'check_out', true);
+        $nights = (int) get_post_meta($booking_id, 'nights', true);
+        $schedule = $booking_type === 'rental'
+            ? sprintf("Check-in: %s\nCheck-out: %s\nStay: %d night%s", $check_in, $check_out, $nights, $nights === 1 ? '' : 's')
+            : sprintf("Preferred date: %s\nPreferred time: %s", $preferred_date ?: 'Not specified', $preferred_time ?: 'Not specified');
 
         // Business owner: a customer wants to book them.
         if ($owner) {
             $subject = sprintf('New booking request — %s', $listing->post_title);
             $body = sprintf(
-                "Hi %s,\n\n%s just requested a booking for \"%s\":\n\nPreferred date: %s\nPreferred time: %s\nEmail: %s\nPhone: %s\nNotes: %s\nPayment: %s\n\nTrack and manage this booking from your dashboard:\n%s",
+                "Hi %s,\n\n%s just requested a %s for \"%s\":\n\n%s\nEmail: %s\nPhone: %s\nNotes: %s\nPayment: %s\n\nTrack and manage this booking from your dashboard:\n%s",
                 $owner->display_name ?: $owner->user_login,
                 $name ?: 'Someone',
+                $booking_type === 'rental' ? 'rental stay' : 'booking',
                 $listing->post_title,
-                $preferred_date ?: 'Not specified',
-                $preferred_time ?: 'Not specified',
+                $schedule,
                 $email ?: 'not provided',
                 $phone ?: 'not provided',
                 $notes ?: '—',
@@ -331,14 +338,22 @@ class C767_Notifications
         // Customer: confirmation their request went through.
         if ($email && is_email($email)) {
             $subject = sprintf('Your booking request to %s', $listing->post_title);
-            $body = sprintf(
-                $amount_cents > 0
-                    ? "Hi %s,\n\nYour appointment request to \"%s\" was created. Complete payment on the booking screen to confirm it and receive the meeting link.\n\n— %s"
-                    : "Hi %s,\n\nYour booking request to \"%s\" was sent. They'll reach out to you directly at this email or the phone number you provided to confirm.\n\n— %s",
-                $name ?: 'there',
-                $listing->post_title,
-                self::site_name()
-            );
+            if ($amount_cents > 0 && $booking_type === 'rental') {
+                $body = sprintf(
+                    "Hi %s,\n\nYour rental request to \"%s\" was created for %d night%s. Complete payment on the booking screen to confirm your stay.\n\n— %s",
+                    $name ?: 'there', $listing->post_title, $nights, $nights === 1 ? '' : 's', self::site_name()
+                );
+            } elseif ($amount_cents > 0) {
+                $body = sprintf(
+                    "Hi %s,\n\nYour appointment request to \"%s\" was created. Complete payment on the booking screen to confirm it and receive the meeting link.\n\n— %s",
+                    $name ?: 'there', $listing->post_title, self::site_name()
+                );
+            } else {
+                $body = sprintf(
+                    "Hi %s,\n\nYour booking request to \"%s\" was sent. They'll reach out to you directly at this email or the phone number you provided to confirm.\n\n— %s",
+                    $name ?: 'there', $listing->post_title, self::site_name()
+                );
+            }
             wp_mail($email, $subject, $body);
         }
     }
@@ -356,21 +371,25 @@ class C767_Notifications
         $date = get_post_meta($booking_id, 'preferred_date', true);
         $time = get_post_meta($booking_id, 'preferred_time', true);
         $duration = (int) (get_post_meta($booking_id, 'duration_minutes', true) ?: 30);
+        $booking_type = get_post_meta($booking_id, 'booking_type', true) === 'rental' ? 'rental' : 'appointment';
+        $check_in = get_post_meta($booking_id, 'check_in', true);
+        $check_out = get_post_meta($booking_id, 'check_out', true);
+        $nights = (int) get_post_meta($booking_id, 'nights', true);
         $meeting_url = get_post_meta($listing_id, 'booking_meeting_url', true);
         $owner = get_userdata($listing->post_author);
 
         if ($email && is_email($email)) {
             $subject = sprintf('Booking confirmed — %s', $listing->post_title);
-            $body = sprintf(
-                "Hi %s,\n\nYour booking with \"%s\" is confirmed.\n\nDate: %s\nTime: %s\nDuration: %d minutes\nMeeting link: %s\n\nKeep this email private; the meeting link is intended for you.\n\n— %s",
-                $name ?: 'there',
-                $listing->post_title,
-                $date ?: 'To be arranged',
-                $time ?: 'To be arranged',
-                $duration,
-                $meeting_url ?: 'The business will send this separately.',
-                self::site_name()
-            );
+            $body = $booking_type === 'rental'
+                ? sprintf(
+                    "Hi %s,\n\nYour stay with \"%s\" is confirmed.\n\nCheck-in: %s\nCheck-out: %s\nStay: %d night%s\n\nThe host will contact you with arrival details.\n\n— %s",
+                    $name ?: 'there', $listing->post_title, $check_in, $check_out, $nights, $nights === 1 ? '' : 's', self::site_name()
+                )
+                : sprintf(
+                    "Hi %s,\n\nYour booking with \"%s\" is confirmed.\n\nDate: %s\nTime: %s\nDuration: %d minutes\nMeeting link: %s\n\nKeep this email private; the meeting link is intended for you.\n\n— %s",
+                    $name ?: 'there', $listing->post_title, $date ?: 'To be arranged', $time ?: 'To be arranged', $duration,
+                    $meeting_url ?: 'The business will send this separately.', self::site_name()
+                );
             wp_mail($email, $subject, $body);
         }
 
@@ -378,13 +397,9 @@ class C767_Notifications
             wp_mail(
                 $owner->user_email,
                 sprintf('Booking confirmed — %s', $listing->post_title),
-                sprintf(
-                    "%s's booking is confirmed for %s at %s. Manage it from your dashboard:\n%s",
-                    $name ?: 'A customer',
-                    $date ?: 'a date to be arranged',
-                    $time ?: 'a time to be arranged',
-                    self::frontend_url('/dashboard')
-                ),
+                $booking_type === 'rental'
+                    ? sprintf("%s's rental is confirmed from %s to %s. Manage it from your dashboard:\n%s", $name ?: 'A customer', $check_in, $check_out, self::frontend_url('/dashboard'))
+                    : sprintf("%s's booking is confirmed for %s at %s. Manage it from your dashboard:\n%s", $name ?: 'A customer', $date ?: 'a date to be arranged', $time ?: 'a time to be arranged', self::frontend_url('/dashboard')),
                 self::reply_to($email)
             );
         }
