@@ -248,6 +248,7 @@ class C767_REST_Listings
         return rest_ensure_response([
             'id' => $post->ID,
             'bookingEnabled' => get_post_meta($post->ID, 'booking_enabled', true) === '1',
+            'bookingType' => get_post_meta($post->ID, 'booking_type', true) === 'rental' ? 'rental' : 'appointment',
             'bookingPriceCents' => (int) get_post_meta($post->ID, 'booking_price_cents', true),
             'bookingDurationMinutes' => (int) (get_post_meta($post->ID, 'booking_duration_minutes', true) ?: 30),
             // Owner-authenticated endpoint only. This value is deliberately
@@ -266,6 +267,8 @@ class C767_REST_Listings
         $post_id = $post->ID;
 
         $enabled = filter_var($request->get_param('enabled'), FILTER_VALIDATE_BOOLEAN);
+        $booking_type = sanitize_key((string) $request->get_param('bookingType'));
+        $booking_type = $booking_type === 'rental' ? 'rental' : 'appointment';
         $price_cents = max(0, min(10000000, (int) $request->get_param('bookingPriceCents')));
         $duration = max(15, min(480, (int) ($request->get_param('bookingDurationMinutes') ?: 30)));
         $meeting_url_raw = trim((string) $request->get_param('bookingMeetingUrl'));
@@ -275,6 +278,7 @@ class C767_REST_Listings
         }
 
         update_post_meta($post_id, 'booking_enabled', $enabled ? '1' : '0');
+        update_post_meta($post_id, 'booking_type', $booking_type);
         update_post_meta($post_id, 'booking_price_cents', $price_cents);
         update_post_meta($post_id, 'booking_duration_minutes', $duration);
         update_post_meta($post_id, 'booking_meeting_url', $meeting_url);
@@ -282,6 +286,7 @@ class C767_REST_Listings
         return rest_ensure_response([
             'id' => $post_id,
             'bookingEnabled' => $enabled,
+            'bookingType' => $booking_type,
             'bookingPriceCents' => $price_cents,
             'bookingDurationMinutes' => $duration,
             'bookingMeetingUrl' => $meeting_url,
@@ -330,6 +335,7 @@ class C767_REST_Listings
                 'rating' => get_post_meta($post->ID, 'rating', true) ?: '0',
                 'reviewCount' => get_post_meta($post->ID, 'review_count', true) ?: '0',
                 'bookingEnabled' => get_post_meta($post->ID, 'booking_enabled', true) === '1',
+                'bookingType' => get_post_meta($post->ID, 'booking_type', true) === 'rental' ? 'rental' : 'appointment',
                 'bookingPriceCents' => (int) get_post_meta($post->ID, 'booking_price_cents', true),
                 'bookingDurationMinutes' => (int) (get_post_meta($post->ID, 'booking_duration_minutes', true) ?: 30),
                 'submittedAt' => $post->post_date,
