@@ -104,10 +104,17 @@ class C767_Rest_Bookings
         $amount_cents = max(0, (int) get_post_meta($listing->ID, 'booking_price_cents', true));
         $duration_minutes = max(15, (int) (get_post_meta($listing->ID, 'booking_duration_minutes', true) ?: 30));
 
-        if ($name === '' || ($email === '' && $phone === '')) {
+        if (
+            $name === ''
+            || $email === ''
+            || $phone === ''
+            || $preferred_date === ''
+            || $preferred_time === ''
+            || $notes === ''
+        ) {
             return new WP_Error(
                 'c767_missing_fields',
-                'Name and at least one contact method (email or phone) are required.',
+                'Name, email, phone, preferred date, preferred time, and appointment details are required.',
                 ['status' => 400]
             );
         }
