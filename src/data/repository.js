@@ -508,6 +508,7 @@ async function saveBookingSettings(listingId, form) {
   const dollars = Number(form.bookingPrice || 0);
   return customClient.post(`/listings/${listingId}/booking`, {
     enabled: form.bookingEnabled ? 1 : 0,
+    bookingType: form.bookingType === "rental" ? "rental" : "appointment",
     bookingPriceCents: Number.isFinite(dollars) ? Math.max(0, Math.round(dollars * 100)) : 0,
     bookingDurationMinutes: Number(form.bookingDurationMinutes) || 30,
     bookingMeetingUrl: form.bookingMeetingUrl || "",
@@ -516,7 +517,7 @@ async function saveBookingSettings(listingId, form) {
 
 export async function getBookingSettings(listingId) {
   if (!isLiveApi) {
-    return { bookingEnabled: false, bookingPriceCents: 0, bookingDurationMinutes: 30, bookingMeetingUrl: "" };
+    return { bookingEnabled: false, bookingType: "appointment", bookingPriceCents: 0, bookingDurationMinutes: 30, bookingMeetingUrl: "" };
   }
   return customClient.get(`/listings/${listingId}/booking`);
 }
