@@ -243,7 +243,7 @@ export default function BookingForm({
                 <strong className="text-primary-900">Total {formatPrice(totalCents)}</strong>
               </div>
             )}
-            <FormField label="Anything else?" htmlFor="booking-notes" required>
+            <FormField label="Notes & Preferences" htmlFor="booking-notes" required>
               <Textarea id="booking-notes" rows={3} value={form.notes} onChange={update("notes")} placeholder="What do you need, how many people, or anything that helps them prepare…" required />
             </FormField>
             {isPaid && (
