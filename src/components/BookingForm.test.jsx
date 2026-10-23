@@ -49,7 +49,7 @@ describe("BookingForm", () => {
     expect(screen.getByLabelText(/phone/i)).toBeRequired();
     expect(screen.getByLabelText(/preferred date/i)).toBeRequired();
     expect(screen.getByLabelText(/preferred time/i)).toBeRequired();
-    expect(screen.getByLabelText(/anything else/i)).toBeRequired();
+    expect(screen.getByLabelText(/notes & preferences/i)).toBeRequired();
   });
 
   it("calculates a rental total from check-in and check-out dates", () => {
