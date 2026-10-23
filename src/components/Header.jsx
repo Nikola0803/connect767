@@ -57,9 +57,7 @@ export default function Header() {
     ? "bg-primary-500/10 backdrop-blur-md border-b border-primary-900/10"
     : "bg-background-50/95 backdrop-blur border-b border-background-200/70";
 
-  const wordmarkText = transparent
-    ? "text-background-50 [text-shadow:0_2px_5px_rgba(0,0,0,0.5)]"
-    : "text-primary-950";
+  const wordmarkText = "text-black";
   // Keep the favicon-shaped C black while the light edge treatment preserves
   // its definition over both the homepage hero and light interior headers.
   const logoMark = "bg-black";
@@ -116,9 +114,10 @@ export default function Header() {
           <span
             aria-hidden="true"
             className={`hidden min-[350px]:inline-flex -ml-0.5 items-baseline font-label text-lg sm:text-xl md:text-[1.4rem] font-extrabold leading-none tracking-[-0.055em] ${wordmarkText}`}
+            style={{ filter: logoMarkFilter }}
           >
             <span>onnect</span>
-            <span className="ml-0.5 text-accent-500 tracking-[-0.035em]">767</span>
+            <span className="ml-0.5 tracking-[-0.035em]">767</span>
           </span>
         </Link>
 
