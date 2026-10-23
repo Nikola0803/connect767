@@ -68,6 +68,7 @@ const initialForm = {
   galleryFiles: [],
   galleryPreviews: [],
   bookingEnabled: false,
+  bookingType: "appointment",
   bookingPrice: "0",
   bookingDurationMinutes: "30",
   bookingMeetingUrl: "",
@@ -161,6 +162,7 @@ function buildPreviewData(form) {
     coverZoom: form.coverZoom || 1,
     coverFit: form.coverFit || "contain",
     bookingEnabled: form.bookingEnabled,
+    bookingType: form.bookingType,
     bookingPriceCents: Math.max(0, Math.round((Number(form.bookingPrice) || 0) * 100)),
     bookingDurationMinutes: Number(form.bookingDurationMinutes) || 30,
   };
@@ -264,6 +266,7 @@ export default function AddListingPage() {
           // cover slot and the owner had to re-upload it every single time,
           // while the logo (which does have its own field) survived fine.
           bookingEnabled: Boolean(data.bookingEnabled),
+          bookingType: data.bookingType === "rental" ? "rental" : "appointment",
           bookingPrice: ((data.bookingPriceCents || 0) / 100).toFixed(2),
           bookingDurationMinutes: String(data.bookingDurationMinutes || 30),
           photoPreview: data.coverPhoto || "",
@@ -283,6 +286,7 @@ export default function AddListingPage() {
             setForm((f) => ({
               ...f,
               bookingEnabled: Boolean(settings.bookingEnabled),
+              bookingType: settings.bookingType === "rental" ? "rental" : "appointment",
               bookingPrice: ((settings.bookingPriceCents || 0) / 100).toFixed(2),
               bookingDurationMinutes: String(settings.bookingDurationMinutes || 30),
               bookingMeetingUrl: settings.bookingMeetingUrl || "",
@@ -799,10 +803,22 @@ export default function AddListingPage() {
                 </FormField>
                 {form.bookingEnabled && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 rounded-xl border border-primary-200 bg-primary-50/30 p-4">
+                    <div className="sm:col-span-2">
+                      <FormField
+                        label="Booking type"
+                        htmlFor="bookingType"
+                        hint="Rental bookings charge for each night between check-in and check-out."
+                      >
+                        <Select id="bookingType" value={form.bookingType} onChange={update("bookingType")}>
+                          <option value="appointment">Appointment or service</option>
+                          <option value="rental">Rental stay</option>
+                        </Select>
+                      </FormField>
+                    </div>
                     <FormField
-                      label="Booking price (USD)"
+                      label={form.bookingType === "rental" ? "Nightly rate (USD)" : "Booking price (USD)"}
                       htmlFor="bookingPrice"
-                      hint="Enter 0 for a free booking request"
+                      hint={form.bookingType === "rental" ? "The total is calculated from the number of nights" : "Enter 0 for a free booking request"}
                     >
                       <Input
                         id="bookingPrice"
@@ -814,7 +830,7 @@ export default function AddListingPage() {
                         placeholder="0.00"
                       />
                     </FormField>
-                    <FormField label="Meeting duration" htmlFor="bookingDurationMinutes">
+                    {form.bookingType !== "rental" && <FormField label="Meeting duration" htmlFor="bookingDurationMinutes">
                       <Select
                         id="bookingDurationMinutes"
                         value={form.bookingDurationMinutes}
@@ -827,8 +843,8 @@ export default function AddListingPage() {
                         <option value="90">90 minutes</option>
                         <option value="120">2 hours</option>
                       </Select>
-                    </FormField>
-                    <div className="sm:col-span-2">
+                    </FormField>}
+                    {form.bookingType !== "rental" && <div className="sm:col-span-2">
                       <FormField
                         label="Private meeting link"
                         htmlFor="bookingMeetingUrl"
@@ -843,7 +859,7 @@ export default function AddListingPage() {
                           placeholder="https://meet.google.com/..."
                         />
                       </FormField>
-                    </div>
+                    </div>}
                   </div>
                 )}
                 <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-5 items-start">
