@@ -2,14 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../hooks/useCart";
-import { config } from "../lib/config";
-
-// Logo assets live in the WordPress media library on the admin.* subdomain,
-// not on this app's own domain — using this app's own domain here was a
-// straight-up wrong-host bug that 404'd on every page load. Falls back to
-// the known production admin host if VITE_WP_BASE_URL isn't set (e.g. local
-// dev without a .env.local).
-const WP_ORIGIN = config.wpBaseUrl || "https://admin.connect767.com";
 
 const navItems = [
   { label: "Shop", href: "/shop" },
@@ -65,7 +57,11 @@ export default function Header() {
     ? "bg-primary-500/10 backdrop-blur-md border-b border-primary-900/10"
     : "bg-background-50/95 backdrop-blur border-b border-background-200/70";
 
-  const logoText = transparent ? "text-background-50" : "text-foreground-950";
+  const wordmarkText = transparent ? "text-background-50" : "text-primary-950";
+  const logoMark = "bg-background-50";
+  const logoMarkFilter = transparent
+    ? "drop-shadow(0 2px 4px rgba(0,0,0,0.28))"
+    : "drop-shadow(1px 0 0 #23624b) drop-shadow(-1px 0 0 #23624b) drop-shadow(0 1px 0 #23624b) drop-shadow(0 -1px 0 #23624b)";
   const iconBtnText = transparent ? "text-background-50" : "text-foreground-950";
   const navBase = transparent
     ? "text-background-50/85 hover:text-background-50 hover:bg-background-50/10"
@@ -91,21 +87,34 @@ export default function Header() {
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${wrapClass}`}
     >
       <div className="w-full px-3 sm:px-4 md:px-8 lg:px-12 flex items-center h-16 md:h-20 pt-[env(safe-area-inset-top)]">
-        <Link className="flex min-w-0 items-center gap-1.5 sm:gap-2 cursor-pointer" to="/">
-          <img
-            src={
-              transparent
-                ? `${WP_ORIGIN}/wp-content/uploads/2026/07/logo-white.png`
-                : `${WP_ORIGIN}/wp-content/uploads/2026/06/cropped-ChatGPT-Image-Jun-22-2026-11_54_52-AM.png`
-            }
-            alt="Connect767"
-            decoding="async"
-            className="h-8 sm:h-9 w-auto flex-shrink-0"
-          />
+        <Link
+          aria-label="Connect767 home"
+          className="group flex min-w-0 items-center gap-0 cursor-pointer"
+          to="/"
+        >
+          <span className="grid h-8 w-8 sm:h-9 sm:w-9 -mr-0.5 flex-shrink-0 place-items-center transition-transform duration-300 group-hover:-rotate-2 group-hover:scale-[1.04]">
+            <span
+              aria-hidden="true"
+              className={`h-8 w-8 sm:h-9 sm:w-9 ${logoMark}`}
+              style={{
+                WebkitMaskImage: "url('/connect767-favicon.png')",
+                maskImage: "url('/connect767-favicon.png')",
+                WebkitMaskPosition: "center",
+                maskPosition: "center",
+                WebkitMaskRepeat: "no-repeat",
+                maskRepeat: "no-repeat",
+                WebkitMaskSize: "contain",
+                maskSize: "contain",
+                filter: logoMarkFilter,
+              }}
+            />
+          </span>
           <span
-            className={`hidden min-[350px]:inline font-heading text-lg sm:text-xl md:text-2xl font-semibold tracking-tight ${logoText}`}
+            aria-hidden="true"
+            className={`hidden min-[350px]:inline-flex -ml-0.5 items-baseline font-label text-lg sm:text-xl md:text-[1.4rem] font-extrabold leading-none tracking-[-0.055em] ${wordmarkText}`}
           >
-            Connect<span className="text-accent-500">767</span>
+            <span>onnect</span>
+            <span className="ml-0.5 text-accent-500 tracking-[-0.035em]">767</span>
           </span>
         </Link>
 
