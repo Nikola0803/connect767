@@ -60,9 +60,9 @@ export default function Header() {
   const wordmarkText = transparent
     ? "text-background-50 [text-shadow:0_2px_5px_rgba(0,0,0,0.5)]"
     : "text-primary-950";
-  // Keep the favicon-shaped C black while the light edge treatment preserves
-  // its definition over both the homepage hero and light interior headers.
-  const logoMark = "bg-black";
+  // Keep the favicon-shaped C and "onnect" visually unified while both
+  // switch with the header background for reliable contrast.
+  const logoMark = transparent ? "bg-background-50" : "bg-primary-950";
   const logoMarkFilter = transparent
     ? "drop-shadow(1px 0 0 rgba(255,255,255,0.72)) drop-shadow(-1px 0 0 rgba(255,255,255,0.72)) drop-shadow(0 1px 3px rgba(0,0,0,0.48))"
     : "drop-shadow(0 1px 1px rgba(255,255,255,0.55))";
