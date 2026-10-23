@@ -235,10 +235,10 @@ export default function DashboardPage() {
             <div className="flex items-end justify-between gap-4 mb-5">
               <div>
                 <h2 className="font-heading text-xl font-medium text-foreground-950">
-                  Booking appointments
+                  Bookings & rentals
                 </h2>
                 <p className="text-xs text-foreground-500 font-label mt-1">
-                  Paid appointments confirm automatically. Free requests need your approval.
+                  Paid bookings confirm automatically. Free requests need your approval.
                 </p>
               </div>
               <button
@@ -255,13 +255,13 @@ export default function DashboardPage() {
             )}
             {bookingsLoading && <CardSkeleton count={2} className="space-y-3" />}
             {bookingsError && (
-              <ErrorState message="Couldn't load booking appointments." onRetry={reloadBookings} />
+              <ErrorState message="Couldn't load bookings and rentals." onRetry={reloadBookings} />
             )}
             {!bookingsLoading && !bookingsError && bookings.length === 0 && (
               <div className="rounded-2xl border border-dashed border-background-300 p-8 text-center">
                 <i className="ri-calendar-event-line text-2xl text-foreground-300" />
                 <p className="text-sm text-foreground-600 font-label mt-2">
-                  No booking requests yet.
+                  No booking or rental requests yet.
                 </p>
               </div>
             )}
@@ -299,9 +299,15 @@ export default function DashboardPage() {
                             )}
                           </div>
                           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground-600 font-label">
-                            <span><i className="ri-calendar-line mr-1" />{booking.preferredDate || "Date not specified"}</span>
-                            <span><i className="ri-time-line mr-1" />{booking.preferredTime || "Time not specified"}</span>
-                            <span>{booking.durationMinutes} minutes</span>
+                            {booking.bookingType === "rental" ? <>
+                              <span><i className="ri-calendar-check-line mr-1" />Check-in: {booking.checkIn}</span>
+                              <span><i className="ri-calendar-close-line mr-1" />Check-out: {booking.checkOut}</span>
+                              <span>{booking.nights} {booking.nights === 1 ? "night" : "nights"}</span>
+                            </> : <>
+                              <span><i className="ri-calendar-line mr-1" />{booking.preferredDate || "Date not specified"}</span>
+                              <span><i className="ri-time-line mr-1" />{booking.preferredTime || "Time not specified"}</span>
+                              <span>{booking.durationMinutes} minutes</span>
+                            </>}
                             {booking.email && <a href={`mailto:${booking.email}`} className="hover:text-primary-700">{booking.email}</a>}
                             {booking.phone && <a href={`tel:${booking.phone}`} className="hover:text-primary-700">{booking.phone}</a>}
                           </div>
