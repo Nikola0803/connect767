@@ -10,6 +10,7 @@ import {
 } from "../data/repository";
 import { isLiveApi } from "../lib/config";
 import Button from "../components/ui/Button";
+import { bookingRateUnit, isRentalBookingType } from "../lib/bookingTypes";
 import TierBadge from "../components/ui/TierBadge";
 import { CardSkeleton, ErrorState } from "../components/ui/States";
 
@@ -299,10 +300,10 @@ export default function DashboardPage() {
                             )}
                           </div>
                           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground-600 font-label">
-                            {booking.bookingType === "rental" ? <>
-                              <span><i className="ri-calendar-check-line mr-1" />Check-in: {booking.checkIn}</span>
-                              <span><i className="ri-calendar-close-line mr-1" />Check-out: {booking.checkOut}</span>
-                              <span>{booking.nights} {booking.nights === 1 ? "night" : "nights"}</span>
+                            {isRentalBookingType(booking.bookingType) ? <>
+                              <span><i className="ri-calendar-check-line mr-1" />{bookingRateUnit(booking.bookingType) === "night" ? "Check-in" : "Start"}: {booking.checkIn}</span>
+                              <span><i className="ri-calendar-close-line mr-1" />{bookingRateUnit(booking.bookingType) === "night" ? "Check-out" : "End"}: {booking.checkOut}</span>
+                              <span>{booking.units || booking.nights} {booking.rateUnit || bookingRateUnit(booking.bookingType)}{(booking.units || booking.nights) === 1 ? "" : "s"}</span>
                             </> : <>
                               <span><i className="ri-calendar-line mr-1" />{booking.preferredDate || "Date not specified"}</span>
                               <span><i className="ri-time-line mr-1" />{booking.preferredTime || "Time not specified"}</span>

@@ -22,6 +22,11 @@ class C767_Notifications
     /** Avoid duplicate approval emails when the review screen and the status transition fire together. */
     private static $approved_notifications_sent = [];
 
+    private static function is_rental_booking($type)
+    {
+        return $type !== '' && $type !== 'appointment';
+    }
+
     public static function init()
     {
         // Keep every transactional message on the public Connect767 domain.
@@ -308,12 +313,14 @@ class C767_Notifications
         $preferred_time = get_post_meta($booking_id, 'preferred_time', true);
         $notes = get_post_meta($booking_id, 'notes', true);
         $amount_cents = (int) get_post_meta($booking_id, 'amount_cents', true);
-        $booking_type = get_post_meta($booking_id, 'booking_type', true) === 'rental' ? 'rental' : 'appointment';
+        $booking_type = (string) get_post_meta($booking_id, 'booking_type', true) ?: 'appointment';
+        $is_rental = self::is_rental_booking($booking_type);
         $check_in = get_post_meta($booking_id, 'check_in', true);
         $check_out = get_post_meta($booking_id, 'check_out', true);
-        $nights = (int) get_post_meta($booking_id, 'nights', true);
-        $schedule = $booking_type === 'rental'
-            ? sprintf("Check-in: %s\nCheck-out: %s\nStay: %d night%s", $check_in, $check_out, $nights, $nights === 1 ? '' : 's')
+        $units = (int) (get_post_meta($booking_id, 'units', true) ?: get_post_meta($booking_id, 'nights', true));
+        $rate_unit = (string) get_post_meta($booking_id, 'rate_unit', true) ?: 'night';
+        $schedule = $is_rental
+            ? sprintf("Start: %s\nEnd: %s\nRental: %d %s%s", $check_in, $check_out, $units, $rate_unit, $units === 1 ? '' : 's')
             : sprintf("Preferred date: %s\nPreferred time: %s", $preferred_date ?: 'Not specified', $preferred_time ?: 'Not specified');
 
         // Business owner: a customer wants to book them.
@@ -323,7 +330,7 @@ class C767_Notifications
                 "Hi %s,\n\n%s just requested a %s for \"%s\":\n\n%s\nEmail: %s\nPhone: %s\nNotes: %s\nPayment: %s\n\nTrack and manage this booking from your dashboard:\n%s",
                 $owner->display_name ?: $owner->user_login,
                 $name ?: 'Someone',
-                $booking_type === 'rental' ? 'rental stay' : 'booking',
+                $is_rental ? 'rental' : 'booking',
                 $listing->post_title,
                 $schedule,
                 $email ?: 'not provided',
@@ -338,10 +345,10 @@ class C767_Notifications
         // Customer: confirmation their request went through.
         if ($email && is_email($email)) {
             $subject = sprintf('Your booking request to %s', $listing->post_title);
-            if ($amount_cents > 0 && $booking_type === 'rental') {
+            if ($amount_cents > 0 && $is_rental) {
                 $body = sprintf(
-                    "Hi %s,\n\nYour rental request to \"%s\" was created for %d night%s. Complete payment on the booking screen to confirm your stay.\n\n— %s",
-                    $name ?: 'there', $listing->post_title, $nights, $nights === 1 ? '' : 's', self::site_name()
+                    "Hi %s,\n\nYour rental request to \"%s\" was created for %d %s%s. Complete payment on the booking screen to confirm it.\n\n— %s",
+                    $name ?: 'there', $listing->post_title, $units, $rate_unit, $units === 1 ? '' : 's', self::site_name()
                 );
             } elseif ($amount_cents > 0) {
                 $body = sprintf(
@@ -371,19 +378,21 @@ class C767_Notifications
         $date = get_post_meta($booking_id, 'preferred_date', true);
         $time = get_post_meta($booking_id, 'preferred_time', true);
         $duration = (int) (get_post_meta($booking_id, 'duration_minutes', true) ?: 30);
-        $booking_type = get_post_meta($booking_id, 'booking_type', true) === 'rental' ? 'rental' : 'appointment';
+        $booking_type = (string) get_post_meta($booking_id, 'booking_type', true) ?: 'appointment';
+        $is_rental = self::is_rental_booking($booking_type);
         $check_in = get_post_meta($booking_id, 'check_in', true);
         $check_out = get_post_meta($booking_id, 'check_out', true);
-        $nights = (int) get_post_meta($booking_id, 'nights', true);
+        $units = (int) (get_post_meta($booking_id, 'units', true) ?: get_post_meta($booking_id, 'nights', true));
+        $rate_unit = (string) get_post_meta($booking_id, 'rate_unit', true) ?: 'night';
         $meeting_url = get_post_meta($listing_id, 'booking_meeting_url', true);
         $owner = get_userdata($listing->post_author);
 
         if ($email && is_email($email)) {
             $subject = sprintf('Booking confirmed — %s', $listing->post_title);
-            $body = $booking_type === 'rental'
+            $body = $is_rental
                 ? sprintf(
-                    "Hi %s,\n\nYour stay with \"%s\" is confirmed.\n\nCheck-in: %s\nCheck-out: %s\nStay: %d night%s\n\nThe host will contact you with arrival details.\n\n— %s",
-                    $name ?: 'there', $listing->post_title, $check_in, $check_out, $nights, $nights === 1 ? '' : 's', self::site_name()
+                    "Hi %s,\n\nYour rental with \"%s\" is confirmed.\n\nStart: %s\nEnd: %s\nRental: %d %s%s\n\nThe owner will contact you with the remaining details.\n\n— %s",
+                    $name ?: 'there', $listing->post_title, $check_in, $check_out, $units, $rate_unit, $units === 1 ? '' : 's', self::site_name()
                 )
                 : sprintf(
                     "Hi %s,\n\nYour booking with \"%s\" is confirmed.\n\nDate: %s\nTime: %s\nDuration: %d minutes\nMeeting link: %s\n\nKeep this email private; the meeting link is intended for you.\n\n— %s",
@@ -397,7 +406,7 @@ class C767_Notifications
             wp_mail(
                 $owner->user_email,
                 sprintf('Booking confirmed — %s', $listing->post_title),
-                $booking_type === 'rental'
+                $is_rental
                     ? sprintf("%s's rental is confirmed from %s to %s. Manage it from your dashboard:\n%s", $name ?: 'A customer', $check_in, $check_out, self::frontend_url('/dashboard'))
                     : sprintf("%s's booking is confirmed for %s at %s. Manage it from your dashboard:\n%s", $name ?: 'A customer', $date ?: 'a date to be arranged', $time ?: 'a time to be arranged', self::frontend_url('/dashboard')),
                 self::reply_to($email)

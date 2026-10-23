@@ -125,9 +125,9 @@ export default function Footer() {
             <Link className="hover:text-background-50 cursor-pointer" to="/privacy">
               Privacy
             </Link>
-            <a className="hover:text-background-50 cursor-pointer" href="#terms">
+            <Link className="hover:text-background-50 cursor-pointer" to="/terms">
               Terms
-            </a>
+            </Link>
           </div>
         </div>
       </div>

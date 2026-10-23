@@ -255,7 +255,7 @@ function RegisterForm() {
         />
         <span>
           I agree to the{" "}
-          <a href="#terms" className="text-primary-700 hover:text-primary-800 font-semibold">
+          <a href="/terms" target="_blank" rel="noreferrer" className="text-primary-700 hover:text-primary-800 font-semibold">
             Terms
           </a>{" "}
           and{" "}

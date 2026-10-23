@@ -105,7 +105,13 @@ class C767_Meta_Fields
             'booking_type' => [
                 'label' => 'Booking type',
                 'type' => 'string',
-                'options' => ['appointment', 'rental'],
+                'options' => [
+                    'appointment', 'rental', 'apartments', 'audio-equipment', 'boats',
+                    'electronics', 'heavy-equipment', 'hotels', 'jet-ski',
+                    'long-term-rental-housing', 'musical-equipment',
+                    'short-term-rental-housing', 'tools', 'vehicles',
+                    'video-equipment', 'video-games',
+                ],
             ],
             'booking_price_cents' => ['label' => 'Booking price (USD cents; 0 for free)', 'type' => 'integer'],
             'booking_duration_minutes' => ['label' => 'Booking duration (minutes)', 'type' => 'integer'],
