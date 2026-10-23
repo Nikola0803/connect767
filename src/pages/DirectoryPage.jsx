@@ -143,6 +143,8 @@ export default function DirectoryPage() {
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE
   );
+  const resultStart = filtered.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
+  const resultEnd = Math.min(currentPage * PAGE_SIZE, filtered.length);
 
   const updateFilter = (setter) => (value) => {
     setter(value);
@@ -177,14 +179,28 @@ export default function DirectoryPage() {
   };
 
   return (
-    <div className="pt-16 md:pt-20 min-h-screen bg-background-50">
-      <section aria-hidden="true" className="relative h-28 overflow-hidden bg-primary-950 md:h-32">
+    <div className="pt-16 md:pt-20 min-h-screen bg-background-100/45">
+      <section className="relative overflow-hidden bg-primary-950 px-4 pb-24 pt-12 md:px-8 md:pb-28 md:pt-16 lg:px-12">
         <div className="absolute -top-28 right-0 h-72 w-72 rounded-full bg-primary-500/20 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-36 left-1/4 h-80 w-80 rounded-full bg-accent-500/15 blur-3xl pointer-events-none" />
+        <div className="relative mx-auto max-w-7xl">
+          <div className="inline-flex items-center gap-2 rounded-full border border-background-50/15 bg-background-50/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-background-50/80">
+            <i className="ri-compass-3-line text-accent-400" />
+            Connect767 Dominica’s Online Directory
+          </div>
+          <div className="mt-5 max-w-3xl">
+            <h1 className="font-heading text-3xl font-light leading-tight text-background-50 md:text-5xl">
+              Find the right <span className="italic text-accent-400">local connection.</span>
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-background-50/65 md:text-base">
+              Explore Dominican businesses, professionals, services, products, and opportunities in one trusted directory.
+            </p>
+          </div>
+        </div>
       </section>
 
-      <section className="relative z-10 -mt-5 w-full px-4 md:-mt-7 md:px-8 lg:px-12">
-        <div className="max-w-7xl mx-auto rounded-[1.6rem] border border-background-200/80 bg-background-50 p-3 md:p-4 shadow-[0_24px_70px_rgba(24,48,36,0.14)]">
+      <section className="relative z-10 -mt-14 w-full px-4 md:-mt-16 md:px-8 lg:px-12">
+        <div className="max-w-7xl mx-auto rounded-[1.75rem] border border-background-200/80 bg-background-50 p-3 md:p-5 shadow-[0_24px_70px_rgba(24,48,36,0.16)]">
           <div className="relative">
             <i className="ri-search-line absolute left-4 top-1/2 -translate-y-1/2 text-primary-700 text-lg pointer-events-none" />
             <input
@@ -224,8 +240,8 @@ export default function DirectoryPage() {
             </span>
           </div>
 
-          <div className="mt-3 pt-3 border-t border-background-200/70 hidden md:flex items-center gap-2 overflow-x-auto no-scrollbar">
-            <span className="inline-flex h-9 items-center gap-2 px-3 rounded-full bg-primary-50 text-[10px] font-bold uppercase tracking-[0.13em] text-primary-800 whitespace-nowrap flex-shrink-0">
+          <div className="mt-4 hidden border-t border-background-200/70 pt-4 md:flex md:flex-wrap md:items-center md:gap-2">
+            <span className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary-50 px-3 text-[10px] font-bold uppercase tracking-[0.13em] text-primary-800 whitespace-nowrap flex-shrink-0">
               <i className="ri-equalizer-2-line text-sm" />
               Filters
               {activeFilterCount > 0 && (
@@ -243,7 +259,7 @@ export default function DirectoryPage() {
                     updateFilter(setCategory)(e.target.value);
                     setIndustry("all");
                   }}
-                  className="appearance-none h-9 min-w-36 pl-3.5 pr-8 rounded-full border border-background-300 bg-white text-xs font-semibold text-foreground-700 focus:outline-none focus:border-primary-400 cursor-pointer"
+                  className="appearance-none h-10 min-w-36 pl-3.5 pr-8 rounded-xl border border-background-300 bg-white text-xs font-semibold text-foreground-700 focus:outline-none focus:border-primary-400 cursor-pointer"
                 >
                   {(directoryCategories || []).map((cat) => (
                     <option key={cat.slug} value={cat.slug}>{cat.slug === "all" ? "All Categories" : cat.label}</option>
@@ -254,7 +270,7 @@ export default function DirectoryPage() {
 
               <label className="relative flex-shrink-0">
                 <span className="sr-only">Industry</span>
-                <select value={industry} onChange={(e) => updateFilter(setIndustry)(e.target.value)} disabled={!selectedCategory} className="appearance-none h-9 min-w-32 pl-3.5 pr-8 rounded-full border border-background-300 bg-white text-xs font-semibold text-foreground-700 focus:outline-none focus:border-primary-400 disabled:text-foreground-400 disabled:bg-background-100 disabled:cursor-not-allowed cursor-pointer">
+                <select value={industry} onChange={(e) => updateFilter(setIndustry)(e.target.value)} disabled={!selectedCategory} className="appearance-none h-10 min-w-32 pl-3.5 pr-8 rounded-xl border border-background-300 bg-white text-xs font-semibold text-foreground-700 focus:outline-none focus:border-primary-400 disabled:text-foreground-400 disabled:bg-background-100 disabled:cursor-not-allowed cursor-pointer">
                   <option value="all">Industry</option>
                   {industryOptions.map((item) => <option key={item.slug} value={item.slug}>{item.label}</option>)}
                 </select>
@@ -263,7 +279,7 @@ export default function DirectoryPage() {
 
               <label className="relative flex-shrink-0">
                 <span className="sr-only">Experience</span>
-                <select value={experienceRange} onChange={(e) => updateFilter(setExperienceRange)(e.target.value)} className="appearance-none h-9 min-w-32 pl-3.5 pr-8 rounded-full border border-background-300 bg-white text-xs font-semibold text-foreground-700 focus:outline-none focus:border-primary-400 cursor-pointer">
+                <select value={experienceRange} onChange={(e) => updateFilter(setExperienceRange)(e.target.value)} className="appearance-none h-10 min-w-32 pl-3.5 pr-8 rounded-xl border border-background-300 bg-white text-xs font-semibold text-foreground-700 focus:outline-none focus:border-primary-400 cursor-pointer">
                   {experienceRangeOptions.map((option) => <option key={option.value} value={option.value}>{option.value === "all" ? "Experience" : option.label}</option>)}
                 </select>
                 <i className="ri-arrow-down-s-line absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground-400 pointer-events-none" />
@@ -271,7 +287,7 @@ export default function DirectoryPage() {
 
               <label className="relative flex-shrink-0">
                 <span className="sr-only">Education</span>
-                <select value={educationFilter} onChange={(e) => updateFilter(setEducationFilter)(e.target.value)} className="appearance-none h-9 min-w-32 pl-3.5 pr-8 rounded-full border border-background-300 bg-white text-xs font-semibold text-foreground-700 focus:outline-none focus:border-primary-400 cursor-pointer">
+                <select value={educationFilter} onChange={(e) => updateFilter(setEducationFilter)(e.target.value)} className="appearance-none h-10 min-w-32 pl-3.5 pr-8 rounded-xl border border-background-300 bg-white text-xs font-semibold text-foreground-700 focus:outline-none focus:border-primary-400 cursor-pointer">
                   <option value="all">Education</option>
                   {EDUCATION_CHOICES.map((choice) => <option key={choice} value={choice}>{choice}</option>)}
                 </select>
@@ -280,7 +296,7 @@ export default function DirectoryPage() {
 
               <label className="relative flex-shrink-0">
                 <span className="sr-only">Price</span>
-                <select value={priceTier} onChange={(e) => updateFilter(setPriceTier)(e.target.value)} className="appearance-none h-9 min-w-24 pl-3.5 pr-8 rounded-full border border-background-300 bg-white text-xs font-semibold text-foreground-700 focus:outline-none focus:border-primary-400 cursor-pointer">
+                <select value={priceTier} onChange={(e) => updateFilter(setPriceTier)(e.target.value)} className="appearance-none h-10 min-w-24 pl-3.5 pr-8 rounded-xl border border-background-300 bg-white text-xs font-semibold text-foreground-700 focus:outline-none focus:border-primary-400 cursor-pointer">
                   {priceOptions.map((option) => <option key={option.value} value={option.value}>{option.value === "all" ? "Price" : option.label}</option>)}
                 </select>
                 <i className="ri-arrow-down-s-line absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground-400 pointer-events-none" />
@@ -288,7 +304,7 @@ export default function DirectoryPage() {
 
               <label className="relative flex-shrink-0">
                 <span className="sr-only">Listing Type</span>
-                <select value={tier} onChange={(e) => updateFilter(setTier)(e.target.value)} className="appearance-none h-9 min-w-32 pl-3.5 pr-8 rounded-full border border-background-300 bg-white text-xs font-semibold text-foreground-700 focus:outline-none focus:border-primary-400 cursor-pointer">
+                <select value={tier} onChange={(e) => updateFilter(setTier)(e.target.value)} className="appearance-none h-10 min-w-32 pl-3.5 pr-8 rounded-xl border border-background-300 bg-white text-xs font-semibold text-foreground-700 focus:outline-none focus:border-primary-400 cursor-pointer">
                   {tierOptions.map((option) => <option key={option.value} value={option.value}>{option.value === "all" ? "Listing Type" : option.label}</option>)}
                 </select>
                 <i className="ri-arrow-down-s-line absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground-400 pointer-events-none" />
@@ -381,15 +397,15 @@ export default function DirectoryPage() {
         </div>
       )}
 
-      <div className="w-full px-4 md:px-8 lg:px-12 pt-14 pb-12 md:pt-16">
+      <div className="w-full px-4 md:px-8 lg:px-12 pt-10 pb-14 md:pt-12">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-7">
+          <div className="mb-7 flex flex-col gap-4 border-b border-background-200/80 pb-5 sm:flex-row sm:items-end">
             <div>
               <h2 className="font-heading text-2xl md:text-4xl font-light text-foreground-950">
                 Browse the <span className="text-accent-500 italic">directory</span>
               </h2>
-              <p className="mt-1 text-xs text-foreground-500">
-                {loading ? "Finding listings…" : `${filtered.length} listing${filtered.length === 1 ? "" : "s"} found`}
+              <p className="mt-1.5 text-xs text-foreground-500">
+                {loading ? "Finding listings…" : `Showing ${resultStart}–${resultEnd} of ${filtered.length} listing${filtered.length === 1 ? "" : "s"}`}
               </p>
             </div>
             <div className="sm:ml-auto flex items-center gap-2">
