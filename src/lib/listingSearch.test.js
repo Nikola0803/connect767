@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createListingSearchText,
+  listingMatchesBookingAvailability,
   listingMatchesSearch,
   normalizeListingSearchValue,
 } from "./listingSearch";
@@ -42,5 +43,11 @@ describe("listing profile search", () => {
     const indexed = { ...listing, searchText: createListingSearchText(listing) };
     expect(normalizeListingSearchValue("Créole")).toBe("creole");
     expect(listingMatchesSearch(indexed, "cafe creole")).toBe(true);
+  });
+
+  it("limits booking views to listings with booking options enabled", () => {
+    expect(listingMatchesBookingAvailability({ bookingEnabled: true }, true)).toBe(true);
+    expect(listingMatchesBookingAvailability({ bookingEnabled: false }, true)).toBe(false);
+    expect(listingMatchesBookingAvailability({ bookingEnabled: false }, false)).toBe(true);
   });
 });
