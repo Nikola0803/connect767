@@ -60,9 +60,6 @@ export default function Header() {
   const wordmarkText = transparent
     ? "text-background-50 [text-shadow:0_2px_5px_rgba(0,0,0,0.5)]"
     : "text-primary-950";
-  // Keep the favicon-shaped C and "onnect" visually unified while both
-  // switch with the header background for reliable contrast.
-  const logoMark = transparent ? "bg-background-50" : "bg-primary-950";
   const logoMarkFilter = transparent
     ? "drop-shadow(1px 0 0 rgba(255,255,255,0.72)) drop-shadow(-1px 0 0 rgba(255,255,255,0.72)) drop-shadow(0 1px 3px rgba(0,0,0,0.48))"
     : "drop-shadow(0 1px 1px rgba(255,255,255,0.55))";
@@ -93,14 +90,15 @@ export default function Header() {
       <div className="w-full px-3 sm:px-4 md:px-8 lg:px-12 flex items-center h-16 md:h-20 pt-[env(safe-area-inset-top)]">
         <Link
           aria-label="Connect767 home"
-          className="group flex min-w-0 items-center gap-0 cursor-pointer"
+          className={`group flex min-w-0 items-center gap-0 cursor-pointer ${wordmarkText}`}
           to="/"
         >
           <span className="grid h-8 w-8 sm:h-9 sm:w-9 -mr-0.5 flex-shrink-0 place-items-center transition-transform duration-300 group-hover:-rotate-2 group-hover:scale-[1.04]">
             <span
               aria-hidden="true"
-              className={`h-8 w-8 sm:h-9 sm:w-9 ${logoMark}`}
+              className="h-8 w-8 sm:h-9 sm:w-9"
               style={{
+                backgroundColor: "currentColor",
                 WebkitMaskImage: "url('/connect767-favicon.png')",
                 maskImage: "url('/connect767-favicon.png')",
                 WebkitMaskPosition: "center",
@@ -115,7 +113,7 @@ export default function Header() {
           </span>
           <span
             aria-hidden="true"
-            className={`hidden min-[350px]:inline-flex -ml-0.5 items-baseline font-label text-lg sm:text-xl md:text-[1.4rem] font-extrabold leading-none tracking-[-0.055em] ${wordmarkText}`}
+            className="hidden min-[350px]:inline-flex -ml-0.5 items-baseline font-label text-lg sm:text-xl md:text-[1.4rem] font-extrabold leading-none tracking-[-0.055em]"
           >
             <span>onnect</span>
             <span className="ml-0.5 text-accent-500 tracking-[-0.035em]">767</span>
