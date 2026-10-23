@@ -513,12 +513,36 @@ async function saveBookingSettings(listingId, form) {
     bookingPriceCents: Number.isFinite(dollars) ? Math.max(0, Math.round(dollars * 100)) : 0,
     bookingDurationMinutes: Number(form.bookingDurationMinutes) || 30,
     bookingMeetingUrl: form.bookingMeetingUrl || "",
+    bookingPayoutMethod: form.bookingPayoutMethod || "",
+    bookingPayoutAccountName: form.bookingPayoutAccountName || "",
+    bookingPayoutBankName: form.bookingPayoutBankName || "",
+    bookingPayoutBankCountry: form.bookingPayoutBankCountry || "",
+    bookingPayoutAccountNumber: form.bookingPayoutAccountNumber || "",
+    bookingPayoutRoutingNumber: form.bookingPayoutRoutingNumber || "",
+    bookingPayoutSwiftCode: form.bookingPayoutSwiftCode || "",
+    bookingPayoutDigitalProvider: form.bookingPayoutDigitalProvider || "",
+    bookingPayoutDigitalAccount: form.bookingPayoutDigitalAccount || "",
   });
 }
 
 export async function getBookingSettings(listingId) {
   if (!isLiveApi) {
-    return { bookingEnabled: false, bookingType: "appointment", bookingPriceCents: 0, bookingDurationMinutes: 30, bookingMeetingUrl: "" };
+    return {
+      bookingEnabled: false,
+      bookingType: "appointment",
+      bookingPriceCents: 0,
+      bookingDurationMinutes: 30,
+      bookingMeetingUrl: "",
+      bookingPayoutMethod: "",
+      bookingPayoutAccountName: "",
+      bookingPayoutBankName: "",
+      bookingPayoutBankCountry: "Dominica",
+      bookingPayoutAccountNumber: "",
+      bookingPayoutRoutingNumber: "",
+      bookingPayoutSwiftCode: "",
+      bookingPayoutDigitalProvider: "",
+      bookingPayoutDigitalAccount: "",
+    };
   }
   return customClient.get(`/listings/${listingId}/booking`);
 }

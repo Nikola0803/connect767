@@ -22,6 +22,8 @@ import ListingProfile from "../components/ListingProfile";
 import PaypalButton from "../components/PaypalButton";
 import { FormField, Input, Select, Textarea } from "../components/ui/FormField";
 import PositionPicker from "../components/ui/PositionPicker";
+import PayoutSettingsFields from "../components/PayoutSettingsFields";
+import { hasCompletePayoutDetails } from "../lib/payoutSettings";
 import { Spinner, ErrorState } from "../components/ui/States";
 import { isLiveApi } from "../lib/config";
 import { imageCropStyle } from "../lib/imagePosition";
@@ -79,6 +81,15 @@ const initialForm = {
   bookingPrice: "0",
   bookingDurationMinutes: "30",
   bookingMeetingUrl: "",
+  bookingPayoutMethod: "",
+  bookingPayoutAccountName: "",
+  bookingPayoutBankName: "",
+  bookingPayoutBankCountry: "Dominica",
+  bookingPayoutAccountNumber: "",
+  bookingPayoutRoutingNumber: "",
+  bookingPayoutSwiftCode: "",
+  bookingPayoutDigitalProvider: "",
+  bookingPayoutDigitalAccount: "",
   amenities: "",
 };
 
@@ -297,6 +308,15 @@ export default function AddListingPage() {
               bookingPrice: ((settings.bookingPriceCents || 0) / 100).toFixed(2),
               bookingDurationMinutes: String(settings.bookingDurationMinutes || 30),
               bookingMeetingUrl: settings.bookingMeetingUrl || "",
+              bookingPayoutMethod: settings.bookingPayoutMethod || "",
+              bookingPayoutAccountName: settings.bookingPayoutAccountName || "",
+              bookingPayoutBankName: settings.bookingPayoutBankName || "",
+              bookingPayoutBankCountry: settings.bookingPayoutBankCountry || "Dominica",
+              bookingPayoutAccountNumber: settings.bookingPayoutAccountNumber || "",
+              bookingPayoutRoutingNumber: settings.bookingPayoutRoutingNumber || "",
+              bookingPayoutSwiftCode: settings.bookingPayoutSwiftCode || "",
+              bookingPayoutDigitalProvider: settings.bookingPayoutDigitalProvider || "",
+              bookingPayoutDigitalAccount: settings.bookingPayoutDigitalAccount || "",
             }));
           })
           .catch(() => {
@@ -356,7 +376,7 @@ export default function AddListingPage() {
         form.description.trim() &&
         form.yearsExperience
       );
-    if (step === 3) return form.email.trim();
+    if (step === 3) return form.email.trim() && hasCompletePayoutDetails(form);
     return true;
   };
 
@@ -873,6 +893,10 @@ export default function AddListingPage() {
                         />
                       </FormField>
                     </div>}
+                    <PayoutSettingsFields
+                      form={form}
+                      onChange={(field, value) => setForm((current) => ({ ...current, [field]: value }))}
+                    />
                   </div>
                 )}
                 <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-5 items-start">

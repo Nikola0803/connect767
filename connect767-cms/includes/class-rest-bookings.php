@@ -232,6 +232,14 @@ class C767_Rest_Bookings
                 ['status' => 400]
             );
         }
+        $owner_payout_method = (string) get_post_meta($listing->ID, '_booking_payout_method', true);
+        if ($amount_cents > 0 && !in_array($owner_payout_method, ['bank', 'digital'], true)) {
+            return new WP_Error(
+                'c767_owner_payout_unavailable',
+                'This business must finish its payout setup before accepting paid bookings.',
+                ['status' => 409]
+            );
+        }
 
         $booking_id = wp_insert_post([
             'post_type' => 'booking',
@@ -265,6 +273,11 @@ class C767_Rest_Bookings
             'paid_terms_version' => $amount_cents > 0 ? self::PAID_TERMS_VERSION : '',
             'paid_terms_accepted_at' => $amount_cents > 0 ? current_time('mysql', true) : '',
             'platform_fee_percent' => $amount_cents > 0 ? self::PLATFORM_FEE_PERCENT : 0,
+            'owner_payout_method' => $amount_cents > 0 ? $owner_payout_method : '',
+            'owner_payout_amount_cents' => $amount_cents > 0
+                ? (int) floor($amount_cents * (100 - self::PLATFORM_FEE_PERCENT) / 100)
+                : 0,
+            'owner_payout_status' => $amount_cents > 0 ? 'awaiting_payment' : 'not_required',
             // Possession of this high-entropy token is required for every
             // public payment/confirmation call, so guessing a numeric booking
             // ID can never reveal a private meeting URL.
@@ -340,6 +353,7 @@ class C767_Rest_Bookings
         update_post_meta($booking_id, 'payment_status', 'paid');
         update_post_meta($booking_id, 'status', 'confirmed');
         update_post_meta($booking_id, 'payment_reference', sanitize_text_field($processor_reference));
+        update_post_meta($booking_id, 'owner_payout_status', 'pending');
         if (!$already_paid) {
             do_action('c767_booking_confirmed', $booking_id);
         }

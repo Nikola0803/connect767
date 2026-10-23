@@ -28,6 +28,91 @@ class C767_REST_Listings
             : 'appointment';
     }
 
+    private static function payout_encryption_key()
+    {
+        return hash('sha256', wp_salt('auth') . '|connect767-booking-payout-v1', true);
+    }
+
+    /** Payout destinations are private listing-owner data and are encrypted at rest. */
+    private static function encrypt_payout_details($details)
+    {
+        if (!function_exists('openssl_encrypt')) {
+            return new WP_Error('c767_payout_encryption_unavailable', 'Secure payout storage is unavailable. Please contact Connect767 support.', ['status' => 503]);
+        }
+        $iv = random_bytes(12);
+        $tag = '';
+        $ciphertext = openssl_encrypt(
+            wp_json_encode($details),
+            'aes-256-gcm',
+            self::payout_encryption_key(),
+            OPENSSL_RAW_DATA,
+            $iv,
+            $tag
+        );
+        if ($ciphertext === false) {
+            return new WP_Error('c767_payout_encryption_failed', 'Payout details could not be secured. Please try again.', ['status' => 500]);
+        }
+        return base64_encode($iv . $tag . $ciphertext);
+    }
+
+    private static function decrypt_payout_details($payload)
+    {
+        if (!$payload || !function_exists('openssl_decrypt')) {
+            return [];
+        }
+        $decoded = base64_decode((string) $payload, true);
+        if ($decoded === false || strlen($decoded) <= 28) {
+            return [];
+        }
+        $plaintext = openssl_decrypt(
+            substr($decoded, 28),
+            'aes-256-gcm',
+            self::payout_encryption_key(),
+            OPENSSL_RAW_DATA,
+            substr($decoded, 0, 12),
+            substr($decoded, 12, 16)
+        );
+        $details = $plaintext === false ? null : json_decode($plaintext, true);
+        return is_array($details) ? $details : [];
+    }
+
+    private static function sanitize_payout_details(WP_REST_Request $request, $required)
+    {
+        $method = sanitize_key((string) $request->get_param('bookingPayoutMethod'));
+        if (!$required && !in_array($method, ['bank', 'digital'], true)) {
+            return ['method' => '', 'details' => []];
+        }
+        if (!in_array($method, ['bank', 'digital'], true)) {
+            return new WP_Error('c767_payout_required', 'Choose where Connect767 should send your booking payouts.', ['status' => 400]);
+        }
+
+        if ($method === 'bank') {
+            $details = [
+                'accountName' => sanitize_text_field((string) $request->get_param('bookingPayoutAccountName')),
+                'bankName' => sanitize_text_field((string) $request->get_param('bookingPayoutBankName')),
+                'bankCountry' => sanitize_text_field((string) $request->get_param('bookingPayoutBankCountry')),
+                'accountNumber' => preg_replace('/[^A-Za-z0-9 .-]/', '', (string) $request->get_param('bookingPayoutAccountNumber')),
+                'routingNumber' => preg_replace('/[^A-Za-z0-9 -]/', '', (string) $request->get_param('bookingPayoutRoutingNumber')),
+                'swiftCode' => strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string) $request->get_param('bookingPayoutSwiftCode'))),
+            ];
+            if ($required && (!$details['accountName'] || !$details['bankName'] || !$details['bankCountry'] || !$details['accountNumber'] || (!$details['routingNumber'] && !$details['swiftCode']))) {
+                return new WP_Error('c767_incomplete_bank_payout', 'Complete the bank payout details, including a routing number or SWIFT/BIC.', ['status' => 400]);
+            }
+        } else {
+            $providers = ['PayPal', 'Wise', 'Zelle', 'Cash App', 'Venmo', 'Other digital wallet'];
+            $provider = sanitize_text_field((string) $request->get_param('bookingPayoutDigitalProvider'));
+            $details = [
+                'digitalProvider' => in_array($provider, $providers, true) ? $provider : '',
+                'digitalAccount' => sanitize_text_field((string) $request->get_param('bookingPayoutDigitalAccount')),
+            ];
+            if ($required && (!$details['digitalProvider'] || !$details['digitalAccount'])) {
+                return new WP_Error('c767_incomplete_digital_payout', 'Choose a digital payment provider and enter its payout email, username, or handle.', ['status' => 400]);
+            }
+        }
+
+        return ['method' => $method, 'details' => $details];
+    }
+
     public static function init()
     {
         add_action('rest_api_init', [__CLASS__, 'register_routes']);
@@ -259,6 +344,7 @@ class C767_REST_Listings
             return $post;
         }
 
+        $payout = self::decrypt_payout_details(get_post_meta($post->ID, '_booking_payout_details', true));
         return rest_ensure_response([
             'id' => $post->ID,
             'bookingEnabled' => get_post_meta($post->ID, 'booking_enabled', true) === '1',
@@ -268,6 +354,15 @@ class C767_REST_Listings
             // Owner-authenticated endpoint only. This value is deliberately
             // absent from public listing REST metadata.
             'bookingMeetingUrl' => (string) get_post_meta($post->ID, 'booking_meeting_url', true),
+            'bookingPayoutMethod' => (string) get_post_meta($post->ID, '_booking_payout_method', true),
+            'bookingPayoutAccountName' => (string) ($payout['accountName'] ?? ''),
+            'bookingPayoutBankName' => (string) ($payout['bankName'] ?? ''),
+            'bookingPayoutBankCountry' => (string) ($payout['bankCountry'] ?? ''),
+            'bookingPayoutAccountNumber' => (string) ($payout['accountNumber'] ?? ''),
+            'bookingPayoutRoutingNumber' => (string) ($payout['routingNumber'] ?? ''),
+            'bookingPayoutSwiftCode' => (string) ($payout['swiftCode'] ?? ''),
+            'bookingPayoutDigitalProvider' => (string) ($payout['digitalProvider'] ?? ''),
+            'bookingPayoutDigitalAccount' => (string) ($payout['digitalAccount'] ?? ''),
         ]);
     }
 
@@ -289,12 +384,22 @@ class C767_REST_Listings
         if ($meeting_url_raw !== '' && $meeting_url === '') {
             return new WP_Error('c767_bad_meeting_url', 'Meeting link must be a valid HTTPS URL.', ['status' => 400]);
         }
+        $payout = self::sanitize_payout_details($request, $enabled && $price_cents > 0);
+        if (is_wp_error($payout)) {
+            return $payout;
+        }
+        $encrypted_payout = self::encrypt_payout_details($payout['details']);
+        if (is_wp_error($encrypted_payout)) {
+            return $encrypted_payout;
+        }
 
         update_post_meta($post_id, 'booking_enabled', $enabled ? '1' : '0');
         update_post_meta($post_id, 'booking_type', $booking_type);
         update_post_meta($post_id, 'booking_price_cents', $price_cents);
         update_post_meta($post_id, 'booking_duration_minutes', $duration);
         update_post_meta($post_id, 'booking_meeting_url', $meeting_url);
+        update_post_meta($post_id, '_booking_payout_method', $payout['method']);
+        update_post_meta($post_id, '_booking_payout_details', $encrypted_payout);
 
         return rest_ensure_response([
             'id' => $post_id,
@@ -303,6 +408,8 @@ class C767_REST_Listings
             'bookingPriceCents' => $price_cents,
             'bookingDurationMinutes' => $duration,
             'bookingMeetingUrl' => $meeting_url,
+            'bookingPayoutMethod' => $payout['method'],
+            'bookingPayoutConfigured' => $payout['method'] !== '',
         ]);
     }
 
