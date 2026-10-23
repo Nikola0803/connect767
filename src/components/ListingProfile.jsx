@@ -566,6 +566,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                   <BookingForm
                     slug={data.slug}
                     businessName={data.title}
+                    bookingType={data.bookingType}
                     priceCents={data.bookingPriceCents}
                     durationMinutes={data.bookingDurationMinutes}
                   />
