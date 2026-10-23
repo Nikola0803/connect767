@@ -77,6 +77,61 @@ class C767_Rest_Bookings
         return is_wp_error($user) ? $user : true;
     }
 
+    private static function valid_date($value)
+    {
+        if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', (string) $value, $parts)) {
+            return false;
+        }
+        return checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1]);
+    }
+
+    private static function rental_conflict($listing_id, $check_in, $check_out, $exclude_booking_id = 0)
+    {
+        $ids = get_posts([
+            'post_type' => 'booking',
+            'post_status' => 'publish',
+            'numberposts' => -1,
+            'fields' => 'ids',
+            'meta_query' => [
+                ['key' => 'listing_id', 'value' => (int) $listing_id, 'compare' => '='],
+                ['key' => 'booking_type', 'value' => 'rental', 'compare' => '='],
+            ],
+        ]);
+
+        foreach ($ids as $id) {
+            if ((int) $id === (int) $exclude_booking_id) {
+                continue;
+            }
+            $status = (string) get_post_meta($id, 'status', true);
+            $hold_expires = (int) get_post_meta($id, 'hold_expires', true);
+            if ($status !== 'confirmed' && $hold_expires <= time()) {
+                continue;
+            }
+            $existing_in = (string) get_post_meta($id, 'check_in', true);
+            $existing_out = (string) get_post_meta($id, 'check_out', true);
+            // Half-open ranges allow a new guest to check in on the prior
+            // guest's check-out date, matching hotel/Airbnb conventions.
+            if ($check_in < $existing_out && $check_out > $existing_in) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static function ensure_rental_available($booking_id)
+    {
+        if (get_post_meta($booking_id, 'booking_type', true) !== 'rental') {
+            return true;
+        }
+        $listing_id = (int) get_post_meta($booking_id, 'listing_id', true);
+        $check_in = (string) get_post_meta($booking_id, 'check_in', true);
+        $check_out = (string) get_post_meta($booking_id, 'check_out', true);
+        if (self::rental_conflict($listing_id, $check_in, $check_out, $booking_id)) {
+            return new WP_Error('c767_rental_unavailable', 'Those dates are no longer available. Please choose another stay.', ['status' => 409]);
+        }
+        return true;
+    }
+
     /**
      * Public submission — no login required, same reasoning as the review
      * form (submitter is a customer, not necessarily a registered user).
@@ -98,25 +153,41 @@ class C767_Rest_Bookings
         $name = sanitize_text_field((string) $request->get_param('name'));
         $email = sanitize_email((string) $request->get_param('email'));
         $phone = sanitize_text_field((string) $request->get_param('phone'));
+        $booking_type = get_post_meta($listing->ID, 'booking_type', true) === 'rental' ? 'rental' : 'appointment';
         $preferred_date = sanitize_text_field((string) $request->get_param('preferredDate'));
         $preferred_time = sanitize_text_field((string) $request->get_param('preferredTime'));
+        $check_in = sanitize_text_field((string) $request->get_param('checkIn'));
+        $check_out = sanitize_text_field((string) $request->get_param('checkOut'));
         $notes = sanitize_textarea_field((string) $request->get_param('notes'));
-        $amount_cents = max(0, (int) get_post_meta($listing->ID, 'booking_price_cents', true));
+        $rate_cents = max(0, (int) get_post_meta($listing->ID, 'booking_price_cents', true));
+        $amount_cents = $rate_cents;
         $duration_minutes = max(15, (int) (get_post_meta($listing->ID, 'booking_duration_minutes', true) ?: 30));
 
-        if (
-            $name === ''
-            || $email === ''
-            || $phone === ''
-            || $preferred_date === ''
-            || $preferred_time === ''
-            || $notes === ''
-        ) {
+        if ($name === '' || $email === '' || $phone === '' || $notes === '') {
             return new WP_Error(
                 'c767_missing_fields',
-                'Name, email, phone, preferred date, preferred time, and appointment details are required.',
+                'Name, email, phone, and booking details are required.',
                 ['status' => 400]
             );
+        }
+
+        $nights = 0;
+        if ($booking_type === 'rental') {
+            if (!self::valid_date($check_in) || !self::valid_date($check_out) || $check_in < wp_date('Y-m-d')) {
+                return new WP_Error('c767_bad_stay_dates', 'Choose valid check-in and check-out dates that are not in the past.', ['status' => 400]);
+            }
+            $nights = (int) ((strtotime($check_out . ' UTC') - strtotime($check_in . ' UTC')) / DAY_IN_SECONDS);
+            if ($nights < 1 || $nights > 365) {
+                return new WP_Error('c767_bad_stay_length', 'Check-out must be after check-in, with a maximum stay of 365 nights.', ['status' => 400]);
+            }
+            if (self::rental_conflict($listing->ID, $check_in, $check_out)) {
+                return new WP_Error('c767_rental_unavailable', 'Those dates are already booked. Please choose another stay.', ['status' => 409]);
+            }
+            $amount_cents = min(100000000, $rate_cents * $nights);
+            $preferred_date = $check_in;
+            $preferred_time = '';
+        } elseif ($preferred_date === '' || $preferred_time === '') {
+            return new WP_Error('c767_missing_fields', 'Preferred date and time are required for an appointment.', ['status' => 400]);
         }
 
         $booking_id = wp_insert_post([
@@ -136,6 +207,11 @@ class C767_Rest_Bookings
             'preferred_date' => $preferred_date,
             'preferred_time' => $preferred_time,
             'notes' => $notes,
+            'booking_type' => $booking_type,
+            'check_in' => $check_in,
+            'check_out' => $check_out,
+            'nights' => $nights,
+            'rate_cents' => $rate_cents,
             'status' => 'pending',
             'amount_cents' => $amount_cents,
             'duration_minutes' => $duration_minutes,
@@ -158,9 +234,13 @@ class C767_Rest_Bookings
             'paymentRequired' => $amount_cents > 0,
             'amountCents' => $amount_cents,
             'durationMinutes' => $duration_minutes,
+            'bookingType' => $booking_type,
+            'checkIn' => $check_in,
+            'checkOut' => $check_out,
+            'nights' => $nights,
             'accessToken' => $meta['access_token'],
             'message' => $amount_cents > 0
-                ? 'Your appointment is reserved pending payment.'
+                ? ($booking_type === 'rental' ? 'Your stay is reserved pending payment.' : 'Your appointment is reserved pending payment.')
                 : 'Your booking request was sent — the business will reach out to confirm.',
         ]);
     }
@@ -213,11 +293,16 @@ class C767_Rest_Bookings
         if ($amount_cents <= 0) {
             return new WP_Error('c767_booking_free', 'This booking does not require payment.', ['status' => 400]);
         }
+        $available = self::ensure_rental_available($booking->ID);
+        if (is_wp_error($available)) {
+            return $available;
+        }
 
         $existing_id = (string) get_post_meta($booking->ID, 'stripe_payment_intent', true);
         if ($existing_id) {
             $existing = C767_Stripe_Checkout::stripe_get('/payment_intents/' . $existing_id);
             if (!is_wp_error($existing) && in_array($existing['status'] ?? '', ['requires_payment_method', 'requires_confirmation', 'requires_action'], true)) {
+                update_post_meta($booking->ID, 'hold_expires', time() + (30 * MINUTE_IN_SECONDS));
                 return rest_ensure_response(['bookingId' => $booking->ID, 'clientSecret' => $existing['client_secret']]);
             }
         }
@@ -233,6 +318,7 @@ class C767_Rest_Bookings
             return $intent;
         }
         update_post_meta($booking->ID, 'stripe_payment_intent', $intent['id']);
+        update_post_meta($booking->ID, 'hold_expires', time() + (30 * MINUTE_IN_SECONDS));
         return rest_ensure_response(['bookingId' => $booking->ID, 'clientSecret' => $intent['client_secret']]);
     }
 
@@ -266,6 +352,10 @@ class C767_Rest_Bookings
         if ($amount_cents <= 0) {
             return new WP_Error('c767_booking_free', 'This booking does not require payment.', ['status' => 400]);
         }
+        $available = self::ensure_rental_available($booking->ID);
+        if (is_wp_error($available)) {
+            return $available;
+        }
         $token = C767_PayPal_Checkout::access_token();
         if (is_wp_error($token)) {
             return $token;
@@ -281,6 +371,7 @@ class C767_Rest_Bookings
             return $paypal_order;
         }
         update_post_meta($booking->ID, 'paypal_order_id', $paypal_order['id']);
+        update_post_meta($booking->ID, 'hold_expires', time() + (30 * MINUTE_IN_SECONDS));
         return rest_ensure_response(['bookingId' => $booking->ID, 'paypalOrderId' => $paypal_order['id']]);
     }
 
@@ -356,6 +447,11 @@ class C767_Rest_Bookings
                 'preferredDate' => get_post_meta($post->ID, 'preferred_date', true),
                 'preferredTime' => get_post_meta($post->ID, 'preferred_time', true),
                 'notes' => get_post_meta($post->ID, 'notes', true),
+                'bookingType' => get_post_meta($post->ID, 'booking_type', true) === 'rental' ? 'rental' : 'appointment',
+                'checkIn' => get_post_meta($post->ID, 'check_in', true),
+                'checkOut' => get_post_meta($post->ID, 'check_out', true),
+                'nights' => (int) get_post_meta($post->ID, 'nights', true),
+                'rateCents' => (int) get_post_meta($post->ID, 'rate_cents', true),
                 'status' => get_post_meta($post->ID, 'status', true) ?: 'pending',
                 'paymentStatus' => get_post_meta($post->ID, 'payment_status', true) ?: 'not_required',
                 'amountCents' => (int) get_post_meta($post->ID, 'amount_cents', true),
@@ -399,6 +495,13 @@ class C767_Rest_Bookings
             get_post_meta($booking_id, 'payment_status', true) !== 'paid'
         ) {
             return new WP_Error('c767_booking_unpaid', 'A paid booking cannot be confirmed until payment succeeds.', ['status' => 400]);
+        }
+
+        if ($status === 'confirmed') {
+            $available = self::ensure_rental_available($booking_id);
+            if (is_wp_error($available)) {
+                return $available;
+            }
         }
 
         $previous = get_post_meta($booking_id, 'status', true) ?: 'pending';
