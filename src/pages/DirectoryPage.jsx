@@ -7,7 +7,7 @@ import { getListings, getDirectoryCategories } from "../data/repository";
 import { tierOptions, priceOptions, directorySortOptions, experienceRangeOptions, matchesExperienceRange } from "../data/directory";
 import { EDUCATION_CHOICES } from "../data/profileChoices";
 import { findCategory } from "../data/industries";
-import { listingMatchesSearch } from "../lib/listingSearch";
+import { listingMatchesBookingAvailability, listingMatchesSearch } from "../lib/listingSearch";
 
 const PAGE_SIZE = 12;
 
@@ -17,6 +17,7 @@ export default function DirectoryPage() {
   const [category, setCategory] = useState(searchParams.get("category") || "all");
   const [industry, setIndustry] = useState("all");
   const [tier, setTier] = useState(searchParams.get("tier") || "all");
+  const [bookingOnly, setBookingOnly] = useState(searchParams.get("booking") === "true");
   const [priceTier, setPriceTier] = useState("all");
   const [educationFilter, setEducationFilter] = useState("all");
   const [experienceRange, setExperienceRange] = useState("all");
@@ -52,6 +53,7 @@ export default function DirectoryPage() {
     priceTier !== "all",
     experienceRange !== "all",
     educationFilter !== "all",
+    bookingOnly,
   ].filter(Boolean).length;
 
   const selectedCategory = category !== "all" ? findCategory(category) : null;
@@ -96,6 +98,7 @@ export default function DirectoryPage() {
       key: "tier",
       label: tierOptions.find((item) => item.value === tier)?.label || tier,
     },
+    bookingOnly && { key: "booking", label: "Booking available" },
   ].filter(Boolean);
 
   const filtered = useMemo(() => {
@@ -109,7 +112,8 @@ export default function DirectoryPage() {
       const matchesEducation =
         educationFilter === "all" || (l.education || "").toLowerCase() === educationFilter.toLowerCase();
       const matchesExperience = matchesExperienceRange(l.yearsExperience, experienceRange);
-      return matchesSearch && matchesCategory && matchesIndustry && matchesTier && matchesPrice && matchesEducation && matchesExperience;
+      const matchesBooking = listingMatchesBookingAvailability(l, bookingOnly);
+      return matchesSearch && matchesCategory && matchesIndustry && matchesTier && matchesPrice && matchesEducation && matchesExperience && matchesBooking;
     });
 
     switch (sort) {
@@ -131,7 +135,7 @@ export default function DirectoryPage() {
         break;
     }
     return list;
-  }, [directoryListings, search, category, industry, tier, priceTier, educationFilter, experienceRange, sort]);
+  }, [directoryListings, search, category, industry, tier, priceTier, educationFilter, experienceRange, bookingOnly, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -153,6 +157,7 @@ export default function DirectoryPage() {
     setPriceTier("all");
     setEducationFilter("all");
     setExperienceRange("all");
+    setBookingOnly(false);
     setPage(1);
   };
 
@@ -167,6 +172,7 @@ export default function DirectoryPage() {
     if (key === "education") setEducationFilter("all");
     if (key === "price") setPriceTier("all");
     if (key === "tier") setTier("all");
+    if (key === "booking") setBookingOnly(false);
     setPage(1);
   };
 

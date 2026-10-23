@@ -101,8 +101,8 @@ export default function Hero() {
             <Link to="/listings?tier=Classified" className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-colors hover:bg-background-50/15 hover:text-background-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300">
               <i className="ri-award-line text-accent-300" aria-hidden="true" /> Classified Listings
             </Link>
-            <Link to="/shop" className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-colors hover:bg-background-50/15 hover:text-background-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300">
-              <i className="ri-t-shirt-line text-accent-300" aria-hidden="true" /> Connect767 Clothing
+            <Link to="/listings?booking=true" className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-colors hover:bg-background-50/15 hover:text-background-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300">
+              <i className="ri-calendar-check-line text-accent-300" aria-hidden="true" /> Book Rentals &amp; Services
             </Link>
             <Link to="/listings" className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-colors hover:bg-background-50/15 hover:text-background-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300">
               <i className="ri-compass-3-line text-accent-300" aria-hidden="true" /> Browse Directory

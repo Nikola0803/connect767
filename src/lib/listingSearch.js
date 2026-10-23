@@ -42,3 +42,7 @@ export function listingMatchesSearch(listing, query) {
   const haystack = listing.searchText || createListingSearchText(listing);
   return terms.every((term) => haystack.includes(term));
 }
+
+export function listingMatchesBookingAvailability(listing, bookingOnly) {
+  return !bookingOnly || listing.bookingEnabled === true;
+}
