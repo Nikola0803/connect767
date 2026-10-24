@@ -29,7 +29,7 @@ export default function Hero() {
 
   const placeholder = searchScope === "shop"
     ? "Search Dominican products, apparel and gifts"
-    : "Search Dominican businesses, professionals and service providers worldwide";
+    : "Search business, professionals & service providers worldwide";
 
   return (
     <section className="relative w-full min-h-[640px] sm:min-h-[720px] md:min-h-[820px] flex items-center overflow-hidden">
