@@ -29,7 +29,7 @@ export default function Hero() {
 
   const placeholder = searchScope === "shop"
     ? "Search Dominican products, apparel and gifts"
-    : "Discover Dominican businesses, professionals and service providers worldwide";
+    : "Search Dominican businesses, professionals and service providers worldwide";
 
   return (
     <section className="relative w-full min-h-[640px] sm:min-h-[720px] md:min-h-[820px] flex items-center overflow-hidden">
@@ -48,8 +48,8 @@ export default function Hero() {
           <h1 className="font-heading text-background-50 text-[clamp(2.05rem,4.15vw,4.05rem)] font-semibold leading-[0.98] tracking-[-0.035em]">
             Dominica’s <span className="italic text-accent-400">Online Directory</span>
           </h1>
-          <p className="mt-1.5 font-heading text-background-50 text-[clamp(1.05rem,1.75vw,1.6rem)] font-medium leading-tight tracking-[-0.015em]">
-            Connecting Dominica to the <span className="italic text-accent-400">World.</span>
+          <p className="mx-auto mt-1.5 max-w-fit font-heading text-background-50 text-[clamp(0.78rem,1.1vw,1rem)] font-normal leading-tight tracking-normal">
+            Discover Dominican talent &amp; enterprise—at home &amp; around the world.
           </p>
           <form onSubmit={handleSubmit} className="mt-5 max-w-5xl mx-auto">
             <div className="flex flex-col lg:flex-row lg:items-center overflow-hidden rounded-[1.75rem] lg:rounded-full bg-background-50 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.25)] focus-within:shadow-[0_18px_55px_rgba(0,0,0,0.34)] transition-shadow">
