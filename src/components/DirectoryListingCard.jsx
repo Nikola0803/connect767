@@ -124,17 +124,27 @@ function Cover({ listing, listView = false, saved = false, onToggleSaved }) {
   return (
     <div className={`relative flex-shrink-0 ${listView ? "sm:w-64" : ""}`}>
       <div className={`w-full overflow-hidden bg-background-100 ${listView ? "h-52 sm:h-full" : "aspect-[4/3]"}`}>
-        <img
-          loading="lazy"
-          decoding="async"
-          alt={`${listing.title} — ${industryLabel(listing)}`}
-          title={`${listing.title} — ${industryLabel(listing)}`}
-          className={`w-full h-full transition-transform duration-500 ${
-            listing.coverFit === "contain" ? "object-contain" : "object-cover group-hover:scale-[1.03]"
-          }`}
-          src={listing.image}
-          style={imageCropStyle(coverPosition, listing.coverZoom, listing.coverFit)}
-        />
+        {listing.image ? (
+          <img
+            loading="lazy"
+            decoding="async"
+            alt={`${listing.title} — ${industryLabel(listing)}`}
+            title={`${listing.title} — ${industryLabel(listing)}`}
+            className={`w-full h-full transition-transform duration-500 ${
+              listing.coverFit === "contain" ? "object-contain" : "object-cover group-hover:scale-[1.03]"
+            }`}
+            src={listing.image}
+            style={imageCropStyle(coverPosition, listing.coverZoom, listing.coverFit)}
+          />
+        ) : (
+          <div
+            className="flex h-full w-full flex-col items-center justify-center gap-2 text-foreground-400"
+            aria-label={`${listing.title} cover photo unavailable`}
+          >
+            <i className="ri-image-line text-3xl" aria-hidden="true" />
+            <span className="text-xs font-label">Cover photo unavailable</span>
+          </div>
+        )}
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-foreground-950/35 via-transparent to-transparent pointer-events-none" />
       <TierBadge tier={listing.badge} className="absolute top-3 left-3" />
