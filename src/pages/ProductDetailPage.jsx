@@ -1,35 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAsync } from "../hooks/useAsync";
 import { useCart } from "../hooks/useCart";
 import { getProductBySlug } from "../data/repository";
 import Button from "../components/ui/Button";
 import { Spinner, ErrorState } from "../components/ui/States";
-
-/**
- * Finds the exact variation matching every currently-selected attribute
- * value. Comparison is case-insensitive against the normalized (lowercase,
- * `attribute_`/`pa_`-stripped) keys mapWcProduct already produced — see
- * mappers.js for why that normalization happens there instead of here.
- *
- * Explicitly coerces both sides to String() before comparing — a real bug
- * here previously crashed the entire page white the moment anyone picked
- * a variation, because WooCommerce's global (taxonomy-based) attributes
- * return raw term IDs (numbers) from get_options() rather than label
- * strings, and calling .toLowerCase() on a number throws. Fixed properly
- * on the backend (class-woocommerce.php resolves the term IDs to real
- * names now), but coercing here too means a data-shape surprise can never
- * white-screen the page again — worst case, a variation just doesn't
- * match.
- */
-function matchVariation(variations, selections) {
-  return variations.find((v) =>
-    Object.entries(selections).every(
-      ([attrName, value]) =>
-        v.attributes[attrName.toLowerCase()] === String(value).toLowerCase()
-    )
-  );
-}
+import { isVariationOptionAvailable, matchVariation } from "../lib/productVariations";
 
 export default function ProductDetailPage() {
   const { slug } = useParams();
@@ -37,6 +13,11 @@ export default function ProductDetailPage() {
   const { addItem } = useCart();
   const [selections, setSelections] = useState({});
   const [added, setAdded] = useState(false);
+
+  useEffect(() => {
+    setSelections({});
+    setAdded(false);
+  }, [slug]);
 
   const hasVariations = Boolean(product?.attributes?.length && product?.variations?.length);
   const matchedVariation = useMemo(
@@ -68,17 +49,26 @@ export default function ProductDetailPage() {
 
   const allSelected = !hasVariations || product.attributes.every((a) => selections[a.name]);
   const displayPrice = matchedVariation?.price ?? product.price;
+  const displayOriginalPrice = matchedVariation?.onSale
+    ? matchedVariation.regularPrice
+    : !hasVariations
+      ? product.originalPrice
+      : null;
   const displayImage = matchedVariation?.image || product.image;
-  const inStock = matchedVariation ? matchedVariation.inStock : product.inStock;
+  const inStock = hasVariations ? matchedVariation?.inStock : product.inStock;
   // A variable product's PARENT is correctly non-purchasable in WooCommerce
-  // (you can't buy "the shirt" without picking a size/color) — so once
+  // (you can't buy "the shirt" without picking a size/color) - so once
   // variations exist, purchasability has to come from the matched
   // variation, not the parent, or the button stays disabled forever even
   // with a fully valid selection.
-  const purchasable = hasVariations ? matchedVariation?.purchasable !== false : product.purchasable !== false;
-  const canAddToCart = purchasable && inStock !== false && allSelected;
+  const validVariation = !hasVariations || Boolean(matchedVariation);
+  const purchasable = hasVariations
+    ? Boolean(matchedVariation && matchedVariation.purchasable !== false)
+    : product.purchasable !== false;
+  const canAddToCart = validVariation && purchasable && inStock !== false && allSelected;
 
   const handleAddToCart = () => {
+    if (!canAddToCart) return;
     const variationLabel = hasVariations
       ? product.attributes.map((a) => selections[a.name]).filter(Boolean).join(" / ")
       : "";
@@ -115,7 +105,7 @@ export default function ProductDetailPage() {
               alt={product.title}
               className="w-full h-full object-cover object-top"
             />
-            {product.originalPrice && (
+            {displayOriginalPrice && (
               <span className="absolute top-4 left-4 px-2.5 py-1 rounded-md bg-accent-500 text-background-50 text-xs font-semibold font-label">
                 Sale
               </span>
@@ -130,9 +120,9 @@ export default function ProductDetailPage() {
               <span className="text-2xl font-semibold text-foreground-950">
                 ${displayPrice.toFixed(2)}
               </span>
-              {product.originalPrice && !matchedVariation && (
+              {displayOriginalPrice && (
                 <span className="text-base text-foreground-400 line-through">
-                  ${product.originalPrice.toFixed(2)}
+                  ${displayOriginalPrice.toFixed(2)}
                 </span>
               )}
             </div>
@@ -144,26 +134,38 @@ export default function ProductDetailPage() {
                     <label className="block text-xs font-semibold text-foreground-800 mb-2">
                       {attr.name}
                       {selections[attr.name] && (
-                        <span className="text-foreground-500 font-normal"> — {selections[attr.name]}</span>
+                        <span className="text-foreground-500 font-normal"> &mdash; {selections[attr.name]}</span>
                       )}
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {attr.options.map((option) => (
-                        <button
-                          key={option}
-                          type="button"
-                          onClick={() =>
-                            setSelections((s) => ({ ...s, [attr.name]: option }))
-                          }
-                          className={`px-3.5 py-2 rounded-lg border text-xs font-semibold cursor-pointer transition-colors ${
-                            selections[attr.name] === option
-                              ? "bg-primary-500 text-background-50 border-primary-500"
-                              : "bg-background-50 text-foreground-700 border-background-300 hover:border-primary-300"
-                          }`}
-                        >
-                          {option}
-                        </button>
-                      ))}
+                      {attr.options.map((option) => {
+                        const optionAvailable = isVariationOptionAvailable(
+                          product.variations,
+                          selections,
+                          attr.name,
+                          option
+                        );
+
+                        return (
+                          <button
+                            key={option}
+                            type="button"
+                            disabled={!optionAvailable}
+                            onClick={() =>
+                              setSelections((s) => ({ ...s, [attr.name]: option }))
+                            }
+                            className={`px-3.5 py-2 rounded-lg border text-xs font-semibold transition-colors ${
+                              selections[attr.name] === option
+                                ? "bg-primary-500 text-background-50 border-primary-500 cursor-pointer"
+                                : optionAvailable
+                                  ? "bg-background-50 text-foreground-700 border-background-300 hover:border-primary-300 cursor-pointer"
+                                  : "bg-background-100 text-foreground-300 border-background-200 cursor-not-allowed line-through"
+                            }`}
+                          >
+                            {option}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
@@ -183,9 +185,15 @@ export default function ProductDetailPage() {
               </div>
             )}
             <p className="text-sm text-foreground-600 leading-relaxed mb-8">
-              Made in the Connect767 shop network — {product.category?.toLowerCase()} goods
+              Made in the Connect767 shop network &mdash; {product.category?.toLowerCase()} goods
               shipped straight from Dominica.{" "}
-              {inStock === false ? "Currently out of stock." : "In stock and ready to ship."}
+              {hasVariations && !allSelected
+                ? "Choose the available options to see stock and pricing."
+                : allSelected && !matchedVariation
+                  ? "That combination is unavailable. Please choose another option."
+                  : inStock === false
+                    ? "Currently out of stock."
+                    : "In stock and ready to ship."}
             </p>
 
             <Button
@@ -198,8 +206,10 @@ export default function ProductDetailPage() {
             >
               {added
                 ? "Added to cart"
-                : inStock === false
-                  ? "Out of stock"
+                : allSelected && hasVariations && !matchedVariation
+                  ? "Combination unavailable"
+                  : inStock === false
+                    ? "Out of stock"
                   : hasVariations && !allSelected
                     ? `Select ${product.attributes.find((a) => !selections[a.name])?.name?.toLowerCase()}`
                     : "Add to cart"}
