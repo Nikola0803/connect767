@@ -12,12 +12,24 @@ export default function HomePage() {
     <>
       <Hero />
       <Featured />
-      <Categories />
-      <HowItWorks />
-      <ShopTeaser />
-      <Pricing />
-      <Blog />
-      <CtaPartners />
+      <div className="[content-visibility:auto] [contain-intrinsic-size:850px]">
+        <Categories />
+      </div>
+      <div className="[content-visibility:auto] [contain-intrinsic-size:900px]">
+        <HowItWorks />
+      </div>
+      <div className="[content-visibility:auto] [contain-intrinsic-size:850px]">
+        <ShopTeaser />
+      </div>
+      <div className="[content-visibility:auto] [contain-intrinsic-size:850px]">
+        <Pricing />
+      </div>
+      <div className="[content-visibility:auto] [contain-intrinsic-size:750px]">
+        <Blog />
+      </div>
+      <div className="[content-visibility:auto] [contain-intrinsic-size:520px]">
+        <CtaPartners />
+      </div>
     </>
   );
 }
