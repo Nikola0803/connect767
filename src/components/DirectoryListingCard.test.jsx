@@ -93,4 +93,15 @@ describe("DirectoryListingCard parent category", () => {
     expect(screen.queryByText("Free booking")).not.toBeInTheDocument();
     expect(screen.getByText("Book · Free · 30 min")).toBeInTheDocument();
   });
+
+  it("shows a clean fallback instead of a broken image when no cover was saved", () => {
+    render(
+      <MemoryRouter>
+        <DirectoryListingCard listing={{ ...listing, image: "" }} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Cover photo unavailable")).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: /island bookkeeper/i })).not.toBeInTheDocument();
+  });
 });

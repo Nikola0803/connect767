@@ -28,6 +28,11 @@ import { Spinner, ErrorState } from "../components/ui/States";
 import { isLiveApi } from "../lib/config";
 import { imageCropStyle } from "../lib/imagePosition";
 import {
+  coverPhotoDimensionError,
+  coverPhotoFileError,
+  readImageDimensions,
+} from "../lib/imageUpload";
+import {
   bookingRateUnit,
   bookingRateLabel,
   bookingTypeOptions,
@@ -229,6 +234,7 @@ export default function AddListingPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [coverPhotoError, setCoverPhotoError] = useState("");
   const [listingId, setListingId] = useState(null);
   const [loadingExisting, setLoadingExisting] = useState(isEditing);
   const [loadError, setLoadError] = useState(null);
@@ -376,7 +382,8 @@ export default function AddListingPage() {
         form.description.trim() &&
         form.yearsExperience
       );
-    if (step === 3) return form.email.trim() && hasCompletePayoutDetails(form);
+    if (step === 3)
+      return form.email.trim() && !coverPhotoError && hasCompletePayoutDetails(form);
     return true;
   };
 
@@ -962,7 +969,7 @@ export default function AddListingPage() {
                   </FormField>
                   <FormField
                     label="Cover photo"
-                    hint="This will be the main image shown on your listing card. Recommended picture size 2MB or smaller and dimensions 1345 × 1544px"
+                    hint="Main image shown on your listing card. Maximum 2 MB. Use JPG, PNG, WebP, or GIF."
                   >
                     <div className="relative w-full group">
                       <label className="relative flex flex-col items-center justify-center gap-2 w-full aspect-[16/9] rounded-lg border-2 border-dashed border-background-300 hover:border-primary-400 cursor-pointer transition-colors text-center overflow-hidden">
@@ -983,11 +990,33 @@ export default function AddListingPage() {
                         )}
                         <input
                           type="file"
-                          accept="image/*"
+                          accept="image/jpeg,image/png,image/webp,image/gif"
                           className="hidden"
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
+                            const fileError = coverPhotoFileError(file);
+                            if (fileError) {
+                              setCoverPhotoError(fileError);
+                              e.target.value = "";
+                              return;
+                            }
+                            try {
+                              const { width, height } = await readImageDimensions(file);
+                              const dimensionError = coverPhotoDimensionError(width, height);
+                              if (dimensionError) {
+                                setCoverPhotoError(dimensionError);
+                                e.target.value = "";
+                                return;
+                              }
+                            } catch {
+                              setCoverPhotoError(
+                                "We couldn't display this image. It may be damaged or use an unsupported format. Choose a different picture.",
+                              );
+                              e.target.value = "";
+                              return;
+                            }
+                            setCoverPhotoError("");
                             setForm((f) => ({
                               ...f,
                               photoFile: file,
@@ -1012,6 +1041,15 @@ export default function AddListingPage() {
                         </button>
                       )}
                     </div>
+                    {coverPhotoError && (
+                      <div
+                        role="alert"
+                        className="mt-3 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-sm text-red-700"
+                      >
+                        <i className="ri-error-warning-line mt-0.5 flex-shrink-0" />
+                        <span>{coverPhotoError}</span>
+                      </div>
+                    )}
                     {form.photoPreview && (
                       <PositionPicker
                         label="Position"

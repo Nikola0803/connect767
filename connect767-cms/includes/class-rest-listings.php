@@ -525,6 +525,67 @@ class C767_REST_Listings
     }
 
     /**
+     * Reject a cover upload before creating/updating the listing when PHP or
+     * WordPress cannot accept it. Previously an oversized file arrived with
+     * an empty tmp_name, handle_uploads() skipped it, and the API still
+     * reported a successful listing — leaving the owner with no cover photo.
+     */
+    private static function validate_cover_upload()
+    {
+        if (!isset($_FILES['coverPhoto'])) {
+            return true;
+        }
+
+        $file = $_FILES['coverPhoto'];
+        $error = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($error === UPLOAD_ERR_NO_FILE) {
+            return true;
+        }
+        if (in_array($error, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)) {
+            return new WP_Error(
+                'c767_cover_too_large',
+                'The cover photo is too large. The maximum upload size is 2 MB. Compress or resize the image, then try again.',
+                ['status' => 413]
+            );
+        }
+        if ($error !== UPLOAD_ERR_OK) {
+            return new WP_Error(
+                'c767_cover_upload_failed',
+                'The cover photo could not be uploaded. Check the image and try a different JPG, PNG, WebP, or GIF file.',
+                ['status' => 400]
+            );
+        }
+
+        $max_size = (int) wp_max_upload_size();
+        if ($max_size > 0 && (int) ($file['size'] ?? 0) > $max_size) {
+            return new WP_Error(
+                'c767_cover_too_large',
+                sprintf(
+                    'The cover photo is too large. The maximum upload size is %s. Compress or resize the image, then try again.',
+                    size_format($max_size)
+                ),
+                ['status' => 413]
+            );
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        $checked = wp_check_filetype_and_ext(
+            (string) ($file['tmp_name'] ?? ''),
+            sanitize_file_name((string) ($file['name'] ?? ''))
+        );
+        $allowed_types = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        if (empty($checked['type']) || !in_array($checked['type'], $allowed_types, true)) {
+            return new WP_Error(
+                'c767_cover_invalid_type',
+                'This cover photo cannot be displayed. Choose a valid JPG, PNG, WebP, or GIF image.',
+                ['status' => 400]
+            );
+        }
+
+        return true;
+    }
+
+    /**
      * Per-listing (not per-account) — a Classified owner running several
      * businesses can show different credentials on each one. Used to live
      * on the owner's user account (set at signup) instead; moved here so
@@ -588,6 +649,11 @@ class C767_REST_Listings
         $user = C767_REST_Auth::user_from_request($request);
         if (is_wp_error($user)) {
             return $user;
+        }
+
+        $cover_validation = self::validate_cover_upload();
+        if (is_wp_error($cover_validation)) {
+            return $cover_validation;
         }
 
         $business_name = sanitize_text_field((string) $request->get_param('businessName'));
@@ -666,7 +732,10 @@ class C767_REST_Listings
         $amenities = array_filter(array_map('trim', explode(',', (string) $request->get_param('amenities'))));
         update_post_meta($post_id, 'amenities', wp_json_encode(array_values($amenities)));
 
-        self::handle_uploads($post_id, $request);
+        $upload_result = self::handle_uploads($post_id, $request);
+        if (is_wp_error($upload_result)) {
+            return $upload_result;
+        }
 
         do_action('c767_listing_submitted', $post_id, $user->ID, $tier);
 
@@ -689,6 +758,11 @@ class C767_REST_Listings
         $user = C767_REST_Auth::user_from_request($request);
         if (is_wp_error($user)) {
             return $user;
+        }
+
+        $cover_validation = self::validate_cover_upload();
+        if (is_wp_error($cover_validation)) {
+            return $cover_validation;
         }
 
         $post_id = (int) $request->get_param('id');
@@ -749,7 +823,10 @@ class C767_REST_Listings
         $amenities = array_filter(array_map('trim', explode(',', (string) $request->get_param('amenities'))));
         update_post_meta($post_id, 'amenities', wp_json_encode(array_values($amenities)));
 
-        self::handle_uploads($post_id, $request);
+        $upload_result = self::handle_uploads($post_id, $request);
+        if (is_wp_error($upload_result)) {
+            return $upload_result;
+        }
 
         return rest_ensure_response([
             'id' => $post_id,
@@ -791,7 +868,7 @@ class C767_REST_Listings
             if ($existing_gallery !== null) {
                 update_post_meta($post_id, 'gallery', wp_json_encode($existing_gallery));
             }
-            return;
+            return true;
         }
 
         require_once ABSPATH . 'wp-admin/includes/image.php';
@@ -807,9 +884,14 @@ class C767_REST_Listings
 
         if (!empty($_FILES['coverPhoto']['tmp_name'])) {
             $cover_id = media_handle_upload('coverPhoto', $post_id);
-            if (!is_wp_error($cover_id)) {
-                set_post_thumbnail($post_id, $cover_id);
+            if (is_wp_error($cover_id)) {
+                return new WP_Error(
+                    'c767_cover_processing_failed',
+                    'WordPress could not process this cover photo: ' . $cover_id->get_error_message() . ' Please resize it or choose a different image.',
+                    ['status' => 400]
+                );
             }
+            set_post_thumbnail($post_id, $cover_id);
         }
 
         $gallery = $existing_gallery ?? [];
@@ -838,5 +920,6 @@ class C767_REST_Listings
         if ($gallery) {
             update_post_meta($post_id, 'gallery', wp_json_encode($gallery));
         }
+        return true;
     }
 }
