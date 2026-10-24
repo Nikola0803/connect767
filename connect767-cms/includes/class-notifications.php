@@ -71,6 +71,34 @@ class C767_Notifications
         return $email && is_email($email) ? ['Reply-To: ' . $email] : [];
     }
 
+    /**
+     * Keep new-listing alerts going to the directory inbox even when the
+     * WordPress administration email is changed. The current admin address
+     * remains a recipient, and duplicate/invalid addresses are discarded.
+     */
+    private static function listing_notification_recipients()
+    {
+        $recipients = [
+            'infoconnect767@gmail.com',
+            get_option('admin_email'),
+        ];
+
+        $recipients = apply_filters('c767_listing_notification_recipients', $recipients);
+        if (!is_array($recipients)) {
+            $recipients = [];
+        }
+
+        $valid_recipients = [];
+        foreach ($recipients as $recipient) {
+            $email = strtolower(sanitize_email((string) $recipient));
+            if ($email && is_email($email)) {
+                $valid_recipients[$email] = $email;
+            }
+        }
+
+        return array_values($valid_recipients);
+    }
+
     private static function frontend_url($path = '/')
     {
         // When WordPress runs on a separate admin subdomain (e.g.
@@ -171,7 +199,16 @@ class C767_Notifications
             $user ? $user->user_email : 'Unknown',
             admin_url('admin.php?page=connect767-review-listings')
         );
-        wp_mail(get_option('admin_email'), $admin_subject, $admin_body, self::reply_to($user ? $user->user_email : ''));
+        $admin_headers = self::reply_to($user ? $user->user_email : '');
+        foreach (self::listing_notification_recipients() as $recipient) {
+            if (!wp_mail($recipient, $admin_subject, $admin_body, $admin_headers)) {
+                error_log(sprintf(
+                    'Connect767 new-listing notification could not be sent to %s for listing %d.',
+                    $recipient,
+                    $post_id
+                ));
+            }
+        }
 
         // Submitter: confirmation their listing is in the queue.
         if ($user) {
