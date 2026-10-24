@@ -1,6 +1,9 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function ProductCard({ product, onAddToCart }) {
+  const navigate = useNavigate();
+  const hasVariations = Boolean(product.attributes?.length && product.variations?.length);
+
   return (
     <Link
       to={`/shop/${product.slug}`}
@@ -51,16 +54,23 @@ export default function ProductCard({ product, onAddToCart }) {
             )}
           </div>
           <button
-            aria-label={`Add ${product.title} to cart`}
+            aria-label={
+              hasVariations ? `Choose options for ${product.title}` : `Add ${product.title} to cart`
+            }
+            title={hasVariations ? "Choose options" : "Add to cart"}
             type="button"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              if (hasVariations) {
+                navigate(`/shop/${product.slug}`);
+                return;
+              }
               onAddToCart(product);
             }}
             className="w-9 h-9 flex items-center justify-center rounded-lg transition-all cursor-pointer bg-primary-500 text-background-50 hover:bg-primary-600 active:scale-95"
           >
-            <i className="text-base ri-shopping-cart-2-line" />
+            <i className={`text-base ${hasVariations ? "ri-equalizer-2-line" : "ri-shopping-cart-2-line"}`} />
           </button>
         </div>
         <div className="flex flex-wrap gap-1.5 mt-3">
