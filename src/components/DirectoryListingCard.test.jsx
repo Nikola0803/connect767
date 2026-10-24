@@ -101,9 +101,13 @@ describe("DirectoryListingCard parent category", () => {
       </MemoryRouter>,
     );
 
-    expect(
-      screen.getByRole("img", { name: "Connect767 default cover for Island Bookkeeper" }),
-    ).toBeInTheDocument();
+    const fallbackCover = screen.getByRole("img", {
+      name: "Connect767 default cover for Island Bookkeeper",
+    });
+
+    expect(fallbackCover).toBeInTheDocument();
+    expect(fallbackCover.querySelector("img")).toHaveClass("object-contain");
+    expect(fallbackCover.querySelector("img")).not.toHaveClass("object-cover");
     expect(document.querySelector('img[src=""]')).not.toBeInTheDocument();
   });
 });
