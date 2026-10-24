@@ -345,6 +345,11 @@ export default function AddListingPage() {
 
   const handleSubmit = async () => {
     setSubmitError(null);
+    if (!form.location.trim()) {
+      setStep(2);
+      setSubmitError("Location is required. Add a city, region, or country before submitting.");
+      return;
+    }
     setSubmitting(true);
     try {
       if (isEditing) {
@@ -380,7 +385,8 @@ export default function AddListingPage() {
         form.category &&
         form.priceTier &&
         form.description.trim() &&
-        form.yearsExperience
+        form.yearsExperience &&
+        form.location.trim()
       );
     if (step === 3)
       return form.email.trim() && !coverPhotoError && hasCompletePayoutDetails(form);
