@@ -13,7 +13,11 @@ import ScrollToTop from "./components/ScrollToTop";
 
 // Keep each route in its own chunk. This prevents the 3D design studios and
 // dashboard code from slowing down the homepage on mobile connections.
-const HomePage = lazy(() => import("./pages/HomePage"));
+// When the homepage is the initial route, begin fetching its chunk while the
+// shell renders instead of waiting for React Router to reach <Suspense>.
+// Other routes do not download homepage code they do not need.
+const initialHomePageModule = window.location.pathname === "/" ? import("./pages/HomePage") : null;
+const HomePage = lazy(() => initialHomePageModule || import("./pages/HomePage"));
 const ShopPage = lazy(() => import("./pages/ShopPage"));
 const ProductDetailPage = lazy(() => import("./pages/ProductDetailPage"));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));

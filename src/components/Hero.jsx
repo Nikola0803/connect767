@@ -107,6 +107,9 @@ export default function Hero() {
             <Link to="/listings" className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-colors hover:bg-background-50/15 hover:text-background-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300">
               <i className="ri-compass-3-line text-accent-300" aria-hidden="true" /> Browse Directory
             </Link>
+            <Link to="/listings/submit?tier=free" className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-colors hover:bg-background-50/15 hover:text-background-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300">
+              <i className="ri-add-circle-line text-accent-300" aria-hidden="true" /> List Your Business or Profile — Free
+            </Link>
           </div>
         </div>
       </div>

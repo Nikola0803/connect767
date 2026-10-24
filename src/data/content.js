@@ -77,10 +77,10 @@ export const steps = [
 ];
 
 export const stats = [
-  { value: "12k+", label: "Active listings" },
-  { value: "180k", label: "Monthly visitors" },
-  { value: "4.9★", label: "Average rating" },
-  { value: "48h", label: "Median first lead" },
+  { value: "Free", label: "Start with a professional listing" },
+  { value: "Direct", label: "Bookings and customer enquiries" },
+  { value: "Simple", label: "Owner-controlled profile and dashboard" },
+  { value: "Global", label: "Reach Dominica and the diaspora" },
 ];
 
 // Blog post fixtures moved to src/data/blog.js (full articles, not just cards).

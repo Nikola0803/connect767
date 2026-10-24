@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../hooks/useCart";
 
 const navItems = [
+  { label: "Directory", href: "/listings" },
   { label: "Shop", href: "/shop" },
   { label: "Custom Uniforms", href: "/uniforms" },
   { label: "Blog", href: "/blog" },
@@ -208,12 +209,20 @@ export default function Header() {
               </div>
             </div>
           ) : (
-            <Link
-              className="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-md bg-primary-500 text-background-50 hover:bg-primary-600 transition-colors cursor-pointer whitespace-nowrap"
-              to="/auth/register"
-            >
-              Sign In | Register
-            </Link>
+            <div className="hidden sm:flex items-center gap-1 lg:gap-2">
+              <Link
+                className={`hidden lg:inline-flex px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${signInClass}`}
+                to="/auth/login"
+              >
+                Sign in
+              </Link>
+              <Link
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-md bg-primary-500 text-background-50 hover:bg-primary-600 transition-colors cursor-pointer whitespace-nowrap"
+                to="/auth/register"
+              >
+                Register
+              </Link>
+            </div>
           )}
 
           <button
@@ -300,12 +309,20 @@ export default function Header() {
                 </button>
               </>
             ) : (
-              <Link
-                to="/auth/register"
-                className="mt-2 inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold rounded-md bg-primary-500 text-background-50 hover:bg-primary-600 cursor-pointer"
-              >
-                Sign In | Register
-              </Link>
+              <div className="mt-2 grid gap-2">
+                <Link
+                  to="/auth/register"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold rounded-md bg-primary-500 text-background-50 hover:bg-primary-600 cursor-pointer"
+                >
+                  Register
+                </Link>
+                <Link
+                  to="/auth/login"
+                  className="inline-flex items-center justify-center px-4 py-3 text-sm font-semibold rounded-md border border-background-300 text-foreground-800 hover:bg-background-100 cursor-pointer"
+                >
+                  Sign in
+                </Link>
+              </div>
             )}
           </nav>
         </div>
