@@ -79,7 +79,7 @@ class C767_Notifications
     private static function listing_notification_recipients()
     {
         $recipients = [
-            'infoconnect767@gmail.com',
+            get_option('c767_listing_notification_email', 'infoconnect767@gmail.com'),
             get_option('admin_email'),
         ];
 
