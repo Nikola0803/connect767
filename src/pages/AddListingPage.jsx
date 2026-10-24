@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { categoryTaxonomy, findIndustry } from "../data/industries";
 import { EDUCATION_CHOICES } from "../data/profileChoices";
@@ -16,7 +16,7 @@ import {
 } from "../data/repository";
 import { getStripe } from "../lib/stripeClient";
 import Button from "../components/ui/Button";
-import TierBadge from "../components/ui/TierBadge";
+import ListingTierCards from "../components/ListingTierCards";
 import DemoModeNotice from "../components/DemoModeNotice";
 import ListingProfile from "../components/ListingProfile";
 import PaypalButton from "../components/PaypalButton";
@@ -227,10 +227,18 @@ function StepIndicator({ current }) {
 
 export default function AddListingPage() {
   const { slug: editSlug } = useParams();
+  const [searchParams] = useSearchParams();
   const isEditing = Boolean(editSlug);
+  const requestedTier = searchParams.get("tier");
 
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState(initialForm);
+  const [form, setForm] = useState(() => ({
+    ...initialForm,
+    tier:
+      requestedTier === "free" || requestedTier === "classified"
+        ? requestedTier
+        : initialForm.tier,
+  }));
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
@@ -490,7 +498,7 @@ export default function AddListingPage() {
             image differently than reality — this wrapper now matches
             ListingProfile's own width on step 5 only, every other step keeps
             the narrower column that suits a form. */}
-        <div className={step === 5 ? "max-w-7xl mx-auto" : "max-w-3xl mx-auto"}>
+        <div className={step === 5 ? "max-w-7xl mx-auto" : step === 1 ? "max-w-4xl mx-auto" : "max-w-3xl mx-auto"}>
           {step === 1 && (
             <div>
               <h1 className="font-heading text-3xl md:text-4xl font-light text-foreground-950 mb-3">
@@ -500,96 +508,12 @@ export default function AddListingPage() {
                 Free listings are a great way to get started. Upgrade to Classified anytime for
                 premium placement and tools.
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <button
-                  type="button"
-                  onClick={() => setForm((f) => ({ ...f, tier: "free" }))}
-                  className={`text-left p-6 rounded-2xl border-2 transition-all cursor-pointer ${
-                    form.tier === "free"
-                      ? "border-primary-500 bg-primary-50/50 ring-2 ring-primary-200"
-                      : "border-background-200/70 bg-background-50 hover:border-background-400"
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-secondary-100 text-secondary-900 border border-secondary-200">
-                      <i className="ri-price-tag-3-line" />
-                      Free
-                    </span>
-                    <span className="text-2xl font-heading font-semibold text-foreground-950">
-                      $0
-                    </span>
-                  </div>
-                  <ul className="space-y-2.5">
-                    {[
-                      "Booking module enabled",
-                      "Pricing module enabled",
-                      "One listing",
-                      "24/7 support",
-                    ].map((f) => (
-                      <li
-                        key={f}
-                        className="flex items-start gap-2 text-sm text-foreground-700 font-label"
-                      >
-                        <i className="ri-check-line mt-0.5 text-secondary-600" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="mt-5 h-1.5 rounded-full w-full bg-secondary-100">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        form.tier === "free" ? "bg-secondary-500 w-full" : "w-0"
-                      }`}
-                    />
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setForm((f) => ({ ...f, tier: "classified" }))}
-                  className={`text-left p-6 rounded-2xl border-2 transition-all cursor-pointer ${
-                    form.tier === "classified"
-                      ? "border-primary-500 bg-primary-50/50 ring-2 ring-primary-200"
-                      : "border-background-200/70 bg-background-50 hover:border-background-400"
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-primary-500 text-background-50">
-                      <i className="ri-vip-crown-line" />
-                      Classified
-                    </span>
-                    <span className="text-2xl font-heading font-semibold text-foreground-950">
-                      $40/yr
-                    </span>
-                  </div>
-                  <ul className="space-y-2.5">
-                    {[
-                      "Booking & pricing modules enabled",
-                      "Up to 15 listings",
-                      "Premium website placement (up to 3 months)",
-                      "Biography highlight (provided by client)",
-                      "Featured on \"Trending Listings\"",
-                      "Shared on all Connect767 social handles",
-                      "Verified Check Mark on Profile",
-                    ].map((f) => (
-                      <li
-                        key={f}
-                        className="flex items-start gap-2 text-sm text-foreground-700 font-label"
-                      >
-                        <i className="ri-check-line mt-0.5 text-primary-600" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="mt-5 h-1.5 rounded-full w-full bg-primary-100">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        form.tier === "classified" ? "bg-primary-500 w-full" : "w-0"
-                      }`}
-                    />
-                  </div>
-                </button>
-              </div>
+              <ListingTierCards
+                selectedTier={form.tier}
+                onSelect={(tier) => setForm((f) => ({ ...f, tier }))}
+                scale={0.7}
+                className="mx-auto max-w-4xl"
+              />
             </div>
           )}
 
@@ -1148,39 +1072,13 @@ export default function AddListingPage() {
                     seeing their finished listing had to abandon the form and
                     start over. */}
                 <div className="pb-4 border-b border-background-200/70">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-semibold text-foreground-800">Tier</span>
-                    <div className="flex items-center gap-2">
-                      <TierBadge tier={form.tier === "classified" ? "Classified" : "Free"} />
-                      <span className="text-xs text-foreground-500 font-label">
-                        {form.tier === "classified" ? "$40/yr" : "$0"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { key: "free", label: "Free", price: "$0" },
-                      { key: "classified", label: "Classified", price: "$40/yr" },
-                    ].map((t) => (
-                      <button
-                        key={t.key}
-                        type="button"
-                        onClick={() => setForm((f) => ({ ...f, tier: t.key }))}
-                        className={`px-3 py-2.5 rounded-lg border text-left cursor-pointer transition-all ${
-                          form.tier === t.key
-                            ? "border-primary-500 bg-primary-50 ring-2 ring-primary-200"
-                            : "border-background-300 bg-background-50 hover:border-primary-300"
-                        }`}
-                      >
-                        <span className="block text-xs font-semibold text-foreground-900">
-                          {t.label}
-                        </span>
-                        <span className="block text-[11px] text-foreground-500 font-label">
-                          {t.price}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
+                  <span className="mb-3 block text-sm font-semibold text-foreground-800">Tier</span>
+                  <ListingTierCards
+                    compact
+                    selectedTier={form.tier}
+                    onSelect={(tier) => setForm((f) => ({ ...f, tier }))}
+                    className="gap-3"
+                  />
                   {form.tier === "classified" && (
                     <p className="text-[11px] text-foreground-500 font-label mt-2">
                       You'll be taken to payment after submitting.
