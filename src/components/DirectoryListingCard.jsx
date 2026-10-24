@@ -3,6 +3,7 @@ import TierBadge from "./ui/TierBadge";
 import { imageCropStyle } from "../lib/imagePosition";
 import { directoryCategories } from "../data/directory";
 import { findIndustry } from "../data/industries";
+import DefaultListingCover from "./ui/DefaultListingCover";
 
 const getCategoryLabel = (slug) =>
   directoryCategories.find((category) => category.slug === slug)?.label || "";
@@ -137,13 +138,7 @@ function Cover({ listing, listView = false, saved = false, onToggleSaved }) {
             style={imageCropStyle(coverPosition, listing.coverZoom, listing.coverFit)}
           />
         ) : (
-          <div
-            className="flex h-full w-full flex-col items-center justify-center gap-2 text-foreground-400"
-            aria-label={`${listing.title} cover photo unavailable`}
-          >
-            <i className="ri-image-line text-3xl" aria-hidden="true" />
-            <span className="text-xs font-label">Cover photo unavailable</span>
-          </div>
+          <DefaultListingCover title={listing.title} compact />
         )}
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-foreground-950/35 via-transparent to-transparent pointer-events-none" />
