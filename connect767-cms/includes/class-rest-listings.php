@@ -660,6 +660,10 @@ class C767_REST_Listings
         if (!$business_name) {
             return new WP_Error('c767_missing_name', 'Business name is required.', ['status' => 400]);
         }
+        $location = trim(sanitize_text_field((string) $request->get_param('location')));
+        if (!$location) {
+            return new WP_Error('c767_missing_location', 'Location is required.', ['status' => 400]);
+        }
 
         $post_id = wp_insert_post([
             'post_type' => 'listing',
@@ -692,7 +696,7 @@ class C767_REST_Listings
             // never meant to be billed.
             'payment_status' => $tier === 'Classified' ? 'unpaid' : 'n/a',
             'price_tier' => sanitize_text_field((string) $request->get_param('priceTier')),
-            'location_display' => sanitize_text_field((string) $request->get_param('location')),
+            'location_display' => $location,
             'phone' => sanitize_text_field((string) $request->get_param('phone')),
             'email' => sanitize_email((string) $request->get_param('email')),
             'website' => esc_url_raw((string) $request->get_param('website')),
@@ -778,6 +782,10 @@ class C767_REST_Listings
         if (!$business_name) {
             return new WP_Error('c767_missing_name', 'Business name is required.', ['status' => 400]);
         }
+        $location = trim(sanitize_text_field((string) $request->get_param('location')));
+        if (!$location) {
+            return new WP_Error('c767_missing_location', 'Location is required.', ['status' => 400]);
+        }
 
         wp_update_post([
             'ID' => $post_id,
@@ -793,7 +801,7 @@ class C767_REST_Listings
         $years_experience = self::sanitize_years_experience($request->get_param('yearsExperience'));
         $meta = [
             'price_tier' => sanitize_text_field((string) $request->get_param('priceTier')),
-            'location_display' => sanitize_text_field((string) $request->get_param('location')),
+            'location_display' => $location,
             'phone' => sanitize_text_field((string) $request->get_param('phone')),
             'email' => sanitize_email((string) $request->get_param('email')),
             'website' => esc_url_raw((string) $request->get_param('website')),
