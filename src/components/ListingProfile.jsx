@@ -8,6 +8,7 @@ import { imageCropStyle } from "../lib/imagePosition";
 import BookingForm from "./BookingForm";
 import ShareMenu from "./ShareMenu";
 import { WriteReviewButton } from "./WriteReviewModal";
+import DefaultListingCover from "./ui/DefaultListingCover";
 
 /**
  * The actual listing profile presentation — used by both
@@ -116,7 +117,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                       }
                     />
                   ) : (
-                    <i className="ri-image-line text-4xl text-foreground-300" />
+                    <DefaultListingCover title={data.title} />
                   )}
                 </div>
                 {gallery.length > 1 && (

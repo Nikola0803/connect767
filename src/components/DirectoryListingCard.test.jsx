@@ -94,14 +94,16 @@ describe("DirectoryListingCard parent category", () => {
     expect(screen.getByText("Book · Free · 30 min")).toBeInTheDocument();
   });
 
-  it("shows a clean fallback instead of a broken image when no cover was saved", () => {
+  it("shows the branded default cover instead of a broken image when no cover was saved", () => {
     render(
       <MemoryRouter>
         <DirectoryListingCard listing={{ ...listing, image: "" }} />
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Cover photo unavailable")).toBeInTheDocument();
-    expect(screen.queryByRole("img", { name: /island bookkeeper/i })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Connect767 default cover for Island Bookkeeper" }),
+    ).toBeInTheDocument();
+    expect(document.querySelector('img[src=""]')).not.toBeInTheDocument();
   });
 });
