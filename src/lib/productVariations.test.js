@@ -32,6 +32,15 @@ describe("product variation matching", () => {
     expect(matchVariation(variations, { Color: "Navy Blue", Size: "Small" })?.id).toBe(1);
   });
 
+  it("resolves a color image before the shopper chooses a size", () => {
+    const colorVariations = [
+      { id: 10, attributes: { color: "black", size: "small" }, image: "black.jpg" },
+      { id: 11, attributes: { color: "sky-blue", size: "small" }, image: "sky-blue.jpg" },
+    ];
+
+    expect(matchVariation(colorVariations, { Color: "Sky Blue" })?.image).toBe("sky-blue.jpg");
+  });
+
   it("supports WooCommerce's empty-value wildcard variations", () => {
     expect(matchVariation(variations, { Color: "Forest Green", Size: "XL" })?.id).toBe(3);
   });

@@ -101,9 +101,10 @@ export default function ProductDetailPage() {
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10">
           <div className="relative rounded-2xl overflow-hidden border border-background-200/70 aspect-square">
             <img
+              key={displayImage}
               src={displayImage}
-              alt={product.title}
-              className="w-full h-full object-cover object-top"
+              alt={matchedVariation ? `${product.title} — selected variation` : product.title}
+              className="w-full h-full object-cover object-top transition-opacity duration-200"
             />
             {displayOriginalPrice && (
               <span className="absolute top-4 left-4 px-2.5 py-1 rounded-md bg-accent-500 text-background-50 text-xs font-semibold font-label">
