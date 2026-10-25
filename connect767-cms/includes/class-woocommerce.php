@@ -445,8 +445,9 @@ class C767_WooCommerce
         $zone = WC_Shipping_Zones::get_zone_matching_package($package);
         $rates = [];
         foreach ($zone->get_shipping_methods(true) as $method) {
+            $method->rates = [];
             $method->calculate_shipping($package);
-            foreach ($method->get_rates() as $rate) {
+            foreach ($method->rates as $rate) {
                 $rates[] = $rate;
             }
         }
