@@ -10,11 +10,13 @@ export default function DefaultListingCover({ title = "Listing", compact = false
       aria-label={`Connect767 default cover for ${title}`}
       className="relative isolate h-full w-full overflow-hidden bg-primary-100"
     >
-      <div
-        aria-hidden="true"
-        className="absolute -inset-3 bg-cover bg-center opacity-20 blur-xl"
-        style={{ backgroundImage: `url(${imageUrl})` }}
-      />
+      {!compact && (
+        <div
+          aria-hidden="true"
+          className="absolute -inset-3 bg-cover bg-center opacity-20 blur-xl"
+          style={{ backgroundImage: `url(${imageUrl})` }}
+        />
+      )}
       <img
         src={imageUrl}
         srcSet={`${DEFAULT_COVER_BASE}-768x453.png 768w, ${DEFAULT_COVER_BASE}-1024x604.png 1024w, ${DEFAULT_COVER_BASE}-1536x906.png 1536w, ${DEFAULT_COVER_BASE}.png 1632w`}
@@ -24,7 +26,9 @@ export default function DefaultListingCover({ title = "Listing", compact = false
         alt=""
         loading="lazy"
         decoding="async"
-        className="relative z-10 h-full w-full max-h-full max-w-full object-contain object-center"
+        className={`relative z-10 h-full w-full max-h-full max-w-full object-center ${
+          compact ? "object-cover" : "object-contain"
+        }`}
       />
     </div>
   );
