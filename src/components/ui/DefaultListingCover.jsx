@@ -1,5 +1,5 @@
 const DEFAULT_COVER_BASE =
-  "https://admin.connect767.com/wp-content/uploads/2026/10/Dominican-Talent-Opportunities-Branding-Poster";
+  "https://admin.connect767.com/wp-content/uploads/2026/10/Dominican-Talent-Branding-Poster";
 
 export default function DefaultListingCover({ title = "Listing", compact = false }) {
   return (
