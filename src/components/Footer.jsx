@@ -1,9 +1,5 @@
 import { Link } from "react-router-dom";
-import { config } from "../lib/config";
-
-// See Header.jsx for why this can't just be a same-domain path — the
-// WordPress media library lives on the admin.* subdomain.
-const WP_ORIGIN = config.wpBaseUrl || "https://admin.connect767.com";
+import BrandLogo from "./BrandLogo";
 
 const discoverLinks = [
   { label: "Browse Directory", href: "/listings" },
@@ -27,22 +23,23 @@ const socials = [
 
 export default function Footer() {
   return (
-    <footer className="px-3 sm:px-4 md:px-8 pb-4 sm:pb-8 pt-12 md:pt-16 bg-background-50">
+    <footer
+      id="site-footer"
+      className="px-3 sm:px-4 md:px-8 pb-4 sm:pb-8 pt-12 md:pt-16 bg-background-50"
+    >
       <div className="rounded-2xl sm:rounded-3xl bg-primary-950 text-background-50 px-5 sm:px-6 md:px-12 py-10 sm:py-12 md:py-16 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <div className="lg:col-span-5">
-            <div className="flex items-center gap-2 mb-6">
-              <img
-                src={`${WP_ORIGIN}/wp-content/uploads/2026/07/logo-white.png`}
-                alt="Connect767"
-                loading="lazy"
-                decoding="async"
-                className="h-10 w-auto"
+            <Link
+              aria-label="Connect767 home"
+              className="group mb-6 inline-flex text-background-50 [text-shadow:0_2px_5px_rgba(0,0,0,0.35)]"
+              to="/"
+            >
+              <BrandLogo
+                markFilter="drop-shadow(1px 0 0 rgba(255,255,255,0.45)) drop-shadow(-1px 0 0 rgba(255,255,255,0.45)) drop-shadow(0 1px 3px rgba(0,0,0,0.35))"
+                size="large"
               />
-              <span className="font-heading text-2xl font-semibold">
-                Connect<span className="text-accent-400">767</span>
-              </span>
-            </div>
+            </Link>
             <h3 className="font-heading text-3xl md:text-4xl font-light leading-tight mb-4">
               Get the weekly digest of new listings, deals &amp; drops.
             </h3>
