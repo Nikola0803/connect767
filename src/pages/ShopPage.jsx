@@ -109,8 +109,15 @@ export default function ShopPage() {
             </div>
 
             <div className="relative hidden sm:block">
-              <div className="relative h-64 md:h-72 overflow-hidden rounded-[2rem] border border-background-50/15 bg-background-50/5 shadow-[0_24px_70px_rgba(0,0,0,0.28)]">
-                <img fetchPriority="high" decoding="async" src={shopHeroImage} alt="Dominican-made products in the Connect767 Shop" className="h-full w-full object-cover object-center" />
+              <div className="relative aspect-[4/3] overflow-hidden rounded-[2rem] border border-background-50/15 bg-background-50/5 shadow-[0_24px_70px_rgba(0,0,0,0.28)]">
+                <img
+                  fetchPriority="high"
+                  decoding="async"
+                  src={shopHeroImage}
+                  alt="Dominican-made products in the Connect767 Shop"
+                  className="h-full w-full object-cover"
+                  style={{ objectPosition: "center 22%" }}
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-primary-950/75 via-transparent to-transparent" />
                 <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-4">
                   <div>
