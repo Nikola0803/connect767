@@ -10,9 +10,9 @@ export default function DefaultListingCover({ title = "Listing", compact = false
     >
       <img
         src={`${DEFAULT_COVER_BASE}.png`}
-        srcSet={`${DEFAULT_COVER_BASE}-768x453.png 768w, ${DEFAULT_COVER_BASE}-1024x604.png 1024w, ${DEFAULT_COVER_BASE}-1536x906.png 1536w, ${DEFAULT_COVER_BASE}.png 1633w`}
+        srcSet={`${DEFAULT_COVER_BASE}-768x453.png 768w, ${DEFAULT_COVER_BASE}-1024x604.png 1024w, ${DEFAULT_COVER_BASE}-1536x906.png 1536w, ${DEFAULT_COVER_BASE}.png 1632w`}
         sizes={compact ? "(max-width: 640px) 100vw, 420px" : "(max-width: 1024px) 100vw, 1200px"}
-        width="1633"
+        width="1632"
         height="963"
         alt=""
         loading="lazy"

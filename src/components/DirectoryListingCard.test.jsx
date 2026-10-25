@@ -106,6 +106,7 @@ describe("DirectoryListingCard parent category", () => {
     });
 
     expect(fallbackCover).toBeInTheDocument();
+    expect(fallbackCover.parentElement).toHaveClass("aspect-[1632/963]");
     expect(fallbackCover.querySelector("img")).toHaveClass("object-contain");
     expect(fallbackCover.querySelector("img")).toHaveAttribute(
       "src",
