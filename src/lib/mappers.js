@@ -166,7 +166,11 @@ export function mapListingCpt(wp) {
   // the industry slug — and DirectoryPage's top-level filter
   // (`l.categorySlug === category`) would then never match the listing.
   // Split them explicitly instead.
-  const allCatTerms = (wp?._embedded?.["wp:term"]?.flat() || []).filter(
+  const hierarchyTerms = Array.isArray(wp?.listing_category_hierarchy)
+    ? wp.listing_category_hierarchy
+    : [];
+  const embeddedTerms = wp?._embedded?.["wp:term"]?.flat() || [];
+  const allCatTerms = (hierarchyTerms.length ? hierarchyTerms : embeddedTerms).filter(
     (t) => t.taxonomy === "listing_category"
   );
   const categoryTerm = allCatTerms.find((t) => !t.parent) || allCatTerms[0];

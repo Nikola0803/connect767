@@ -22,7 +22,61 @@ class C767_Post_Types
         // (default priority registers at 10, this at 20).
         add_action('init', [__CLASS__, 'cleanup_stray_industry_terms'], 20);
         add_action('rest_api_init', [__CLASS__, 'register_query_vars']);
+        add_action('rest_api_init', [__CLASS__, 'register_listing_category_hierarchy_field']);
         add_filter('posts_search', [__CLASS__, 'expand_listing_search'], 10, 2);
+    }
+
+    /**
+     * Preserve the listing-category hierarchy in public listing responses.
+     *
+     * WordPress' `_embed` response includes the assigned terms, but omits
+     * each term's `parent` property. The headless frontend therefore cannot
+     * reliably distinguish a top-level category (Services) from its industry
+     * (General Contractor), especially when the child term is returned first.
+     */
+    public static function register_listing_category_hierarchy_field()
+    {
+        register_rest_field('listing', 'listing_category_hierarchy', [
+            'get_callback' => [__CLASS__, 'get_listing_category_hierarchy'],
+            'schema' => [
+                'description' => 'Assigned listing categories with their parent term IDs.',
+                'type' => 'array',
+                'context' => ['view', 'edit'],
+                'items' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'id' => ['type' => 'integer'],
+                        'name' => ['type' => 'string'],
+                        'slug' => ['type' => 'string'],
+                        'parent' => ['type' => 'integer'],
+                        'taxonomy' => ['type' => 'string'],
+                    ],
+                ],
+            ],
+        ]);
+    }
+
+    public static function get_listing_category_hierarchy($object)
+    {
+        $post_id = isset($object['id']) ? (int) $object['id'] : 0;
+        if (!$post_id) {
+            return [];
+        }
+
+        $terms = wp_get_object_terms($post_id, 'listing_category');
+        if (is_wp_error($terms)) {
+            return [];
+        }
+
+        return array_map(static function ($term) {
+            return [
+                'id' => (int) $term->term_id,
+                'name' => $term->name,
+                'slug' => $term->slug,
+                'parent' => (int) $term->parent,
+                'taxonomy' => 'listing_category',
+            ];
+        }, $terms);
     }
 
     /**
