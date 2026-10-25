@@ -10,6 +10,7 @@ import { SavedListingsProvider } from "./hooks/useSavedListings";
 import CartDrawer from "./components/CartDrawer";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ScrollToTop from "./components/ScrollToTop";
+import RouteSeo from "./components/RouteSeo";
 
 // Keep each route in its own chunk. This prevents the 3D design studios and
 // dashboard code from slowing down the homepage on mobile connections.
@@ -84,6 +85,7 @@ function App() {
       <CartProvider>
         <SavedListingsProvider>
           <ScrollToTop />
+          <RouteSeo />
           <Chrome>
             <RouteBoundary>
               <Suspense fallback={<RouteLoading />}>

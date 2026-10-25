@@ -99,8 +99,15 @@ class C767F_SPA_Router
             self::serve_file($file_path);
         }
 
-        // Job 2: not a real file — treat it as a client-side route and let
-        // React Router take over.
+        // Job 2: prefer a route-specific HTML shell when the build provides
+        // one. It contains the same React app plus a unique title,
+        // description and canonical URL for search engines and link previews.
+        $route_index = C767F_DIST_DIR . trim($path, '/') . '/index.html';
+        if ($path !== '/' && is_file($route_index)) {
+            self::serve_index($route_index);
+        }
+
+        // Dynamic routes still use the main shell and let React Router take over.
         self::serve_index($index_path);
     }
 

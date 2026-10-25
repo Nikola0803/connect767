@@ -1,3 +1,19 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "redirects": [
+    { "source": "/shop/", "destination": "/shop", "permanent": true },
+    { "source": "/listings/", "destination": "/listings", "permanent": true },
+    { "source": "/uniforms/", "destination": "/uniforms", "permanent": true },
+    { "source": "/about/", "destination": "/about", "permanent": true },
+    { "source": "/blog/", "destination": "/blog", "permanent": true },
+    { "source": "/help/", "destination": "/help", "permanent": true }
+  ],
+  "rewrites": [
+    { "source": "/shop", "destination": "/shop/index.html" },
+    { "source": "/listings", "destination": "/listings/index.html" },
+    { "source": "/uniforms", "destination": "/uniforms/index.html" },
+    { "source": "/about", "destination": "/about/index.html" },
+    { "source": "/blog", "destination": "/blog/index.html" },
+    { "source": "/help", "destination": "/help/index.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }

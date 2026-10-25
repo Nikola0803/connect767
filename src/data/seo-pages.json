@@ -1,0 +1,37 @@
+{
+  "/": {
+    "title": "Connect767 | Dominica’s Online Directory",
+    "description": "Discover Dominican businesses, professionals, services, products, rentals and opportunities in Dominica and across the global diaspora.",
+    "label": "Home"
+  },
+  "/listings": {
+    "title": "Browse Dominica’s Online Directory | Connect767",
+    "description": "Search Connect767’s trusted directory for Dominican businesses, professionals, services, products, rentals and opportunities at home and worldwide.",
+    "label": "Directory"
+  },
+  "/shop": {
+    "title": "Shop Dominican Products & Apparel | Connect767",
+    "description": "Shop Connect767 apparel and products from Dominican brands and creators, including clothing, activewear and accessories, with secure online checkout.",
+    "label": "Shop"
+  },
+  "/uniforms": {
+    "title": "3D Custom Uniform Studio | Connect767",
+    "description": "Design custom team uniforms in 3D. Choose your sport, colors, collar and sleeves, then add logos, names and numbers before requesting a quote.",
+    "label": "Uniform Studio"
+  },
+  "/about": {
+    "title": "About Connect767 | Dominican Talent & Enterprise",
+    "description": "Learn how Connect767 connects Dominican businesses, professionals, products, services and opportunities across Dominica and the global diaspora.",
+    "label": "About"
+  },
+  "/blog": {
+    "title": "Dominican Business Stories & Guides | Connect767",
+    "description": "Read Connect767 stories, practical guides and updates for Dominican businesses, professionals, shoppers and creators at home and abroad.",
+    "label": "Blog"
+  },
+  "/help": {
+    "title": "Help Center | Connect767",
+    "description": "Get help with Connect767 directory listings, bookings, shopping, orders, custom uniforms, returns and account questions.",
+    "label": "Help Center"
+  }
+}
