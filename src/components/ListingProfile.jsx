@@ -27,7 +27,6 @@ export default function ListingProfile({ data, isPreview = false }) {
   const [mapCoords, setMapCoords] = useState(null);
   const { isSaved, toggleSaved } = useSavedListings();
   const gallery = data.gallery.length > 0 ? data.gallery : [{ alt: data.title, src: "" }];
-  const usesDefaultCover = !gallery[activeImage]?.src;
   const saved = !isPreview && isSaved(data.slug);
 
   const handleSave = () => {
@@ -101,8 +100,8 @@ export default function ListingProfile({ data, isPreview = false }) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
               <div className="relative">
-                <div className={`w-full ${usesDefaultCover ? "aspect-[1632/963]" : "h-[320px] md:h-[500px]"} rounded-2xl overflow-hidden border border-background-200/70 bg-background-100 flex items-center justify-center`}>
-                  {!usesDefaultCover ? (
+                <div className="w-full h-[320px] md:h-[500px] rounded-2xl overflow-hidden border border-background-200/70 bg-background-100 flex items-center justify-center">
+                  {gallery[activeImage]?.src ? (
                     <img
                       alt={gallery[activeImage]?.alt}
                       className={`w-full h-full ${

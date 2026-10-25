@@ -121,15 +121,9 @@ function ListingHighlights({ listing }) {
 
 function Cover({ listing, listView = false, saved = false, onToggleSaved }) {
   const coverPosition = listing.coverPosition || "top";
-  const coverFrameClass = listView
-    ? "h-52 sm:h-full"
-    : listing.image
-      ? "aspect-[4/3]"
-      : "aspect-[1632/963]";
-
   return (
     <div className={`relative flex-shrink-0 ${listView ? "sm:w-64" : ""}`}>
-      <div className={`w-full overflow-hidden bg-background-100 ${coverFrameClass}`}>
+      <div className={`w-full overflow-hidden bg-background-100 ${listView ? "h-52 sm:h-full" : "aspect-[4/3]"}`}>
         {listing.image ? (
           <img
             loading="lazy"
