@@ -171,48 +171,12 @@ class C767_Stripe_Checkout
     public static function create_intent(WP_REST_Request $request)
     {
         $items = (array) $request->get_param('items');
-        if (empty($items)) {
-            return new WP_Error('c767_empty_cart', 'Cart is empty.', ['status' => 400]);
-        }
-
-        $order = wc_create_order();
-        if (is_wp_error($order)) {
-            return new WP_Error('c767_order_failed', $order->get_error_message(), ['status' => 400]);
-        }
-
-        foreach ($items as $item) {
-            $variation_id = (int) ($item['variationId'] ?? 0);
-            $qty = max(1, (int) ($item['qty'] ?? 1));
-
-            if ($variation_id) {
-                $variation = wc_get_product($variation_id);
-                if ($variation && $variation->is_type('variation')) {
-                    $order->add_product($variation, $qty);
-                    continue;
-                }
-            }
-
-            $slug = sanitize_title((string) ($item['slug'] ?? ''));
-            $product_id = self::product_id_from_slug($slug);
-            $product = $product_id ? wc_get_product($product_id) : null;
-            if ($product && $product->is_purchasable()) {
-                $order->add_product($product, $qty);
-            }
-        }
-
-        if (count($order->get_items()) === 0) {
-            $order->delete(true);
-            return new WP_Error('c767_no_valid_items', 'None of the cart items matched a real product.', ['status' => 400]);
-        }
-
         $email = sanitize_email((string) $request->get_param('email'));
-        if ($email) {
-            $order->set_billing_email($email);
+        $shipping = (array) $request->get_param('shipping');
+        $order = C767_WooCommerce::build_pending_order($items, $email, $shipping);
+        if (is_wp_error($order)) {
+            return $order;
         }
-
-        $order->calculate_totals();
-        $order->set_status('pending');
-        $order->save();
 
         $amount_cents = (int) round($order->get_total() * 100);
         $intent = self::stripe_request('/payment_intents', [
