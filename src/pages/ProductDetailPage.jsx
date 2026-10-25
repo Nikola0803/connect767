@@ -5,7 +5,11 @@ import { useCart } from "../hooks/useCart";
 import { getProductBySlug } from "../data/repository";
 import Button from "../components/ui/Button";
 import { Spinner, ErrorState } from "../components/ui/States";
-import { isVariationOptionAvailable, matchVariation } from "../lib/productVariations";
+import {
+  formatVariationOption,
+  isVariationOptionAvailable,
+  matchVariation,
+} from "../lib/productVariations";
 
 export default function ProductDetailPage() {
   const { slug } = useParams();
@@ -70,7 +74,14 @@ export default function ProductDetailPage() {
   const handleAddToCart = () => {
     if (!canAddToCart) return;
     const variationLabel = hasVariations
-      ? product.attributes.map((a) => selections[a.name]).filter(Boolean).join(" / ")
+      ? product.attributes
+        .map((attribute) =>
+          selections[attribute.name]
+            ? formatVariationOption(attribute.name, selections[attribute.name])
+            : ""
+        )
+        .filter(Boolean)
+        .join(" / ")
       : "";
     addItem(
       { slug: product.slug, title: product.title, image: displayImage, price: displayPrice },
@@ -135,7 +146,9 @@ export default function ProductDetailPage() {
                     <label className="block text-xs font-semibold text-foreground-800 mb-2">
                       {attr.name}
                       {selections[attr.name] && (
-                        <span className="text-foreground-500 font-normal"> &mdash; {selections[attr.name]}</span>
+                        <span className="text-foreground-500 font-normal">
+                          {" "}&mdash; {formatVariationOption(attr.name, selections[attr.name])}
+                        </span>
                       )}
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -163,7 +176,7 @@ export default function ProductDetailPage() {
                                   : "bg-background-100 text-foreground-300 border-background-200 cursor-not-allowed line-through"
                             }`}
                           >
-                            {option}
+                            {formatVariationOption(attr.name, option)}
                           </button>
                         );
                       })}

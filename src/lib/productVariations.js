@@ -20,6 +20,17 @@ export function normalizeVariationAttributeName(name) {
   );
 }
 
+/**
+ * Keep WooCommerce's raw option value for variation matching, but present
+ * apparel/shoe sizes consistently throughout the storefront.
+ */
+export function formatVariationOption(attributeName, value) {
+  const text = String(value ?? "");
+  return normalizeVariationAttributeName(attributeName).includes("size")
+    ? text.toUpperCase()
+    : text;
+}
+
 export function variationMatchesSelections(variation, selections, ignoredAttribute = "") {
   const ignoredKey = normalizeVariationAttributeName(ignoredAttribute);
 
