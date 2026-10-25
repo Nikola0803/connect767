@@ -13,11 +13,24 @@ import {
 } from "../data/repository";
 import { isLiveApi } from "../lib/config";
 import Button from "../components/ui/Button";
-import { Input } from "../components/ui/FormField";
+import { FormField, Input } from "../components/ui/FormField";
 import { Spinner } from "../components/ui/States";
 import PaypalButton from "../components/PaypalButton";
 
 let stripePromise = null;
+const emptyShipping = {
+  firstName: "",
+  lastName: "",
+  company: "",
+  address1: "",
+  address2: "",
+  city: "",
+  state: "",
+  postcode: "",
+  country: "US",
+  phone: "",
+};
+
 function getStripe(publishableKey) {
   if (!stripePromise) stripePromise = loadStripe(publishableKey);
   return stripePromise;
@@ -28,6 +41,7 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const [config, setConfig] = useState(null);
   const [email, setEmail] = useState("");
+  const [shipping, setShipping] = useState(emptyShipping);
   const [clientSecret, setClientSecret] = useState(null);
   const [orderId, setOrderId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,6 +49,25 @@ export default function CheckoutPage() {
   const [fallingBack, setFallingBack] = useState(false);
 
   const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const shippingComplete = Boolean(
+    email.trim() &&
+      shipping.firstName.trim() &&
+      shipping.lastName.trim() &&
+      shipping.address1.trim() &&
+      shipping.city.trim() &&
+      shipping.state.trim() &&
+      shipping.postcode.trim()
+  );
+
+  const updateShipping = (field) => (event) => {
+    setShipping((current) => ({ ...current, [field]: event.target.value }));
+  };
+
+  const requireShipping = () => {
+    if (shippingComplete) return true;
+    setError("Enter your email and complete every required shipping-address field.");
+    return false;
+  };
 
   useEffect(() => {
     getCheckoutConfig()
@@ -44,9 +77,10 @@ export default function CheckoutPage() {
   }, []);
 
   const startEmbeddedCheckout = async () => {
+    if (!requireShipping()) return;
     setError(null);
     try {
-      const result = await createPaymentIntent(items, email);
+      const result = await createPaymentIntent(items, email, shipping);
       setClientSecret(result.clientSecret);
       setOrderId(result.orderId);
     } catch (err) {
@@ -55,10 +89,11 @@ export default function CheckoutPage() {
   };
 
   const useWooCommerceFallback = async () => {
+    if (!requireShipping()) return;
     setFallingBack(true);
     setError(null);
     try {
-      const result = await checkout(items, email);
+      const result = await checkout(items, email, shipping);
       clearCart();
       window.location.href = result.checkoutUrl;
     } catch (err) {
@@ -99,9 +134,12 @@ export default function CheckoutPage() {
             </div>
           ))}
           <div className="flex justify-between text-base font-semibold pt-3 mt-2 border-t border-background-200/70">
-            <span>Total</span>
+            <span>Subtotal</span>
             <span>${total.toFixed(2)}</span>
           </div>
+          <p className="mt-2 text-xs text-foreground-500 font-label">
+            Shipping is calculated from the delivery address and included before payment.
+          </p>
         </div>
 
         {error && (
@@ -118,20 +156,66 @@ export default function CheckoutPage() {
 
         {!clientSecret ? (
           <>
-            <label className="block text-xs font-semibold text-foreground-800 mb-1.5" htmlFor="checkout-email">
-              Email
-            </label>
-            <Input
-              id="checkout-email"
-              type="email"
-              placeholder="you@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mb-5"
-            />
+            <div className="rounded-xl border border-background-200/70 bg-background-50 p-5 mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <i className="ri-truck-line text-primary-700" />
+                <h2 className="font-heading text-xl font-medium text-foreground-950">Shipping address</h2>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="First name" htmlFor="shipping-first-name" required>
+                  <Input id="shipping-first-name" autoComplete="given-name" value={shipping.firstName} onChange={updateShipping("firstName")} />
+                </FormField>
+                <FormField label="Last name" htmlFor="shipping-last-name" required>
+                  <Input id="shipping-last-name" autoComplete="family-name" value={shipping.lastName} onChange={updateShipping("lastName")} />
+                </FormField>
+                <div className="sm:col-span-2">
+                  <FormField label="Company" htmlFor="shipping-company" hint="Optional">
+                    <Input id="shipping-company" autoComplete="organization" value={shipping.company} onChange={updateShipping("company")} />
+                  </FormField>
+                </div>
+                <div className="sm:col-span-2">
+                  <FormField label="Street address" htmlFor="shipping-address-1" required>
+                    <Input id="shipping-address-1" autoComplete="address-line1" value={shipping.address1} onChange={updateShipping("address1")} />
+                  </FormField>
+                </div>
+                <div className="sm:col-span-2">
+                  <FormField label="Apartment, suite or unit" htmlFor="shipping-address-2" hint="Optional">
+                    <Input id="shipping-address-2" autoComplete="address-line2" value={shipping.address2} onChange={updateShipping("address2")} />
+                  </FormField>
+                </div>
+                <FormField label="City" htmlFor="shipping-city" required>
+                  <Input id="shipping-city" autoComplete="address-level2" value={shipping.city} onChange={updateShipping("city")} />
+                </FormField>
+                <FormField label="State" htmlFor="shipping-state" hint="Two-letter code, e.g. TX" required>
+                  <Input id="shipping-state" autoComplete="address-level1" maxLength={2} value={shipping.state} onChange={updateShipping("state")} />
+                </FormField>
+                <FormField label="ZIP code" htmlFor="shipping-postcode" required>
+                  <Input id="shipping-postcode" autoComplete="postal-code" value={shipping.postcode} onChange={updateShipping("postcode")} />
+                </FormField>
+                <FormField label="Phone" htmlFor="shipping-phone" hint="Optional">
+                  <Input id="shipping-phone" type="tel" autoComplete="tel" value={shipping.phone} onChange={updateShipping("phone")} />
+                </FormField>
+                <div className="sm:col-span-2">
+                  <FormField label="Email" htmlFor="checkout-email" required>
+                    <Input
+                      id="checkout-email"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="you@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </FormField>
+                </div>
+              </div>
+              <p className="mt-4 text-xs text-foreground-500 font-label">
+                Shipping is currently available to U.S. addresses. Carrier labels are created from the completed order in WooCommerce.
+              </p>
+            </div>
 
             {config?.stripeEnabled && (
-              <Button variant="primary" size="lg" className="w-full" onClick={startEmbeddedCheckout} disabled={!isLiveApi}>
+              <Button variant="primary" size="lg" className="w-full" onClick={startEmbeddedCheckout} disabled={!isLiveApi || !shippingComplete}>
                 Continue to payment
               </Button>
             )}
@@ -147,9 +231,10 @@ export default function CheckoutPage() {
             {config?.paypalEnabled && (
               <PaypalButton
                 clientId={config.paypalClientId}
-                disabled={!isLiveApi}
+                disabled={!isLiveApi || !shippingComplete}
                 createOrder={async () => {
-                  const result = await createCartPaypalOrder(items, email);
+                  if (!requireShipping()) throw new Error("Complete the shipping address first.");
+                  const result = await createCartPaypalOrder(items, email, shipping);
                   return { orderId: result.orderId, paypalOrderId: result.paypalOrderId };
                 }}
                 captureOrder={(id) => captureCartPaypalOrder(id)}
@@ -172,7 +257,7 @@ export default function CheckoutPage() {
                   size="lg"
                   className="w-full"
                   onClick={useWooCommerceFallback}
-                  disabled={!isLiveApi || fallingBack}
+                  disabled={!isLiveApi || fallingBack || !shippingComplete}
                 >
                   {fallingBack ? "Redirecting…" : "Continue to payment"}
                 </Button>

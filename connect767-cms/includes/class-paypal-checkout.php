@@ -151,48 +151,6 @@ class C767_PayPal_Checkout
      * first so PayPal's order amount always matches server-calculated totals,
      * never a client-supplied number.
      */
-    private static function build_pending_order(array $items, $email)
-    {
-        $order = wc_create_order();
-        if (is_wp_error($order)) {
-            return $order;
-        }
-
-        foreach ($items as $item) {
-            $variation_id = (int) ($item['variationId'] ?? 0);
-            $qty = max(1, (int) ($item['qty'] ?? 1));
-
-            if ($variation_id) {
-                $variation = wc_get_product($variation_id);
-                if ($variation && $variation->is_type('variation')) {
-                    $order->add_product($variation, $qty);
-                    continue;
-                }
-            }
-
-            $slug = sanitize_title((string) ($item['slug'] ?? ''));
-            $post = $slug ? get_page_by_path($slug, OBJECT, 'product') : null;
-            $product = $post ? wc_get_product($post->ID) : null;
-            if ($product && $product->is_purchasable()) {
-                $order->add_product($product, $qty);
-            }
-        }
-
-        if (count($order->get_items()) === 0) {
-            $order->delete(true);
-            return new WP_Error('c767_no_valid_items', 'None of the cart items matched a real product.', ['status' => 400]);
-        }
-
-        if ($email) {
-            $order->set_billing_email(sanitize_email($email));
-        }
-        $order->calculate_totals();
-        $order->set_status('pending');
-        $order->save();
-
-        return $order;
-    }
-
     public static function create_order(WP_REST_Request $request)
     {
         $items = (array) $request->get_param('items');
@@ -200,7 +158,8 @@ class C767_PayPal_Checkout
             return new WP_Error('c767_empty_cart', 'Cart is empty.', ['status' => 400]);
         }
 
-        $order = self::build_pending_order($items, (string) $request->get_param('email'));
+        $shipping = (array) $request->get_param('shipping');
+        $order = C767_WooCommerce::build_pending_order($items, (string) $request->get_param('email'), $shipping);
         if (is_wp_error($order)) {
             return $order;
         }

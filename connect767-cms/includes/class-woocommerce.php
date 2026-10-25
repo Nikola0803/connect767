@@ -283,11 +283,25 @@ class C767_WooCommerce
 
     // ---------- Headless checkout ----------
 
-    public static function checkout(WP_REST_Request $request)
+    /**
+     * Build one shipment-ready WooCommerce order for every Shop payment path.
+     * Stripe, PayPal, and the hosted WooCommerce fallback all call this method
+     * so customer addresses, shipping lines, taxes, and totals stay identical.
+     */
+    public static function build_pending_order(array $items, $email, array $shipping)
     {
-        $items = (array) $request->get_param('items');
         if (empty($items)) {
             return new WP_Error('c767_empty_cart', 'Cart is empty.', ['status' => 400]);
+        }
+
+        $email = sanitize_email((string) $email);
+        if (!$email || !is_email($email)) {
+            return new WP_Error('c767_invalid_email', 'A valid email address is required.', ['status' => 400]);
+        }
+
+        $address = self::sanitize_shipping_address($shipping);
+        if (is_wp_error($address)) {
+            return $address;
         }
 
         $order = wc_create_order();
@@ -300,27 +314,19 @@ class C767_WooCommerce
             $qty = max(1, (int) ($item['qty'] ?? 1));
             $variation_id = (int) ($item['variationId'] ?? 0);
 
-            // A variation ID (from a size/color pick) always takes
-            // priority — adding the parent variable product instead would
-            // silently order the wrong size/color, or fail outright, since
-            // a variable product itself generally isn't purchasable.
             if ($variation_id) {
                 $variation = wc_get_product($variation_id);
-                if ($variation && $variation->is_type('variation')) {
+                if ($variation && $variation->is_type('variation') && $variation->is_purchasable()) {
                     $order->add_product($variation, $qty);
                     continue;
                 }
             }
 
             $product_id = self::product_id_from_slug($slug);
-            if (!$product_id) {
-                continue;
+            $product = $product_id ? wc_get_product($product_id) : null;
+            if ($product && $product->is_purchasable()) {
+                $order->add_product($product, $qty);
             }
-            $product = wc_get_product($product_id);
-            if (!$product || !$product->is_purchasable()) {
-                continue;
-            }
-            $order->add_product($product, $qty);
         }
 
         if (count($order->get_items()) === 0) {
@@ -328,14 +334,142 @@ class C767_WooCommerce
             return new WP_Error('c767_no_valid_items', 'None of the cart items matched a real product.', ['status' => 400]);
         }
 
-        $email = sanitize_email((string) $request->get_param('email'));
-        if ($email) {
-            $order->set_billing_email($email);
+        $billing = $address;
+        $billing['email'] = $email;
+        $order->set_address($billing, 'billing');
+        $order->set_address($address, 'shipping');
+        $order->calculate_totals(false);
+
+        $shipping_rate = self::calculate_shipping_rate($order, $address);
+        if (is_wp_error($shipping_rate)) {
+            $order->delete(true);
+            return $shipping_rate;
         }
+
+        $shipping_item = new WC_Order_Item_Shipping();
+        $shipping_item->set_method_title($shipping_rate->get_label());
+        $shipping_item->set_method_id($shipping_rate->get_method_id());
+        $shipping_item->set_instance_id($shipping_rate->get_instance_id());
+        $shipping_item->set_total((float) $shipping_rate->get_cost());
+        $shipping_item->set_taxes($shipping_rate->get_taxes());
+        $order->add_item($shipping_item);
 
         $order->calculate_totals();
         $order->set_status('pending');
         $order->save();
+
+        return $order;
+    }
+
+    private static function sanitize_shipping_address(array $shipping)
+    {
+        $address = [
+            'first_name' => sanitize_text_field((string) ($shipping['firstName'] ?? '')),
+            'last_name' => sanitize_text_field((string) ($shipping['lastName'] ?? '')),
+            'company' => sanitize_text_field((string) ($shipping['company'] ?? '')),
+            'address_1' => sanitize_text_field((string) ($shipping['address1'] ?? '')),
+            'address_2' => sanitize_text_field((string) ($shipping['address2'] ?? '')),
+            'city' => sanitize_text_field((string) ($shipping['city'] ?? '')),
+            'state' => strtoupper(sanitize_text_field((string) ($shipping['state'] ?? ''))),
+            'postcode' => sanitize_text_field((string) ($shipping['postcode'] ?? '')),
+            'country' => strtoupper(sanitize_text_field((string) ($shipping['country'] ?? 'US'))),
+            'phone' => wc_sanitize_phone_number((string) ($shipping['phone'] ?? '')),
+        ];
+
+        foreach (['first_name', 'last_name', 'address_1', 'city', 'postcode', 'country'] as $field) {
+            if ($address[$field] === '') {
+                return new WP_Error('c767_incomplete_shipping_address', 'Complete every required shipping-address field.', ['status' => 400]);
+            }
+        }
+
+        $countries = WC()->countries->get_countries();
+        if (!isset($countries[$address['country']])) {
+            return new WP_Error('c767_invalid_shipping_country', 'Choose a valid shipping country.', ['status' => 400]);
+        }
+
+        if ($address['country'] === 'US') {
+            $states = WC()->countries->get_states('US');
+            if (!$address['state'] || !isset($states[$address['state']])) {
+                return new WP_Error('c767_invalid_shipping_state', 'Choose a valid U.S. state.', ['status' => 400]);
+            }
+        }
+
+        return $address;
+    }
+
+    private static function calculate_shipping_rate(WC_Order $order, array $address)
+    {
+        $contents = [];
+        $contents_cost = 0.0;
+
+        foreach ($order->get_items('line_item') as $item_id => $item) {
+            $product = $item->get_product();
+            if (!$product || !$product->needs_shipping()) {
+                continue;
+            }
+            $contents[$item_id] = [
+                'key' => (string) $item_id,
+                'product_id' => $item->get_product_id(),
+                'variation_id' => $item->get_variation_id(),
+                'variation' => [],
+                'quantity' => $item->get_quantity(),
+                'data' => $product,
+                'line_total' => (float) $item->get_total(),
+                'line_tax' => 0,
+                'line_subtotal' => (float) $item->get_subtotal(),
+                'line_subtotal_tax' => 0,
+            ];
+            $contents_cost += (float) $item->get_total();
+        }
+
+        if (empty($contents)) {
+            return new WP_Error('c767_no_shippable_items', 'This order does not contain shippable products.', ['status' => 400]);
+        }
+
+        $package = [
+            'contents' => $contents,
+            'contents_cost' => $contents_cost,
+            'applied_coupons' => [],
+            'user' => ['ID' => get_current_user_id()],
+            'destination' => [
+                'country' => $address['country'],
+                'state' => $address['state'],
+                'postcode' => $address['postcode'],
+                'city' => $address['city'],
+                'address' => $address['address_1'],
+                'address_1' => $address['address_1'],
+                'address_2' => $address['address_2'],
+            ],
+        ];
+
+        $zone = WC_Shipping_Zones::get_zone_matching_package($package);
+        $rates = [];
+        foreach ($zone->get_shipping_methods(true) as $method) {
+            $method->calculate_shipping($package);
+            foreach ($method->get_rates() as $rate) {
+                $rates[] = $rate;
+            }
+        }
+
+        if (empty($rates)) {
+            return new WP_Error('c767_no_shipping_method', 'No shipping method is available for this address.', ['status' => 400]);
+        }
+
+        usort($rates, function ($a, $b) {
+            return (float) $a->get_cost() <=> (float) $b->get_cost();
+        });
+
+        return $rates[0];
+    }
+
+    public static function checkout(WP_REST_Request $request)
+    {
+        $items = (array) $request->get_param('items');
+        $shipping = (array) $request->get_param('shipping');
+        $order = self::build_pending_order($items, $request->get_param('email'), $shipping);
+        if (is_wp_error($order)) {
+            return $order;
+        }
 
         do_action('c767_checkout_order_created', $order);
 
