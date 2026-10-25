@@ -176,10 +176,15 @@ class C767_WooCommerce
     private static function format_product($product)
     {
         $image_id = $product->get_image_id();
-        $images = [];
-        if ($image_id) {
-            $images[] = ['id' => $image_id, 'src' => wp_get_attachment_url($image_id)];
-        } else {
+        $image_ids = array_values(array_unique(array_filter(array_merge(
+            $image_id ? [$image_id] : [],
+            $product->get_gallery_image_ids()
+        ))));
+        $images = array_values(array_filter(array_map(function ($attachment_id) {
+            $src = wp_get_attachment_url($attachment_id);
+            return $src ? ['id' => $attachment_id, 'src' => $src] : null;
+        }, $image_ids)));
+        if (empty($images)) {
             $fallback = get_post_meta($product->get_id(), 'fallback_image', true);
             if ($fallback) {
                 $images[] = ['id' => 0, 'src' => $fallback];
@@ -217,6 +222,7 @@ class C767_WooCommerce
         // attributes) had no way for the frontend to show a size or color
         // picker at all, and "add to cart" had no variation ID to add.
         if ($product->is_type('variable')) {
+            $color_image_map = self::build_color_image_map($product, $image_ids);
             $result['attributes'] = array_map(function ($attribute) {
                 // WC_Product_Attribute::get_options() behaves differently
                 // depending on attribute type: for a *global* attribute
@@ -241,12 +247,26 @@ class C767_WooCommerce
                 ];
             }, array_values($product->get_attributes()));
 
-            $result['variations'] = array_map(function ($variation_id) {
+            $result['variations'] = array_map(function ($variation_id) use ($color_image_map) {
                 $variation = wc_get_product($variation_id);
                 if (!$variation) {
                     return null;
                 }
-                $variation_image_id = $variation->get_image_id();
+                // `get_image_id()` in view context inherits the parent product's
+                // thumbnail when the variation itself has no image. That made
+                // every color report the exact same URL. Prefer a genuinely
+                // assigned variation image, then the matching parent-gallery
+                // color image built below.
+                $variation_image_id = (int) $variation->get_image_id('edit');
+                if (!$variation_image_id && !empty($color_image_map)) {
+                    foreach ($variation->get_variation_attributes() as $attribute_name => $value) {
+                        if (self::is_color_attribute($attribute_name)) {
+                            $color_key = self::normalize_image_match_text($value);
+                            $variation_image_id = (int) ($color_image_map[$color_key] ?? 0);
+                            break;
+                        }
+                    }
+                }
                 return [
                     'id' => $variation->get_id(),
                     'attributes' => $variation->get_variation_attributes(),
@@ -262,6 +282,94 @@ class C767_WooCommerce
         }
 
         return $result;
+    }
+
+    /**
+     * Match a variable product's color options to its product-gallery images.
+     *
+     * A large part of the imported catalog stores one mockup per color in the
+     * parent gallery, but leaves every WC variation image blank. WooCommerce's
+     * normal getter then inherits the same parent thumbnail for every color.
+     * Use descriptive filenames first ("navy-blue", "brown", etc.), then pair
+     * any remaining colors with the remaining gallery images in catalog order.
+     */
+    private static function build_color_image_map($product, array $image_ids)
+    {
+        $color_options = [];
+        foreach ($product->get_attributes() as $attribute) {
+            if (!self::is_color_attribute($attribute->get_name())) {
+                continue;
+            }
+            $color_options = $attribute->is_taxonomy()
+                ? array_map(function ($term_id) use ($attribute) {
+                    $term = get_term($term_id, $attribute->get_name());
+                    return $term && !is_wp_error($term) ? $term->name : (string) $term_id;
+                }, $attribute->get_options())
+                : $attribute->get_options();
+            break;
+        }
+
+        if (empty($color_options) || empty($image_ids)) {
+            return [];
+        }
+
+        $candidates = [];
+        foreach ($image_ids as $attachment_id) {
+            $file = get_attached_file($attachment_id);
+            $search_text = self::normalize_image_match_text(implode(' ', [
+                get_the_title($attachment_id),
+                get_post_meta($attachment_id, '_wp_attachment_image_alt', true),
+                $file ? pathinfo($file, PATHINFO_FILENAME) : '',
+            ]));
+            if (strpos($search_text, 'sizechart') !== false || strpos($search_text, 'measurement') !== false) {
+                continue;
+            }
+            $candidates[(int) $attachment_id] = $search_text;
+        }
+
+        $map = [];
+        $used = [];
+        $sortable_options = $color_options;
+        usort($sortable_options, function ($a, $b) {
+            return strlen(self::normalize_image_match_text($b)) <=> strlen(self::normalize_image_match_text($a));
+        });
+
+        foreach ($sortable_options as $option) {
+            $color_key = self::normalize_image_match_text($option);
+            if (strlen($color_key) < 3) {
+                continue;
+            }
+            foreach ($candidates as $attachment_id => $search_text) {
+                if (!isset($used[$attachment_id]) && strpos($search_text, $color_key) !== false) {
+                    $map[$color_key] = $attachment_id;
+                    $used[$attachment_id] = true;
+                    break;
+                }
+            }
+        }
+
+        $remaining_images = array_values(array_filter(array_keys($candidates), function ($attachment_id) use ($used) {
+            return !isset($used[$attachment_id]);
+        }));
+        foreach ($color_options as $option) {
+            $color_key = self::normalize_image_match_text($option);
+            if (!isset($map[$color_key]) && !empty($remaining_images)) {
+                $map[$color_key] = array_shift($remaining_images);
+            }
+        }
+
+        return $map;
+    }
+
+    private static function is_color_attribute($name)
+    {
+        $name = strtolower((string) $name);
+        return strpos($name, 'color') !== false || strpos($name, 'colour') !== false;
+    }
+
+    private static function normalize_image_match_text($value)
+    {
+        return preg_replace('/[^a-z0-9]+/', '', strtolower(remove_accents((string) $value)));
     }
 
     public static function list_categories()
