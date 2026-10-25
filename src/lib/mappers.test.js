@@ -191,6 +191,42 @@ describe("mapListingCpt", () => {
     expect(mapped.industrySlug).toBe("accounting-and-bookkeeping");
   });
 
+  it("uses the authoritative REST hierarchy when embedded terms omit parent IDs", () => {
+    const mapped = mapListingCpt({
+      id: 9,
+      slug: "island-contractor",
+      title: "Island Contractor",
+      acf: {},
+      listing_category_hierarchy: [
+        {
+          taxonomy: "listing_category",
+          id: 91,
+          parent: 90,
+          slug: "general-contractor",
+          name: "General Contractor",
+        },
+        { taxonomy: "listing_category", id: 90, parent: 0, slug: "services", name: "Services" },
+      ],
+      _embedded: {
+        "wp:term": [[
+          {
+            taxonomy: "listing_category",
+            id: 91,
+            slug: "general-contractor",
+            name: "General Contractor",
+          },
+          { taxonomy: "listing_category", id: 90, slug: "services", name: "Services" },
+        ]],
+      },
+    });
+
+    expect(mapped.category).toBe("Services");
+    expect(mapped.categorySlug).toBe("services");
+    expect(mapped.parentCategorySlug).toBe("services");
+    expect(mapped.industrySlug).toBe("general-contractor");
+    expect(mapped.industryLabel).toBe("General Contractor");
+  });
+
   it("advances years of experience from the year in which it was recorded", () => {
     const thisYear = new Date().getUTCFullYear();
     const mapped = mapListingCpt({
