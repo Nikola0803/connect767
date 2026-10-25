@@ -1,5 +1,5 @@
 const DEFAULT_COVER_BASE =
-  "https://admin.connect767.com/wp-content/uploads/2026/10/Dominican-Talent-Branding-Poster";
+  "https://admin.connect767.com/wp-content/uploads/2026/10/Dominican-Talent-C-Logo";
 
 export default function DefaultListingCover({ title = "Listing", compact = false }) {
   const imageUrl = `${DEFAULT_COVER_BASE}.png`;
@@ -19,10 +19,10 @@ export default function DefaultListingCover({ title = "Listing", compact = false
       )}
       <img
         src={imageUrl}
-        srcSet={`${DEFAULT_COVER_BASE}-768x453.png 768w, ${DEFAULT_COVER_BASE}-1024x604.png 1024w, ${DEFAULT_COVER_BASE}-1536x906.png 1536w, ${DEFAULT_COVER_BASE}.png 1632w`}
+        srcSet={`${DEFAULT_COVER_BASE}-300x225.png 300w, ${DEFAULT_COVER_BASE}-768x576.png 768w, ${DEFAULT_COVER_BASE}-1024x768.png 1024w, ${DEFAULT_COVER_BASE}.png 1448w`}
         sizes={compact ? "(max-width: 640px) 100vw, 420px" : "(max-width: 1024px) 100vw, 1200px"}
-        width="1632"
-        height="963"
+        width="1448"
+        height="1086"
         alt=""
         loading="lazy"
         decoding="async"

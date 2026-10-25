@@ -110,7 +110,7 @@ describe("DirectoryListingCard parent category", () => {
     expect(fallbackCover.querySelector("img")).toHaveClass("object-cover");
     expect(fallbackCover.querySelector("img")).toHaveAttribute(
       "src",
-      expect.stringContaining("Dominican-Talent-Branding-Poster.png"),
+      expect.stringContaining("Dominican-Talent-C-Logo.png"),
     );
     expect(fallbackCover.querySelector("img")).not.toHaveClass("object-contain");
     expect(document.querySelector('img[src=""]')).not.toBeInTheDocument();
