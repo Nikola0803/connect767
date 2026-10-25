@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatVariationOption,
   isVariationOptionAvailable,
   matchVariation,
   normalizeVariationAttributeName,
@@ -57,5 +58,11 @@ describe("product variation matching", () => {
   it("normalizes attribute names and accented values consistently", () => {
     expect(normalizeVariationAttributeName("attribute_pa_Shoe Size")).toBe("shoe-size");
     expect(normalizeVariationValue("Cafe & Cream")).toBe("cafe-and-cream");
+  });
+
+  it("displays every size value in uppercase without changing colors", () => {
+    expect(formatVariationOption("Size", "2xl")).toBe("2XL");
+    expect(formatVariationOption("Shoe Size", "US Size 7")).toBe("US SIZE 7");
+    expect(formatVariationOption("Color", "Navy Blue")).toBe("Navy Blue");
   });
 });
