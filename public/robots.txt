@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://connect767.com/sitemap.xml
