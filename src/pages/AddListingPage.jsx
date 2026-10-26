@@ -900,7 +900,7 @@ export default function AddListingPage() {
                   </FormField>
                   <FormField
                     label="Cover photo"
-                    hint="Main image shown on your listing card. Maximum 2 MB. Use JPG, PNG, WebP, or GIF."
+                    hint="Main image shown on your listing card and profile. Best fit: 16:9 (1600 × 900 px). Keep important content centered because directory cards use a 4:3 crop. Maximum 2 MB. Use JPG, PNG, WebP, or GIF."
                   >
                     <div className="relative w-full group">
                       <label className="relative flex flex-col items-center justify-center gap-2 w-full aspect-[16/9] rounded-lg border-2 border-dashed border-background-300 hover:border-primary-400 cursor-pointer transition-colors text-center overflow-hidden">
