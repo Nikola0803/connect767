@@ -309,10 +309,10 @@ export function mapListingCpt(wp) {
     // Any crop selected by the listing owner still takes precedence.
     coverPosition: acf.cover_position || "top",
     coverZoom: Number(acf.cover_zoom) || 1,
-    // Legacy listings were always cropped. New submissions explicitly save
-    // "contain" so the full image remains visible unless the owner chooses
-    // the Reposition tool.
-    coverFit: acf.cover_fit === "contain" ? "contain" : "cover",
+    // Older listings may not have a saved fit preference. Default those to
+    // "contain" so their complete cover photo is visible on cards and the
+    // full profile; an explicit owner-selected crop remains respected.
+    coverFit: acf.cover_fit === "cover" ? "cover" : "contain",
     // Precomputed from every public, user-visible profile value so the
     // directory can search details that are not rendered on its cards.
     searchText: createListingSearchText(publicProfile),

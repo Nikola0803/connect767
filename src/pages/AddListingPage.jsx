@@ -304,8 +304,9 @@ export default function AddListingPage() {
           photoPreview: data.coverPhoto || "",
           coverPosition: data.coverPosition || "center",
           coverZoom: data.coverZoom || 1,
-          // Existing listings predate coverFit and keep their historical crop.
-          coverFit: data.coverFit || "cover",
+          // Existing listings that predate coverFit should show the complete
+          // image in the editor and live profile instead of silently cropping.
+          coverFit: data.coverFit || "contain",
           // gallery[0] is the cover once mapListingDetail prepends it, so the
           // gallery previews start after it.
           galleryPreviews: (data.gallery || [])
