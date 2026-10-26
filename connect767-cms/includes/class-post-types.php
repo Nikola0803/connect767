@@ -21,6 +21,7 @@ class C767_Post_Types
         // Runs after the taxonomy is registered on the same 'init' hook
         // (default priority registers at 10, this at 20).
         add_action('init', [__CLASS__, 'cleanup_stray_industry_terms'], 20);
+        add_action('init', [__CLASS__, 'repair_listing_category_assignments'], 21);
         add_action('rest_api_init', [__CLASS__, 'register_query_vars']);
         add_action('rest_api_init', [__CLASS__, 'register_listing_category_hierarchy_field']);
         add_filter('posts_search', [__CLASS__, 'expand_listing_search'], 10, 2);
@@ -174,6 +175,50 @@ class C767_Post_Types
         delete_option('listing_category_children');
 
         update_option('c767_stray_industry_cleanup_2', 1);
+    }
+
+    /**
+     * One-time repair for existing categorized listings. Each listing keeps
+     * its canonical industry and also receives that industry's parent term;
+     * the child slug is mirrored to meta for resilient REST mapping.
+     */
+    public static function repair_listing_category_assignments()
+    {
+        if (get_option('c767_listing_category_assignment_repair_1')) {
+            return;
+        }
+        $taxonomy_file = C767_PLUGIN_DIR . 'data/category-taxonomy.json';
+        $taxonomy = file_exists($taxonomy_file) ? json_decode(file_get_contents($taxonomy_file), true) : null;
+        if (!is_array($taxonomy)) {
+            return;
+        }
+        $industry_parent_slugs = [];
+        foreach ($taxonomy as $category) {
+            foreach ($category['industries'] ?? [] as $industry) {
+                if (!empty($industry['slug']) && !empty($category['slug'])) {
+                    $industry_parent_slugs[$industry['slug']] = $category['slug'];
+                }
+            }
+        }
+        $listing_ids = get_posts(['post_type' => 'listing', 'post_status' => 'any', 'numberposts' => -1, 'fields' => 'ids']);
+        foreach ($listing_ids as $listing_id) {
+            $terms = wp_get_post_terms($listing_id, 'listing_category');
+            if (is_wp_error($terms)) {
+                continue;
+            }
+            foreach ($terms as $term) {
+                if (!isset($industry_parent_slugs[$term->slug])) {
+                    continue;
+                }
+                $parent = get_term_by('slug', $industry_parent_slugs[$term->slug], 'listing_category');
+                if ($parent && !is_wp_error($parent)) {
+                    wp_set_object_terms($listing_id, [(int) $parent->term_id], 'listing_category', true);
+                }
+                update_post_meta($listing_id, 'category_slug', $term->slug);
+                break;
+            }
+        }
+        update_option('c767_listing_category_assignment_repair_1', 1);
     }
 
     public static function register_post_types()

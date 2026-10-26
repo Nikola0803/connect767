@@ -228,17 +228,35 @@ export function mapListingCpt(wp) {
   const allCatTerms = (hierarchyTerms.length ? hierarchyTerms : embeddedTerms).filter(
     (t) => t.taxonomy === "listing_category"
   );
-  const categoryTerm = allCatTerms.find((t) => !t.parent) || allCatTerms[0];
-  const industryTerm = allCatTerms.find((t) => t.parent);
+  // Core's embedded terms can omit `parent`, so do not rely on that field
+  // alone. A canonical industry slug is enough to recover both sides of the
+  // hierarchy, including records saved by older plugin versions that only
+  // persisted `category_slug`.
+  const industryTerm =
+    allCatTerms.find((t) => t.parent && findIndustry(t.slug)) ||
+    allCatTerms.find((t) => findIndustry(t.slug)) ||
+    allCatTerms.find((t) => t.parent) ||
+    allCatTerms.find((t) => !findCategory(t.slug)) ||
+    null;
+  const industry = findIndustry(industryTerm?.slug) || findIndustry(acf.category_slug);
   const parentCategorySlug =
-    findIndustry(industryTerm?.slug)?.categorySlug ||
-    findIndustry(acf.category_slug)?.categorySlug ||
-    findCategory(categoryTerm?.slug)?.slug ||
+    industry?.categorySlug ||
+    findCategory(allCatTerms.find((t) => !t.parent)?.slug)?.slug ||
     findCategory(acf.category_slug)?.slug ||
     "";
+  const parentCategory = findCategory(parentCategorySlug);
+  const categoryTerm =
+    allCatTerms.find((t) => t.slug === parentCategorySlug) ||
+    allCatTerms.find((t) => !t.parent && findCategory(t.slug)) ||
+    null;
 
   const title = stripHtml(wp.title?.rendered || wp.title || "");
-  const category = decodeEntities(acf.category_label || categoryTerm?.name || "");
+  const category = decodeEntities(
+    acf.category_label || categoryTerm?.name || parentCategory?.label || ""
+  );
+  const categorySlug = parentCategorySlug || categoryTerm?.slug || "";
+  const industrySlug = industry?.slug || industryTerm?.slug || "";
+  const industryLabel = decodeEntities(industry?.label || industryTerm?.name || "");
   const yearsExperience = currentYearsExperience(
     acf.years_experience,
     acf.years_experience_as_of_year,
@@ -248,11 +266,10 @@ export function mapListingCpt(wp) {
     slug: wp.slug,
     description: acf.description || htmlToText(wp.content?.rendered || ""),
     category,
-    categorySlug: categoryTerm?.slug || acf.category_slug || "",
+    categorySlug,
     parentCategorySlug,
-    industry: industryTerm
-      ? { name: decodeEntities(industryTerm.name), slug: industryTerm.slug }
-      : null,
+    parentCategoryLabel: category,
+    industry: industrySlug ? { name: industryLabel, slug: industrySlug } : null,
     priceTier: acf.price_tier || "$",
     tier: acf.tier || "Free",
     verified: isTruthyMeta(acf.verified) ? "verified" : "",
@@ -302,13 +319,14 @@ export function mapListingCpt(wp) {
     slug: wp.slug,
     title,
     category,
-    categorySlug: categoryTerm?.slug || acf.category_slug || "",
+    categorySlug,
     parentCategorySlug,
+    parentCategoryLabel: category,
     // Powers DirectoryPage's industry sub-filter (`l.industrySlug ===
     // industry`) — this was never populated before, so the sub-filter
     // silently matched nothing on live data.
-    industrySlug: industryTerm?.slug || "",
-    industryLabel: industryTerm ? decodeEntities(industryTerm.name) : "",
+    industrySlug,
+    industryLabel,
     description: acf.description || htmlToText(wp.content?.rendered || ""),
     logo: acf.logo || "",
     tags: (acf.tags || []).map((tag) => decodeEntities(tag)),
@@ -393,8 +411,8 @@ export function mapListingDetail(wp) {
   return {
     ...base,
     logo: acf.logo || "",
-    categoryPath: base.categorySlug,
-    categoryLabel: base.category,
+    categoryPath: base.parentCategorySlug || base.categorySlug,
+    categoryLabel: base.parentCategoryLabel || base.category,
     description: acf.description || htmlToText(wp.content?.rendered || ""),
     tags: (acf.tags || []).map((t) => decodeEntities(t)),
     amenities: acf.amenities || [],

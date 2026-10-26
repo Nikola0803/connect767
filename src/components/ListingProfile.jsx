@@ -202,30 +202,32 @@ export default function ListingProfile({ data, isPreview = false }) {
                     {(() => {
                       const years = Number(data.yearsExperience);
                       const parts = [
-                        data.category && { icon: "ri-briefcase-4-line", text: data.category },
-                        // Graduation cap = the qualification itself (Master's,
-                        // Bachelor's). Book = what it's in (Engineering
-                        // Management, Nursing).
-                        data.education && {
-                          icon: "ri-graduation-cap-line",
-                          text: data.education,
+                        (data.parentCategoryLabel || data.categoryLabel) && {
+                          icon: "ri-folder-line",
+                          text: data.parentCategoryLabel || data.categoryLabel,
                         },
-                        data.degreeType && { icon: "ri-book-open-line", text: data.degreeType },
+                        data.industryLabel && {
+                          icon: "ri-building-line",
+                          text: data.industryLabel,
+                        },
                         (data.yearsExperience || data.experienceLevel) && {
                           icon: "ri-time-line",
-                          // Abbreviated: "12 Years of Experience" spelled out
-                          // was long enough to wrap this line onto a second
-                          // row on most screens once a degree and field of
-                          // study were also present. Full wording is kept in
-                          // the title attribute for anyone who hovers.
                           text: data.yearsExperience
-                            ? `${data.yearsExperience} ${years === 1 ? "Yr" : "Yrs"} Exp.`
+                            ? `${data.yearsExperience} ${years === 1 ? "Yr." : "Yrs."} Exp.`
                             : data.experienceLevel,
                           title: data.yearsExperience
                             ? `${data.yearsExperience} ${
                                 years === 1 ? "Year" : "Years"
                               } of Experience`
                             : data.experienceLevel,
+                        },
+                        data.education && {
+                          icon: "ri-graduation-cap-line",
+                          text: data.education,
+                        },
+                        data.degreeType && {
+                          icon: "ri-book-open-line",
+                          text: data.degreeType,
                         },
                       ].filter(Boolean);
 

@@ -12,6 +12,7 @@ const getCategoryLabel = (slug) =>
 const mainCategoryLabel = (listing) => {
   const industryParent = findIndustry(listing.industrySlug || listing.categorySlug)?.categorySlug;
   return (
+    listing.parentCategoryLabel ||
     getCategoryLabel(listing.parentCategorySlug) ||
     getCategoryLabel(listing.categoryPath) ||
     getCategoryLabel(industryParent) ||
