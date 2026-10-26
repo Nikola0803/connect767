@@ -329,6 +329,27 @@ class C767_WooCommerce
 
         $map = [];
         $used = [];
+
+        // These legacy products keep their color photography in the parent
+        // gallery and use camera-generated filenames for several colors. A
+        // blind gallery-order fallback paired Navy with Milk/Cream, Black
+        // with Chocolate, and Blue with a red crew-neck photo. Pin the
+        // visually verified filename fragments before applying the generic
+        // filename and order matching below. This remains product-wide: every
+        // size variation for a color receives the same correct image.
+        $verified_overrides = self::verified_color_image_overrides($product->get_slug());
+        foreach ($verified_overrides as $color => $filename_fragment) {
+            $color_key = self::normalize_image_match_text($color);
+            $image_key = self::normalize_image_match_text($filename_fragment);
+            foreach ($candidates as $attachment_id => $search_text) {
+                if (!isset($used[$attachment_id]) && strpos($search_text, $image_key) !== false) {
+                    $map[$color_key] = $attachment_id;
+                    $used[$attachment_id] = true;
+                    break;
+                }
+            }
+        }
+
         $sortable_options = $color_options;
         usort($sortable_options, function ($a, $b) {
             return strlen(self::normalize_image_match_text($b)) <=> strlen(self::normalize_image_match_text($a));
@@ -336,7 +357,7 @@ class C767_WooCommerce
 
         foreach ($sortable_options as $option) {
             $color_key = self::normalize_image_match_text($option);
-            if (strlen($color_key) < 3) {
+            if (isset($map[$color_key]) || strlen($color_key) < 3) {
                 continue;
             }
             foreach ($candidates as $attachment_id => $search_text) {
@@ -359,6 +380,34 @@ class C767_WooCommerce
         }
 
         return $map;
+    }
+
+    private static function verified_color_image_overrides($product_slug)
+    {
+        $overrides = [
+            'unisex-stay-connected-t-shirt' => [
+                'black' => 'WhatsAppImage2023-01-19at1.55.11AM',
+                'chocolate' => 'WhatsAppImage2023-01-19at1.56.56AM',
+                'cream' => 'MilkC767',
+                'navy' => 'WhatsAppImage2023-01-19at1.52.39AM',
+                'ocean-blue' => 'BlueC767',
+                'white' => 'WhiteC767',
+            ],
+            'unisex-sissarou-t-shirt' => [
+                'black' => 'WhatsAppImage2023-01-19at2.11.09AM',
+                'chocolate' => 'WhatsAppImage2023-01-19at2.06.55AM_1',
+                'cream' => 'Milkparrot',
+                'green' => 'Greenparrot',
+                'navy' => 'WhatsAppImage2023-01-19at2.08.59AM',
+                'white' => 'Whiteparrot',
+            ],
+            'cotton-crew-neck-t-shirts' => [
+                'blue' => '174A0524-Edit-scaled-1-scaled',
+                'red' => '174A9975-Edit-scaled-1-scaled',
+            ],
+        ];
+
+        return $overrides[$product_slug] ?? [];
     }
 
     private static function is_color_attribute($name)
