@@ -29,7 +29,7 @@ describe("ListingTierCards", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /Go Classified/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Select Classified" }));
     expect(onSelect).toHaveBeenCalledWith("classified");
   });
 
