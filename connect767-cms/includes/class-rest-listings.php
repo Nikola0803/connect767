@@ -530,10 +530,10 @@ class C767_REST_Listings
         return (string) $zoom;
     }
 
-    /** Full-image fit is the safe default for new listings; cover enables repositioning/cropping. */
+    /** Cover photos always fill the public card/profile frame. */
     private static function sanitize_cover_fit($value)
     {
-        return sanitize_key((string) $value) === 'cover' ? 'cover' : 'contain';
+        return 'cover';
     }
 
     /**

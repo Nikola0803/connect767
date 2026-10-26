@@ -23,13 +23,18 @@ const mainCategoryLabel = (listing) => {
 const reviewCount = (listing) =>
   Number(listing.reviewCount ?? String(listing.reviews || "").replace(/\D/g, "")) || 0;
 
-const industryLabel = (listing) =>
-  listing.industryLabel ||
-  (listing.category?.includes("·")
+const industryLabel = (listing) => {
+  const category = mainCategoryLabel(listing);
+  const knownIndustry = findIndustry(listing.industrySlug || listing.categorySlug)?.label;
+  const legacyLabel = listing.category?.includes("·")
     ? listing.category.split("·").slice(1).join("·").trim()
-    : listing.category) ||
-  getCategoryLabel(listing.categorySlug) ||
-  "Industry not specified";
+    : String(listing.category || "").trim();
+  const industry = listing.industryLabel || knownIndustry || legacyLabel;
+
+  return industry && industry.toLocaleLowerCase() !== category.toLocaleLowerCase()
+    ? industry
+    : "Industry not specified";
+};
 
 function BookingSignal({ listing }) {
   if (!listing.bookingEnabled) return null;
@@ -70,8 +75,6 @@ function RatingSignal({ listing }) {
 
 function ListingIdentity({ listing, compact = false }) {
   const category = mainCategoryLabel(listing);
-  const industry = industryLabel(listing);
-  const showIndustry = industry.toLocaleLowerCase() !== category.toLocaleLowerCase();
 
   return (
     <>
@@ -80,15 +83,9 @@ function ListingIdentity({ listing, compact = false }) {
           <p
             data-testid="listing-category-industry"
             className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary-700 truncate"
-            title={showIndustry ? `${category} · ${industry}` : category}
+            title={category}
           >
-            <span>{category}</span>
-            {showIndustry && (
-              <>
-                <span aria-hidden="true"> · </span>
-                <span>{industry}</span>
-              </>
-            )}
+            {category}
           </p>
           <h3 className={`${compact ? "text-xl" : "text-lg"} font-heading font-medium text-foreground-950 group-hover:text-primary-700 transition-colors leading-snug flex items-center gap-1.5 mt-1`}>
             <span className="line-clamp-2">{listing.title}</span>
@@ -149,11 +146,9 @@ function Cover({ listing, listView = false, saved = false, onToggleSaved }) {
             decoding="async"
             alt={`${listing.title} — ${industryLabel(listing)}`}
             title={`${listing.title} — ${industryLabel(listing)}`}
-            className={`w-full h-full transition-transform duration-500 ${
-              listing.coverFit === "contain" ? "object-contain" : "object-cover group-hover:scale-[1.03]"
-            }`}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
             src={listing.image}
-            style={imageCropStyle(coverPosition, listing.coverZoom, listing.coverFit)}
+            style={imageCropStyle(coverPosition, listing.coverZoom, "cover")}
           />
         ) : (
           <DefaultListingCover title={listing.title} compact />

@@ -309,10 +309,10 @@ export function mapListingCpt(wp) {
     // Any crop selected by the listing owner still takes precedence.
     coverPosition: acf.cover_position || "top",
     coverZoom: Number(acf.cover_zoom) || 1,
-    // Older listings may not have a saved fit preference. Default those to
-    // "contain" so their complete cover photo is visible on cards and the
-    // full profile; an explicit owner-selected crop remains respected.
-    coverFit: acf.cover_fit === "cover" ? "cover" : "contain",
+    // Cover photos consistently fill their frames. Reposition and zoom are
+    // still respected, but legacy "contain" values no longer add letterbox
+    // space to cards or profile heroes.
+    coverFit: "cover",
     // Precomputed from every public, user-visible profile value so the
     // directory can search details that are not rendered on its cards.
     searchText: createListingSearchText(publicProfile),
