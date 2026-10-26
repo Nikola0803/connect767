@@ -101,6 +101,10 @@
         "label": "Community Services"
       },
       {
+        "slug": "construction",
+        "label": "Construction"
+      },
+      {
         "slug": "construction-labor",
         "label": "Construction Labor"
       },
@@ -227,6 +231,10 @@
       {
         "slug": "gas",
         "label": "Gas"
+      },
+      {
+        "slug": "general-contractor",
+        "label": "General Contractor"
       },
       {
         "slug": "general-labor",

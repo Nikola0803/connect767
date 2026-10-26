@@ -55,7 +55,15 @@ function PlanAction({ planKey, plan, selected, onSelect }) {
 
   if (onSelect) {
     return (
-      <button type="button" onClick={() => onSelect(planKey)} className={className} aria-pressed={selected}>
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          onSelect(planKey);
+        }}
+        className={className}
+        aria-pressed={selected}
+      >
         {content}
       </button>
     );
@@ -74,9 +82,20 @@ function FullTierCard({ planKey, selected, onSelect }) {
 
   return (
     <article
+      onClick={onSelect ? () => onSelect(planKey) : undefined}
+      onKeyDown={onSelect ? (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect(planKey);
+        }
+      } : undefined}
+      role={onSelect ? "button" : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      aria-pressed={onSelect ? selected : undefined}
+      aria-label={onSelect ? `Select ${plan.title}` : undefined}
       className={`relative flex h-full min-h-[540px] flex-col overflow-hidden rounded-2xl border bg-background-50 p-6 text-foreground-950 shadow-[0_16px_42px_rgba(49,77,62,0.08)] transition-all duration-300 md:p-7 ${
         isClassified ? "border-accent-300" : "border-background-300"
-      } ${selected ? "ring-2 ring-primary-500 ring-offset-2" : "hover:-translate-y-1 hover:shadow-[0_20px_48px_rgba(49,77,62,0.12)]"}`}
+      } ${onSelect ? "cursor-pointer" : ""} ${selected ? "ring-2 ring-primary-500 ring-offset-2" : "hover:-translate-y-1 hover:shadow-[0_20px_48px_rgba(49,77,62,0.12)]"}`}
     >
       {isClassified && (
         <span className="absolute right-5 top-5 inline-flex items-center rounded-full bg-accent-500 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white shadow-sm">
