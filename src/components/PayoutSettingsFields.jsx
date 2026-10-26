@@ -1,8 +1,12 @@
 import { FormField, Input, Select } from "./ui/FormField";
-import { DIGITAL_PAYOUT_PROVIDERS } from "../lib/payoutSettings";
+import {
+  DIGITAL_PAYOUT_PROVIDERS,
+  DIGITAL_PAYOUT_PROVIDER_HELP,
+} from "../lib/payoutSettings";
 
 export default function PayoutSettingsFields({ form, onChange }) {
   const paidBookings = Number(form.bookingPrice || 0) > 0;
+  const providerHelp = DIGITAL_PAYOUT_PROVIDER_HELP[form.bookingPayoutDigitalProvider];
 
   if (!paidBookings) {
     return (
@@ -52,7 +56,7 @@ export default function PayoutSettingsFields({ form, onChange }) {
               value: "digital",
               icon: "ri-wallet-3-line",
               title: "Digital payment",
-              text: "PayPal, Wise, Zelle and more",
+              text: "NBD MoBanking, Remitly and more",
             },
           ].map((method) => (
             <label
@@ -157,7 +161,7 @@ export default function PayoutSettingsFields({ form, onChange }) {
               </Select>
             </FormField>
             <FormField
-              label="Payout email, username, or handle"
+              label={providerHelp?.label || "Payout email, username, or handle"}
               htmlFor="bookingPayoutDigitalAccount"
               required
               hint="Enter the exact destination registered with your provider"
@@ -167,9 +171,16 @@ export default function PayoutSettingsFields({ form, onChange }) {
                 value={form.bookingPayoutDigitalAccount}
                 onChange={(event) => onChange("bookingPayoutDigitalAccount", event.target.value)}
                 autoComplete="off"
-                placeholder="payments@business.com or @business"
+                placeholder={providerHelp?.placeholder || "payments@business.com or @business"}
               />
             </FormField>
+            {(form.bookingPayoutDigitalProvider === "NBD MoBanking" ||
+              form.bookingPayoutDigitalProvider === "Remitly") && (
+              <p className="sm:col-span-2 -mt-1 text-xs leading-5 text-foreground-600 font-label">
+                Connect767 will verify this destination and process the payout after you request cash out.
+                Transfer timing and any provider requirements are confirmed before funds are released.
+              </p>
+            )}
           </div>
         )}
 

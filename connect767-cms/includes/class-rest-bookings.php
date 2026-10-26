@@ -54,6 +54,12 @@ class C767_Rest_Bookings
             'permission_callback' => [__CLASS__, 'check_auth'],
         ]);
 
+        register_rest_route(self::NAMESPACE_, '/bookings/(?P<id>\d+)/cashout', [
+            'methods' => 'POST',
+            'callback' => [__CLASS__, 'request_cashout'],
+            'permission_callback' => [__CLASS__, 'check_auth'],
+        ]);
+
         register_rest_route(self::NAMESPACE_, '/bookings/(?P<id>\d+)/checkout', [
             'methods' => 'POST',
             'callback' => [__CLASS__, 'create_checkout'],
@@ -250,6 +256,10 @@ class C767_Rest_Bookings
             return new WP_Error('c767_booking_failed', $booking_id->get_error_message(), ['status' => 400]);
         }
 
+        $platform_fee_amount_cents = $amount_cents > 0
+            ? (int) round($amount_cents * self::PLATFORM_FEE_PERCENT / 100)
+            : 0;
+        $owner_payout_amount_cents = $amount_cents - $platform_fee_amount_cents;
         $meta = [
             'listing_id' => $listing->ID,
             'name' => $name,
@@ -273,10 +283,9 @@ class C767_Rest_Bookings
             'paid_terms_version' => $amount_cents > 0 ? self::PAID_TERMS_VERSION : '',
             'paid_terms_accepted_at' => $amount_cents > 0 ? current_time('mysql', true) : '',
             'platform_fee_percent' => $amount_cents > 0 ? self::PLATFORM_FEE_PERCENT : 0,
+            'platform_fee_amount_cents' => $platform_fee_amount_cents,
             'owner_payout_method' => $amount_cents > 0 ? $owner_payout_method : '',
-            'owner_payout_amount_cents' => $amount_cents > 0
-                ? (int) floor($amount_cents * (100 - self::PLATFORM_FEE_PERCENT) / 100)
-                : 0,
+            'owner_payout_amount_cents' => $owner_payout_amount_cents,
             'owner_payout_status' => $amount_cents > 0 ? 'awaiting_payment' : 'not_required',
             // Possession of this high-entropy token is required for every
             // public payment/confirmation call, so guessing a numeric booking
@@ -547,6 +556,10 @@ class C767_Rest_Bookings
                 'status' => get_post_meta($post->ID, 'status', true) ?: 'pending',
                 'paymentStatus' => get_post_meta($post->ID, 'payment_status', true) ?: 'not_required',
                 'amountCents' => (int) get_post_meta($post->ID, 'amount_cents', true),
+                'platformFeePercent' => (int) get_post_meta($post->ID, 'platform_fee_percent', true),
+                'platformFeeAmountCents' => (int) get_post_meta($post->ID, 'platform_fee_amount_cents', true),
+                'ownerPayoutAmountCents' => (int) get_post_meta($post->ID, 'owner_payout_amount_cents', true),
+                'ownerPayoutStatus' => (string) (get_post_meta($post->ID, 'owner_payout_status', true) ?: 'not_required'),
                 'durationMinutes' => (int) (get_post_meta($post->ID, 'duration_minutes', true) ?: 30),
                 'meetingUrl' => self::meeting_url($post->ID),
                 'submittedAt' => $post->post_date,
@@ -554,6 +567,64 @@ class C767_Rest_Bookings
         }, $bookings);
 
         return rest_ensure_response($results);
+    }
+
+    /**
+     * Listing-owner cash-out request. Money has already settled into the
+     * Connect767 processor account; this moves the owner's 90% share into
+     * the payout queue without ever exposing private payout details here.
+     */
+    public static function request_cashout(WP_REST_Request $request)
+    {
+        $user = C767_REST_Auth::user_from_request($request);
+        if (is_wp_error($user)) {
+            return $user;
+        }
+
+        $booking_id = (int) $request->get_param('id');
+        $booking = get_post($booking_id);
+        if (!$booking || $booking->post_type !== 'booking') {
+            return new WP_Error('c767_booking_not_found', 'Booking not found.', ['status' => 404]);
+        }
+
+        $listing_id = (int) get_post_meta($booking_id, 'listing_id', true);
+        $listing = get_post($listing_id);
+        if (!$listing || (int) $listing->post_author !== (int) $user->ID) {
+            return new WP_Error('c767_not_owner', 'This payout is not connected to one of your listings.', ['status' => 403]);
+        }
+        if (get_post_meta($booking_id, 'payment_status', true) !== 'paid') {
+            return new WP_Error('c767_cashout_unpaid', 'Cash out becomes available after the customer payment succeeds.', ['status' => 409]);
+        }
+
+        $payout_amount = (int) get_post_meta($booking_id, 'owner_payout_amount_cents', true);
+        if ($payout_amount <= 0) {
+            return new WP_Error('c767_cashout_empty', 'This booking has no owner payout available.', ['status' => 409]);
+        }
+        $status = (string) get_post_meta($booking_id, 'owner_payout_status', true);
+        if (in_array($status, ['requested', 'processing', 'paid'], true)) {
+            return rest_ensure_response([
+                'bookingId' => $booking_id,
+                'ownerPayoutStatus' => $status,
+                'ownerPayoutAmountCents' => $payout_amount,
+            ]);
+        }
+
+        $method = (string) get_post_meta($listing_id, '_booking_payout_method', true);
+        if (!in_array($method, ['bank', 'digital'], true)) {
+            return new WP_Error('c767_cashout_destination', 'Update this listing with a valid payout destination before cashing out.', ['status' => 409]);
+        }
+
+        update_post_meta($booking_id, 'owner_payout_status', 'requested');
+        update_post_meta($booking_id, 'owner_payout_requested_at', current_time('mysql', true));
+        update_post_meta($booking_id, 'owner_payout_method', $method);
+        do_action('c767_booking_cashout_requested', $booking_id, $listing_id, $user->ID);
+
+        return rest_ensure_response([
+            'bookingId' => $booking_id,
+            'ownerPayoutStatus' => 'requested',
+            'ownerPayoutAmountCents' => $payout_amount,
+            'message' => 'Cash-out request received. Connect767 will verify the destination and process the payout.',
+        ]);
     }
 
     /** Owner marks a request confirmed/declined after contacting the customer themselves. */

@@ -38,12 +38,106 @@ class C767_Admin_Dashboard
             'connect767-cms',
             [__CLASS__, 'render']
         );
+
+        add_submenu_page(
+            'connect767-cms',
+            'Booking Payouts',
+            'Booking Payouts',
+            'manage_options',
+            'connect767-booking-payouts',
+            [__CLASS__, 'render_booking_payouts']
+        );
     }
 
     private static function count($post_type, $status = 'publish')
     {
         $counts = wp_count_posts($post_type);
         return isset($counts->$status) ? (int) $counts->$status : 0;
+    }
+
+    public static function render_booking_payouts()
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('You do not have permission to manage payouts.', 'connect767-cms'));
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['c767_payout_action'])) {
+            check_admin_referer('c767_update_booking_payout');
+            $booking_id = isset($_POST['booking_id']) ? (int) $_POST['booking_id'] : 0;
+            $status = isset($_POST['payout_status']) ? sanitize_key(wp_unslash($_POST['payout_status'])) : '';
+            $booking = get_post($booking_id);
+            if ($booking && $booking->post_type === 'booking' && in_array($status, ['processing', 'paid'], true)) {
+                update_post_meta($booking_id, 'owner_payout_status', $status);
+                update_post_meta($booking_id, 'owner_payout_' . $status . '_at', current_time('mysql', true));
+                if ($status === 'paid') {
+                    do_action('c767_booking_payout_paid', $booking_id);
+                }
+                echo '<div class="notice notice-success is-dismissible"><p>Payout status updated.</p></div>';
+            }
+        }
+
+        $booking_ids = get_posts([
+            'post_type' => 'booking',
+            'post_status' => 'publish',
+            'numberposts' => -1,
+            'fields' => 'ids',
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'meta_query' => [[
+                'key' => 'owner_payout_status',
+                'value' => ['requested', 'processing'],
+                'compare' => 'IN',
+            ]],
+        ]);
+        ?>
+        <div class="wrap">
+            <h1>Booking Payouts</h1>
+            <p class="description">Connect767 retains the recorded 10% service fee. Process only the owner's 90% balance using the verified private destination below.</p>
+            <table class="widefat striped" style="margin-top:18px">
+                <thead><tr><th>Booking</th><th>Listing owner</th><th>Accounting</th><th>Private payout destination</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody>
+                <?php if (empty($booking_ids)) : ?>
+                    <tr><td colspan="6">No cash-out requests are waiting.</td></tr>
+                <?php else : foreach ($booking_ids as $booking_id) :
+                    $listing_id = (int) get_post_meta($booking_id, 'listing_id', true);
+                    $listing = get_post($listing_id);
+                    $owner = $listing ? get_userdata($listing->post_author) : null;
+                    $gross = (int) get_post_meta($booking_id, 'amount_cents', true);
+                    $fee = (int) get_post_meta($booking_id, 'platform_fee_amount_cents', true);
+                    $payout = (int) get_post_meta($booking_id, 'owner_payout_amount_cents', true);
+                    $status = (string) get_post_meta($booking_id, 'owner_payout_status', true);
+                    $destination = C767_REST_Listings::payout_destination_for_admin($listing_id);
+                    $details = $destination['details'] ?? [];
+                    if (($destination['method'] ?? '') === 'digital') {
+                        $destination_text = trim(($details['digitalProvider'] ?? '') . ': ' . ($details['digitalAccount'] ?? ''), ': ');
+                    } else {
+                        $destination_text = implode(' · ', array_filter([
+                            $details['accountName'] ?? '', $details['bankName'] ?? '', $details['bankCountry'] ?? '',
+                            $details['accountNumber'] ?? '', $details['routingNumber'] ?? '', $details['swiftCode'] ?? '',
+                        ]));
+                    }
+                    ?>
+                    <tr>
+                        <td><strong>#<?php echo esc_html($booking_id); ?></strong><br><?php echo esc_html($listing ? $listing->post_title : 'Listing unavailable'); ?></td>
+                        <td><?php echo esc_html($owner ? ($owner->display_name ?: $owner->user_login) : 'Unknown'); ?><br><a href="mailto:<?php echo esc_attr($owner ? $owner->user_email : ''); ?>"><?php echo esc_html($owner ? $owner->user_email : ''); ?></a></td>
+                        <td>Gross: <strong>$<?php echo esc_html(number_format($gross / 100, 2)); ?></strong><br>Connect767 fee: $<?php echo esc_html(number_format($fee / 100, 2)); ?><br>Owner payout: <strong>$<?php echo esc_html(number_format($payout / 100, 2)); ?></strong></td>
+                        <td><?php echo esc_html($destination_text ?: 'Destination unavailable — contact owner'); ?></td>
+                        <td><strong><?php echo esc_html(ucfirst($status)); ?></strong></td>
+                        <td>
+                            <form method="post">
+                                <?php wp_nonce_field('c767_update_booking_payout'); ?>
+                                <input type="hidden" name="c767_payout_action" value="1">
+                                <input type="hidden" name="booking_id" value="<?php echo esc_attr($booking_id); ?>">
+                                <select name="payout_status"><option value="processing">Mark processing</option><option value="paid">Mark paid</option></select>
+                                <button type="submit" class="button button-primary">Update</button>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endforeach; endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php
     }
 
     public static function render()
