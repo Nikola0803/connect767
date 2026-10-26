@@ -3,6 +3,7 @@ import TierBadge from "./ui/TierBadge";
 import { imageCropStyle } from "../lib/imagePosition";
 import { directoryCategories } from "../data/directory";
 import { findIndustry } from "../data/industries";
+import { bookingRateUnit, isRentalBookingType } from "../lib/bookingTypes";
 import DefaultListingCover from "./ui/DefaultListingCover";
 
 const getCategoryLabel = (slug) =>
@@ -35,10 +36,13 @@ function BookingSignal({ listing }) {
   const price = Number(listing.bookingPriceCents) > 0
     ? `$${(Number(listing.bookingPriceCents) / 100).toFixed(0)}`
     : "Free";
+  const detail = isRentalBookingType(listing.bookingType)
+    ? `${price} / ${bookingRateUnit(listing.bookingType)}`
+    : `${price} · ${listing.bookingDurationMinutes || 30} min`;
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-2.5 py-1 text-[10px] font-semibold text-primary-800 border border-primary-100 whitespace-nowrap">
       <i className="ri-calendar-check-line text-xs" />
-      Book · {price} · {listing.bookingDurationMinutes || 30} min
+      Book · {detail}
     </span>
   );
 }
