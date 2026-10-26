@@ -97,6 +97,25 @@ describe("DirectoryListingCard parent category", () => {
     expect(screen.getByText("Book · Free · 30 min")).toBeInTheDocument();
   });
 
+  it("shows a rental rate unit instead of an appointment duration", () => {
+    render(
+      <MemoryRouter>
+        <DirectoryListingCard
+          listing={{
+            ...listing,
+            bookingEnabled: true,
+            bookingType: "rental",
+            bookingPriceCents: 20000,
+            bookingDurationMinutes: 30,
+          }}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Book · $200 / night")).toBeInTheDocument();
+    expect(screen.queryByText(/30 min/i)).not.toBeInTheDocument();
+  });
+
   it("shows the branded default cover instead of a broken image when no cover was saved", () => {
     render(
       <MemoryRouter>
