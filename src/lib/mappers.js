@@ -99,6 +99,61 @@ function featuredImage(wpPost) {
   return media?.source_url || media?.media_details?.sizes?.large?.source_url || "";
 }
 
+// A few legacy catalog products were imported with color photos only in the
+// parent gallery, not on their individual WooCommerce variations. Their old
+// filenames also carry camera timestamps rather than color names, so the CMS
+// cannot safely infer the correct pairing from text alone. Keep the verified
+// pairings here as a storefront safety net (and mirror them in
+// class-woocommerce.php) so every size of a color resolves to the same,
+// accurately colored photo.
+const productColorImageOverrides = {
+  "unisex-stay-connected-t-shirt": {
+    black: "whatsappimage20230119at15511am",
+    chocolate: "whatsappimage20230119at15656am",
+    cream: "milkc767",
+    navy: "whatsappimage20230119at15239am",
+    oceanblue: "bluec767",
+    white: "whitec767",
+  },
+  "unisex-sissarou-t-shirt": {
+    black: "whatsappimage20230119at21109am",
+    chocolate: "whatsappimage20230119at20655am1",
+    cream: "milkparrot",
+    green: "greenparrot",
+    navy: "whatsappimage20230119at20859am",
+    white: "whiteparrot",
+  },
+  "cotton-crew-neck-t-shirts": {
+    blue: "174a0524editscaled1scaled",
+    red: "174a9975editscaled1scaled",
+  },
+};
+
+function normalizedImageKey(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+function correctedVariationImage(wc, variation) {
+  const overrides = productColorImageOverrides[wc.slug];
+  if (!overrides) return variation.image || null;
+
+  const color = Object.entries(variation.attributes || {}).find(([name]) =>
+    /colou?r/i.test(name)
+  )?.[1];
+  const imageNeedle = overrides[normalizedImageKey(color)];
+  if (!imageNeedle) return variation.image || null;
+
+  return (
+    (wc.images || []).find((image) => normalizedImageKey(image.src).includes(imageNeedle))?.src ||
+    variation.image ||
+    null
+  );
+}
+
 /** WooCommerce `product` -> shop ProductCard view model */
 export function mapWcProduct(wc) {
   return {
@@ -142,7 +197,7 @@ export function mapWcProduct(wc) {
       onSale: Boolean(v.on_sale),
       inStock: v.stock_status ? v.stock_status === "instock" : true,
       purchasable: v.purchasable !== false,
-      image: v.image || null,
+      image: correctedVariationImage(wc, v),
     })),
   };
 }

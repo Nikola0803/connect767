@@ -85,6 +85,47 @@ describe("mapWcProduct", () => {
     expect(mapped.variations[0].attributes).toEqual({ size: "large", color: "blue" });
   });
 
+  it.each([
+    [
+      "unisex-stay-connected-t-shirt",
+      "Black",
+      "WhatsAppImage2023-01-19at1.55.11AM.jpg",
+    ],
+    [
+      "unisex-sissarou-t-shirt",
+      "Cream",
+      "Milkparrot.jpg",
+    ],
+    [
+      "cotton-crew-neck-t-shirts",
+      "Blue",
+      "174A0524-Edit-scaled-1-scaled.jpg",
+    ],
+  ])("uses the verified %s color image for %s", (slug, color, expectedFile) => {
+    const images = [
+      "WhatsAppImage2023-01-19at1.55.11AM.jpg",
+      "Milkparrot.jpg",
+      "174A0524-Edit-scaled-1-scaled.jpg",
+    ].map((file) => ({ src: "https://example.com/" + file }));
+    const mapped = mapWcProduct({
+      id: 5,
+      slug,
+      name: "Shirt",
+      type: "variable",
+      images,
+      variations: [
+        {
+          id: 501,
+          attributes: { attribute_color: color, attribute_size: "M" },
+          image: "https://example.com/wrong-color.jpg",
+          price: "35",
+        },
+      ],
+    });
+
+    expect(mapped.variations[0].image).toBe("https://example.com/" + expectedFile);
+  });
+
   it("defaults stock/purchasable to true when WooCommerce omits the field", () => {
     const mapped = mapWcProduct({ id: 1, name: "Item", price: "5" });
     expect(mapped.inStock).toBe(true);
