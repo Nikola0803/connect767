@@ -12,9 +12,9 @@ describe("cover photo validation", () => {
   });
 
   it("explains when the selected image exceeds the 2 MB server limit", () => {
-    expect(
-      coverPhotoFileError({ type: "image/png", size: MAX_COVER_PHOTO_BYTES + 1 }),
-    ).toMatch(/maximum upload size is 2 MB/i);
+    const message = coverPhotoFileError({ type: "image/png", size: 2.5 * 1024 * 1024 });
+    expect(message).toMatch(/2\.5 MB/i);
+    expect(message).toMatch(/maximum upload size is 2 MB/i);
   });
 
   it("rejects image formats WordPress cannot reliably display", () => {

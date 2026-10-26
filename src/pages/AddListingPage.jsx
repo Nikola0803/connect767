@@ -471,6 +471,27 @@ export default function AddListingPage() {
 
   return (
     <div className="pt-16 md:pt-20">
+      {coverPhotoError && step === 3 && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="fixed top-20 right-4 md:right-8 z-50 flex w-[min(26rem,calc(100vw-2rem))] items-start gap-3 rounded-xl border border-red-200 bg-background-50 p-4 text-sm text-red-700 shadow-xl"
+        >
+          <i className="ri-error-warning-line mt-0.5 text-lg flex-shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-red-800">Cover photo needs attention</p>
+            <p className="mt-1 leading-relaxed">{coverPhotoError}</p>
+          </div>
+          <button
+            type="button"
+            aria-label="Dismiss cover photo error"
+            onClick={() => setCoverPhotoError("")}
+            className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-red-700 hover:bg-red-100 cursor-pointer"
+          >
+            <i className="ri-close-line" />
+          </button>
+        </div>
+      )}
       <div className="w-full px-4 md:px-8 lg:px-12 py-6 border-b border-background-200/70 bg-background-50">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center gap-3 mb-2">
@@ -900,7 +921,7 @@ export default function AddListingPage() {
                   </FormField>
                   <FormField
                     label="Cover photo"
-                    hint="Main image shown on your listing card and profile. Best fit: 16:9 (1600 × 900 px). Keep important content centered because directory cards use a 4:3 crop. Maximum 2 MB. Use JPG, PNG, WebP, or GIF."
+                    hint="Main image shown on your listing card and profile. Recommended image size: 1600 × 900 px (16:9). Maximum file size: 2 MB. Keep important content centered because directory cards use a 4:3 crop. Use JPG, PNG, WebP, or GIF."
                   >
                     <div className="relative w-full group">
                       <label className="relative flex flex-col items-center justify-center gap-2 w-full aspect-[16/9] rounded-lg border-2 border-dashed border-background-300 hover:border-primary-400 cursor-pointer transition-colors text-center overflow-hidden">
