@@ -44,6 +44,8 @@ class C767_Notifications
         add_action('c767_listing_payment_confirmed', [__CLASS__, 'on_listing_payment_confirmed']);
         add_action('c767_booking_submitted', [__CLASS__, 'on_booking_submitted'], 10, 2);
         add_action('c767_booking_confirmed', [__CLASS__, 'on_booking_confirmed']);
+        add_action('c767_booking_cashout_requested', [__CLASS__, 'on_booking_cashout_requested'], 10, 3);
+        add_action('c767_booking_payout_paid', [__CLASS__, 'on_booking_payout_paid']);
     }
 
     public static function mail_from()
@@ -449,5 +451,63 @@ class C767_Notifications
                 self::reply_to($email)
             );
         }
+    }
+
+    public static function on_booking_cashout_requested($booking_id, $listing_id, $user_id)
+    {
+        $listing = get_post($listing_id);
+        $owner = get_userdata($user_id);
+        if (!$listing || !$owner) {
+            return;
+        }
+
+        $amount_cents = (int) get_post_meta($booking_id, 'owner_payout_amount_cents', true);
+        $method = (string) get_post_meta($booking_id, 'owner_payout_method', true);
+        $subject = sprintf('[Connect767] Cash-out request — %s', $listing->post_title);
+        $body = sprintf(
+            "Listing: %s\nOwner: %s\nOwner email: %s\nPayout amount: $%s USD\nPayout method: %s\nBooking ID: %d\n\nVerify the saved destination and process this payout from the Connect767 payment account.\n\nOpen booking: %s",
+            $listing->post_title,
+            $owner->display_name ?: $owner->user_login,
+            $owner->user_email,
+            number_format($amount_cents / 100, 2),
+            $method === 'digital' ? 'Digital payment' : 'Bank transfer',
+            $booking_id,
+            admin_url('post.php?post=' . $booking_id . '&action=edit')
+        );
+        wp_mail(get_option('admin_email'), $subject, $body, self::reply_to($owner->user_email));
+
+        wp_mail(
+            $owner->user_email,
+            sprintf('Cash-out request received — %s', $listing->post_title),
+            sprintf(
+                "Hi %s,\n\nWe received your cash-out request for $%s USD from booking #%d. Connect767 will verify your saved payout destination and process the transfer. You can track the status from your dashboard:\n%s",
+                $owner->display_name ?: $owner->user_login,
+                number_format($amount_cents / 100, 2),
+                $booking_id,
+                self::frontend_url('/dashboard')
+            )
+        );
+    }
+
+    public static function on_booking_payout_paid($booking_id)
+    {
+        $listing_id = (int) get_post_meta($booking_id, 'listing_id', true);
+        $listing = get_post($listing_id);
+        $owner = $listing ? get_userdata($listing->post_author) : null;
+        if (!$listing || !$owner) {
+            return;
+        }
+        $amount_cents = (int) get_post_meta($booking_id, 'owner_payout_amount_cents', true);
+        wp_mail(
+            $owner->user_email,
+            sprintf('Your Connect767 payout was sent — %s', $listing->post_title),
+            sprintf(
+                "Hi %s,\n\nYour $%s USD payout for booking #%d has been marked paid. Check your selected payout destination and contact Connect767 support if it does not arrive within the provider's stated transfer time.\n\nTrack your bookings:\n%s",
+                $owner->display_name ?: $owner->user_login,
+                number_format($amount_cents / 100, 2),
+                $booking_id,
+                self::frontend_url('/dashboard')
+            )
+        );
     }
 }

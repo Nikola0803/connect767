@@ -1,4 +1,6 @@
 export const DIGITAL_PAYOUT_PROVIDERS = [
+  "NBD MoBanking",
+  "Remitly",
   "PayPal",
   "Wise",
   "Zelle",
@@ -6,6 +8,17 @@ export const DIGITAL_PAYOUT_PROVIDERS = [
   "Venmo",
   "Other digital wallet",
 ];
+
+export const DIGITAL_PAYOUT_PROVIDER_HELP = {
+  "NBD MoBanking": {
+    label: "NBD MoBanking mobile number or account reference",
+    placeholder: "+1 767 555 0100 or NBD account reference",
+  },
+  Remitly: {
+    label: "Remitly recipient email or mobile number",
+    placeholder: "payments@business.com or +1 767 555 0100",
+  },
+};
 
 export function hasCompletePayoutDetails(form) {
   if (!form.bookingEnabled || Number(form.bookingPrice || 0) <= 0) return true;

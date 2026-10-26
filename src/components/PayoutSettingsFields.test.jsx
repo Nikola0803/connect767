@@ -41,6 +41,18 @@ describe("PayoutSettingsFields", () => {
     expect(screen.getByText(/10% platform fee/i)).toBeInTheDocument();
   });
 
+  it("includes NBD MoBanking and Remitly as digital cash-out destinations", () => {
+    render(
+      <PayoutSettingsFields
+        form={{ ...paidForm, bookingPayoutMethod: "digital" }}
+        onChange={() => {}}
+      />,
+    );
+
+    expect(screen.getByRole("option", { name: "NBD MoBanking" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Remitly" })).toBeInTheDocument();
+  });
+
   it("renders protected bank fields when bank transfer is selected", () => {
     render(
       <PayoutSettingsFields

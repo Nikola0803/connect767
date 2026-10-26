@@ -76,6 +76,18 @@ class C767_REST_Listings
         return is_array($details) ? $details : [];
     }
 
+    /** Private helper for the administrator payout queue; never exposed over REST. */
+    public static function payout_destination_for_admin($listing_id)
+    {
+        if (!current_user_can('manage_options')) {
+            return [];
+        }
+        return [
+            'method' => (string) get_post_meta((int) $listing_id, '_booking_payout_method', true),
+            'details' => self::decrypt_payout_details(get_post_meta((int) $listing_id, '_booking_payout_details', true)),
+        ];
+    }
+
     private static function sanitize_payout_details(WP_REST_Request $request, $required)
     {
         $method = sanitize_key((string) $request->get_param('bookingPayoutMethod'));
@@ -99,7 +111,7 @@ class C767_REST_Listings
                 return new WP_Error('c767_incomplete_bank_payout', 'Complete the bank payout details, including a routing number or SWIFT/BIC.', ['status' => 400]);
             }
         } else {
-            $providers = ['PayPal', 'Wise', 'Zelle', 'Cash App', 'Venmo', 'Other digital wallet'];
+            $providers = ['NBD MoBanking', 'Remitly', 'PayPal', 'Wise', 'Zelle', 'Cash App', 'Venmo', 'Other digital wallet'];
             $provider = sanitize_text_field((string) $request->get_param('bookingPayoutDigitalProvider'));
             $details = [
                 'digitalProvider' => in_array($provider, $providers, true) ? $provider : '',

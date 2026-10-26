@@ -628,6 +628,13 @@ export async function setBookingStatus(bookingId, status) {
   return customClient.post(`/bookings/${bookingId}/status`, { status });
 }
 
+export async function requestBookingCashout(bookingId) {
+  if (!isLiveApi) {
+    return { bookingId, ownerPayoutStatus: "requested" };
+  }
+  return customClient.post(`/bookings/${bookingId}/cashout`, {});
+}
+
 // ---------- Vendor marketplace ("Buy" cards on a Classified listing) ----------
 // See connect767-cms's class-rest-vendor-products.php for the matching
 // backend routes. These were previously imported by ListingProducts.jsx

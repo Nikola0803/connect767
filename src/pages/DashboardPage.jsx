@@ -5,6 +5,7 @@ import { useAsync } from "../hooks/useAsync";
 import {
   getMyBookings,
   getMyListings,
+  requestBookingCashout,
   setBookingStatus,
   setListingTier,
 } from "../data/repository";
@@ -43,6 +44,19 @@ export default function DashboardPage() {
       reloadBookings();
     } catch (err) {
       setBookingError(err.message || "Couldn't update this booking.");
+    } finally {
+      setBookingBusy(null);
+    }
+  };
+
+  const cashOutBooking = async (booking) => {
+    setBookingBusy(booking.id);
+    setBookingError(null);
+    try {
+      await requestBookingCashout(booking.id);
+      reloadBookings();
+    } catch (err) {
+      setBookingError(err.message || "Couldn't request this payout.");
     } finally {
       setBookingBusy(null);
     }
@@ -315,6 +329,13 @@ export default function DashboardPage() {
                           {booking.notes && (
                             <p className="text-xs text-foreground-600 font-label mt-2">{booking.notes}</p>
                           )}
+                          {paid && (
+                            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs font-label text-foreground-600">
+                              <span>Customer paid <strong className="text-foreground-900">${(booking.amountCents / 100).toFixed(2)}</strong></span>
+                              <span>Connect767 fee ({booking.platformFeePercent || 10}%) <strong className="text-foreground-900">${((booking.platformFeeAmountCents ?? Math.round(booking.amountCents * 0.1)) / 100).toFixed(2)}</strong></span>
+                              <span>Your payout <strong className="text-primary-800">${((booking.ownerPayoutAmountCents ?? Math.floor(booking.amountCents * 0.9)) / 100).toFixed(2)}</strong></span>
+                            </div>
+                          )}
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           {booking.status === "confirmed" && booking.meetingUrl && (
@@ -346,6 +367,22 @@ export default function DashboardPage() {
                             >
                               Decline
                             </button>
+                          )}
+                          {paid && booking.ownerPayoutStatus === "pending" && (
+                            <button
+                              type="button"
+                              onClick={() => cashOutBooking(booking)}
+                              disabled={bookingBusy === booking.id}
+                              className="inline-flex items-center gap-1.5 rounded-md bg-foreground-950 px-3 py-2 text-xs font-semibold text-white cursor-pointer disabled:opacity-50"
+                            >
+                              <i className="ri-wallet-3-line" /> Cash out ${(booking.ownerPayoutAmountCents / 100).toFixed(2)}
+                            </button>
+                          )}
+                          {paid && ["requested", "processing", "paid"].includes(booking.ownerPayoutStatus) && (
+                            <span className="inline-flex items-center gap-1.5 rounded-md border border-background-300 px-3 py-2 text-xs font-semibold text-foreground-700">
+                              <i className={booking.ownerPayoutStatus === "paid" ? "ri-checkbox-circle-line text-primary-700" : "ri-time-line text-secondary-700"} />
+                              {booking.ownerPayoutStatus === "paid" ? "Payout sent" : booking.ownerPayoutStatus === "processing" ? "Payout processing" : "Cash-out requested"}
+                            </span>
                           )}
                         </div>
                       </div>
