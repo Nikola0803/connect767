@@ -17,7 +17,7 @@ const listing = {
 };
 
 describe("DirectoryListingCard parent category", () => {
-  it("shows the parent category selected by the listing form", () => {
+  it("shows both the parent category and industry in the card header", () => {
     render(
       <MemoryRouter>
         <DirectoryListingCard listing={listing} />
@@ -25,6 +25,9 @@ describe("DirectoryListingCard parent category", () => {
     );
 
     expect(screen.getByText("Services")).toBeInTheDocument();
+    expect(screen.getByTestId("listing-category-industry")).toHaveTextContent(
+      "Services · Accounting & Bookkeeping",
+    );
     expect(screen.queryByText("Directory profile")).not.toBeInTheDocument();
   });
 

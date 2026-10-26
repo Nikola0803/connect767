@@ -27,7 +27,8 @@ const industryLabel = (listing) =>
   (listing.category?.includes("·")
     ? listing.category.split("·").slice(1).join("·").trim()
     : listing.category) ||
-  getCategoryLabel(listing.categorySlug);
+  getCategoryLabel(listing.categorySlug) ||
+  "Industry not specified";
 
 function BookingSignal({ listing }) {
   if (!listing.bookingEnabled) return null;
@@ -64,12 +65,26 @@ function RatingSignal({ listing }) {
 }
 
 function ListingIdentity({ listing, compact = false }) {
+  const category = mainCategoryLabel(listing);
+  const industry = industryLabel(listing);
+  const showIndustry = industry.toLocaleLowerCase() !== category.toLocaleLowerCase();
+
   return (
     <>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary-700 truncate">
-            {mainCategoryLabel(listing)}
+          <p
+            data-testid="listing-category-industry"
+            className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary-700 truncate"
+            title={showIndustry ? `${category} · ${industry}` : category}
+          >
+            <span>{category}</span>
+            {showIndustry && (
+              <>
+                <span aria-hidden="true"> · </span>
+                <span>{industry}</span>
+              </>
+            )}
           </p>
           <h3 className={`${compact ? "text-xl" : "text-lg"} font-heading font-medium text-foreground-950 group-hover:text-primary-700 transition-colors leading-snug flex items-center gap-1.5 mt-1`}>
             <span className="line-clamp-2">{listing.title}</span>
