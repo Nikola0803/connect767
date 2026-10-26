@@ -221,14 +221,19 @@ class C767_REST_Listings
     {
         $term_id = self::resolve_category_term($slug);
         if (!$term_id) {
-            return;
+            return new WP_Error('c767_invalid_category', 'Choose a valid industry from the listing form.', ['status' => 400]);
         }
         $term_ids = [$term_id];
         $term = get_term($term_id, 'listing_category');
         if ($term && !is_wp_error($term) && $term->parent) {
             $term_ids[] = (int) $term->parent;
         }
-        wp_set_object_terms($post_id, $term_ids, 'listing_category');
+        $assigned = wp_set_object_terms($post_id, $term_ids, 'listing_category');
+        if (is_wp_error($assigned)) {
+            return new WP_Error('c767_category_save_failed', 'The industry and parent category could not be saved. Please try again.', ['status' => 500]);
+        }
+        update_post_meta($post_id, 'category_slug', $slug);
+        return true;
     }
 
     public static function register_routes()
@@ -656,6 +661,48 @@ class C767_REST_Listings
         return (string) $years;
     }
 
+    /** Validate every field marked required in AddListingPage. */
+    private static function required_listing_values(WP_REST_Request $request)
+    {
+        $raw_years_experience = trim((string) $request->get_param('yearsExperience'));
+        $values = [
+            'business_name' => trim(sanitize_text_field((string) $request->get_param('businessName'))),
+            'category' => sanitize_key((string) $request->get_param('category')),
+            'price_tier' => sanitize_text_field((string) $request->get_param('priceTier')),
+            'description' => trim(sanitize_textarea_field((string) $request->get_param('description'))),
+            'years_experience' => self::sanitize_years_experience($request->get_param('yearsExperience')),
+            'location' => trim(sanitize_text_field((string) $request->get_param('location'))),
+            'email' => sanitize_email((string) $request->get_param('email')),
+        ];
+        $labels = [
+            'business_name' => 'Listing name',
+            'category' => 'Industry',
+            'price_tier' => 'Price tier',
+            'description' => 'Description',
+            'years_experience' => 'Years of experience',
+            'location' => 'Location',
+            'email' => 'Email',
+        ];
+        foreach ($labels as $key => $label) {
+            if ($values[$key] === '') {
+                return new WP_Error('c767_missing_required_field', $label . ' is required.', ['status' => 400]);
+            }
+        }
+        if (!preg_match('/^\d+$/', $raw_years_experience) || (int) $raw_years_experience > 80) {
+            return new WP_Error('c767_invalid_years_experience', 'Years of experience must be a whole number from 0 to 80.', ['status' => 400]);
+        }
+        if (!in_array($values['price_tier'], ['$', '$$', '$$$'], true)) {
+            return new WP_Error('c767_invalid_price_tier', 'Choose a valid price tier.', ['status' => 400]);
+        }
+        if (!is_email($values['email'])) {
+            return new WP_Error('c767_invalid_email', 'Enter a valid email address.', ['status' => 400]);
+        }
+        if (!self::resolve_category_term($values['category'])) {
+            return new WP_Error('c767_invalid_category', 'Choose a valid industry from the listing form.', ['status' => 400]);
+        }
+        return $values;
+    }
+
     public static function submit(WP_REST_Request $request)
     {
         $user = C767_REST_Auth::user_from_request($request);
@@ -668,20 +715,20 @@ class C767_REST_Listings
             return $cover_validation;
         }
 
-        $business_name = sanitize_text_field((string) $request->get_param('businessName'));
-        if (!$business_name) {
-            return new WP_Error('c767_missing_name', 'Business name is required.', ['status' => 400]);
+        $required = self::required_listing_values($request);
+        if (is_wp_error($required)) {
+            return $required;
         }
-        $location = trim(sanitize_text_field((string) $request->get_param('location')));
-        if (!$location) {
-            return new WP_Error('c767_missing_location', 'Location is required.', ['status' => 400]);
-        }
+        $business_name = $required['business_name'];
+        $category = $required['category'];
+        $location = $required['location'];
+        $years_experience = $required['years_experience'];
 
         $post_id = wp_insert_post([
             'post_type' => 'listing',
             'post_status' => 'pending',
             'post_title' => $business_name,
-            'post_content' => sanitize_textarea_field((string) $request->get_param('description')),
+            'post_content' => $required['description'],
             'post_author' => $user->ID,
         ], true);
 
@@ -689,13 +736,13 @@ class C767_REST_Listings
             return new WP_Error('c767_submit_failed', $post_id->get_error_message(), ['status' => 400]);
         }
 
-        $category = sanitize_key((string) $request->get_param('category'));
-        if ($category) {
-            self::assign_category($post_id, $category);
+        $category_result = self::assign_category($post_id, $category);
+        if (is_wp_error($category_result)) {
+            wp_delete_post($post_id, true);
+            return $category_result;
         }
 
         $tier = $request->get_param('tier') === 'classified' ? 'Classified' : 'Free';
-        $years_experience = self::sanitize_years_experience($request->get_param('yearsExperience'));
         $meta = [
             'tier' => $tier,
             // Classified used to be recorded as a fully-formed paid tier
@@ -707,10 +754,11 @@ class C767_REST_Listings
             // before approving it. 'n/a' for Free listings, which were
             // never meant to be billed.
             'payment_status' => $tier === 'Classified' ? 'unpaid' : 'n/a',
-            'price_tier' => sanitize_text_field((string) $request->get_param('priceTier')),
+            'price_tier' => $required['price_tier'],
+            'description' => $required['description'],
             'location_display' => $location,
             'phone' => sanitize_text_field((string) $request->get_param('phone')),
-            'email' => sanitize_email((string) $request->get_param('email')),
+            'email' => $required['email'],
             'website' => esc_url_raw((string) $request->get_param('website')),
             'instagram' => esc_url_raw((string) $request->get_param('instagram')),
             'facebook' => esc_url_raw((string) $request->get_param('facebook')),
@@ -790,32 +838,31 @@ class C767_REST_Listings
             return new WP_Error('c767_not_owner', 'This listing does not belong to you.', ['status' => 403]);
         }
 
-        $business_name = sanitize_text_field((string) $request->get_param('businessName'));
-        if (!$business_name) {
-            return new WP_Error('c767_missing_name', 'Business name is required.', ['status' => 400]);
+        $required = self::required_listing_values($request);
+        if (is_wp_error($required)) {
+            return $required;
         }
-        $location = trim(sanitize_text_field((string) $request->get_param('location')));
-        if (!$location) {
-            return new WP_Error('c767_missing_location', 'Location is required.', ['status' => 400]);
-        }
+        $business_name = $required['business_name'];
+        $category = $required['category'];
+        $location = $required['location'];
+        $years_experience = $required['years_experience'];
 
         wp_update_post([
             'ID' => $post_id,
             'post_title' => $business_name,
-            'post_content' => sanitize_textarea_field((string) $request->get_param('description')),
+            'post_content' => $required['description'],
         ]);
 
-        $category = sanitize_key((string) $request->get_param('category'));
-        if ($category) {
-            self::assign_category($post_id, $category);
+        $category_result = self::assign_category($post_id, $category);
+        if (is_wp_error($category_result)) {
+            return $category_result;
         }
-
-        $years_experience = self::sanitize_years_experience($request->get_param('yearsExperience'));
         $meta = [
-            'price_tier' => sanitize_text_field((string) $request->get_param('priceTier')),
+            'price_tier' => $required['price_tier'],
+            'description' => $required['description'],
             'location_display' => $location,
             'phone' => sanitize_text_field((string) $request->get_param('phone')),
-            'email' => sanitize_email((string) $request->get_param('email')),
+            'email' => $required['email'],
             'website' => esc_url_raw((string) $request->get_param('website')),
             'instagram' => esc_url_raw((string) $request->get_param('instagram')),
             'facebook' => esc_url_raw((string) $request->get_param('facebook')),

@@ -49,6 +49,8 @@ const steps = [
 ];
 
 const priceChoices = ["$", "$$", "$$$"];
+const hasValidRequiredYears = (value) => /^\d+$/.test(String(value)) && Number(value) <= 80;
+const hasValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
 
 const initialForm = {
   tier: "classified",
@@ -126,6 +128,9 @@ function buildPreviewData(form) {
     categoryPath: industry?.categorySlug || "",
     parentCategorySlug: industry?.categorySlug || "",
     categoryLabel: industry?.categoryLabel || "",
+    parentCategoryLabel: industry?.categoryLabel || "",
+    industrySlug: industry?.slug || "",
+    industryLabel: industry?.label || "",
     badge: form.tier === "classified" ? "Classified" : "Free",
     verified: false,
     rating: "0",
@@ -354,9 +359,24 @@ export default function AddListingPage() {
 
   const handleSubmit = async () => {
     setSubmitError(null);
-    if (!form.location.trim()) {
+    const missingBusinessFields = [
+      [form.businessName.trim(), "Listing name"],
+      [findIndustry(form.category), "Industry"],
+      [form.priceTier, "Price tier"],
+      [form.description.trim(), "Description"],
+      [hasValidRequiredYears(form.yearsExperience), "Years of experience (0–80)"],
+      [form.location.trim(), "Location"],
+    ]
+      .filter(([value]) => !value)
+      .map(([, label]) => label);
+    if (missingBusinessFields.length) {
       setStep(2);
-      setSubmitError("Location is required. Add a city, region, or country before submitting.");
+      setSubmitError(`Complete all required fields: ${missingBusinessFields.join(", ")}.`);
+      return;
+    }
+    if (!hasValidEmail(form.email)) {
+      setStep(3);
+      setSubmitError("Enter a valid email address.");
       return;
     }
     setSubmitting(true);
@@ -394,11 +414,11 @@ export default function AddListingPage() {
         form.category &&
         form.priceTier &&
         form.description.trim() &&
-        form.yearsExperience &&
+        hasValidRequiredYears(form.yearsExperience) &&
         form.location.trim()
       );
     if (step === 3)
-      return form.email.trim() && !coverPhotoError && hasCompletePayoutDetails(form);
+      return hasValidEmail(form.email) && !coverPhotoError && hasCompletePayoutDetails(form);
     return true;
   };
 
@@ -554,11 +574,12 @@ export default function AddListingPage() {
                     placeholder="e.g. Cocoa Palm Bistro"
                     value={form.businessName}
                     onChange={update("businessName")}
+                    required
                   />
                 </FormField>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <FormField label="Industry" htmlFor="category" required>
-                    <Select id="category" value={form.category} onChange={update("category")}>
+                    <Select id="category" value={form.category} onChange={update("category")} required>
                       <option value="">Select your industry</option>
                       {categoryTaxonomy.map((cat) => (
                         <optgroup key={cat.slug} label={cat.label}>
@@ -631,6 +652,7 @@ export default function AddListingPage() {
                       placeholder="12"
                       value={form.yearsExperience}
                       onChange={update("yearsExperience")}
+                      required
                     />
                   </FormField>
                 </div>
@@ -646,6 +668,7 @@ export default function AddListingPage() {
                     placeholder="Describe goods or services offered"
                     value={form.description}
                     onChange={update("description")}
+                    required
                   />
                 </FormField>
                 <FormField label="Tags" htmlFor="tags">
@@ -702,6 +725,7 @@ export default function AddListingPage() {
                       type="email"
                       value={form.email}
                       onChange={update("email")}
+                      required
                     />
                   </FormField>
                 </div>

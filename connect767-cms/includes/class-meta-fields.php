@@ -118,6 +118,10 @@ class C767_Meta_Fields
             'rating' => ['label' => 'Rating (0–5)', 'type' => 'number'],
             'review_count' => ['label' => 'Review count', 'type' => 'integer'],
             'location_display' => ['label' => 'Location (display text, e.g. "Roseau, Dominica")', 'type' => 'string'],
+            // Redundant with the assigned taxonomy on purpose: this gives
+            // older/custom REST clients a stable recovery value if WordPress
+            // omits parent IDs from embedded terms.
+            'category_slug' => ['label' => 'Industry slug (managed by the listing form)', 'type' => 'string'],
             'location_country' => ['label' => 'Country', 'type' => 'string'],
             'location_region' => ['label' => 'State / region / parish', 'type' => 'string'],
             'location_city' => ['label' => 'City', 'type' => 'string'],

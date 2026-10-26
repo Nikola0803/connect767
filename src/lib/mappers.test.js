@@ -268,6 +268,22 @@ describe("mapListingCpt", () => {
     expect(mapped.industryLabel).toBe("General Contractor");
   });
 
+  it("recovers parent and industry from the stored industry slug when terms are absent", () => {
+    const mapped = mapListingCpt({
+      id: 10,
+      slug: "legacy-nurse",
+      title: "Legacy Nurse",
+      acf: { category_slug: "nursing-and-caregiving" },
+    });
+
+    expect(mapped.category).toBe("Services");
+    expect(mapped.categorySlug).toBe("services");
+    expect(mapped.parentCategorySlug).toBe("services");
+    expect(mapped.parentCategoryLabel).toBe("Services");
+    expect(mapped.industrySlug).toBe("nursing-and-caregiving");
+    expect(mapped.industryLabel).toBe("Nursing & Caregiving");
+  });
+
   it("advances years of experience from the year in which it was recorded", () => {
     const thisYear = new Date().getUTCFullYear();
     const mapped = mapListingCpt({
