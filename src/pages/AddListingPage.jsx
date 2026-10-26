@@ -859,7 +859,10 @@ export default function AddListingPage() {
                   </div>
                 )}
                 <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-5 items-start">
-                  <FormField label="Logo / profile picture" hint="This will be the Account Profile Photo. It will be the same for every listing if there are multiple listings">
+                  <FormField
+                    label="Logo / profile picture"
+                    hint="Your account photo, shared across all listings."
+                  >
                     <div className="relative w-32 h-32 group">
                       <label className="flex flex-col items-center justify-center gap-2 w-32 h-32 rounded-full border-2 border-dashed border-background-300 hover:border-primary-400 cursor-pointer transition-colors text-center overflow-hidden bg-background-100/40">
                         {form.logoPreview ? (
@@ -921,7 +924,7 @@ export default function AddListingPage() {
                   </FormField>
                   <FormField
                     label="Cover photo"
-                    hint="Main image shown on your listing card and profile. Recommended image size: 1600 × 900 px (16:9). Maximum file size: 2 MB. Keep important content centered because directory cards use a 4:3 crop. Use JPG, PNG, WebP, or GIF."
+                    hint="Best fit: 1600 × 900 px (16:9), max 2 MB. Keep key content centered for the 4:3 directory crop."
                   >
                     <div className="relative w-full group">
                       <label className="relative flex flex-col items-center justify-center gap-2 w-full aspect-[16/9] rounded-lg border-2 border-dashed border-background-300 hover:border-primary-400 cursor-pointer transition-colors text-center overflow-hidden">
@@ -1021,7 +1024,7 @@ export default function AddListingPage() {
                 </div>
                 <FormField
                   label="Gallery"
-                  hint="Add as many photos as you'd like — shown on your profile page"
+                  hint="Add extra photos to your profile gallery."
                 >
                   <div className="flex flex-wrap gap-3">
                     {form.galleryPreviews.map((src, i) => (
