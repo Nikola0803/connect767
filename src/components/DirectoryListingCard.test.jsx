@@ -17,7 +17,7 @@ const listing = {
 };
 
 describe("DirectoryListingCard parent category", () => {
-  it("shows both the parent category and industry in the card header", () => {
+  it("shows the parent category once and keeps industry in its dedicated field", () => {
     render(
       <MemoryRouter>
         <DirectoryListingCard listing={listing} />
@@ -25,9 +25,11 @@ describe("DirectoryListingCard parent category", () => {
     );
 
     expect(screen.getByText("Services")).toBeInTheDocument();
-    expect(screen.getByTestId("listing-category-industry")).toHaveTextContent(
-      "Services · Accounting & Bookkeeping",
+    expect(screen.getByTestId("listing-category-industry")).toHaveTextContent("Services");
+    expect(screen.getByTestId("listing-category-industry")).not.toHaveTextContent(
+      "Accounting & Bookkeeping",
     );
+    expect(screen.getByText("Accounting & Bookkeeping")).toBeInTheDocument();
     expect(screen.queryByText("Directory profile")).not.toBeInTheDocument();
   });
 
@@ -136,5 +138,17 @@ describe("DirectoryListingCard parent category", () => {
     );
     expect(fallbackCover.querySelector("img")).not.toHaveClass("object-contain");
     expect(document.querySelector('img[src=""]')).not.toBeInTheDocument();
+  });
+
+  it("fills the cover frame even when a legacy listing saved contain mode", () => {
+    render(
+      <MemoryRouter>
+        <DirectoryListingCard listing={{ ...listing, coverFit: "contain" }} />
+      </MemoryRouter>,
+    );
+
+    const cover = screen.getByRole("img", { name: /Island Bookkeeper/ });
+    expect(cover).toHaveClass("object-cover");
+    expect(cover).not.toHaveClass("object-contain");
   });
 });
