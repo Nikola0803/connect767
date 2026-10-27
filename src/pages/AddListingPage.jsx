@@ -84,6 +84,7 @@ const initialForm = {
   galleryFiles: [],
   galleryPreviews: [],
   bookingEnabled: false,
+  hideContactInfo: false,
   bookingType: "appointment",
   bookingPrice: "0",
   bookingDurationMinutes: "30",
@@ -109,6 +110,11 @@ const initialForm = {
  */
 function buildPreviewData(form) {
   const industry = findIndustry(form.category);
+  const contactHidden = Boolean(
+    form.bookingEnabled &&
+      Number(form.bookingPrice) > 0 &&
+      form.hideContactInfo
+  );
   const hasContactInfo = Boolean(
     form.phone ||
       form.email ||
@@ -164,22 +170,25 @@ function buildPreviewData(form) {
           src,
         })),
     reviews: [],
+    contactHidden,
     contact: hasContactInfo
       ? {
-          phone: form.phone || "",
+          phone: contactHidden ? "" : form.phone || "",
           email: form.email || "",
-          website: form.website || "",
-          websiteUrl: form.website
-            ? form.website.startsWith("http")
-              ? form.website
-              : `https://${form.website}`
-            : "",
-          address: form.location || "",
-          instagram: form.instagram || "",
-          facebook: form.facebook || "",
-          youtube: form.youtube || "",
-          twitter: form.twitter || "",
-          whatsapp: form.whatsapp || "",
+          website: contactHidden ? "" : form.website || "",
+          websiteUrl: contactHidden
+            ? ""
+            : form.website
+              ? form.website.startsWith("http")
+                ? form.website
+                : `https://${form.website}`
+              : "",
+          address: contactHidden ? "" : form.location || "",
+          instagram: contactHidden ? "" : form.instagram || "",
+          facebook: contactHidden ? "" : form.facebook || "",
+          youtube: contactHidden ? "" : form.youtube || "",
+          twitter: contactHidden ? "" : form.twitter || "",
+          whatsapp: contactHidden ? "" : form.whatsapp || "",
         }
       : null,
     mapEmbedUrl: null,
@@ -303,6 +312,7 @@ export default function AddListingPage() {
           // cover slot and the owner had to re-upload it every single time,
           // while the logo (which does have its own field) survived fine.
           bookingEnabled: Boolean(data.bookingEnabled),
+          hideContactInfo: Boolean(data.contactHidden),
           bookingType: normalizeBookingType(data.bookingType),
           bookingPrice: ((data.bookingPriceCents || 0) / 100).toFixed(2),
           bookingDurationMinutes: String(data.bookingDurationMinutes || 30),
@@ -324,6 +334,15 @@ export default function AddListingPage() {
             setForm((f) => ({
               ...f,
               bookingEnabled: Boolean(settings.bookingEnabled),
+              hideContactInfo: Boolean(settings.hideContactInfo),
+              phone: settings.phone ?? f.phone,
+              email: settings.email ?? f.email,
+              website: settings.website ?? f.website,
+              instagram: settings.instagram ?? f.instagram,
+              facebook: settings.facebook ?? f.facebook,
+              youtube: settings.youtube ?? f.youtube,
+              twitter: settings.twitter ?? f.twitter,
+              whatsapp: settings.whatsapp ?? f.whatsapp,
               bookingType: normalizeBookingType(settings.bookingType),
               bookingPrice: ((settings.bookingPriceCents || 0) / 100).toFixed(2),
               bookingDurationMinutes: String(settings.bookingDurationMinutes || 30),
@@ -797,7 +816,11 @@ export default function AddListingPage() {
                       className="mt-0.5 rounded border-background-300 cursor-pointer"
                       checked={form.bookingEnabled}
                       onChange={(e) =>
-                        setForm((f) => ({ ...f, bookingEnabled: e.target.checked }))
+                        setForm((f) => ({
+                          ...f,
+                          bookingEnabled: e.target.checked,
+                          hideContactInfo: e.target.checked ? f.hideContactInfo : false,
+                        }))
                       }
                     />
                     <span>
@@ -842,7 +865,14 @@ export default function AddListingPage() {
                         min="0"
                         step="0.01"
                         value={form.bookingPrice}
-                        onChange={update("bookingPrice")}
+                        onChange={(e) =>
+                          setForm((f) => ({
+                            ...f,
+                            bookingPrice: e.target.value,
+                            hideContactInfo:
+                              Number(e.target.value) > 0 ? f.hideContactInfo : false,
+                          }))
+                        }
                         placeholder="0.00"
                       />
                     </FormField>
@@ -860,6 +890,32 @@ export default function AddListingPage() {
                         <option value="120">2 hours</option>
                       </Select>
                     </FormField>}
+                    {Number(form.bookingPrice) > 0 && (
+                      <div className="sm:col-span-2">
+                        <label className="flex items-start gap-3 rounded-xl border border-primary-200 bg-background-50 p-4 cursor-pointer hover:border-primary-400 transition-colors">
+                          <input
+                            id="hideContactInfo"
+                            type="checkbox"
+                            className="mt-0.5 rounded border-background-300 cursor-pointer"
+                            checked={form.hideContactInfo}
+                            onChange={(e) =>
+                              setForm((f) => ({ ...f, hideContactInfo: e.target.checked }))
+                            }
+                          />
+                          <span>
+                            <span className="flex items-center gap-2 text-sm font-semibold text-foreground-900">
+                              <i className="ri-shield-user-line text-primary-600" />
+                              Limit public contact information
+                            </span>
+                            <span className="block text-xs text-foreground-600 font-label mt-1 leading-relaxed">
+                              Keep your email visible while hiding your phone, WhatsApp number, website
+                              and social media links. Customers can email you or use Connect767&apos;s
+                              secure paid booking form. Your hidden details remain saved for your account.
+                            </span>
+                          </span>
+                        </label>
+                      </div>
+                    )}
                     {!isRentalBookingType(form.bookingType) && <div className="sm:col-span-2">
                       <FormField
                         label="Private meeting link"
