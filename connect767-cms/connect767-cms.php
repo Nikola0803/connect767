@@ -3,7 +3,7 @@
  * Plugin Name: Connect767 CMS
  * Plugin URI: https://connect767.com
  * Description: Content management, REST API, auth, and WooCommerce checkout bridge for the Connect767 headless React frontend. Registers the Listing and Uniform Template custom post types, exposes the connect767/v1 REST namespace (auth, AI matching, listing submissions, uniform quotes, headless checkout), and includes a one-click sample content importer matching the frontend's local fixture data.
- * Version: 1.3.6
+ * Version: 1.4.0
  * Author: Connect767
  * Text Domain: connect767-cms
  * Requires PHP: 7.4
@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
     exit; // No direct access.
 }
 
-define('C767_VERSION', '1.3.6');
+define('C767_VERSION', '1.4.0');
 define('C767_PLUGIN_FILE', __FILE__);
 define('C767_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('C767_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -40,6 +40,7 @@ function c767_require_includes()
         'includes/class-rest-listings.php',
         'includes/class-rest-listing-reviews.php',
         'includes/class-rest-bookings.php',
+        'includes/class-rest-messages.php',
         'includes/class-rest-uniform-quotes.php',
         'includes/class-rest-product-quotes.php',
         'includes/class-woocommerce.php',
@@ -79,6 +80,7 @@ function c767_init_plugin()
     C767_REST_Listings::init();
     C767_Rest_Listing_Reviews::init();
     C767_Rest_Bookings::init();
+    C767_REST_Messages::init();
     C767_REST_Uniform_Quotes::init();
     C767_REST_Product_Quotes::init();
     C767_WooCommerce::init();

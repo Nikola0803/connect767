@@ -577,6 +577,15 @@ export default function ListingProfile({ data, isPreview = false }) {
                       Contact details haven't been added by this business yet.
                     </p>
                   )}
+                  {!isPreview && data.slug && (
+                    <Link
+                      to={`/messages?listing=${encodeURIComponent(data.slug)}&title=${encodeURIComponent(data.title)}`}
+                      className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-3 text-sm font-semibold text-background-50 transition-colors hover:bg-primary-700"
+                    >
+                      <i className="ri-chat-3-line" />
+                      Message listing owner
+                    </Link>
+                  )}
                 </div>
 
                 {/* Sits directly under the contact card — someone who has just
