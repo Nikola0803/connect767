@@ -48,8 +48,8 @@ export default function Hero() {
           <h1 className="whitespace-nowrap font-heading text-background-50 text-[clamp(1.2rem,6.2vw,2.05rem)] sm:text-[clamp(2.05rem,4.15vw,4.05rem)] font-semibold leading-[0.98] tracking-[-0.045em] sm:tracking-[-0.035em]">
             Dominica’s <span className="italic text-accent-400">Online Directory</span>
           </h1>
-          <p className="mx-auto mt-1.5 max-w-fit font-heading text-background-50 text-[clamp(0.78rem,1.1vw,1rem)] font-normal leading-tight tracking-normal">
-            Discover Dominican Excellence at Home and Abroad
+          <p className="mx-auto mt-1.5 max-w-fit font-heading text-background-50 text-[clamp(0.78rem,1.1vw,1rem)] font-semibold leading-[0.98] tracking-[-0.035em]">
+            Discover Dominican Excellence at Home &amp; Abroad
           </p>
           <form onSubmit={handleSubmit} className="mt-5 max-w-5xl mx-auto">
             <div className="flex flex-col lg:flex-row lg:items-center overflow-hidden rounded-[1.75rem] lg:rounded-full bg-background-50 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.25)] focus-within:shadow-[0_18px_55px_rgba(0,0,0,0.34)] transition-shadow">
