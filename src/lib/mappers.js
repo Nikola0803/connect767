@@ -261,6 +261,7 @@ export function mapListingCpt(wp) {
     acf.years_experience,
     acf.years_experience_as_of_year,
   );
+  const contactHidden = isTruthyMeta(acf.hide_contact_info);
   const publicProfile = {
     title,
     slug: wp.slug,
@@ -280,7 +281,7 @@ export function mapListingCpt(wp) {
       country: acf.location_country || "",
       region: acf.location_region || "",
       city: acf.location_city || "",
-      address: acf.address || "",
+      address: contactHidden ? "" : acf.address || "",
     },
     education: acf.education || "",
     degreeType: acf.degree_type || "",
@@ -292,14 +293,14 @@ export function mapListingCpt(wp) {
     gallery: acf.gallery || [],
     reviews: acf.reviews || [],
     contact: {
-      phone: acf.phone || "",
+      phone: contactHidden ? "" : acf.phone || "",
       email: acf.email || "",
-      website: acf.website || "",
-      instagram: acf.instagram || "",
-      facebook: acf.facebook || "",
-      youtube: acf.youtube || "",
-      twitter: acf.twitter || "",
-      whatsapp: acf.whatsapp || "",
+      website: contactHidden ? "" : acf.website || "",
+      instagram: contactHidden ? "" : acf.instagram || "",
+      facebook: contactHidden ? "" : acf.facebook || "",
+      youtube: contactHidden ? "" : acf.youtube || "",
+      twitter: contactHidden ? "" : acf.twitter || "",
+      whatsapp: contactHidden ? "" : acf.whatsapp || "",
     },
     attributes: [
       isTruthyMeta(acf.verified) ? "verified" : "",
@@ -346,6 +347,7 @@ export function mapListingCpt(wp) {
     // simply never read or wrote it, so the owner had no way to turn bookings
     // on despite it being advertised as a Classified feature.
     bookingEnabled: isTruthyMeta(acf.booking_enabled),
+    contactHidden,
     bookingType: normalizeBookingType(acf.booking_type),
     bookingPriceCents: Math.max(0, Number(acf.booking_price_cents) || 0),
     bookingDurationMinutes: Math.max(15, Number(acf.booking_duration_minutes) || 30),
@@ -431,7 +433,20 @@ export function mapListingDetail(wp) {
       stars: Number(r.stars) || 5,
       text: decodeEntities(r.text),
     })),
-    contact: hasContactInfo
+    contact: base.contactHidden
+      ? {
+          phone: "",
+          email: acf.email || "",
+          website: "",
+          websiteUrl: "",
+          address: "",
+          instagram: "",
+          facebook: "",
+          youtube: "",
+          twitter: "",
+          whatsapp: "",
+        }
+      : hasContactInfo
       ? {
           phone: acf.phone || "",
           email: acf.email || "",
