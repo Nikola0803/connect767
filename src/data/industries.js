@@ -269,6 +269,17 @@ export function findIndustry(slug) {
   return allIndustries.find((i) => i.slug === slug) || null;
 }
 
+/**
+ * Resolve the industry value used by the listing form when editing.
+ * New view models expose `industrySlug`; older records may still carry the
+ * industry in `categorySlug`. Parent-category slugs are deliberately rejected
+ * because they are not valid options in the Industry selector.
+ */
+export function resolveListingIndustrySlug(listing = {}) {
+  const candidates = [listing.industrySlug, listing.categorySlug];
+  return candidates.find((slug) => findIndustry(slug)) || "";
+}
+
 export function findCategory(slug) {
   return categoryTaxonomy.find((c) => c.slug === slug) || null;
 }

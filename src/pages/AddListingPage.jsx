@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { categoryTaxonomy, findIndustry } from "../data/industries";
+import {
+  categoryTaxonomy,
+  findIndustry,
+  resolveListingIndustrySlug,
+} from "../data/industries";
 import { EDUCATION_CHOICES } from "../data/profileChoices";
 import {
   submitListing,
@@ -286,7 +290,7 @@ export default function AddListingPage() {
           ...f,
           tier: data.badge === "Classified" ? "classified" : "free",
           businessName: data.title || "",
-          category: data.categorySlug || "",
+          category: resolveListingIndustrySlug(data),
           priceTier: data.price || "",
           description: data.description || "",
           tags: (data.tags || []).join(", "),

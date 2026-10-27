@@ -1,7 +1,12 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { allIndustries, categoryTaxonomy, findCategory } from "./industries";
+import {
+  allIndustries,
+  categoryTaxonomy,
+  findCategory,
+  resolveListingIndustrySlug,
+} from "./industries";
 
 const allowedCategories = [
   "eat-and-drink",
@@ -44,5 +49,19 @@ describe("listing form industry taxonomy", () => {
     );
 
     expect(cmsTaxonomy).toEqual(categoryTaxonomy);
+  });
+
+  it("restores the saved industry when editing current and legacy listings", () => {
+    expect(
+      resolveListingIndustrySlug({
+        categorySlug: "services",
+        industrySlug: "accounting-and-bookkeeping",
+      }),
+    ).toBe("accounting-and-bookkeeping");
+
+    expect(resolveListingIndustrySlug({ categorySlug: "accounting-and-bookkeeping" })).toBe(
+      "accounting-and-bookkeeping",
+    );
+    expect(resolveListingIndustrySlug({ categorySlug: "services" })).toBe("");
   });
 });
