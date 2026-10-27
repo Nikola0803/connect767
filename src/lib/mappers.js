@@ -294,7 +294,7 @@ export function mapListingCpt(wp) {
     reviews: acf.reviews || [],
     contact: {
       phone: contactHidden ? "" : acf.phone || "",
-      email: contactHidden ? "" : acf.email || "",
+      email: "",
       website: contactHidden ? "" : acf.website || "",
       instagram: contactHidden ? "" : acf.instagram || "",
       facebook: contactHidden ? "" : acf.facebook || "",
@@ -449,7 +449,7 @@ export function mapListingDetail(wp) {
       : hasContactInfo
       ? {
           phone: acf.phone || "",
-          email: acf.email || "",
+          email: "",
           website: acf.website || "",
           websiteUrl: acf.website
             ? acf.website.startsWith("http")

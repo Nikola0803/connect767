@@ -446,17 +446,6 @@ export default function ListingProfile({ data, isPreview = false }) {
                           <span>{data.contact.phone}</span>
                         </a>
                       )}
-                      {data.contact.email && (
-                        <a
-                          className="flex items-center gap-3 py-3 border-b border-background-100 text-sm text-foreground-700 hover:text-primary-700 font-label cursor-pointer transition-colors"
-                          href={`mailto:${data.contact.email}`}
-                        >
-                          <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-secondary-50 text-secondary-700 shrink-0">
-                            <i className="ri-mail-line" />
-                          </div>
-                          <span className="truncate">{data.contact.email}</span>
-                        </a>
-                      )}
                       {data.contact.websiteUrl && (
                         <a
                           className="flex items-center gap-3 py-3 border-b border-background-100 text-sm text-foreground-700 hover:text-primary-700 font-label cursor-pointer transition-colors"
@@ -535,7 +524,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                           </a>
                         )}
                       </div>
-                      {(data.contact.phone || data.contact.email || data.contact.websiteUrl) && (
+                      {(data.contact.phone || data.contact.websiteUrl) && (
                         <div className="mt-5 flex flex-col gap-2">
                           {data.contact.phone && (
                             <a
@@ -546,16 +535,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                               Call Now
                             </a>
                           )}
-                          {data.contact.email && (
-                            <a
-                              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold rounded-lg border border-background-300 bg-background-50 text-foreground-800 hover:bg-background-100 cursor-pointer whitespace-nowrap transition-colors"
-                              href={`mailto:${data.contact.email}`}
-                            >
-                              <i className="ri-mail-send-line" />
-                              Send Message
-                            </a>
-                          )}
-                          {!data.contact.phone && !data.contact.email && data.contact.websiteUrl && (
+                          {!data.contact.phone && data.contact.websiteUrl && (
                             <a
                               className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold rounded-lg bg-primary-500 text-background-50 hover:bg-primary-600 cursor-pointer whitespace-nowrap transition-colors"
                               href={data.contact.websiteUrl}
