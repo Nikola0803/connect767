@@ -423,18 +423,9 @@ export default function ListingProfile({ data, isPreview = false }) {
                         Contact details are private
                       </p>
                       <p className="mt-1 text-xs leading-relaxed text-foreground-600 font-label">
-                        Phone, website and social links are hidden. You can still email this provider
-                        or use the secure booking form below.
+                        Email, phone, website and social links are hidden. Use Message Listing Owner
+                        or the secure booking form below.
                       </p>
-                      {data.contact?.email && (
-                        <a
-                          className="mt-4 flex items-center justify-center gap-2 rounded-lg border border-primary-200 bg-background-50 px-3 py-2.5 text-sm font-semibold text-primary-700 hover:bg-primary-100 transition-colors"
-                          href={`mailto:${data.contact.email}`}
-                        >
-                          <i className="ri-mail-line" />
-                          <span className="truncate">{data.contact.email}</span>
-                        </a>
-                      )}
                     </div>
                   ) : data.contact ? (
                     <>
@@ -577,15 +568,25 @@ export default function ListingProfile({ data, isPreview = false }) {
                       Contact details haven't been added by this business yet.
                     </p>
                   )}
-                  {!isPreview && data.slug && (
+                  {!isPreview && data.slug ? (
                     <Link
                       to={`/messages?listing=${encodeURIComponent(data.slug)}&title=${encodeURIComponent(data.title)}`}
                       className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-3 text-sm font-semibold text-background-50 transition-colors hover:bg-primary-700"
                     >
                       <i className="ri-chat-3-line" />
-                      Message listing owner
+                      Message Listing Owner
                     </Link>
-                  )}
+                  ) : data.contactHidden ? (
+                    <button
+                      type="button"
+                      disabled
+                      aria-label="Message Listing Owner (available after publishing)"
+                      className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-3 text-sm font-semibold text-background-50 opacity-70"
+                    >
+                      <i className="ri-chat-3-line" />
+                      Message Listing Owner
+                    </button>
+                  ) : null}
                 </div>
 
                 {/* Sits directly under the contact card — someone who has just

@@ -102,6 +102,7 @@ class C767_Meta_Fields
             'verified' => ['label' => 'Verified badge', 'type' => 'boolean'],
             'featured' => ['label' => 'Show in homepage Featured section', 'type' => 'boolean'],
             'booking_enabled' => ['label' => 'Accept booking requests (owner-toggled from their dashboard)', 'type' => 'boolean'],
+            'hide_contact_info' => ['label' => 'Hide contact information while paid bookings are enabled', 'type' => 'boolean'],
             'booking_type' => [
                 'label' => 'Booking type',
                 'type' => 'string',
@@ -194,6 +195,7 @@ class C767_Meta_Fields
     {
         $excluded = [
             'payment_status',
+            'hide_contact_info',
             'logo_position',
             'logo_zoom',
             'cover_position',
@@ -310,7 +312,19 @@ class C767_Meta_Fields
     {
         register_rest_field('listing', 'acf', [
             'get_callback' => function ($post) {
-                return self::build_acf_object($post['id'], self::listing_fields());
+                $acf = self::build_acf_object($post['id'], self::listing_fields());
+
+                // Contact details remain stored for the owner, but a paid-booking
+                // profile can keep them out of the public listing response. The
+                // authenticated /listings/{id}/booking endpoint returns the raw
+                // values to the owner so editing never erases private details.
+                if (!empty($acf['hide_contact_info'])) {
+                    foreach (['phone', 'email', 'website', 'address', 'instagram', 'facebook', 'youtube', 'twitter', 'whatsapp'] as $field) {
+                        $acf[$field] = '';
+                    }
+                }
+
+                return $acf;
             },
         ]);
 
