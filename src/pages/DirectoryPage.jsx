@@ -143,8 +143,6 @@ export default function DirectoryPage() {
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE
   );
-  const resultStart = filtered.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
-  const resultEnd = Math.min(currentPage * PAGE_SIZE, filtered.length);
 
   const updateFilter = (setter) => (value) => {
     setter(value);
@@ -404,9 +402,6 @@ export default function DirectoryPage() {
               <h2 className="font-heading text-2xl md:text-4xl font-light text-foreground-950">
                 Browse the <span className="text-accent-500 italic">directory</span>
               </h2>
-              <p className="mt-1.5 text-xs text-foreground-500">
-                {loading ? "Finding listings…" : `Showing ${resultStart}–${resultEnd} of ${filtered.length} listing${filtered.length === 1 ? "" : "s"}`}
-              </p>
             </div>
             <div className="sm:ml-auto flex items-center gap-2">
               <label className="sr-only" htmlFor="directory-sort">Sort listings</label>
