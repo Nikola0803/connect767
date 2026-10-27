@@ -349,6 +349,33 @@ describe("mapListingDetail", () => {
     expect(withContact.contact.phone).toBe("555-1234");
   });
 
+  it("hides private contact details for paid-booking profiles", () => {
+    const hidden = mapListingDetail({
+      id: 3,
+      slug: "private-provider",
+      title: "Private Provider",
+      acf: {
+        booking_enabled: true,
+        booking_price_cents: 5000,
+        hide_contact_info: true,
+        phone: "555-0199",
+        email: "private@example.com",
+        website: "private.example.com",
+        address: "12 Private Road",
+        instagram: "https://instagram.com/private",
+      },
+    });
+
+    expect(hidden.contactHidden).toBe(true);
+    expect(hidden.contact.email).toBe("private@example.com");
+    expect(hidden.contact.phone).toBe("");
+    expect(hidden.contact.website).toBe("");
+    expect(hidden.searchText).toContain("private@example.com");
+    expect(hidden.searchText).not.toContain("555-0199");
+    expect(hidden.searchText).not.toContain("private.example.com");
+    expect(hidden.searchText).not.toContain("12 private road");
+  });
+
   it("adds https:// to a bare-domain website but leaves a full URL alone", () => {
     const bareDomain = mapListingDetail({ id: 1, slug: "a", title: "A", acf: { website: "example.com" } });
     expect(bareDomain.contact.websiteUrl).toBe("https://example.com");
