@@ -1,5 +1,5 @@
 import { isLiveApi } from "../lib/config";
-import { wpClient, customClient } from "../lib/apiClient";
+import { wpClient, customClient, getStoredUser } from "../lib/apiClient";
 import {
   mapWcProduct,
   mapWcCategory,
@@ -643,6 +643,124 @@ export async function requestBookingCashout(bookingId) {
     return { bookingId, ownerPayoutStatus: "requested" };
   }
   return customClient.post(`/bookings/${bookingId}/cashout`, {});
+}
+
+// ---------- Private listing messages ----------
+
+// A small in-memory conversation keeps the full inbox usable in Vite's local
+// demo mode. Live sites always use the authenticated WordPress endpoints.
+let localMessageThreads = [
+  {
+    id: "preview-1",
+    listingId: 1,
+    listingTitle: "Crown to Sole",
+    listingSlug: "crown-to-sole",
+    bookingId: 0,
+    otherParticipant: "Crown to Sole",
+    lastMessage: "Yes, Saturday afternoon is available. What time works for you?",
+    lastMessageAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+    unread: true,
+    messages: [
+      {
+        id: "preview-message-1",
+        body: "Hi, I would like to ask about an appointment this weekend.",
+        senderName: "You",
+        mine: true,
+        createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+      },
+      {
+        id: "preview-message-2",
+        body: "Yes, Saturday afternoon is available. What time works for you?",
+        senderName: "Crown to Sole",
+        mine: false,
+        createdAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+      },
+    ],
+  },
+];
+
+const localThreadSummary = ({ messages, ...thread }) => ({
+  ...thread,
+  lastMessage: messages.at(-1)?.body || thread.lastMessage || "",
+  lastMessageAt: messages.at(-1)?.createdAt || thread.lastMessageAt || "",
+});
+
+export async function getMessageThreads() {
+  if (!isLiveApi) return localMessageThreads.map(localThreadSummary);
+  return customClient.get("/messages/threads");
+}
+
+export async function getMessageThread(threadId) {
+  if (!isLiveApi) {
+    const thread = localMessageThreads.find((item) => String(item.id) === String(threadId));
+    if (!thread) throw new Error("Conversation not found.");
+    thread.unread = false;
+    return { ...thread, messages: [...thread.messages] };
+  }
+  return customClient.get(`/messages/threads/${threadId}`);
+}
+
+export async function startMessageThread({ listingSlug, listingTitle, bookingId = 0, message }) {
+  if (!isLiveApi) {
+    const user = getStoredUser();
+    const createdAt = new Date().toISOString();
+    const thread = {
+      id: `preview-${Date.now()}`,
+      listingId: 0,
+      listingTitle: listingTitle || "Directory listing",
+      listingSlug,
+      bookingId,
+      otherParticipant: listingTitle || "Listing owner",
+      lastMessage: message,
+      lastMessageAt: createdAt,
+      unread: false,
+      messages: [{
+        id: `preview-message-${Date.now()}`,
+        body: message,
+        senderName: user?.name || "You",
+        mine: true,
+        createdAt,
+      }],
+    };
+    localMessageThreads = [thread, ...localMessageThreads];
+    return thread;
+  }
+  return customClient.post("/messages/threads", { listingSlug, bookingId, message });
+}
+
+export async function sendMessage(threadId, message) {
+  if (!isLiveApi) {
+    const thread = localMessageThreads.find((item) => String(item.id) === String(threadId));
+    if (!thread) throw new Error("Conversation not found.");
+    const user = getStoredUser();
+    const created = {
+      id: `preview-message-${Date.now()}`,
+      body: message,
+      senderName: user?.name || "You",
+      mine: true,
+      createdAt: new Date().toISOString(),
+    };
+    thread.messages.push(created);
+    thread.lastMessage = message;
+    thread.lastMessageAt = created.createdAt;
+    thread.unread = false;
+    return created;
+  }
+  return customClient.post(`/messages/threads/${threadId}`, { message });
+}
+
+export async function markMessageThreadRead(threadId) {
+  if (!isLiveApi) {
+    const thread = localMessageThreads.find((item) => String(item.id) === String(threadId));
+    if (thread) thread.unread = false;
+    return { id: threadId, unread: false };
+  }
+  return customClient.post(`/messages/threads/${threadId}/read`, {});
+}
+
+export async function getUnreadMessageCount() {
+  if (!isLiveApi) return { count: localMessageThreads.filter((item) => item.unread).length };
+  return customClient.get("/messages/unread-count");
 }
 
 // ---------- Vendor marketplace ("Buy" cards on a Classified listing) ----------

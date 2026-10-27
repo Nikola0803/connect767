@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../hooks/useCart";
 import BrandLogo from "./BrandLogo";
+import { getUnreadMessageCount } from "../data/repository";
 
 const navItems = [
   { label: "Directory", href: "/listings" },
@@ -17,6 +18,7 @@ export default function Header() {
   const { isAuthenticated, email, logout } = useAuth();
   const { count: cartCount, setIsOpen: setCartOpen } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   // Fully transparent only at the very top of the homepage (over the hero
   // image) — it used to be transparent on "/" no matter how far you'd
   // scrolled, since this was purely path-based with no scroll tracking at
@@ -40,6 +42,23 @@ export default function Header() {
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setUnreadMessages(0);
+      return undefined;
+    }
+    let cancelled = false;
+    const refresh = () => getUnreadMessageCount()
+      .then((result) => { if (!cancelled) setUnreadMessages(Number(result?.count) || 0); })
+      .catch(() => {});
+    refresh();
+    const timer = window.setInterval(refresh, 30000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [isAuthenticated, pathname]);
 
   // Lock background scroll while the mobile menu is open.
   useEffect(() => {
@@ -122,6 +141,20 @@ export default function Header() {
           >
             <i className={`ri-heart-line text-lg ${iconBtnText}`} />
           </Link>
+          {isAuthenticated && (
+            <Link
+              to="/messages"
+              aria-label="Messages"
+              className="relative hidden sm:flex w-10 h-10 items-center justify-center rounded-lg hover:bg-background-100 cursor-pointer"
+            >
+              <i className={`ri-chat-3-line text-lg ${iconBtnText}`} />
+              {unreadMessages > 0 && (
+                <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-500 px-1 text-[9px] font-bold text-background-50">
+                  {unreadMessages > 9 ? "9+" : unreadMessages}
+                </span>
+              )}
+            </Link>
+          )}
           <button
             type="button"
             aria-label="Open cart"
@@ -166,6 +199,13 @@ export default function Header() {
                   >
                     <i className="ri-dashboard-line" />
                     Dashboard
+                  </Link>
+                  <Link
+                    to="/messages"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-foreground-700 hover:bg-background-100"
+                  >
+                    <i className="ri-chat-3-line" />
+                    Messages
                   </Link>
                   <Link
                     to="/listings/submit"
@@ -268,6 +308,13 @@ export default function Header() {
                 >
                   <i className="ri-dashboard-line" />
                   Dashboard
+                </Link>
+                <Link
+                  to="/messages"
+                  className="flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-md text-foreground-800 hover:bg-background-100 cursor-pointer"
+                >
+                  <i className="ri-chat-3-line" />
+                  Messages
                 </Link>
                 <Link
                   to="/listings/submit"
