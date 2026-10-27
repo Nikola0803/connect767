@@ -365,6 +365,17 @@ class C767_REST_Listings
         return rest_ensure_response([
             'id' => $post->ID,
             'bookingEnabled' => get_post_meta($post->ID, 'booking_enabled', true) === '1',
+            'hideContactInfo' => get_post_meta($post->ID, 'hide_contact_info', true) === '1',
+            // Owner-only contact values. Public listing REST responses redact
+            // these when hide_contact_info is enabled.
+            'phone' => (string) get_post_meta($post->ID, 'phone', true),
+            'email' => (string) get_post_meta($post->ID, 'email', true),
+            'website' => (string) get_post_meta($post->ID, 'website', true),
+            'instagram' => (string) get_post_meta($post->ID, 'instagram', true),
+            'facebook' => (string) get_post_meta($post->ID, 'facebook', true),
+            'youtube' => (string) get_post_meta($post->ID, 'youtube', true),
+            'twitter' => (string) get_post_meta($post->ID, 'twitter', true),
+            'whatsapp' => (string) get_post_meta($post->ID, 'whatsapp', true),
             'bookingType' => self::sanitize_booking_type(get_post_meta($post->ID, 'booking_type', true)),
             'bookingPriceCents' => (int) get_post_meta($post->ID, 'booking_price_cents', true),
             'bookingDurationMinutes' => (int) (get_post_meta($post->ID, 'booking_duration_minutes', true) ?: 30),
@@ -395,6 +406,12 @@ class C767_REST_Listings
         $enabled = filter_var($request->get_param('enabled'), FILTER_VALIDATE_BOOLEAN);
         $booking_type = self::sanitize_booking_type($request->get_param('bookingType'));
         $price_cents = max(0, min(10000000, (int) $request->get_param('bookingPriceCents')));
+        // Privacy is available only while this profile is actually using a
+        // paid Connect767 booking flow. A free/disabled booking cannot hide
+        // every direct way for visitors to reach the listing owner.
+        $hide_contact_info = $enabled
+            && $price_cents > 0
+            && filter_var($request->get_param('hideContactInfo'), FILTER_VALIDATE_BOOLEAN);
         $duration = max(15, min(480, (int) ($request->get_param('bookingDurationMinutes') ?: 30)));
         $meeting_url_raw = trim((string) $request->get_param('bookingMeetingUrl'));
         $meeting_url = $meeting_url_raw === '' ? '' : esc_url_raw($meeting_url_raw, ['https']);
@@ -411,6 +428,7 @@ class C767_REST_Listings
         }
 
         update_post_meta($post_id, 'booking_enabled', $enabled ? '1' : '0');
+        update_post_meta($post_id, 'hide_contact_info', $hide_contact_info ? '1' : '0');
         update_post_meta($post_id, 'booking_type', $booking_type);
         update_post_meta($post_id, 'booking_price_cents', $price_cents);
         update_post_meta($post_id, 'booking_duration_minutes', $duration);
@@ -421,6 +439,7 @@ class C767_REST_Listings
         return rest_ensure_response([
             'id' => $post_id,
             'bookingEnabled' => $enabled,
+            'hideContactInfo' => $hide_contact_info,
             'bookingType' => $booking_type,
             'bookingPriceCents' => $price_cents,
             'bookingDurationMinutes' => $duration,
