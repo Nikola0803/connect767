@@ -367,10 +367,10 @@ describe("mapListingDetail", () => {
     });
 
     expect(hidden.contactHidden).toBe(true);
-    expect(hidden.contact.email).toBe("private@example.com");
+    expect(hidden.contact.email).toBe("");
     expect(hidden.contact.phone).toBe("");
     expect(hidden.contact.website).toBe("");
-    expect(hidden.searchText).toContain("private@example.com");
+    expect(hidden.searchText).not.toContain("private@example.com");
     expect(hidden.searchText).not.toContain("555-0199");
     expect(hidden.searchText).not.toContain("private.example.com");
     expect(hidden.searchText).not.toContain("12 private road");

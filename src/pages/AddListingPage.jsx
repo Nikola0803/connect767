@@ -174,7 +174,7 @@ function buildPreviewData(form) {
     contact: hasContactInfo
       ? {
           phone: contactHidden ? "" : form.phone || "",
-          email: form.email || "",
+          email: contactHidden ? "" : form.email || "",
           website: contactHidden ? "" : form.website || "",
           websiteUrl: contactHidden
             ? ""
@@ -908,9 +908,9 @@ export default function AddListingPage() {
                               Limit public contact information
                             </span>
                             <span className="block text-xs text-foreground-600 font-label mt-1 leading-relaxed">
-                              Keep your email visible while hiding your phone, WhatsApp number, website
-                              and social media links. Customers can email you or use Connect767&apos;s
-                              secure paid booking form. Your hidden details remain saved for your account.
+                              Hide your email, phone, WhatsApp number, website and social media links.
+                              Customers can use Message Listing Owner or Connect767&apos;s secure paid
+                              booking form. Your hidden details remain saved for your account.
                             </span>
                           </span>
                         </label>

@@ -319,7 +319,7 @@ class C767_Meta_Fields
                 // authenticated /listings/{id}/booking endpoint returns the raw
                 // values to the owner so editing never erases private details.
                 if (!empty($acf['hide_contact_info'])) {
-                    foreach (['phone', 'website', 'address', 'instagram', 'facebook', 'youtube', 'twitter', 'whatsapp'] as $field) {
+                    foreach (['phone', 'email', 'website', 'address', 'instagram', 'facebook', 'youtube', 'twitter', 'whatsapp'] as $field) {
                         $acf[$field] = '';
                     }
                 }
