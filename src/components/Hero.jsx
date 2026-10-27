@@ -45,7 +45,7 @@ export default function Hero() {
       </div>
       <div className="relative z-10 w-full translate-y-12 sm:translate-y-20 md:translate-y-28 px-4 md:px-8 lg:px-12 pt-16 md:pt-20 pb-12">
         <div className="w-full max-w-7xl mx-auto text-center">
-          <h1 className="font-heading text-background-50 text-[clamp(2.05rem,4.15vw,4.05rem)] font-semibold leading-[0.98] tracking-[-0.035em]">
+          <h1 className="whitespace-nowrap font-heading text-background-50 text-[clamp(1.2rem,6.2vw,2.05rem)] sm:text-[clamp(2.05rem,4.15vw,4.05rem)] font-semibold leading-[0.98] tracking-[-0.045em] sm:tracking-[-0.035em]">
             Dominica’s <span className="italic text-accent-400">Online Directory</span>
           </h1>
           <p className="mx-auto mt-1.5 max-w-fit font-heading text-background-50 text-[clamp(0.78rem,1.1vw,1rem)] font-normal leading-tight tracking-normal">
