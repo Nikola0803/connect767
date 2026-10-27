@@ -10,6 +10,11 @@ import ShareMenu from "./ShareMenu";
 import { WriteReviewButton } from "./WriteReviewModal";
 import DefaultListingCover from "./ui/DefaultListingCover";
 
+export function listingOwnerMessagePath(data, isPreview = false) {
+  if (isPreview || !data?.slug) return "";
+  return `/messages?listing=${encodeURIComponent(data.slug)}&title=${encodeURIComponent(data.title || "")}`;
+}
+
 /**
  * The actual listing profile presentation — used by both
  * ListingDetailPage.jsx (real, fetched data) and AddListingPage.jsx's
@@ -28,6 +33,7 @@ export default function ListingProfile({ data, isPreview = false }) {
   const { isSaved, toggleSaved } = useSavedListings();
   const gallery = data.gallery.length > 0 ? data.gallery : [{ alt: data.title, src: "" }];
   const saved = !isPreview && isSaved(data.slug);
+  const messagePath = listingOwnerMessagePath(data, isPreview);
 
   const handleSave = () => {
     if (isPreview) return;
@@ -568,15 +574,15 @@ export default function ListingProfile({ data, isPreview = false }) {
                       Contact details haven't been added by this business yet.
                     </p>
                   )}
-                  {!isPreview && data.slug ? (
+                  {messagePath ? (
                     <Link
-                      to={`/messages?listing=${encodeURIComponent(data.slug)}&title=${encodeURIComponent(data.title)}`}
+                      to={messagePath}
                       className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-3 text-sm font-semibold text-background-50 transition-colors hover:bg-primary-700"
                     >
                       <i className="ri-chat-3-line" />
                       Message Listing Owner
                     </Link>
-                  ) : data.contactHidden ? (
+                  ) : (
                     <button
                       type="button"
                       disabled
@@ -586,7 +592,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                       <i className="ri-chat-3-line" />
                       Message Listing Owner
                     </button>
-                  ) : null}
+                  )}
                 </div>
 
                 {/* Sits directly under the contact card — someone who has just
