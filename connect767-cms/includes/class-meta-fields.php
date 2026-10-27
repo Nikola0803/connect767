@@ -314,10 +314,12 @@ class C767_Meta_Fields
             'get_callback' => function ($post) {
                 $acf = self::build_acf_object($post['id'], self::listing_fields());
 
-                // Contact details remain stored for the owner, but a paid-booking
-                // profile can keep them out of the public listing response. The
-                // authenticated /listings/{id}/booking endpoint returns the raw
-                // values to the owner so editing never erases private details.
+                // Email is always private because public visitors use the
+                // authenticated Message Listing Owner flow. Contact details
+                // remain stored and the owner-only booking endpoint returns the
+                // raw values so editing never erases them.
+                $acf['email'] = '';
+
                 if (!empty($acf['hide_contact_info'])) {
                     foreach (['phone', 'email', 'website', 'address', 'instagram', 'facebook', 'youtube', 'twitter', 'whatsapp'] as $field) {
                         $acf[$field] = '';

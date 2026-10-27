@@ -178,7 +178,7 @@ function buildPreviewData(form) {
     contact: hasContactInfo
       ? {
           phone: contactHidden ? "" : form.phone || "",
-          email: contactHidden ? "" : form.email || "",
+          email: "",
           website: contactHidden ? "" : form.website || "",
           websiteUrl: contactHidden
             ? ""

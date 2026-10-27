@@ -349,6 +349,19 @@ describe("mapListingDetail", () => {
     expect(withContact.contact.phone).toBe("555-1234");
   });
 
+  it("keeps listing-owner email private on every public profile", () => {
+    const mapped = mapListingDetail({
+      id: 4,
+      slug: "public-provider",
+      title: "Public Provider",
+      acf: { email: "owner@example.com", phone: "555-0100" },
+    });
+
+    expect(mapped.contact.email).toBe("");
+    expect(mapped.contact.phone).toBe("555-0100");
+    expect(mapped.searchText).not.toContain("owner@example.com");
+  });
+
   it("hides private contact details for paid-booking profiles", () => {
     const hidden = mapListingDetail({
       id: 3,
