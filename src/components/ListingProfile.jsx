@@ -414,7 +414,29 @@ export default function ListingProfile({ data, isPreview = false }) {
                   <h3 className="font-heading text-lg font-medium text-foreground-950 mb-5">
                     Contact
                   </h3>
-                  {data.contact ? (
+                  {data.contactHidden ? (
+                    <div className="rounded-xl border border-primary-200 bg-primary-50/50 p-4 text-center">
+                      <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-700">
+                        <i className="ri-shield-check-line text-lg" />
+                      </div>
+                      <p className="text-sm font-semibold text-foreground-900 font-label">
+                        Contact details are private
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-foreground-600 font-label">
+                        Phone, website and social links are hidden. You can still email this provider
+                        or use the secure booking form below.
+                      </p>
+                      {data.contact?.email && (
+                        <a
+                          className="mt-4 flex items-center justify-center gap-2 rounded-lg border border-primary-200 bg-background-50 px-3 py-2.5 text-sm font-semibold text-primary-700 hover:bg-primary-100 transition-colors"
+                          href={`mailto:${data.contact.email}`}
+                        >
+                          <i className="ri-mail-line" />
+                          <span className="truncate">{data.contact.email}</span>
+                        </a>
+                      )}
+                    </div>
+                  ) : data.contact ? (
                     <>
                       {data.contact.phone && (
                         <a
