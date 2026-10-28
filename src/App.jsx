@@ -1,8 +1,6 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-// Routes that own the entire viewport — the studio is a full-screen tool,
-// so the site header/footer/cart chrome would only be distraction there.
-const CHROMELESS_ROUTES = ["/uniforms", "/shop/customize"];
+const CHROMELESS_ROUTES = ["/uniforms", "/shop/customize", "/design-studio"];
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { CartProvider } from "./hooks/useCart";
@@ -12,11 +10,6 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import ScrollToTop from "./components/ScrollToTop";
 import RouteSeo from "./components/RouteSeo";
 
-// Keep each route in its own chunk. This prevents the 3D design studios and
-// dashboard code from slowing down the homepage on mobile connections.
-// When the homepage is the initial route, begin fetching its chunk while the
-// shell renders instead of waiting for React Router to reach <Suspense>.
-// Other routes do not download homepage code they do not need.
 const initialHomePageModule = window.location.pathname === "/" ? import("./pages/HomePage") : null;
 const HomePage = lazy(() => initialHomePageModule || import("./pages/HomePage"));
 const ShopPage = lazy(() => import("./pages/ShopPage"));
@@ -41,6 +34,7 @@ const HelpPage = lazy(() => import("./pages/HelpPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const SavedListingsPage = lazy(() => import("./pages/SavedListingsPage"));
+const AIDesignStudioPage = lazy(() => import("./pages/AIDesignStudioPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 
 function RouteLoading() {
@@ -55,9 +49,6 @@ function RouteLoading() {
 }
 
 function RouteBoundary({ children }) {
-  // Keyed by pathname so navigating to a different page always gets a
-  // fresh boundary — otherwise a caught error would keep showing the
-  // error screen even after the user tries to leave the broken page.
   const location = useLocation();
   return <ErrorBoundary key={location.pathname}>{children}</ErrorBoundary>;
 }
@@ -116,6 +107,7 @@ function App() {
                   <Route path="/help" element={<HelpPage />} />
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="/terms" element={<TermsPage />} />
+                  <Route path="/design-studio" element={<AIDesignStudioPage />} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </Suspense>
