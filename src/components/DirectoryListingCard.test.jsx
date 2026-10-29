@@ -17,6 +17,17 @@ const listing = {
 };
 
 describe("DirectoryListingCard parent category", () => {
+  it("shows only the numeric experience value beneath Yrs Exp.", () => {
+    render(
+      <MemoryRouter>
+        <DirectoryListingCard listing={{ ...listing, yearsExperience: "12" }} />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText("12")).toBeInTheDocument();
+    expect(screen.queryByText("12 years")).not.toBeInTheDocument();
+  });
+
   it("shows the parent category once and keeps industry in its dedicated field", () => {
     render(
       <MemoryRouter>
