@@ -61,6 +61,27 @@ describe("mapWcProduct", () => {
       inStock: true,
       type: "simple",
     });
+    expect(mapped.gallery).toEqual([
+      { src: "https://example.com/tee.jpg", alt: "Classic Tee" },
+    ]);
+  });
+
+  it("keeps every unique WooCommerce product-gallery image", () => {
+    const mapped = mapWcProduct({
+      id: 13,
+      name: "Gallery Tee",
+      images: [
+        { src: "https://example.com/front.jpg", alt: "Front view" },
+        { src: "https://example.com/back.jpg", alt: "Back view" },
+        { src: "https://example.com/front.jpg", alt: "Duplicate front" },
+      ],
+    });
+
+    expect(mapped.image).toBe("https://example.com/front.jpg");
+    expect(mapped.gallery).toEqual([
+      { src: "https://example.com/front.jpg", alt: "Front view" },
+      { src: "https://example.com/back.jpg", alt: "Back view" },
+    ]);
   });
 
   it("only reports an originalPrice when actually on sale", () => {

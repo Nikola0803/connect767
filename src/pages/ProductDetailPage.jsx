@@ -17,10 +17,12 @@ export default function ProductDetailPage() {
   const { addItem } = useCart();
   const [selections, setSelections] = useState({});
   const [added, setAdded] = useState(false);
+  const [selectedImage, setSelectedImage] = useState("");
 
   useEffect(() => {
     setSelections({});
     setAdded(false);
+    setSelectedImage("");
   }, [slug]);
 
   const hasVariations = Boolean(product?.attributes?.length && product?.variations?.length);
@@ -28,6 +30,27 @@ export default function ProductDetailPage() {
     () => (hasVariations ? matchVariation(product.variations, selections) : null),
     [hasVariations, product, selections]
   );
+
+  const gallery = useMemo(() => {
+    if (!product) return [];
+    const images = [
+      ...(product.gallery || []),
+      ...(product.variations || []).map((variation) => ({
+        src: variation.image,
+        alt: `${product.title} — product variation`,
+      })),
+    ];
+    if (product.image) images.unshift({ src: product.image, alt: product.title });
+    return images.filter(
+      (image, index) =>
+        image?.src && images.findIndex((candidate) => candidate?.src === image.src) === index
+    );
+  }, [product]);
+
+  useEffect(() => {
+    const nextImage = matchedVariation?.image || product?.image || gallery[0]?.src || "";
+    if (nextImage) setSelectedImage(nextImage);
+  }, [gallery, matchedVariation?.image, product?.image]);
 
   if (loading) return <Spinner className="pt-16 md:pt-20 min-h-[60vh]" />;
   if (error) {
@@ -58,7 +81,7 @@ export default function ProductDetailPage() {
     : !hasVariations
       ? product.originalPrice
       : null;
-  const displayImage = matchedVariation?.image || product.image;
+  const displayImage = selectedImage || matchedVariation?.image || product.image;
   const inStock = hasVariations ? matchedVariation?.inStock : product.inStock;
   // A variable product's PARENT is correctly non-purchasable in WooCommerce
   // (you can't buy "the shirt" without picking a size/color) - so once
@@ -110,17 +133,50 @@ export default function ProductDetailPage() {
 
       <div className="w-full px-4 md:px-8 lg:px-12 py-10">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10">
-          <div className="relative rounded-2xl overflow-hidden border border-background-200/70 aspect-square">
-            <img
-              key={displayImage}
-              src={displayImage}
-              alt={matchedVariation ? `${product.title} — selected variation` : product.title}
-              className="w-full h-full object-cover object-top transition-opacity duration-200"
-            />
-            {displayOriginalPrice && (
-              <span className="absolute top-4 left-4 px-2.5 py-1 rounded-md bg-accent-500 text-background-50 text-xs font-semibold font-label">
-                Sale
-              </span>
+          <div>
+            <div className="relative rounded-2xl overflow-hidden border border-background-200/70 aspect-square bg-background-50">
+              <img
+                key={displayImage}
+                src={displayImage}
+                alt={
+                  gallery.find((image) => image.src === displayImage)?.alt ||
+                  (matchedVariation ? `${product.title} — selected variation` : product.title)
+                }
+                className="w-full h-full object-cover object-top transition-opacity duration-200"
+              />
+              {displayOriginalPrice && (
+                <span className="absolute top-4 left-4 px-2.5 py-1 rounded-md bg-accent-500 text-background-50 text-xs font-semibold font-label">
+                  Sale
+                </span>
+              )}
+            </div>
+
+            {gallery.length > 1 && (
+              <div
+                className="grid grid-cols-4 sm:grid-cols-5 gap-2 mt-3"
+                aria-label="Product gallery"
+              >
+                {gallery.map((image, index) => (
+                  <button
+                    key={image.src}
+                    type="button"
+                    onClick={() => setSelectedImage(image.src)}
+                    aria-label={`View product image ${index + 1}`}
+                    aria-pressed={displayImage === image.src}
+                    className={`aspect-square overflow-hidden rounded-lg border-2 bg-background-50 transition-colors cursor-pointer ${
+                      displayImage === image.src
+                        ? "border-primary-500"
+                        : "border-background-200 hover:border-primary-300"
+                    }`}
+                  >
+                    <img
+                      src={image.src}
+                      alt=""
+                      className="w-full h-full object-cover object-top"
+                    />
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 

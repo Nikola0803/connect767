@@ -156,6 +156,15 @@ function correctedVariationImage(wc, variation) {
 
 /** WooCommerce `product` -> shop ProductCard view model */
 export function mapWcProduct(wc) {
+  const gallery = (wc.images || [])
+    .map((image) => ({
+      src: image?.src || "",
+      alt: decodeEntities(image?.alt || wc.name || "Product image"),
+    }))
+    .filter((image, index, images) =>
+      image.src && images.findIndex((candidate) => candidate.src === image.src) === index
+    );
+
   return {
     id: wc.id,
     slug: wc.slug,
@@ -167,7 +176,8 @@ export function mapWcProduct(wc) {
     rating: wc.average_rating || "0",
     reviews: `(${wc.rating_count ?? 0})`,
     tags: (wc.tags || []).map((t) => decodeEntities(t.name)),
-    image: wc.images?.[0]?.src || "",
+    image: gallery[0]?.src || "",
+    gallery,
     inStock: wc.stock_status ? wc.stock_status === "instock" : true,
     // Variable products (the normal WooCommerce setup for apparel — Size,
     // Color, etc.) — `attributes` drives the picker UI, `variations` is
