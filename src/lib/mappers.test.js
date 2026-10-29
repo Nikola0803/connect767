@@ -38,6 +38,7 @@ describe("mapWcProduct", () => {
       id: 12,
       slug: "classic-tee",
       name: "Classic Tee",
+      description: "<p>Soft cotton with a relaxed fit.</p>",
       categories: [{ name: "Apparel", slug: "apparel" }],
       price: "24.99",
       regular_price: "29.99",
@@ -54,6 +55,7 @@ describe("mapWcProduct", () => {
       id: 12,
       slug: "classic-tee",
       title: "Classic Tee",
+      description: "Soft cotton with a relaxed fit.",
       category: "Apparel",
       price: 24.99,
       originalPrice: 29.99,
@@ -64,6 +66,16 @@ describe("mapWcProduct", () => {
     expect(mapped.gallery).toEqual([
       { src: "https://example.com/tee.jpg", alt: "Classic Tee" },
     ]);
+  });
+
+  it("preserves paragraph breaks from WooCommerce product descriptions", () => {
+    const mapped = mapWcProduct({
+      id: 14,
+      name: "Casual Slippers",
+      description: "<p>Order one size up.</p><p>These are men's slippers.</p>",
+    });
+
+    expect(mapped.description).toBe("Order one size up.\n\nThese are men's slippers.");
   });
 
   it("keeps every unique WooCommerce product-gallery image", () => {

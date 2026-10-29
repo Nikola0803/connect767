@@ -1,5 +1,5 @@
 import { isLiveApi } from "../lib/config";
-import { wpClient, customClient, getStoredUser } from "../lib/apiClient";
+import { wpClient, customClient, wcStoreClient, getStoredUser } from "../lib/apiClient";
 import {
   mapWcProduct,
   mapWcCategory,
@@ -72,7 +72,24 @@ export async function getProducts() {
 export async function getProductBySlug(slug) {
   if (isLiveApi) {
     const wc = await customClient.get("/shop/products", { slug });
-    return wc[0] && !isHiddenShopProduct(wc[0]) ? mapWcProduct(wc[0]) : null;
+    if (!wc[0] || isHiddenShopProduct(wc[0])) return null;
+
+    const product = mapWcProduct(wc[0]);
+    if (product.description) return product;
+
+    // CMS versions before 1.4.3 omitted both WooCommerce description fields.
+    // The public Store API already exposes them, so keep existing storefronts
+    // correct during the plugin rollout rather than showing hard-coded copy.
+    try {
+      const storeProducts = await wcStoreClient.get("/products", { slug });
+      const storeProduct = storeProducts?.[0];
+      if (storeProduct) {
+        product.description = mapWcProduct(storeProduct).description;
+      }
+    } catch {
+      // Description fallback is non-critical; the product itself still loads.
+    }
+    return product;
   }
   return localProducts.find((product) => product.slug === slug && !isHiddenShopProduct(product)) || null;
 }

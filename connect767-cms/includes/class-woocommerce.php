@@ -203,6 +203,8 @@ class C767_WooCommerce
             'id' => $product->get_id(),
             'slug' => $product->get_slug(),
             'name' => $product->get_name(),
+            'description' => $product->get_description(),
+            'short_description' => $product->get_short_description(),
             'type' => $product->get_type(),
             'price' => $product->get_price(),
             'regular_price' => $product->get_regular_price(),

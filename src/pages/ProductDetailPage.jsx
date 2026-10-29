@@ -254,9 +254,20 @@ export default function ProductDetailPage() {
                 ))}
               </div>
             )}
-            <p className="text-sm text-foreground-600 leading-relaxed mb-8">
-              Made in the Connect767 shop network &mdash; {product.category?.toLowerCase()} goods
-              shipped straight from Dominica.{" "}
+            <section className="mb-6" aria-labelledby="product-description-heading">
+              <h2
+                id="product-description-heading"
+                className="font-heading text-xl text-foreground-950 mb-2"
+              >
+                Product description
+              </h2>
+              <p className="text-sm text-foreground-600 leading-relaxed whitespace-pre-line">
+                {product.description ||
+                  `Made in the Connect767 shop network — ${product.category?.toLowerCase() || "quality"} goods shipped straight from Dominica.`}
+              </p>
+            </section>
+
+            <p className="text-sm font-medium text-foreground-700 mb-8" role="status">
               {hasVariations && !allSelected
                 ? "Choose the available options to see stock and pricing."
                 : allSelected && !matchedVariation
