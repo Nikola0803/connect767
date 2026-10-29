@@ -64,7 +64,33 @@ import { blogPosts as localBlogPosts, blogCategories as localBlogCategories, get
 export async function getProducts() {
   if (isLiveApi) {
     const wc = await customClient.get("/shop/products");
-    return wc.filter((product) => !isHiddenShopProduct(product)).map(mapWcProduct);
+    let featuredIds = null;
+
+    // CMS releases before this fix did not expose WooCommerce's Featured
+    // flag. Read the public Store API as a compatibility bridge so Featured
+    // works immediately during the plugin rollout; once every custom response
+    // includes `featured`, this extra request disappears automatically.
+    if (wc.some((product) => typeof product.featured !== "boolean")) {
+      try {
+        const featuredProducts = await wcStoreClient.get("/products", {
+          featured: true,
+          per_page: 100,
+        });
+        featuredIds = new Set(featuredProducts.map((product) => Number(product.id)));
+      } catch {
+        // Products still render if the optional compatibility request fails.
+        // They simply retain the server's existing order until the CMS update.
+      }
+    }
+
+    return wc
+      .filter((product) => !isHiddenShopProduct(product))
+      .map((product) =>
+        mapWcProduct({
+          ...product,
+          featured: featuredIds ? featuredIds.has(Number(product.id)) : product.featured,
+        })
+      );
   }
   return localProducts.filter((product) => !isHiddenShopProduct(product));
 }
