@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import PromoBanner from "../components/PromoBanner";
 import ProductCard from "../components/ProductCard";
 import Studio from "../components/Studio";
 import { shopHeroImage } from "../components/ShopTeaser";
@@ -59,8 +58,6 @@ export default function ShopPage() {
 
   return (
     <div className="pt-16 md:pt-20">
-      <PromoBanner />
-
       <section className="relative overflow-hidden bg-primary-950 text-background-50">
         <div className="absolute -top-32 -right-24 w-80 h-80 rounded-full bg-primary-500/20 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-40 left-1/4 w-96 h-96 rounded-full bg-accent-500/15 blur-3xl pointer-events-none" />
