@@ -114,7 +114,7 @@ function ListingIdentity({ listing, compact = false }) {
 
 function ListingHighlights({ listing }) {
   const experience = listing.yearsExperience
-    ? `${listing.yearsExperience} ${Number(listing.yearsExperience) === 1 ? "year" : "years"}`
+    ? String(listing.yearsExperience)
     : "Not provided";
   return (
     <div className="grid grid-cols-[0.7fr_1.3fr] gap-2 mt-3 rounded-lg border border-background-200/70 bg-background-100/70 px-3 py-2.5">
