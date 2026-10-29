@@ -31,6 +31,64 @@ export function formatVariationOption(attributeName, value) {
     : text;
 }
 
+const naturalOptionCollator = new Intl.Collator(undefined, {
+  numeric: true,
+  sensitivity: "base",
+});
+
+function apparelSizeRank(value) {
+  const compact = normalizeVariationValue(value)
+    .replace(/^(?:us-)?size-/, "")
+    .replace(/-/g, "");
+  const fixedRanks = {
+    xxs: 10,
+    "2xs": 10,
+    extraextrasmall: 10,
+    xs: 20,
+    extrasmall: 20,
+    s: 30,
+    small: 30,
+    m: 40,
+    medium: 40,
+    l: 50,
+    large: 50,
+    xl: 60,
+    xlarge: 60,
+    extralarge: 60,
+  };
+  if (fixedRanks[compact] !== undefined) return fixedRanks[compact];
+
+  const numberedXl = compact.match(/^(\d+)xl$/);
+  if (numberedXl) return 50 + Number(numberedXl[1]) * 10;
+
+  const repeatedXl = compact.match(/^(x{2,})l$/);
+  if (repeatedXl) return 50 + repeatedXl[1].length * 10;
+
+  const plusSize = compact.match(/^(\d+)x$/);
+  if (plusSize) return 60 + Number(plusSize[1]) * 10;
+
+  return null;
+}
+
+/**
+ * WooCommerce can return size terms in database/term order rather than the
+ * order shoppers expect. Sort only size attributes: numeric shoe/waist sizes
+ * ascend naturally, while apparel sizes follow XXS → XS → S → M → L → XL →
+ * 2XL, etc. Color and every other attribute retain their configured order.
+ */
+export function sortVariationOptions(attributeName, options = []) {
+  if (!normalizeVariationAttributeName(attributeName).includes("size")) return options;
+
+  return [...options].sort((left, right) => {
+    const leftRank = apparelSizeRank(left);
+    const rightRank = apparelSizeRank(right);
+    if (leftRank !== null && rightRank !== null && leftRank !== rightRank) {
+      return leftRank - rightRank;
+    }
+    return naturalOptionCollator.compare(String(left), String(right));
+  });
+}
+
 export function variationMatchesSelections(variation, selections, ignoredAttribute = "") {
   const ignoredKey = normalizeVariationAttributeName(ignoredAttribute);
 
