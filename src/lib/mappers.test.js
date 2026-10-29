@@ -66,6 +66,28 @@ describe("mapWcProduct", () => {
     expect(mapped.gallery).toEqual([
       { src: "https://example.com/tee.jpg", alt: "Classic Tee" },
     ]);
+    expect(mapped.categories).toEqual([{ name: "Apparel", slug: "apparel" }]);
+  });
+
+  it("retains every assigned product category and ignores Uncategorized when real categories exist", () => {
+    const mapped = mapWcProduct({
+      id: 15,
+      name: "Biker Shorts",
+      categories: [
+        { name: "Activewear", slug: "activewear" },
+        { name: "Leggings", slug: "leggings" },
+        { name: "Shorts", slug: "shorts" },
+        { name: "Uncategorized", slug: "uncategorized" },
+      ],
+    });
+
+    expect(mapped.categories).toEqual([
+      { name: "Activewear", slug: "activewear" },
+      { name: "Leggings", slug: "leggings" },
+      { name: "Shorts", slug: "shorts" },
+    ]);
+    expect(mapped.category).toBe("Activewear");
+    expect(mapped.categorySlug).toBe("activewear");
   });
 
   it("preserves paragraph breaks from WooCommerce product descriptions", () => {

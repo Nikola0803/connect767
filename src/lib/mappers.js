@@ -165,14 +165,27 @@ export function mapWcProduct(wc) {
     .filter((image, index, images) =>
       image.src && images.findIndex((candidate) => candidate.src === image.src) === index
     );
+  const allCategories = (wc.categories || [])
+    .map((category) => ({
+      name: decodeEntities(category?.name || ""),
+      slug: category?.slug || "",
+    }))
+    .filter((category) => category.name || category.slug);
+  const assignedCategories = allCategories.filter((category) => category.slug !== "uncategorized");
+  const categories = assignedCategories.length ? assignedCategories : allCategories;
+  const primaryCategory = categories[0] || {};
 
   return {
     id: wc.id,
     slug: wc.slug,
     title: decodeEntities(wc.name),
     description: htmlToText(wc.description || wc.short_description || ""),
-    category: decodeEntities(wc.categories?.[0]?.name || ""),
-    categorySlug: wc.categories?.[0]?.slug || "",
+    // WooCommerce products can belong to several categories. Retain the
+    // complete assignment for filtering/search while keeping the first real
+    // category as the concise label shown on product cards.
+    categories,
+    category: primaryCategory.name || "",
+    categorySlug: primaryCategory.slug || "",
     price: parseFloat(wc.price || wc.regular_price || 0),
     originalPrice: wc.on_sale && wc.regular_price ? parseFloat(wc.regular_price) : null,
     rating: wc.average_rating || "0",
