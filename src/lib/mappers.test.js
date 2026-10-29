@@ -49,6 +49,9 @@ describe("mapWcProduct", () => {
       images: [{ src: "https://example.com/tee.jpg" }],
       stock_status: "instock",
       type: "simple",
+      featured: true,
+      menu_order: 4,
+      date_created: "2026-10-20T10:00:00-04:00",
     };
     const mapped = mapWcProduct(wc);
     expect(mapped).toMatchObject({
@@ -62,6 +65,9 @@ describe("mapWcProduct", () => {
       image: "https://example.com/tee.jpg",
       inStock: true,
       type: "simple",
+      featured: true,
+      menuOrder: 4,
+      dateCreated: "2026-10-20T10:00:00-04:00",
     });
     expect(mapped.gallery).toEqual([
       { src: "https://example.com/tee.jpg", alt: "Classic Tee" },

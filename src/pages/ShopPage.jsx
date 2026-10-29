@@ -9,6 +9,7 @@ import { useCart } from "../hooks/useCart";
 import { getProducts, getShopCategories } from "../data/repository";
 import { sortOptions } from "../data/shop";
 import { productMatchesCategory, productMatchesSearch } from "../lib/productCategories";
+import { sortShopProducts } from "../lib/productSorting";
 
 export default function ShopPage() {
   const [searchParams] = useSearchParams();
@@ -31,20 +32,7 @@ export default function ShopPage() {
       list = list.filter((product) => productMatchesSearch(product, search));
     }
 
-    switch (sort) {
-      case "price-low":
-        list = [...list].sort((a, b) => a.price - b.price);
-        break;
-      case "price-high":
-        list = [...list].sort((a, b) => b.price - a.price);
-        break;
-      case "rating":
-        list = [...list].sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating));
-        break;
-      default:
-        break;
-    }
-    return list;
+    return sortShopProducts(list, sort);
   }, [products, activeCategory, search, sort]);
 
   const hasActiveFilters = activeCategory !== "all" || Boolean(search.trim());

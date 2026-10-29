@@ -169,7 +169,15 @@ class C767_WooCommerce
             return rest_ensure_response(array_map([__CLASS__, 'format_product'], $products));
         }
 
-        $products = wc_get_products(['status' => 'publish', 'limit' => -1]);
+        // Preserve the manual order set in WordPress (Products > Sorting).
+        // The frontend applies the Featured-first grouping without losing this
+        // catalog order inside the featured and non-featured groups.
+        $products = wc_get_products([
+            'status' => 'publish',
+            'limit' => -1,
+            'orderby' => 'menu_order',
+            'order' => 'ASC',
+        ]);
         return rest_ensure_response(array_map([__CLASS__, 'format_product'], $products));
     }
 
@@ -209,6 +217,11 @@ class C767_WooCommerce
             'price' => $product->get_price(),
             'regular_price' => $product->get_regular_price(),
             'on_sale' => $product->is_on_sale(),
+            'featured' => $product->is_featured(),
+            'menu_order' => $product->get_menu_order(),
+            'date_created' => $product->get_date_created()
+                ? $product->get_date_created()->date(DATE_ATOM)
+                : null,
             'average_rating' => $product->get_average_rating(),
             'rating_count' => $product->get_rating_count(),
             'stock_status' => $product->get_stock_status(),
