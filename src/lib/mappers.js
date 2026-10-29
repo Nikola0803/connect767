@@ -2,6 +2,7 @@ import { createListingSearchText } from "./listingSearch";
 import { currentYearsExperience } from "./experience";
 import { findCategory, findIndustry } from "../data/industries";
 import { normalizeBookingType } from "./bookingTypes";
+import { sortVariationOptions } from "./productVariations";
 
 /**
  * Mappers between raw WordPress/WooCommerce REST API shapes and the flat
@@ -188,7 +189,10 @@ export function mapWcProduct(wc) {
     // needed."
     type: wc.type || "simple",
     purchasable: wc.purchasable !== false,
-    attributes: wc.attributes || [],
+    attributes: (wc.attributes || []).map((attribute) => ({
+      ...attribute,
+      options: sortVariationOptions(attribute.name, attribute.options || []),
+    })),
     variations: (wc.variations || []).map((v) => ({
       id: v.id,
       // Raw WC variation attribute keys look like `attribute_pa_size` (or

@@ -106,6 +106,7 @@ describe("mapWcProduct", () => {
       id: 5,
       name: "Hoodie",
       type: "variable",
+      attributes: [{ name: "Size", options: ["XL", "Small", "Medium", "Large"] }],
       variations: [
         {
           id: 501,
@@ -116,6 +117,7 @@ describe("mapWcProduct", () => {
     };
     const mapped = mapWcProduct(wc);
     expect(mapped.variations[0].attributes).toEqual({ size: "large", color: "blue" });
+    expect(mapped.attributes[0].options).toEqual(["Small", "Medium", "Large", "XL"]);
   });
 
   it.each([

@@ -5,6 +5,7 @@ import {
   matchVariation,
   normalizeVariationAttributeName,
   normalizeVariationValue,
+  sortVariationOptions,
 } from "./productVariations";
 
 describe("product variation matching", () => {
@@ -64,5 +65,27 @@ describe("product variation matching", () => {
     expect(formatVariationOption("Size", "2xl")).toBe("2XL");
     expect(formatVariationOption("Shoe Size", "US Size 7")).toBe("US SIZE 7");
     expect(formatVariationOption("Color", "Navy Blue")).toBe("Navy Blue");
+  });
+
+  it("sorts numeric shoe sizes in ascending order", () => {
+    expect(
+      sortVariationOptions("Shoe Size", [
+        "US Size 10",
+        "US Size 11",
+        "US Size 5",
+        "US Size 6",
+        "US Size 9",
+      ])
+    ).toEqual(["US Size 5", "US Size 6", "US Size 9", "US Size 10", "US Size 11"]);
+  });
+
+  it("sorts named apparel sizes from smallest to largest", () => {
+    expect(sortVariationOptions("Size", ["2XL", "Medium", "XS", "XL", "Small", "Large"]))
+      .toEqual(["XS", "Small", "Medium", "Large", "XL", "2XL"]);
+  });
+
+  it("preserves the configured order of non-size attributes", () => {
+    const colors = ["White", "Black", "Forest Green"];
+    expect(sortVariationOptions("Color", colors)).toBe(colors);
   });
 });
