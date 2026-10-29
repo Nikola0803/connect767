@@ -262,7 +262,7 @@ export function mapListingCpt(wp) {
 
   const title = stripHtml(wp.title?.rendered || wp.title || "");
   const category = decodeEntities(
-    acf.category_label || categoryTerm?.name || parentCategory?.label || ""
+    categoryTerm?.name || parentCategory?.label || acf.category_label || ""
   );
   const categorySlug = parentCategorySlug || categoryTerm?.slug || "";
   const industrySlug = industry?.slug || industryTerm?.slug || "";

@@ -11,6 +11,8 @@ export const listingDetails = {
     category: "Tour Operator · Cultural Heritage",
     categoryPath: "services",
     categoryLabel: "Services",
+    parentCategoryLabel: "Services",
+    industryLabel: "Tourism Services",
     badge: "Classified",
     badgeIcon: "ri-vip-crown-line",
     verified: true,

@@ -305,6 +305,38 @@ describe("mapListingCpt", () => {
     expect(mapped.industryLabel).toBe("Nursing & Caregiving");
   });
 
+  it("keeps the parent category distinct from a stale industry category label", () => {
+    const mapped = mapListingDetail({
+      id: 11,
+      slug: "kalinago-tours",
+      title: "Kalinago Tours",
+      acf: {
+        category_slug: "tourism-services",
+        category_label: "Tourism Services",
+      },
+      listing_category_hierarchy: [
+        {
+          taxonomy: "listing_category",
+          id: 111,
+          parent: 110,
+          slug: "tourism-services",
+          name: "Tourism Services",
+        },
+        {
+          taxonomy: "listing_category",
+          id: 110,
+          parent: 0,
+          slug: "services",
+          name: "Services",
+        },
+      ],
+    });
+
+    expect(mapped.categoryLabel).toBe("Services");
+    expect(mapped.parentCategoryLabel).toBe("Services");
+    expect(mapped.industryLabel).toBe("Tourism Services");
+  });
+
   it("advances years of experience from the year in which it was recorded", () => {
     const thisYear = new Date().getUTCFullYear();
     const mapped = mapListingCpt({
