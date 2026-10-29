@@ -9,6 +9,7 @@ import { useAsync } from "../hooks/useAsync";
 import { useCart } from "../hooks/useCart";
 import { getProducts, getShopCategories } from "../data/repository";
 import { sortOptions } from "../data/shop";
+import { productMatchesCategory, productMatchesSearch } from "../lib/productCategories";
 
 export default function ShopPage() {
   const [searchParams] = useSearchParams();
@@ -25,16 +26,10 @@ export default function ShopPage() {
     let list =
       activeCategory === "all"
         ? products
-        : products.filter((p) => p.categorySlug === activeCategory || p.category === activeCategory);
+        : products.filter((product) => productMatchesCategory(product, activeCategory));
 
     if (search) {
-      const q = search.trim().toLowerCase();
-      list = list.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.category?.toLowerCase().includes(q) ||
-          p.tags?.some((tag) => tag.toLowerCase().includes(q))
-      );
+      list = list.filter((product) => productMatchesSearch(product, search));
     }
 
     switch (sort) {
