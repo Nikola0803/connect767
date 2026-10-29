@@ -69,6 +69,13 @@ export const customClient = {
   },
 };
 
+/** Public WooCommerce Store API — read-only product compatibility fallback. */
+export const wcStoreClient = {
+  get(path, params) {
+    return request(`${config.wcStoreApiUrl}${path}${buildQuery(params)}`);
+  },
+};
+
 export function getStoredToken() {
   try {
     return localStorage.getItem("c767_auth_token");

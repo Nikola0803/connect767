@@ -39,6 +39,13 @@ export const config = {
   get customApiUrl() {
     return this.wpBaseUrl ? `${this.wpBaseUrl}/wp-json/connect767/v1` : "";
   },
+
+  // Public WooCommerce Store API. Product detail uses this only as a
+  // compatibility fallback while an older Connect767 CMS plugin response
+  // does not yet include WooCommerce's description fields.
+  get wcStoreApiUrl() {
+    return this.wpBaseUrl ? `${this.wpBaseUrl}/wp-json/wc/store/v1` : "";
+  },
 };
 
 // True once a real backend is configured; false means "use local fixtures."

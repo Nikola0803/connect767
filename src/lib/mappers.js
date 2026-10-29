@@ -169,6 +169,7 @@ export function mapWcProduct(wc) {
     id: wc.id,
     slug: wc.slug,
     title: decodeEntities(wc.name),
+    description: htmlToText(wc.description || wc.short_description || ""),
     category: decodeEntities(wc.categories?.[0]?.name || ""),
     categorySlug: wc.categories?.[0]?.slug || "",
     price: parseFloat(wc.price || wc.regular_price || 0),
