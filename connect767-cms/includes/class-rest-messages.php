@@ -202,8 +202,7 @@ class C767_REST_Messages
         if (!$recipient || !is_email($recipient->user_email)) {
             return;
         }
-        $base = defined('C767_FRONTEND_URL') && C767_FRONTEND_URL ? untrailingslashit(C767_FRONTEND_URL) : untrailingslashit(home_url());
-        $url = add_query_arg('thread', (int) $thread_id, $base . '/messages');
+        $url = add_query_arg('thread', (int) $thread_id, c767_frontend_url('/messages'));
         $subject = sprintf('New Connect767 message about %s', $listing ? $listing->post_title : 'a listing');
         $mail_body = sprintf(
             "Hi %s,\n\n%s sent you a new message about %s:\n\n%s\n\nReply securely on Connect767:\n%s",
