@@ -228,6 +228,48 @@ describe("mapWcProduct", () => {
     expect(mapped.inStock).toBe(true);
     expect(mapped.purchasable).toBe(true);
   });
+
+  it("retains inventory limits for simple products and every variation", () => {
+    const mapped = mapWcProduct({
+      id: 20,
+      name: "Biker Shorts",
+      type: "variable",
+      stock_quantity: 8,
+      backorders_allowed: false,
+      variations: [
+        {
+          id: 201,
+          attributes: { attribute_size: "L" },
+          stock_status: "instock",
+          stock_quantity: 1,
+          backorders_allowed: false,
+          purchasable: true,
+          price: "35",
+        },
+        {
+          id: 202,
+          attributes: { attribute_size: "XL" },
+          stock_status: "instock",
+          stock_quantity: 2,
+          backorders_allowed: true,
+          purchasable: true,
+          price: "35",
+        },
+      ],
+    });
+
+    expect(mapped).toMatchObject({ stockQuantity: 8, backordersAllowed: false });
+    expect(mapped.variations[0]).toMatchObject({
+      id: 201,
+      stockQuantity: 1,
+      backordersAllowed: false,
+    });
+    expect(mapped.variations[1]).toMatchObject({
+      id: 202,
+      stockQuantity: 2,
+      backordersAllowed: true,
+    });
+  });
 });
 
 describe("mapWcCategory", () => {

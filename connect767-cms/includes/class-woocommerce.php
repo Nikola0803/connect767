@@ -259,6 +259,8 @@ class C767_WooCommerce
             'average_rating' => $product->get_average_rating(),
             'rating_count' => $product->get_rating_count(),
             'stock_status' => $product->get_stock_status(),
+            'stock_quantity' => $product->get_stock_quantity(),
+            'backorders_allowed' => $product->backorders_allowed(),
             'purchasable' => $product->is_purchasable(),
             'categories' => $categories,
             'tags' => $tags,
@@ -304,6 +306,20 @@ class C767_WooCommerce
                 if (!$variation) {
                     return null;
                 }
+                // A variation may manage its own stock (the normal setup for
+                // size-specific quantities) or inherit inventory from its
+                // parent. Always expose the effective stock owner so the
+                // storefront can prevent the cart from exceeding what
+                // WooCommerce will accept at checkout.
+                $stock_owner_id = method_exists($variation, 'get_stock_managed_by_id')
+                    ? (int) $variation->get_stock_managed_by_id()
+                    : (int) $variation->get_id();
+                $stock_owner = $stock_owner_id === (int) $variation->get_id()
+                    ? $variation
+                    : wc_get_product($stock_owner_id);
+                if (!$stock_owner) {
+                    $stock_owner = $variation;
+                }
                 // `get_image_id()` in view context inherits the parent product's
                 // thumbnail when the variation itself has no image. That made
                 // every color report the exact same URL. Prefer a genuinely
@@ -326,6 +342,8 @@ class C767_WooCommerce
                     'regular_price' => $variation->get_regular_price(),
                     'on_sale' => $variation->is_on_sale(),
                     'stock_status' => $variation->get_stock_status(),
+                    'stock_quantity' => $stock_owner->get_stock_quantity(),
+                    'backorders_allowed' => $stock_owner->backorders_allowed(),
                     'purchasable' => $variation->is_purchasable(),
                     'image' => $variation_image_id ? wp_get_attachment_url($variation_image_id) : null,
                 ];
@@ -526,6 +544,11 @@ class C767_WooCommerce
             if ($variation_id) {
                 $variation = wc_get_product($variation_id);
                 if ($variation && $variation->is_type('variation') && $variation->is_purchasable()) {
+                    $stock_check = self::validate_requested_stock($variation, $qty);
+                    if (is_wp_error($stock_check)) {
+                        $order->delete(true);
+                        return $stock_check;
+                    }
                     $order->add_product($variation, $qty);
                     continue;
                 }
@@ -534,6 +557,11 @@ class C767_WooCommerce
             $product_id = self::product_id_from_slug($slug);
             $product = $product_id ? wc_get_product($product_id) : null;
             if ($product && $product->is_purchasable()) {
+                $stock_check = self::validate_requested_stock($product, $qty);
+                if (is_wp_error($stock_check)) {
+                    $order->delete(true);
+                    return $stock_check;
+                }
                 $order->add_product($product, $qty);
             }
         }
@@ -568,6 +596,34 @@ class C767_WooCommerce
         $order->save();
 
         return $order;
+    }
+
+    /**
+     * Recheck stock on the server immediately before creating an order.
+     * The storefront warning is helpful feedback, but checkout must remain
+     * authoritative when inventory changes in another session or a request
+     * is submitted without using the storefront UI.
+     */
+    private static function validate_requested_stock($product, $quantity)
+    {
+        if (!$product->is_in_stock()) {
+            return new WP_Error(
+                'c767_out_of_stock',
+                sprintf('%s is currently out of stock.', $product->get_name()),
+                ['status' => 409]
+            );
+        }
+
+        if (!$product->has_enough_stock($quantity)) {
+            $available = $product->get_stock_quantity();
+            $message = is_numeric($available)
+                ? sprintf('Only %d of %s are currently available.', max(0, (int) $available), $product->get_name())
+                : sprintf('%s is not available in the requested quantity.', $product->get_name());
+
+            return new WP_Error('c767_insufficient_stock', $message, ['status' => 409]);
+        }
+
+        return true;
     }
 
     private static function sanitize_shipping_address(array $shipping)
