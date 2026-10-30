@@ -69,7 +69,7 @@ describe("mapWcProduct", () => {
       menuOrder: 4,
       dateCreated: "2026-10-20T10:00:00-04:00",
     });
-    expect(mapped.gallery).toEqual([
+    expect(mapped.gallery).toMatchObject([
       { src: "https://example.com/tee.jpg", alt: "Classic Tee" },
     ]);
     expect(mapped.categories).toEqual([{ name: "Apparel", slug: "apparel" }]);
@@ -106,6 +106,40 @@ describe("mapWcProduct", () => {
     expect(mapped.description).toBe("Order one size up.\n\nThese are men's slippers.");
   });
 
+  it("separates a textual WooCommerce size guide from the product description", () => {
+    const mapped = mapWcProduct({
+      id: 18,
+      name: "Classic Hoodie",
+      description:
+        "<p>Soft fleece hoodie.</p><h3>Size guide</h3><table><tr><th>Size</th><th>S</th><th>M</th></tr><tr><td>Chest (inches)</td><td>34</td><td>38</td></tr></table>",
+    });
+
+    expect(mapped.description).toBe("Soft fleece hoodie.");
+    expect(mapped.sizeGuideText).toContain("Size guide");
+    expect(mapped.sizeGuideText).toContain("Chest (inches)\t34\t38");
+  });
+
+  it("maps an image-based size chart separately from the product gallery", () => {
+    const mapped = mapWcProduct({
+      id: 19,
+      name: "Training Top",
+      images: [
+        { src: "top.jpg" },
+        { src: "chart.jpg", alt: "Measurements", width: 600, height: 200, is_size_chart: true },
+      ],
+      size_chart: {
+        src: "chart.jpg",
+        alt: "Measurements",
+        width: 600,
+        height: 200,
+        is_size_chart: true,
+      },
+    });
+
+    expect(mapped.sizeChart).toMatchObject({ src: "chart.jpg", isSizeChart: true });
+    expect(mapped.gallery[1]).toMatchObject({ src: "chart.jpg", width: 600, height: 200 });
+  });
+
   it("keeps every unique WooCommerce product-gallery image", () => {
     const mapped = mapWcProduct({
       id: 13,
@@ -118,7 +152,7 @@ describe("mapWcProduct", () => {
     });
 
     expect(mapped.image).toBe("https://example.com/front.jpg");
-    expect(mapped.gallery).toEqual([
+    expect(mapped.gallery).toMatchObject([
       { src: "https://example.com/front.jpg", alt: "Front view" },
       { src: "https://example.com/back.jpg", alt: "Back view" },
     ]);
