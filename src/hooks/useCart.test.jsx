@@ -75,6 +75,26 @@ describe("useCart", () => {
     expect(result.current.stockNotice).toBeNull();
   });
 
+  it("uses the selected variation's stock limit instead of the parent product total", () => {
+    const variableProduct = { ...product, stockQuantity: 10, backordersAllowed: false };
+    const limitedLarge = {
+      ...variation,
+      stockQuantity: 1,
+      backordersAllowed: false,
+    };
+    const { result } = renderHook(() => useCart(), { wrapper });
+
+    act(() => result.current.addItem(variableProduct, limitedLarge, 1));
+    let wasAdded;
+    act(() => {
+      wasAdded = result.current.addItem(variableProduct, limitedLarge, 1);
+    });
+
+    expect(wasAdded).toBe(false);
+    expect(result.current.items[0]).toMatchObject({ variationId: 501, qty: 1 });
+    expect(result.current.stockNotice).toMatchObject({ available: 1, inCart: 1 });
+  });
+
   it("tracks the same product with different variations as separate line items", () => {
     const { result } = renderHook(() => useCart(), { wrapper });
     act(() => result.current.addItem(product, null, 1));
