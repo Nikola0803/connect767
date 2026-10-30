@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
 
 export default function CartDrawer() {
-  const { items, isOpen, setIsOpen, removeItem } = useCart();
+  const { items, isOpen, setIsOpen, removeItem, stockNotice, clearStockNotice } = useCart();
   const navigate = useNavigate();
   const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
 
@@ -39,6 +39,31 @@ export default function CartDrawer() {
               <i className="ri-close-line text-lg" />
             </button>
           </div>
+
+          {stockNotice && (
+            <div
+              role="alert"
+              className="mx-5 mt-4 flex gap-3 rounded-xl border border-accent-200 bg-accent-50 p-4 text-accent-950"
+            >
+              <i className="ri-information-line mt-0.5 text-lg text-accent-600" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">Only {stockNotice.available} available</p>
+                <p className="mt-1 text-xs leading-relaxed text-accent-800">
+                  {stockNotice.inCart > 0
+                    ? `${stockNotice.inCart} ${stockNotice.inCart === 1 ? "item is" : "items are"} already in your cart. You can’t add more ${stockNotice.title} than the available stock.`
+                    : `${stockNotice.title} is currently unavailable in the quantity requested.`}
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Dismiss stock notice"
+                onClick={clearStockNotice}
+                className="h-7 w-7 flex-shrink-0 rounded-full text-accent-700 hover:bg-accent-100 cursor-pointer"
+              >
+                <i className="ri-close-line" />
+              </button>
+            </div>
+          )}
 
           {items.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center px-5 text-center">
