@@ -236,6 +236,11 @@ export function mapWcProduct(wc) {
     image: gallery[0]?.src || "",
     gallery,
     inStock: wc.stock_status ? wc.stock_status === "instock" : true,
+    stockQuantity:
+      wc.stock_quantity === null || wc.stock_quantity === undefined
+        ? null
+        : Math.max(0, Number(wc.stock_quantity) || 0),
+    backordersAllowed: Boolean(wc.backorders_allowed),
     // Variable products (the normal WooCommerce setup for apparel — Size,
     // Color, etc.) — `attributes` drives the picker UI, `variations` is
     // matched against the current picks to find price/stock/image/id for
@@ -266,6 +271,11 @@ export function mapWcProduct(wc) {
       regularPrice: v.regular_price ? parseFloat(v.regular_price) : null,
       onSale: Boolean(v.on_sale),
       inStock: v.stock_status ? v.stock_status === "instock" : true,
+      stockQuantity:
+        v.stock_quantity === null || v.stock_quantity === undefined
+          ? null
+          : Math.max(0, Number(v.stock_quantity) || 0),
+      backordersAllowed: Boolean(v.backorders_allowed),
       purchasable: v.purchasable !== false,
       image: correctedVariationImage(wc, v),
     })),
