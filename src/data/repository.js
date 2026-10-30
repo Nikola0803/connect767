@@ -722,9 +722,11 @@ let localMessageThreads = [
   },
 ];
 
+const localMessageSummary = (message) => message?.body || (message?.attachments?.length ? "Sent an attachment" : "");
+
 const localThreadSummary = ({ messages, ...thread }) => ({
   ...thread,
-  lastMessage: messages.at(-1)?.body || thread.lastMessage || "",
+  lastMessage: localMessageSummary(messages.at(-1)) || thread.lastMessage || "",
   lastMessageAt: messages.at(-1)?.createdAt || thread.lastMessageAt || "",
 });
 
@@ -743,10 +745,28 @@ export async function getMessageThread(threadId) {
   return customClient.get(`/messages/threads/${threadId}`);
 }
 
-export async function startMessageThread({ listingSlug, listingTitle, bookingId = 0, message }) {
+const localAttachment = (file, index) => ({
+  id: `preview-attachment-${Date.now()}-${index}`,
+  name: file.name,
+  url: URL.createObjectURL(file),
+  mimeType: file.type || "application/octet-stream",
+  size: file.size,
+  isImage: file.type.startsWith("image/"),
+});
+
+const messageFormData = (message, attachments = [], extra = {}) => {
+  const form = new FormData();
+  form.append("message", message);
+  Object.entries(extra).forEach(([key, value]) => form.append(key, String(value)));
+  attachments.forEach((file) => form.append("attachments[]", file));
+  return form;
+};
+
+export async function startMessageThread({ listingSlug, listingTitle, bookingId = 0, message, attachments = [] }) {
   if (!isLiveApi) {
     const user = getStoredUser();
     const createdAt = new Date().toISOString();
+    const previewAttachments = attachments.map(localAttachment);
     const thread = {
       id: `preview-${Date.now()}`,
       listingId: 0,
@@ -760,6 +780,7 @@ export async function startMessageThread({ listingSlug, listingTitle, bookingId 
       messages: [{
         id: `preview-message-${Date.now()}`,
         body: message,
+        attachments: previewAttachments,
         senderName: user?.name || "You",
         mine: true,
         createdAt,
@@ -768,10 +789,13 @@ export async function startMessageThread({ listingSlug, listingTitle, bookingId 
     localMessageThreads = [thread, ...localMessageThreads];
     return thread;
   }
+  if (attachments.length) {
+    return customClient.post("/messages/threads", messageFormData(message, attachments, { listingSlug, bookingId }));
+  }
   return customClient.post("/messages/threads", { listingSlug, bookingId, message });
 }
 
-export async function sendMessage(threadId, message) {
+export async function sendMessage(threadId, message, attachments = []) {
   if (!isLiveApi) {
     const thread = localMessageThreads.find((item) => String(item.id) === String(threadId));
     if (!thread) throw new Error("Conversation not found.");
@@ -779,15 +803,19 @@ export async function sendMessage(threadId, message) {
     const created = {
       id: `preview-message-${Date.now()}`,
       body: message,
+      attachments: attachments.map(localAttachment),
       senderName: user?.name || "You",
       mine: true,
       createdAt: new Date().toISOString(),
     };
     thread.messages.push(created);
-    thread.lastMessage = message;
+    thread.lastMessage = localMessageSummary(created);
     thread.lastMessageAt = created.createdAt;
     thread.unread = false;
     return created;
+  }
+  if (attachments.length) {
+    return customClient.post(`/messages/threads/${threadId}`, messageFormData(message, attachments));
   }
   return customClient.post(`/messages/threads/${threadId}`, { message });
 }
