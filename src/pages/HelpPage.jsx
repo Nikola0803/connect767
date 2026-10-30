@@ -41,7 +41,7 @@ const sections = [
   },
   {
     icon: "ri-arrow-go-back-line",
-    title: "Returns & Exchange",
+    title: "Returns, Exchanges & Refunds",
     body: "We accept returns on eligible domestic orders that are received within 15 days from the day the order was placed. All returns must be unwashed and unworn and include all original packaging. Connect767 reserves the right to deny credit for any returned goods that don't meet the requirements of our return policy — please treat our pieces with lots of TLC! Original shipping charges are non-refundable and the buyer must pay return shipping costs. Once we've received the item(s), we'll process your refund or store credit within 5–7 business days and email you to let you know.",
   },
   {
