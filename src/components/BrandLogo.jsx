@@ -27,6 +27,8 @@ export default function BrandLogo({
             WebkitMaskSize: "contain",
             maskSize: "contain",
             filter: markFilter,
+            transform: "translateY(-1px) scale(1.14)",
+            transformOrigin: "center",
           }}
         />
       </span>
@@ -36,7 +38,7 @@ export default function BrandLogo({
           compactOnNarrow ? "hidden min-[350px]:inline-flex" : "inline-flex"
         } -ml-0.5 items-baseline font-label ${textSize} font-extrabold leading-none tracking-[-0.055em]`}
       >
-        <span>onnect</span>
+        <span>ONNECT</span>
         <span className="ml-0.5 text-accent-500 tracking-[-0.035em]">767</span>
       </span>
     </span>
