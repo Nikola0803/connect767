@@ -45,6 +45,36 @@ describe("useCart", () => {
     expect(result.current.count).toBe(3);
   });
 
+  it("blocks quantities above available stock and shows a stock notice", () => {
+    const limitedProduct = { ...product, stockQuantity: 2, backordersAllowed: false };
+    const { result } = renderHook(() => useCart(), { wrapper });
+
+    act(() => result.current.addItem(limitedProduct, null, 2));
+    let wasAdded;
+    act(() => {
+      wasAdded = result.current.addItem(limitedProduct, null, 1);
+    });
+
+    expect(wasAdded).toBe(false);
+    expect(result.current.items[0].qty).toBe(2);
+    expect(result.current.stockNotice).toMatchObject({
+      title: "Classic Tee",
+      available: 2,
+      inCart: 2,
+    });
+    expect(result.current.isOpen).toBe(true);
+  });
+
+  it("allows quantities above stock when backorders are enabled", () => {
+    const backorderProduct = { ...product, stockQuantity: 1, backordersAllowed: true };
+    const { result } = renderHook(() => useCart(), { wrapper });
+
+    act(() => result.current.addItem(backorderProduct, null, 2));
+
+    expect(result.current.items[0].qty).toBe(2);
+    expect(result.current.stockNotice).toBeNull();
+  });
+
   it("tracks the same product with different variations as separate line items", () => {
     const { result } = renderHook(() => useCart(), { wrapper });
     act(() => result.current.addItem(product, null, 1));
