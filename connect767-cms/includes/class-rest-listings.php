@@ -406,12 +406,12 @@ class C767_REST_Listings
         $enabled = filter_var($request->get_param('enabled'), FILTER_VALIDATE_BOOLEAN);
         $booking_type = self::sanitize_booking_type($request->get_param('bookingType'));
         $price_cents = max(0, min(10000000, (int) $request->get_param('bookingPriceCents')));
-        // Privacy is available only while this profile is actually using a
-        // paid Connect767 booking flow. A free/disabled booking cannot hide
-        // every direct way for visitors to reach the listing owner.
-        $hide_contact_info = $enabled
-            && $price_cents > 0
-            && filter_var($request->get_param('hideContactInfo'), FILTER_VALIDATE_BOOLEAN);
+        // Paid booking profiles keep customers inside Connect767's secure
+        // messaging and booking flows. Contact details remain stored for the
+        // owner but are always hidden from the public profile while paid
+        // bookings are active. Free/disabled bookings keep contact details
+        // visible.
+        $hide_contact_info = $enabled && $price_cents > 0;
         $duration = max(15, min(480, (int) ($request->get_param('bookingDurationMinutes') ?: 30)));
         $meeting_url_raw = trim((string) $request->get_param('bookingMeetingUrl'));
         $meeting_url = $meeting_url_raw === '' ? '' : esc_url_raw($meeting_url_raw, ['https']);
