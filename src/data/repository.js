@@ -555,7 +555,7 @@ async function saveBookingSettings(listingId, form) {
   const dollars = Number(form.bookingPrice || 0);
   return customClient.post(`/listings/${listingId}/booking`, {
     enabled: form.bookingEnabled ? 1 : 0,
-    hideContactInfo: form.hideContactInfo ? 1 : 0,
+    hideContactInfo: form.bookingEnabled && dollars > 0 ? 1 : 0,
     bookingType: normalizeBookingType(form.bookingType),
     bookingPriceCents: Number.isFinite(dollars) ? Math.max(0, Math.round(dollars * 100)) : 0,
     bookingDurationMinutes: Number(form.bookingDurationMinutes) || 30,
