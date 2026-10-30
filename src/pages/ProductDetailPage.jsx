@@ -128,11 +128,19 @@ export default function ProductDetailPage() {
         .filter(Boolean)
         .join(" / ")
       : "";
-    addItem(
-      { slug: product.slug, title: product.title, image: displayImage, price: displayPrice },
+    const wasAdded = addItem(
+      {
+        slug: product.slug,
+        title: product.title,
+        image: displayImage,
+        price: displayPrice,
+        stockQuantity: product.stockQuantity,
+        backordersAllowed: product.backordersAllowed,
+      },
       matchedVariation ? { ...matchedVariation, label: variationLabel } : null,
       1
     );
+    if (!wasAdded) return;
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
@@ -331,7 +339,7 @@ export default function ProductDetailPage() {
             <p className="text-sm font-medium text-foreground-700 mb-8" role="status">
               {hasVariations && !allSelected
                 ? "Choose the available options to see stock and pricing."
-                : allSelected && !matchedVariation
+                : allSelected && hasVariations && !matchedVariation
                   ? "That combination is unavailable. Please choose another option."
                   : inStock === false
                     ? "Currently out of stock."
