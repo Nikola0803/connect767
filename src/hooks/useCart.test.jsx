@@ -104,6 +104,87 @@ describe("useCart", () => {
     expect(result.current.items[1]).toMatchObject({ variationId: 501, price: 22 });
   });
 
+  it("changes quantity in the cart without exceeding variation stock", () => {
+    const limitedVariation = {
+      ...variation,
+      stockQuantity: 2,
+      backordersAllowed: false,
+    };
+    const { result } = renderHook(() => useCart(), { wrapper });
+    act(() => result.current.addItem(product, limitedVariation, 1));
+    const key = result.current.items[0].key;
+
+    act(() => result.current.updateQuantity(key, 2));
+    expect(result.current.items[0].qty).toBe(2);
+
+    let wasUpdated;
+    act(() => {
+      wasUpdated = result.current.updateQuantity(key, 3);
+    });
+    expect(wasUpdated).toBe(false);
+    expect(result.current.items[0].qty).toBe(2);
+    expect(result.current.stockNotice).toMatchObject({ available: 2, inCart: 2 });
+  });
+
+  it("changes size in the cart and updates its variation details", () => {
+    const large = { ...variation, label: "L", stockQuantity: 1, backordersAllowed: false };
+    const medium = {
+      id: 502,
+      label: "M",
+      price: 21,
+      image: "tee-medium.jpg",
+      stockQuantity: 4,
+      backordersAllowed: false,
+      inStock: true,
+      purchasable: true,
+    };
+    const variableProduct = {
+      ...product,
+      variationName: "Size",
+      variationOptions: [large, medium],
+    };
+    const { result } = renderHook(() => useCart(), { wrapper });
+    act(() => result.current.addItem(variableProduct, large, 1));
+    const largeKey = result.current.items[0].key;
+
+    act(() => result.current.changeVariation(largeKey, 502));
+
+    expect(result.current.items).toHaveLength(1);
+    expect(result.current.items[0]).toMatchObject({
+      key: "classic-tee::502",
+      variationId: 502,
+      variationLabel: "M",
+      image: "tee-medium.jpg",
+      price: 21,
+      stockQuantity: 4,
+      qty: 1,
+    });
+  });
+
+  it("merges cart lines when changing to a size already in the cart", () => {
+    const large = { ...variation, label: "L", stockQuantity: 3, backordersAllowed: false };
+    const medium = {
+      ...variation,
+      id: 502,
+      label: "M",
+      stockQuantity: 3,
+      backordersAllowed: false,
+    };
+    const variableProduct = {
+      ...product,
+      variationName: "Size",
+      variationOptions: [large, medium],
+    };
+    const { result } = renderHook(() => useCart(), { wrapper });
+    act(() => result.current.addItem(variableProduct, large, 1));
+    act(() => result.current.addItem(variableProduct, medium, 1));
+
+    act(() => result.current.changeVariation("classic-tee::501", 502));
+
+    expect(result.current.items).toHaveLength(1);
+    expect(result.current.items[0]).toMatchObject({ variationId: 502, qty: 2 });
+  });
+
   it("removes a line item by key", () => {
     const { result } = renderHook(() => useCart(), { wrapper });
     act(() => result.current.addItem(product, null, 1));

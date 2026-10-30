@@ -9,6 +9,7 @@ import {
   formatVariationOption,
   isVariationOptionAvailable,
   matchVariation,
+  normalizeVariationAttributeName,
 } from "../lib/productVariations";
 import { detectLegacySizeChart, explicitSizeChart } from "../lib/productSizeGuide";
 
@@ -136,6 +137,20 @@ export default function ProductDetailPage() {
         price: displayPrice,
         stockQuantity: product.stockQuantity,
         backordersAllowed: product.backordersAllowed,
+        variationName: (product.attributes || []).map((attribute) => attribute.name).join(" / "),
+        variationOptions: (product.variations || []).map((variation) => ({
+          ...variation,
+          label: product.attributes
+            .map((attribute) => {
+              const attributeKey = normalizeVariationAttributeName(attribute.name);
+              const value = Object.entries(variation.attributes || {}).find(
+                ([name]) => normalizeVariationAttributeName(name) === attributeKey
+              )?.[1];
+              return value ? formatVariationOption(attribute.name, value) : "";
+            })
+            .filter(Boolean)
+            .join(" / "),
+        })),
       },
       matchedVariation ? { ...matchedVariation, label: variationLabel } : null,
       1
