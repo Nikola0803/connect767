@@ -10,6 +10,7 @@ import {
   isVariationOptionAvailable,
   matchVariation,
 } from "../lib/productVariations";
+import { detectLegacySizeChart, explicitSizeChart } from "../lib/productSizeGuide";
 
 export default function ProductDetailPage() {
   const { slug } = useParams();
@@ -18,12 +19,33 @@ export default function ProductDetailPage() {
   const [selections, setSelections] = useState({});
   const [added, setAdded] = useState(false);
   const [selectedImage, setSelectedImage] = useState("");
+  const [detectedSizeChart, setDetectedSizeChart] = useState(null);
 
   useEffect(() => {
     setSelections({});
     setAdded(false);
     setSelectedImage("");
+    setDetectedSizeChart(null);
   }, [slug]);
+
+  useEffect(() => {
+    if (!product) return undefined;
+    let cancelled = false;
+    const knownChart = product.sizeChart || explicitSizeChart(product.gallery);
+    if (knownChart) {
+      setDetectedSizeChart(knownChart);
+      return undefined;
+    }
+
+    detectLegacySizeChart(product.gallery, product.description).then((chart) => {
+      if (!cancelled) setDetectedSizeChart(chart);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [product]);
+
+  const sizeChart = product?.sizeChart || detectedSizeChart;
 
   const hasVariations = Boolean(product?.attributes?.length && product?.variations?.length);
   const matchedVariation = useMemo(
@@ -34,7 +56,7 @@ export default function ProductDetailPage() {
   const gallery = useMemo(() => {
     if (!product) return [];
     const images = [
-      ...(product.gallery || []),
+      ...(product.gallery || []).filter((image) => image.src !== sizeChart?.src),
       ...(product.variations || []).map((variation) => ({
         src: variation.image,
         alt: `${product.title} — product variation`,
@@ -45,7 +67,7 @@ export default function ProductDetailPage() {
       (image, index) =>
         image?.src && images.findIndex((candidate) => candidate?.src === image.src) === index
     );
-  }, [product]);
+  }, [product, sizeChart?.src]);
 
   useEffect(() => {
     const nextImage = matchedVariation?.image || product?.image || gallery[0]?.src || "";
@@ -253,6 +275,45 @@ export default function ProductDetailPage() {
                   </span>
                 ))}
               </div>
+            )}
+            {(sizeChart || product.sizeGuideText) && (
+              <section
+                className="mb-6 border-y border-background-200 py-5"
+                aria-labelledby="product-size-guide-heading"
+              >
+                <div className="mb-3 flex items-center justify-between gap-4">
+                  <h2
+                    id="product-size-guide-heading"
+                    className="font-heading text-xl text-foreground-950"
+                  >
+                    Size guide
+                  </h2>
+                  {sizeChart?.src && (
+                    <a
+                      href={sizeChart.src}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs font-semibold text-primary-700 hover:text-primary-900"
+                    >
+                      Open full size <i className="ri-external-link-line" />
+                    </a>
+                  )}
+                </div>
+                {sizeChart?.src && (
+                  <div className="overflow-hidden rounded-xl border border-background-200 bg-white p-3">
+                    <img
+                      src={sizeChart.src}
+                      alt={sizeChart.alt || `${product.title} size guide`}
+                      className="mx-auto max-h-[32rem] w-full object-contain"
+                    />
+                  </div>
+                )}
+                {product.sizeGuideText && (
+                  <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-xl bg-background-100 p-4 font-label text-xs leading-relaxed text-foreground-700">
+                    {product.sizeGuideText}
+                  </pre>
+                )}
+              </section>
             )}
             <section className="mb-6" aria-labelledby="product-description-heading">
               <h2

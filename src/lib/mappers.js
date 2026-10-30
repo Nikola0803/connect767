@@ -39,6 +39,9 @@ function stripHtml(html = "") {
 function htmlToText(html = "") {
   const withBreaks = String(html)
     .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(th|td)>/gi, "\t")
+    .replace(/<\/tr>/gi, "\n")
+    .replace(/<\/table>/gi, "\n\n")
     .replace(/<\/(p|div|li|h[1-6]|blockquote)>/gi, "\n\n")
     .replace(/<li[^>]*>/gi, "• ")
     .replace(/<[^>]*>/g, "");
@@ -155,12 +158,34 @@ function correctedVariationImage(wc, variation) {
   );
 }
 
+function splitProductSizeGuide(description) {
+  const marker = /\bsize\s+(?:chart|guide)\b/i.exec(description);
+  if (!marker) return { description, sizeGuideText: "" };
+
+  const candidate = description.slice(marker.index).trim();
+  const hasMeasurements = /\b(length|width|chest|waist|hip|height|inches|centimeters|cm)\b/i.test(candidate);
+  const numericValues = (candidate.match(/\d+(?:[¼½¾⅛⅜⅝⅞])?/g) || []).length;
+  const hasStructuredValues = numericValues >= 2 && (/\t/.test(candidate) || /\b(XS|S|M|L|XL|\dXL)\b/i.test(candidate));
+  if (!hasMeasurements || !hasStructuredValues) {
+    return { description, sizeGuideText: "" };
+  }
+
+  return {
+    description: description.slice(0, marker.index).trim(),
+    sizeGuideText: candidate,
+  };
+}
+
 /** WooCommerce `product` -> shop ProductCard view model */
 export function mapWcProduct(wc) {
   const gallery = (wc.images || [])
     .map((image) => ({
       src: image?.src || "",
       alt: decodeEntities(image?.alt || wc.name || "Product image"),
+      name: decodeEntities(image?.name || ""),
+      width: Number(image?.width) || 0,
+      height: Number(image?.height) || 0,
+      isSizeChart: Boolean(image?.is_size_chart),
     }))
     .filter((image, index, images) =>
       image.src && images.findIndex((candidate) => candidate.src === image.src) === index
@@ -174,12 +199,26 @@ export function mapWcProduct(wc) {
   const assignedCategories = allCategories.filter((category) => category.slug !== "uncategorized");
   const categories = assignedCategories.length ? assignedCategories : allCategories;
   const primaryCategory = categories[0] || {};
+  const rawDescription = htmlToText(wc.description || wc.short_description || "");
+  const descriptionParts = splitProductSizeGuide(rawDescription);
+  const mappedSizeChart = wc.size_chart
+    ? {
+        src: wc.size_chart.src || "",
+        alt: decodeEntities(wc.size_chart.alt || `${wc.name || "Product"} size guide`),
+        name: decodeEntities(wc.size_chart.name || "Size guide"),
+        width: Number(wc.size_chart.width) || 0,
+        height: Number(wc.size_chart.height) || 0,
+        isSizeChart: true,
+      }
+    : gallery.find((image) => image.isSizeChart) || null;
 
   return {
     id: wc.id,
     slug: wc.slug,
     title: decodeEntities(wc.name),
-    description: htmlToText(wc.description || wc.short_description || ""),
+    description: descriptionParts.description,
+    sizeGuideText: descriptionParts.sizeGuideText,
+    sizeChart: mappedSizeChart,
     // WooCommerce products can belong to several categories. Retain the
     // complete assignment for filtering/search while keeping the first real
     // category as the concise label shown on product cards.
