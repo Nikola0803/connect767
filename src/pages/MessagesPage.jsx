@@ -14,6 +14,39 @@ const relativeTime = (value) => {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 };
 
+const MAX_ATTACHMENTS = 5;
+const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
+const MESSAGE_EMOJIS = ["😀", "😊", "😂", "❤️", "👍", "👏", "🙏", "🎉", "✨", "📌", "📎", "✅"];
+const ACCEPTED_ATTACHMENTS = ".jpg,.jpeg,.png,.webp,.gif,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt";
+
+const formatFileSize = (bytes = 0) => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+function MessageAttachments({ attachments = [], mine = false }) {
+  if (!attachments.length) return null;
+  return (
+    <div className={`mt-2 grid gap-2 ${attachments.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+      {attachments.map((attachment) => (
+        attachment.isImage ? (
+          <a key={attachment.id || attachment.url} href={attachment.url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-xl border border-white/20 bg-black/5">
+            <img src={attachment.url} alt={attachment.name || "Message attachment"} className="max-h-56 w-full object-cover" />
+            <span className={`block truncate px-2.5 py-2 text-[10px] ${mine ? "text-background-50/80" : "text-foreground-600"}`}>{attachment.name}</span>
+          </a>
+        ) : (
+          <a key={attachment.id || attachment.url} href={attachment.url} target="_blank" rel="noreferrer" className={`flex min-w-0 items-center gap-2 rounded-xl border px-3 py-2.5 ${mine ? "border-white/20 bg-white/10 text-background-50" : "border-background-200 bg-background-100 text-foreground-800"}`}>
+            <i className="ri-file-line text-lg" />
+            <span className="min-w-0"><span className="block truncate text-xs font-semibold">{attachment.name}</span><span className={`block text-[10px] ${mine ? "text-background-50/70" : "text-foreground-400"}`}>{formatFileSize(attachment.size)}</span></span>
+            <i className="ri-download-2-line ml-auto flex-shrink-0" />
+          </a>
+        )
+      ))}
+    </div>
+  );
+}
+
 export default function MessagesPage() {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
@@ -26,9 +59,13 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true);
   const [threadLoading, setThreadLoading] = useState(false);
   const [draft, setDraft] = useState("");
+  const [attachments, setAttachments] = useState([]);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
   const endRef = useRef(null);
+  const attachmentInputRef = useRef(null);
+  const draftRef = useRef(null);
 
   const loadThreads = useCallback(async () => {
     try {
@@ -83,25 +120,52 @@ export default function MessagesPage() {
   const submit = async (event) => {
     event.preventDefault();
     const message = draft.trim();
-    if (!message || sending) return;
+    if ((!message && !attachments.length) || sending) return;
     setSending(true);
     setError("");
     try {
       if (activeThread?.id) {
-        const created = await sendMessage(activeThread.id, message);
+        const created = await sendMessage(activeThread.id, message, attachments);
         setActiveThread((thread) => ({ ...thread, messages: [...thread.messages, created] }));
       } else if (listingSlug) {
-        const created = await startMessageThread({ listingSlug, listingTitle, message });
+        const created = await startMessageThread({ listingSlug, listingTitle, message, attachments });
         setActiveThread(created);
         setSearchParams({ thread: String(created.id) });
       }
       setDraft("");
+      setAttachments([]);
+      setEmojiOpen(false);
+      if (attachmentInputRef.current) attachmentInputRef.current.value = "";
       await loadThreads();
     } catch (requestError) {
       setError(requestError.message || "Couldn't send your message.");
     } finally {
       setSending(false);
     }
+  };
+
+  const chooseAttachments = (event) => {
+    const incoming = Array.from(event.target.files || []);
+    setError("");
+    if (attachments.length + incoming.length > MAX_ATTACHMENTS) {
+      setError(`You can attach up to ${MAX_ATTACHMENTS} files to one message.`);
+      event.target.value = "";
+      return;
+    }
+    const oversized = incoming.find((file) => file.size > MAX_ATTACHMENT_SIZE);
+    if (oversized) {
+      setError(`${oversized.name} is larger than the 10 MB attachment limit.`);
+      event.target.value = "";
+      return;
+    }
+    setAttachments((current) => [...current, ...incoming]);
+    event.target.value = "";
+  };
+
+  const addEmoji = (emoji) => {
+    setDraft((value) => `${value}${emoji}`);
+    setEmojiOpen(false);
+    window.setTimeout(() => draftRef.current?.focus(), 0);
   };
 
   const composingNew = Boolean(listingSlug && !activeThread);
@@ -162,18 +226,23 @@ export default function MessagesPage() {
                   {composingNew && <div className="mx-auto mb-6 max-w-md rounded-xl border border-primary-200 bg-primary-50/70 p-4 text-center text-xs leading-relaxed text-foreground-700"><i className="ri-shield-check-line mr-1 text-primary-700" /> Your message will be shared only with this listing owner.</div>}
                   <div className="space-y-4">
                     {(activeThread?.messages || []).map((message) => (
-                      <div key={message.id} className={`flex ${message.mine ? "justify-end" : "justify-start"}`}><div className={`max-w-[82%] rounded-2xl px-4 py-3 shadow-sm ${message.mine ? "rounded-br-md bg-primary-700 text-background-50" : "rounded-bl-md border border-background-200/70 bg-background-50 text-foreground-800"}`}><p className="whitespace-pre-wrap text-sm leading-relaxed">{message.body}</p><p className={`mt-1.5 text-[10px] ${message.mine ? "text-background-50/70" : "text-foreground-400"}`}>{relativeTime(message.createdAt)}</p></div></div>
+                      <div key={message.id} className={`flex ${message.mine ? "justify-end" : "justify-start"}`}><div className={`max-w-[82%] rounded-2xl px-4 py-3 shadow-sm ${message.mine ? "rounded-br-md bg-primary-700 text-background-50" : "rounded-bl-md border border-background-200/70 bg-background-50 text-foreground-800"}`}>{message.body && <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.body}</p>}<MessageAttachments attachments={message.attachments} mine={message.mine} /><p className={`mt-1.5 text-[10px] ${message.mine ? "text-background-50/70" : "text-foreground-400"}`}>{relativeTime(message.createdAt)}</p></div></div>
                     ))}
                     <div ref={endRef} />
                   </div>
                 </div>
 
                 <form onSubmit={submit} className="border-t border-background-200/70 bg-background-50 p-4 sm:p-5">
-                  <div className="flex items-end gap-3 rounded-2xl border border-background-300 bg-background-50 p-2 pl-4 focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-100">
-                    <textarea value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); submit(event); } }} maxLength={4000} rows={1} placeholder={composingNew ? `Message ${listingTitle}` : "Write a message…"} className="max-h-32 min-h-10 flex-1 resize-none border-0 bg-transparent py-2 text-sm text-foreground-900 outline-none placeholder:text-foreground-400" />
-                    <button type="submit" disabled={!draft.trim() || sending} className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary-600 text-background-50 hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Send message"><i className={sending ? "ri-loader-4-line animate-spin" : "ri-send-plane-2-fill"} /></button>
+                  {attachments.length > 0 && <div className="mb-2 flex flex-wrap gap-2">{attachments.map((file, index) => <div key={`${file.name}-${file.lastModified}`} className="flex max-w-full items-center gap-2 rounded-xl border border-background-200 bg-background-100 px-3 py-2 text-xs text-foreground-700"><i className={file.type.startsWith("image/") ? "ri-image-line text-primary-700" : "ri-file-line text-primary-700"} /><span className="max-w-48 truncate font-medium">{file.name}</span><span className="text-foreground-400">{formatFileSize(file.size)}</span><button type="button" onClick={() => setAttachments((files) => files.filter((_, itemIndex) => itemIndex !== index))} className="ml-1 text-foreground-400 hover:text-accent-700" aria-label={`Remove ${file.name}`}><i className="ri-close-line" /></button></div>)}</div>}
+                  <div className="relative flex items-end gap-2 rounded-2xl border border-background-300 bg-background-50 p-2 focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-100">
+                    <input ref={attachmentInputRef} type="file" multiple accept={ACCEPTED_ATTACHMENTS} onChange={chooseAttachments} className="sr-only" />
+                    <button type="button" onClick={() => attachmentInputRef.current?.click()} disabled={sending || attachments.length >= MAX_ATTACHMENTS} className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-foreground-500 hover:bg-background-100 hover:text-primary-700 disabled:opacity-40" aria-label="Attach files" title="Attach up to 5 files"><i className="ri-attachment-2" /></button>
+                    <button type="button" onClick={() => setEmojiOpen((open) => !open)} className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-foreground-500 hover:bg-background-100 hover:text-primary-700" aria-label="Add emoji"><i className="ri-emotion-happy-line" /></button>
+                    {emojiOpen && <div className="absolute bottom-14 left-10 z-20 grid w-52 grid-cols-6 gap-1 rounded-2xl border border-background-200 bg-background-50 p-3 shadow-xl">{MESSAGE_EMOJIS.map((emoji) => <button key={emoji} type="button" onClick={() => addEmoji(emoji)} className="flex h-8 w-8 items-center justify-center rounded-lg text-lg hover:bg-primary-50" aria-label={`Add ${emoji}`}>{emoji}</button>)}</div>}
+                    <textarea ref={draftRef} value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); submit(event); } }} maxLength={4000} rows={1} placeholder={composingNew ? `Message ${listingTitle}` : "Write a message…"} className="max-h-32 min-h-10 flex-1 resize-none border-0 bg-transparent py-2 text-sm text-foreground-900 outline-none placeholder:text-foreground-400" />
+                    <button type="submit" disabled={(!draft.trim() && !attachments.length) || sending} className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary-600 text-background-50 hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Send message"><i className={sending ? "ri-loader-4-line animate-spin" : "ri-send-plane-2-fill"} /></button>
                   </div>
-                  <div className="mt-2 flex items-center justify-between px-1 text-[10px] text-foreground-400"><span>Enter to send · Shift + Enter for a new line</span><span>{draft.length}/4000</span></div>
+                  <div className="mt-2 flex items-center justify-between px-1 text-[10px] text-foreground-400"><span>Enter to send · Attach up to 5 files, 10 MB each</span><span>{draft.length}/4000</span></div>
                 </form>
               </>
             ) : (
