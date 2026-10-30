@@ -21,6 +21,12 @@ function lineKey(slug, variationId) {
   return variationId ? `${slug}::${variationId}` : slug;
 }
 
+function normalizedStockQuantity(source) {
+  return Number.isFinite(source?.stockQuantity)
+    ? Math.max(0, source.stockQuantity)
+    : null;
+}
+
 function loadPersistedItems() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -51,9 +57,7 @@ export function CartProvider({ children }) {
   const addItem = (product, variation, qty = 1) => {
     const key = lineKey(product.slug, variation?.id);
     const stockSource = variation || product;
-    const stockQuantity = Number.isFinite(stockSource?.stockQuantity)
-      ? Math.max(0, stockSource.stockQuantity)
-      : null;
+    const stockQuantity = normalizedStockQuantity(stockSource);
     const currentItems = itemsRef.current;
     const existingQuantity = currentItems.find((item) => item.key === key)?.qty || 0;
     const requestedQuantity = existingQuantity + qty;
@@ -76,7 +80,15 @@ export function CartProvider({ children }) {
     const existing = currentItems.find((item) => item.key === key);
     const nextItems = existing
       ? currentItems.map((item) =>
-          item.key === key ? { ...item, qty: item.qty + qty } : item
+          item.key === key
+            ? {
+                ...item,
+                qty: item.qty + qty,
+                productImage: product.image || item.productImage || item.image,
+                variationName: product.variationName || item.variationName || "",
+                variationOptions: product.variationOptions || item.variationOptions || [],
+              }
+            : item
         )
       : [
           ...currentItems,
@@ -86,8 +98,11 @@ export function CartProvider({ children }) {
             variationId: variation?.id || null,
             title: product.title,
             image: variation?.image || product.image,
+            productImage: product.image,
             price: variation?.price ?? product.price,
             variationLabel: variation?.label || "",
+            variationName: product.variationName || "",
+            variationOptions: product.variationOptions || [],
             stockQuantity,
             backordersAllowed: stockSource?.backordersAllowed === true,
             qty,
@@ -97,6 +112,94 @@ export function CartProvider({ children }) {
     setItems(nextItems);
     setStockNotice(null);
     setIsOpen(true);
+    return true;
+  };
+
+  const updateQuantity = (key, quantity) => {
+    const currentItems = itemsRef.current;
+    const item = currentItems.find((candidate) => candidate.key === key);
+    if (!item) return false;
+
+    const nextQuantity = Math.max(1, Math.floor(Number(quantity) || 1));
+    if (
+      item.stockQuantity !== null &&
+      item.stockQuantity !== undefined &&
+      item.backordersAllowed !== true &&
+      nextQuantity > item.stockQuantity
+    ) {
+      setStockNotice({
+        key,
+        title: item.title,
+        available: item.stockQuantity,
+        inCart: item.qty,
+      });
+      setIsOpen(true);
+      return false;
+    }
+
+    const nextItems = currentItems.map((candidate) =>
+      candidate.key === key ? { ...candidate, qty: nextQuantity } : candidate
+    );
+    itemsRef.current = nextItems;
+    setItems(nextItems);
+    setStockNotice(null);
+    return true;
+  };
+
+  const changeVariation = (key, variationId) => {
+    const currentItems = itemsRef.current;
+    const item = currentItems.find((candidate) => candidate.key === key);
+    if (!item) return false;
+
+    const variation = (item.variationOptions || []).find(
+      (option) => Number(option.id) === Number(variationId)
+    );
+    if (!variation || variation.purchasable === false || variation.inStock === false) {
+      setStockNotice({ key, title: item.title, available: 0, inCart: item.qty });
+      setIsOpen(true);
+      return false;
+    }
+
+    const nextKey = lineKey(item.slug, variation.id);
+    if (nextKey === key) return true;
+
+    const existingTarget = currentItems.find((candidate) => candidate.key === nextKey);
+    const requestedQuantity = item.qty + (existingTarget?.qty || 0);
+    const stockQuantity = normalizedStockQuantity(variation);
+    if (
+      stockQuantity !== null &&
+      variation.backordersAllowed !== true &&
+      requestedQuantity > stockQuantity
+    ) {
+      setStockNotice({
+        key: nextKey,
+        title: item.title,
+        available: stockQuantity,
+        inCart: existingTarget?.qty || 0,
+      });
+      setIsOpen(true);
+      return false;
+    }
+
+    const nextItem = {
+      ...(existingTarget || item),
+      key: nextKey,
+      variationId: variation.id,
+      variationLabel: variation.label || "",
+      image: variation.image || item.productImage || item.image,
+      price: variation.price ?? item.price,
+      stockQuantity,
+      backordersAllowed: variation.backordersAllowed === true,
+      qty: requestedQuantity,
+    };
+    const insertionIndex = currentItems.findIndex((candidate) => candidate.key === key);
+    const nextItems = currentItems.filter(
+      (candidate) => candidate.key !== key && candidate.key !== nextKey
+    );
+    nextItems.splice(Math.max(0, insertionIndex), 0, nextItem);
+    itemsRef.current = nextItems;
+    setItems(nextItems);
+    setStockNotice(null);
     return true;
   };
 
@@ -118,6 +221,8 @@ export function CartProvider({ children }) {
     isOpen,
     setIsOpen,
     addItem,
+    updateQuantity,
+    changeVariation,
     removeItem,
     clearCart,
     stockNotice,

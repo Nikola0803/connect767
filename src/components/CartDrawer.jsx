@@ -2,7 +2,16 @@ import { useNavigate } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
 
 export default function CartDrawer() {
-  const { items, isOpen, setIsOpen, removeItem, stockNotice, clearStockNotice } = useCart();
+  const {
+    items,
+    isOpen,
+    setIsOpen,
+    removeItem,
+    updateQuantity,
+    changeVariation,
+    stockNotice,
+    clearStockNotice,
+  } = useCart();
   const navigate = useNavigate();
   const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
 
@@ -77,8 +86,11 @@ export default function CartDrawer() {
             <>
               <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
                 {items.map((item) => (
-                  <div key={item.key} className="flex gap-3">
-                    <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-background-100">
+                  <div
+                    key={item.key}
+                    className="flex gap-3 rounded-xl border border-background-200/70 bg-white p-3"
+                  >
+                    <div className="w-20 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-background-100">
                       <img
                         src={item.image}
                         alt={item.title}
@@ -89,20 +101,62 @@ export default function CartDrawer() {
                       <h4 className="text-sm font-medium text-foreground-950 leading-snug line-clamp-2">
                         {item.title}
                       </h4>
-                      {item.variationLabel && (
-                        <p className="text-xs text-foreground-500 font-label">
-                          {item.variationLabel}
-                        </p>
+                      <p className="mt-0.5 text-xs text-foreground-500 font-label">
+                        ${item.price.toFixed(2)} each
+                      </p>
+                      {item.variationOptions?.length > 0 && (
+                        <label className="mt-2 block text-[10px] font-bold uppercase tracking-[0.12em] text-foreground-500">
+                          {item.variationName || "Size"}
+                          <select
+                            aria-label={`${item.variationName || "Size"} for ${item.title}`}
+                            value={item.variationId || ""}
+                            onChange={(event) => changeVariation(item.key, event.target.value)}
+                            className="mt-1 h-9 w-full rounded-lg border border-background-300 bg-background-50 px-2 text-xs font-semibold normal-case tracking-normal text-foreground-900 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
+                          >
+                            {item.variationOptions.map((option) => (
+                              <option
+                                key={option.id}
+                                value={option.id}
+                                disabled={option.inStock === false || option.purchasable === false}
+                              >
+                                {option.label}
+                                {option.inStock === false ? " — Sold out" : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
                       )}
-                      <div className="flex items-center justify-between mt-1">
-                        <span className="text-xs text-foreground-500 font-label">
-                          Qty {item.qty} · ${item.price.toFixed(2)}
-                        </span>
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <div
+                          className="inline-flex h-9 items-center rounded-lg border border-background-300 bg-background-50"
+                          aria-label={`Quantity for ${item.title}`}
+                        >
+                          <button
+                            type="button"
+                            aria-label={`Decrease ${item.title} quantity`}
+                            disabled={item.qty <= 1}
+                            onClick={() => updateQuantity(item.key, item.qty - 1)}
+                            className="h-full w-8 rounded-l-lg text-foreground-700 hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-35 cursor-pointer"
+                          >
+                            <i className="ri-subtract-line" />
+                          </button>
+                          <span className="min-w-7 text-center text-xs font-bold text-foreground-900" aria-live="polite">
+                            {item.qty}
+                          </span>
+                          <button
+                            type="button"
+                            aria-label={`Increase ${item.title} quantity`}
+                            onClick={() => updateQuantity(item.key, item.qty + 1)}
+                            className="h-full w-8 rounded-r-lg text-foreground-700 hover:bg-background-100 cursor-pointer"
+                          >
+                            <i className="ri-add-line" />
+                          </button>
+                        </div>
                         <button
                           type="button"
                           aria-label={`Remove ${item.title}`}
                           onClick={() => removeItem(item.key)}
-                          className="text-xs text-foreground-400 hover:text-accent-500 cursor-pointer"
+                          className="h-9 w-9 rounded-lg text-sm text-foreground-400 hover:bg-accent-50 hover:text-accent-500 cursor-pointer"
                         >
                           <i className="ri-delete-bin-line" />
                         </button>
