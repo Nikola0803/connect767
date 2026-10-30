@@ -116,8 +116,7 @@ function buildPreviewData(form) {
   const industry = findIndustry(form.category);
   const contactHidden = Boolean(
     form.bookingEnabled &&
-      Number(form.bookingPrice) > 0 &&
-      form.hideContactInfo
+      Number(form.bookingPrice) > 0
   );
   const hasContactInfo = Boolean(
     form.phone ||
@@ -823,7 +822,8 @@ export default function AddListingPage() {
                         setForm((f) => ({
                           ...f,
                           bookingEnabled: e.target.checked,
-                          hideContactInfo: e.target.checked ? f.hideContactInfo : false,
+                          hideContactInfo:
+                            e.target.checked && Number(f.bookingPrice) > 0,
                         }))
                       }
                     />
@@ -873,8 +873,7 @@ export default function AddListingPage() {
                           setForm((f) => ({
                             ...f,
                             bookingPrice: e.target.value,
-                            hideContactInfo:
-                              Number(e.target.value) > 0 ? f.hideContactInfo : false,
+                            hideContactInfo: Number(e.target.value) > 0,
                           }))
                         }
                         placeholder="0.00"
@@ -895,29 +894,24 @@ export default function AddListingPage() {
                       </Select>
                     </FormField>}
                     {Number(form.bookingPrice) > 0 && (
-                      <div className="sm:col-span-2">
-                        <label className="flex items-start gap-3 rounded-xl border border-primary-200 bg-background-50 p-4 cursor-pointer hover:border-primary-400 transition-colors">
-                          <input
-                            id="hideContactInfo"
-                            type="checkbox"
-                            className="mt-0.5 rounded border-background-300 cursor-pointer"
-                            checked={form.hideContactInfo}
-                            onChange={(e) =>
-                              setForm((f) => ({ ...f, hideContactInfo: e.target.checked }))
-                            }
-                          />
-                          <span>
-                            <span className="flex items-center gap-2 text-sm font-semibold text-foreground-900">
-                              <i className="ri-shield-user-line text-primary-600" />
-                              Limit public contact information
-                            </span>
-                            <span className="block text-xs text-foreground-600 font-label mt-1 leading-relaxed">
-                              Hide your email, phone, WhatsApp number, website and social media links.
-                              Customers can use Message Listing Owner or Connect767&apos;s secure paid
-                              booking form. Your hidden details remain saved for your account.
-                            </span>
-                          </span>
-                        </label>
+                      <div
+                        className="sm:col-span-2 flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4"
+                        role="note"
+                        aria-label="Paid booking privacy notice"
+                      >
+                        <i className="ri-information-line mt-0.5 text-lg text-amber-700" />
+                        <div>
+                          <p className="text-sm font-semibold text-amber-950">
+                            Paid booking privacy notice
+                          </p>
+                          <p className="mt-1 text-xs leading-relaxed text-amber-900 font-label">
+                            When paid bookings are active, all public contact information—including
+                            your phone, email, address, website, WhatsApp and social media links—will
+                            be hidden. Customers can still contact you through Message Listing Owner
+                            or Connect767&apos;s secure booking form. Your details remain saved privately
+                            in your account.
+                          </p>
+                        </div>
                       </div>
                     )}
                     {!isRentalBookingType(form.bookingType) && <div className="sm:col-span-2">
