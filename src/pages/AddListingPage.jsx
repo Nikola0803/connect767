@@ -938,7 +938,7 @@ export default function AddListingPage() {
                 )}
                 <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-5 items-start">
                   <FormField
-                    label="Logo / profile picture"
+                    label="Profile Photo"
                     hint="Your account photo, shared across all listings."
                   >
                     <div className="relative w-32 h-32 group">
