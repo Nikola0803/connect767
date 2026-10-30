@@ -22,6 +22,9 @@ class C767_Notifications
     /** Avoid duplicate approval emails when the review screen and the status transition fire together. */
     private static $approved_notifications_sent = [];
 
+    /** Per-message sender override used for directory account and listing mail. */
+    private static $mail_from_override = '';
+
     private static function is_rental_booking($type)
     {
         return $type !== '' && $type !== 'appointment';
@@ -50,6 +53,10 @@ class C767_Notifications
 
     public static function mail_from()
     {
+        if (self::$mail_from_override && is_email(self::$mail_from_override)) {
+            return self::$mail_from_override;
+        }
+
         $email = defined('C767_MAIL_FROM') && C767_MAIL_FROM
             ? C767_MAIL_FROM
             : 'info@connect767.com';
@@ -73,17 +80,30 @@ class C767_Notifications
         return $email && is_email($email) ? ['Reply-To: ' . $email] : [];
     }
 
+    private static function directory_mail_from()
+    {
+        $email = sanitize_email((string) get_option('c767_directory_mail_from', 'no-reply@connect767.com'));
+        return is_email($email) ? $email : 'no-reply@connect767.com';
+    }
+
+    /** Send directory notifications through the dedicated verified Brevo identity. */
+    private static function send_directory_mail($to, $subject, $body, $headers = [])
+    {
+        self::$mail_from_override = self::directory_mail_from();
+        try {
+            return wp_mail($to, $subject, $body, $headers);
+        } finally {
+            self::$mail_from_override = '';
+        }
+    }
+
     /**
-     * Keep new-listing alerts going to the directory inbox even when the
-     * WordPress administration email is changed. The current admin address
-     * remains a recipient, and duplicate/invalid addresses are discarded.
+     * Keep directory account and listing alerts going to the dedicated inbox
+     * even when the WordPress administration email is changed.
      */
     private static function listing_notification_recipients()
     {
-        $recipients = [
-            get_option('c767_listing_notification_email', 'infoconnect767@gmail.com'),
-            get_option('admin_email'),
-        ];
+        $recipients = [get_option('c767_listing_notification_email', 'no-reply@connect767.com')];
 
         $recipients = apply_filters('c767_listing_notification_recipients', $recipients);
         if (!is_array($recipients)) {
@@ -130,7 +150,7 @@ class C767_Notifications
                 $user->display_name ?: $user->user_login,
                 self::frontend_url('/listings')
             );
-        if (!wp_mail($user->user_email, $subject, $body)) {
+        if (!self::send_directory_mail($user->user_email, $subject, $body)) {
             error_log('Connect767 welcome email could not be sent for user ' . $user_id . '.');
         }
 
@@ -144,8 +164,10 @@ class C767_Notifications
             current_time('mysql'),
             admin_url('user-edit.php?user_id=' . $user_id)
         );
-        if (!wp_mail(get_option('admin_email'), $admin_subject, $admin_body, self::reply_to($user->user_email))) {
-            error_log('Connect767 new-account admin email could not be sent for user ' . $user_id . '.');
+        foreach (self::listing_notification_recipients() as $recipient) {
+            if (!self::send_directory_mail($recipient, $admin_subject, $admin_body, self::reply_to($user->user_email))) {
+                error_log('Connect767 new-account directory email could not be sent for user ' . $user_id . '.');
+            }
         }
     }
 
@@ -196,7 +218,7 @@ class C767_Notifications
         );
         $admin_headers = self::reply_to($user ? $user->user_email : '');
         foreach (self::listing_notification_recipients() as $recipient) {
-            if (!wp_mail($recipient, $admin_subject, $admin_body, $admin_headers)) {
+            if (!self::send_directory_mail($recipient, $admin_subject, $admin_body, $admin_headers)) {
                 error_log(sprintf(
                     'Connect767 new-listing notification could not be sent to %s for listing %d.',
                     $recipient,
@@ -216,7 +238,7 @@ class C767_Notifications
                 self::site_name(),
                 self::frontend_url('/dashboard')
             );
-            wp_mail($user->user_email, $owner_subject, $owner_body);
+            self::send_directory_mail($user->user_email, $owner_subject, $owner_body);
         }
     }
 
@@ -266,7 +288,7 @@ class C767_Notifications
             self::frontend_url('/listings/' . $post->post_name),
             self::frontend_url('/dashboard')
         );
-        if (!wp_mail($owner->user_email, $subject, $body, self::reply_to(get_option('admin_email')))) {
+        if (!self::send_directory_mail($owner->user_email, $subject, $body, self::reply_to(self::directory_mail_from()))) {
             error_log('Connect767 listing-approval email could not be sent for listing ' . $post_id . '.');
         }
     }
@@ -289,7 +311,7 @@ class C767_Notifications
             $post->post_title,
             self::frontend_url('/dashboard')
         );
-        wp_mail($owner->user_email, $subject, $body, self::reply_to(get_option('admin_email')));
+        self::send_directory_mail($owner->user_email, $subject, $body, self::reply_to(self::directory_mail_from()));
     }
 
     // ---------- Classified tier payment confirmed ----------
@@ -313,7 +335,7 @@ class C767_Notifications
                 self::frontend_url('/listings/' . $post->post_name),
                 self::frontend_url('/dashboard')
             );
-            wp_mail($owner->user_email, $subject, $body);
+            self::send_directory_mail($owner->user_email, $subject, $body);
         }
 
         // Admin: revenue event worth a quiet heads-up.
@@ -325,7 +347,9 @@ class C767_Notifications
             $owner ? $owner->user_email : 'Unknown',
             admin_url('post.php?post=' . $listing_id . '&action=edit')
         );
-        wp_mail(get_option('admin_email'), $admin_subject, $admin_body);
+        foreach (self::listing_notification_recipients() as $recipient) {
+            self::send_directory_mail($recipient, $admin_subject, $admin_body);
+        }
     }
 
     // ---------- Booking request ----------
