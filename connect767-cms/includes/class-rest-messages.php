@@ -8,6 +8,8 @@ class C767_REST_Messages
 {
     const NAMESPACE_ = 'connect767/v1';
     const MAX_MESSAGE_LENGTH = 4000;
+    const MAX_ATTACHMENTS = 5;
+    const MAX_ATTACHMENT_SIZE = 10485760;
 
     public static function init()
     {
@@ -81,10 +83,10 @@ class C767_REST_Messages
         return $thread;
     }
 
-    private static function clean_message($value)
+    private static function clean_message($value, $allow_empty = false)
     {
         $message = trim(sanitize_textarea_field((string) $value));
-        if ($message === '') {
+        if ($message === '' && !$allow_empty) {
             return new WP_Error('c767_message_empty', 'Write a message before sending.', ['status' => 400]);
         }
         $length = function_exists('mb_strlen') ? mb_strlen($message) : strlen($message);
@@ -92,6 +94,89 @@ class C767_REST_Messages
             return new WP_Error('c767_message_long', 'Messages are limited to 4,000 characters.', ['status' => 400]);
         }
         return $message;
+    }
+
+    private static function attachment_files(WP_REST_Request $request)
+    {
+        $params = $request->get_file_params();
+        if (empty($params['attachments'])) {
+            return [];
+        }
+        $raw = $params['attachments'];
+        if (!isset($raw['name']) || !is_array($raw['name'])) {
+            return [$raw];
+        }
+        $files = [];
+        foreach ($raw['name'] as $index => $name) {
+            $files[] = [
+                'name' => $name,
+                'type' => $raw['type'][$index] ?? '',
+                'tmp_name' => $raw['tmp_name'][$index] ?? '',
+                'error' => $raw['error'][$index] ?? UPLOAD_ERR_NO_FILE,
+                'size' => $raw['size'][$index] ?? 0,
+            ];
+        }
+        return $files;
+    }
+
+    private static function validate_attachments($files)
+    {
+        if (count($files) > self::MAX_ATTACHMENTS) {
+            return new WP_Error('c767_too_many_attachments', 'Attach no more than 5 files to one message.', ['status' => 400]);
+        }
+        $allowed_extensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt'];
+        foreach ($files as $file) {
+            if ((int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || empty($file['tmp_name'])) {
+                return new WP_Error('c767_attachment_failed', 'One of the attachments could not be uploaded. Please try again.', ['status' => 400]);
+            }
+            if ((int) ($file['size'] ?? 0) > self::MAX_ATTACHMENT_SIZE) {
+                return new WP_Error('c767_attachment_too_large', 'Each attachment must be 10 MB or smaller.', ['status' => 400]);
+            }
+            $extension = strtolower((string) pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
+            if (!in_array($extension, $allowed_extensions, true)) {
+                return new WP_Error('c767_attachment_type', 'Attach an image, PDF, Word, Excel, CSV, or text file.', ['status' => 400]);
+            }
+        }
+        return true;
+    }
+
+    private static function store_attachments($message_id, $files)
+    {
+        if (!$files) return [];
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+        $ids = [];
+        foreach ($files as $file) {
+            $attachment_id = media_handle_sideload($file, $message_id);
+            if (is_wp_error($attachment_id)) {
+                foreach ($ids as $stored_id) wp_delete_attachment($stored_id, true);
+                return new WP_Error('c767_attachment_failed', 'An attachment could not be saved: ' . $attachment_id->get_error_message(), ['status' => 400]);
+            }
+            update_post_meta($attachment_id, '_c767_original_name', sanitize_file_name((string) $file['name']));
+            $ids[] = (int) $attachment_id;
+        }
+        update_post_meta($message_id, 'attachment_ids', $ids);
+        return $ids;
+    }
+
+    private static function format_attachments($message_id)
+    {
+        $ids = array_filter(array_map('absint', (array) get_post_meta($message_id, 'attachment_ids', true)));
+        return array_values(array_filter(array_map(function ($attachment_id) {
+            $url = wp_get_attachment_url($attachment_id);
+            if (!$url) return null;
+            $file = get_attached_file($attachment_id);
+            $mime_type = (string) get_post_mime_type($attachment_id);
+            return [
+                'id' => $attachment_id,
+                'name' => get_post_meta($attachment_id, '_c767_original_name', true) ?: (get_the_title($attachment_id) ?: basename((string) $file)),
+                'url' => esc_url_raw($url),
+                'mimeType' => $mime_type,
+                'size' => $file && file_exists($file) ? (int) filesize($file) : 0,
+                'isImage' => strpos($mime_type, 'image/') === 0,
+            ];
+        }, $ids)));
     }
 
     private static function rate_limit($user_id)
@@ -128,6 +213,7 @@ class C767_REST_Messages
         return [
             'id' => (int) $post->ID,
             'body' => (string) $post->post_content,
+            'attachments' => self::format_attachments($post->ID),
             'senderId' => (int) $post->post_author,
             'senderName' => $sender ? ($sender->display_name ?: $sender->user_login) : 'Connect767 member',
             'mine' => (int) $post->post_author === (int) $viewer_id,
@@ -159,7 +245,7 @@ class C767_REST_Messages
             'listingSlug' => $listing ? $listing->post_name : '',
             'bookingId' => (int) get_post_meta($thread->ID, 'booking_id', true),
             'otherParticipant' => $other ? ($other->display_name ?: $other->user_login) : 'Connect767 member',
-            'lastMessage' => $last ? wp_trim_words($last->post_content, 18, '…') : '',
+            'lastMessage' => $last ? (trim((string) $last->post_content) !== '' ? wp_trim_words($last->post_content, 18, '…') : 'Sent an attachment') : '',
             'lastMessageAt' => $last ? mysql_to_rfc3339($last->post_date_gmt ?: $last->post_date) : '',
             'unread' => self::is_unread($thread->ID, $viewer_id),
         ];
@@ -171,7 +257,7 @@ class C767_REST_Messages
         return $result;
     }
 
-    private static function insert_message($thread_id, $sender_id, $body)
+    private static function insert_message($thread_id, $sender_id, $body, $attachment_files = [])
     {
         $limited = self::rate_limit($sender_id);
         if (is_wp_error($limited)) {
@@ -185,14 +271,19 @@ class C767_REST_Messages
         if (is_wp_error($message_id)) {
             return new WP_Error('c767_message_failed', $message_id->get_error_message(), ['status' => 400]);
         }
+        $attachment_ids = self::store_attachments($message_id, $attachment_files);
+        if (is_wp_error($attachment_ids)) {
+            wp_delete_post($message_id, true);
+            return $attachment_ids;
+        }
         update_post_meta($thread_id, 'last_message_at', time());
         update_post_meta($thread_id, 'last_sender_id', (int) $sender_id);
         update_post_meta($thread_id, 'read_at_' . (int) $sender_id, time());
-        self::notify_recipient($thread_id, $sender_id, $body);
+        self::notify_recipient($thread_id, $sender_id, $body, count($attachment_ids));
         return get_post($message_id);
     }
 
-    private static function notify_recipient($thread_id, $sender_id, $body)
+    private static function notify_recipient($thread_id, $sender_id, $body, $attachment_count = 0)
     {
         $participants = self::participant_ids($thread_id);
         $recipient_id = $participants[0] === (int) $sender_id ? $participants[1] : $participants[0];
@@ -204,12 +295,16 @@ class C767_REST_Messages
         }
         $url = add_query_arg('thread', (int) $thread_id, c767_frontend_url('/messages'));
         $subject = sprintf('New Connect767 message about %s', $listing ? $listing->post_title : 'a listing');
+        $message_preview = trim((string) $body) !== '' ? wp_trim_words($body, 35, '…') : sprintf('Sent %d attachment%s.', $attachment_count, $attachment_count === 1 ? '' : 's');
+        if ($attachment_count && trim((string) $body) !== '') {
+            $message_preview .= sprintf("\n\n%d attachment%s included.", $attachment_count, $attachment_count === 1 ? '' : 's');
+        }
         $mail_body = sprintf(
             "Hi %s,\n\n%s sent you a new message about %s:\n\n%s\n\nReply securely on Connect767:\n%s",
             $recipient->display_name ?: $recipient->user_login,
             $sender ? ($sender->display_name ?: $sender->user_login) : 'A Connect767 member',
             $listing ? $listing->post_title : 'a listing',
-            wp_trim_words($body, 35, '…'),
+            $message_preview,
             $url
         );
         if (!wp_mail($recipient->user_email, $subject, $mail_body)) {
@@ -240,7 +335,10 @@ class C767_REST_Messages
     {
         $user = self::user($request);
         if (is_wp_error($user)) return $user;
-        $message = self::clean_message($request->get_param('message'));
+        $attachment_files = self::attachment_files($request);
+        $attachments_valid = self::validate_attachments($attachment_files);
+        if (is_wp_error($attachments_valid)) return $attachments_valid;
+        $message = self::clean_message($request->get_param('message'), !empty($attachment_files));
         if (is_wp_error($message)) return $message;
         $slug = sanitize_title((string) $request->get_param('listingSlug'));
         $listings = get_posts(['post_type' => 'listing', 'post_status' => 'publish', 'name' => $slug, 'numberposts' => 1]);
@@ -274,7 +372,7 @@ class C767_REST_Messages
             update_post_meta($thread_id, 'owner_user_id', $owner_id);
             $thread = get_post($thread_id);
         }
-        $created = self::insert_message($thread->ID, $user->ID, $message);
+        $created = self::insert_message($thread->ID, $user->ID, $message, $attachment_files);
         if (is_wp_error($created)) return $created;
         return rest_ensure_response(self::format_thread($thread, $user->ID, true));
     }
@@ -295,9 +393,12 @@ class C767_REST_Messages
         if (is_wp_error($user)) return $user;
         $thread = self::participant_thread($request->get_param('id'), $user->ID);
         if (is_wp_error($thread)) return $thread;
-        $message = self::clean_message($request->get_param('message'));
+        $attachment_files = self::attachment_files($request);
+        $attachments_valid = self::validate_attachments($attachment_files);
+        if (is_wp_error($attachments_valid)) return $attachments_valid;
+        $message = self::clean_message($request->get_param('message'), !empty($attachment_files));
         if (is_wp_error($message)) return $message;
-        $created = self::insert_message($thread->ID, $user->ID, $message);
+        $created = self::insert_message($thread->ID, $user->ID, $message, $attachment_files);
         if (is_wp_error($created)) return $created;
         return rest_ensure_response(self::format_message($created, $user->ID));
     }
