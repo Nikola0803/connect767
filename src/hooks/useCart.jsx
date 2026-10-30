@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * Cart state used to live entirely inside ShopPage.jsx's own useState —
@@ -35,7 +35,9 @@ function loadPersistedItems() {
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState(loadPersistedItems);
+  const itemsRef = useRef(items);
   const [isOpen, setIsOpen] = useState(false);
+  const [stockNotice, setStockNotice] = useState(null);
 
   useEffect(() => {
     try {
@@ -48,34 +50,79 @@ export function CartProvider({ children }) {
 
   const addItem = (product, variation, qty = 1) => {
     const key = lineKey(product.slug, variation?.id);
-    setItems((prev) => {
-      const existing = prev.find((item) => item.key === key);
-      if (existing) {
-        return prev.map((item) => (item.key === key ? { ...item, qty: item.qty + qty } : item));
-      }
-      return [
-        ...prev,
-        {
-          key,
-          slug: product.slug,
-          variationId: variation?.id || null,
-          title: product.title,
-          image: variation?.image || product.image,
-          price: variation?.price ?? product.price,
-          variationLabel: variation?.label || "",
-          qty,
-        },
-      ];
-    });
+    const stockSource = variation || product;
+    const stockQuantity = Number.isFinite(stockSource?.stockQuantity)
+      ? Math.max(0, stockSource.stockQuantity)
+      : null;
+    const currentItems = itemsRef.current;
+    const existingQuantity = currentItems.find((item) => item.key === key)?.qty || 0;
+    const requestedQuantity = existingQuantity + qty;
+
+    if (
+      stockQuantity !== null &&
+      stockSource?.backordersAllowed !== true &&
+      requestedQuantity > stockQuantity
+    ) {
+      setStockNotice({
+        key,
+        title: product.title,
+        available: stockQuantity,
+        inCart: existingQuantity,
+      });
+      setIsOpen(true);
+      return false;
+    }
+
+    const existing = currentItems.find((item) => item.key === key);
+    const nextItems = existing
+      ? currentItems.map((item) =>
+          item.key === key ? { ...item, qty: item.qty + qty } : item
+        )
+      : [
+          ...currentItems,
+          {
+            key,
+            slug: product.slug,
+            variationId: variation?.id || null,
+            title: product.title,
+            image: variation?.image || product.image,
+            price: variation?.price ?? product.price,
+            variationLabel: variation?.label || "",
+            stockQuantity,
+            backordersAllowed: stockSource?.backordersAllowed === true,
+            qty,
+          },
+        ];
+    itemsRef.current = nextItems;
+    setItems(nextItems);
+    setStockNotice(null);
     setIsOpen(true);
+    return true;
   };
 
-  const removeItem = (key) => setItems((prev) => prev.filter((item) => item.key !== key));
-  const clearCart = () => setItems([]);
+  const removeItem = (key) => {
+    const nextItems = itemsRef.current.filter((item) => item.key !== key);
+    itemsRef.current = nextItems;
+    setItems(nextItems);
+  };
+  const clearCart = () => {
+    itemsRef.current = [];
+    setItems([]);
+  };
 
   const count = useMemo(() => items.reduce((sum, item) => sum + item.qty, 0), [items]);
 
-  const value = { items, count, isOpen, setIsOpen, addItem, removeItem, clearCart };
+  const value = {
+    items,
+    count,
+    isOpen,
+    setIsOpen,
+    addItem,
+    removeItem,
+    clearCart,
+    stockNotice,
+    clearStockNotice: () => setStockNotice(null),
+  };
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
