@@ -9,8 +9,8 @@ const NOINDEX_PREFIXES = [
   "/auth/",
   "/checkout",
   "/dashboard",
+  "/messages",
   "/saved",
-  "/listings/submit",
   "/shop/customize",
 ];
 
@@ -91,6 +91,14 @@ function setStructuredData(pathname, meta, canonical) {
     });
   } else {
     graph.push({
+      "@type": "WebPage",
+      "@id": `${canonical}#webpage`,
+      url: canonical,
+      name: meta.title,
+      description: meta.description,
+      isPartOf: { "@id": `${SITE_URL}/#website` },
+    });
+    graph.push({
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Connect767", item: `${SITE_URL}/` },
@@ -111,7 +119,7 @@ export default function RouteSeo() {
     const canonical = `${SITE_URL}${normalizedPath === "/" ? "/" : normalizedPath}`;
     const noindex = NOINDEX_PREFIXES.some(
       (prefix) => normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`),
-    );
+    ) || /^\/listings\/[^/]+\/edit$/.test(normalizedPath);
 
     document.title = meta.title;
     setMeta('meta[name="description"]', { name: "description", content: meta.description });

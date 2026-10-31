@@ -40,6 +40,14 @@ function structuredData(route, meta, canonical) {
     });
   } else {
     graph.push({
+      "@type": "WebPage",
+      "@id": `${canonical}#webpage`,
+      url: canonical,
+      name: meta.title,
+      description: meta.description,
+      isPartOf: { "@id": `${siteUrl}/#website` },
+    });
+    graph.push({
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Connect767", item: `${siteUrl}/` },

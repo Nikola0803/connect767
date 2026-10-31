@@ -33,5 +33,25 @@
     "title": "Help Center | Connect767",
     "description": "Get help with Connect767 directory listings, bookings, shopping, orders, custom uniforms, returns and account questions.",
     "label": "Help Center"
+  },
+  "/match": {
+    "title": "AI Matching for Dominican Talent & Services | Connect767",
+    "description": "Use Connect767 AI Match to find Dominican businesses, professionals, rentals and service providers that fit your needs at home or abroad.",
+    "label": "AI Match"
+  },
+  "/listings/submit": {
+    "title": "List Your Business or Professional Profile | Connect767",
+    "description": "Compare Connect767 Free and Classified listing plans, then create a business or professional profile with booking, pricing and contact options.",
+    "label": "Add a Listing"
+  },
+  "/privacy": {
+    "title": "Privacy Policy | Connect767",
+    "description": "Read how Connect767 collects, uses and protects information from directory members, shoppers, booking customers and website visitors.",
+    "label": "Privacy Policy"
+  },
+  "/terms": {
+    "title": "Terms & Conditions | Connect767",
+    "description": "Review the terms for using Connect767 directory listings, paid bookings, marketplace purchases, custom uniforms and account services.",
+    "label": "Terms and Conditions"
   }
 }
