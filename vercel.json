@@ -2,10 +2,14 @@
   "redirects": [
     { "source": "/shop/", "destination": "/shop", "permanent": true },
     { "source": "/listings/", "destination": "/listings", "permanent": true },
+    { "source": "/listings/submit/", "destination": "/listings/submit", "permanent": true },
+    { "source": "/match/", "destination": "/match", "permanent": true },
     { "source": "/uniforms/", "destination": "/uniforms", "permanent": true },
     { "source": "/about/", "destination": "/about", "permanent": true },
     { "source": "/blog/", "destination": "/blog", "permanent": true },
-    { "source": "/help/", "destination": "/help", "permanent": true }
+    { "source": "/help/", "destination": "/help", "permanent": true },
+    { "source": "/privacy/", "destination": "/privacy", "permanent": true },
+    { "source": "/terms/", "destination": "/terms", "permanent": true }
   ],
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
