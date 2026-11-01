@@ -18,6 +18,14 @@ function formatPrice(cents) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+function fulfillmentLabel(product) {
+  const mode = product.fulfillmentMode || "none";
+  if (mode === "none") return "No delivery required";
+  if (mode === "pickup") return "Local pickup";
+  if (mode === "both") return "Shipping or pickup";
+  return product.shippingFeeCents ? `Shipping ${formatPrice(product.shippingFeeCents)}` : "Free shipping";
+}
+
 /**
  * "Buy" cards on a Classified listing's public profile — the marketplace
  * feature ("buy things like a multivendor marketplace"). Only ever shows
@@ -178,6 +186,18 @@ export default function ListingProducts({
                   {p.description}
                 </p>
               )}
+              <p className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary-700">
+                <i
+                  className={
+                    p.fulfillmentMode === "pickup"
+                      ? "ri-map-pin-line"
+                      : p.fulfillmentMode === "none" || !p.fulfillmentMode
+                        ? "ri-checkbox-circle-line"
+                        : "ri-truck-line"
+                  }
+                />
+                {fulfillmentLabel(p)}
+              </p>
               <div className={`mt-auto flex items-center justify-between gap-3 ${fullStorefront ? "pt-4" : "border-t border-background-200/70 pt-4"}`}>
                 <span className={`font-heading font-semibold text-foreground-950 ${fullStorefront ? "text-base" : "text-lg"}`}>
                   {formatPrice(p.priceCents)}
@@ -216,16 +236,48 @@ function BuyModal({ product, onClose }) {
   const [step, setStep] = useState("details"); // details -> choosePayment -> payment -> done
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [fulfillmentMethod, setFulfillmentMethod] = useState(
+    product.fulfillmentMode === "pickup"
+      ? "pickup"
+      : product.fulfillmentMode === "none" || !product.fulfillmentMode
+        ? "none"
+        : "shipping",
+  );
+  const [shipping, setShipping] = useState({
+    address1: "",
+    address2: "",
+    city: "",
+    region: "",
+    postcode: "",
+    country: "",
+    phone: "",
+  });
   const [paymentConfig, setPaymentConfig] = useState(null);
   const [clientSecret, setClientSecret] = useState(null);
   const [orderId, setOrderId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const shippingFee = fulfillmentMethod === "shipping" ? Number(product.shippingFeeCents || 0) : 0;
+  const totalCents = Number(product.priceCents || 0) + shippingFee;
+  const checkoutDetails = {
+    name: name.trim(),
+    email: email.trim(),
+    fulfillmentMethod,
+    shipping: fulfillmentMethod === "shipping" ? shipping : {},
+  };
+  const updateShipping = (key) => (e) => setShipping((value) => ({ ...value, [key]: e.target.value }));
 
   const startCheckout = async (e) => {
     e.preventDefault();
     if (!name.trim() || !email.trim()) {
       setError("Please add your name and email.");
+      return;
+    }
+    if (
+      fulfillmentMethod === "shipping" &&
+      (!shipping.address1.trim() || !shipping.city.trim() || !shipping.postcode.trim() || !shipping.country.trim())
+    ) {
+      setError("Please complete the required delivery-address fields.");
       return;
     }
     setSubmitting(true);
@@ -251,8 +303,7 @@ function BuyModal({ product, onClose }) {
     setSubmitting(true);
     try {
       const result = await createVendorProductCheckout(product.id, {
-        name: name.trim(),
-        email: email.trim(),
+        ...checkoutDetails,
       });
       setClientSecret(result.clientSecret);
       setOrderId(result.orderId);
@@ -266,7 +317,7 @@ function BuyModal({ product, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground-950/50">
-      <div className="w-full max-w-md rounded-2xl bg-background-50 p-6 relative">
+      <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-background-50 p-6">
         <button
           type="button"
           onClick={onClose}
@@ -279,9 +330,18 @@ function BuyModal({ product, onClose }) {
         <h3 className="font-heading text-lg font-medium text-foreground-950 mb-1">
           {product.name}
         </h3>
-        <p className="text-sm text-foreground-600 font-label mb-5">
-          {formatPrice(product.priceCents)}
-        </p>
+        <div className="mb-5 flex items-center justify-between gap-3 text-sm font-label">
+          <span className="text-foreground-600">
+            {fulfillmentMethod === "shipping" && shippingFee > 0
+              ? `${formatPrice(product.priceCents)} + ${formatPrice(shippingFee)} shipping`
+              : fulfillmentMethod === "pickup"
+                ? "Local pickup"
+                : fulfillmentMethod === "none"
+                  ? "No delivery required"
+                  : "Free shipping"}
+          </span>
+          <span className="font-semibold text-foreground-950">Total {formatPrice(totalCents)}</span>
+        </div>
 
         {step === "details" && (
           <form onSubmit={startCheckout} className="space-y-4">
@@ -296,6 +356,77 @@ function BuyModal({ product, onClose }) {
                 onChange={(e) => setEmail(e.target.value)}
               />
             </FormField>
+            {product.fulfillmentMode === "both" && (
+              <fieldset>
+                <legend className="mb-2 text-sm font-semibold text-foreground-800">How would you like to receive it?</legend>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    ["shipping", "ri-truck-line", "Shipping"],
+                    ["pickup", "ri-map-pin-line", "Local pickup"],
+                  ].map(([value, icon, label]) => (
+                    <label
+                      key={value}
+                      className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-sm font-semibold ${
+                        fulfillmentMethod === value
+                          ? "border-primary-500 bg-primary-50 text-primary-800"
+                          : "border-background-300 text-foreground-700"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="fulfillment"
+                        value={value}
+                        checked={fulfillmentMethod === value}
+                        onChange={(e) => setFulfillmentMethod(e.target.value)}
+                        className="sr-only"
+                      />
+                      <i className={icon} /> {label}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            )}
+            {fulfillmentMethod === "pickup" && (
+              <div className="rounded-xl border border-primary-100 bg-primary-50/70 p-3.5 text-xs leading-relaxed text-foreground-700">
+                <p className="font-semibold text-primary-800">Pickup details</p>
+                <p className="mt-1">
+                  {product.pickupInstructions || "The listing owner will email you to arrange the pickup location and time."}
+                </p>
+              </div>
+            )}
+            {fulfillmentMethod === "shipping" && (
+              <div className="space-y-3 rounded-xl border border-background-200 bg-background-100/40 p-4">
+                <p className="text-sm font-semibold text-foreground-800">Delivery address</p>
+                <Input
+                  aria-label="Street address"
+                  autoComplete="shipping address-line1"
+                  placeholder="Street address *"
+                  value={shipping.address1}
+                  onChange={updateShipping("address1")}
+                />
+                <Input
+                  aria-label="Apartment, suite or unit"
+                  autoComplete="shipping address-line2"
+                  placeholder="Apartment, suite or unit"
+                  value={shipping.address2}
+                  onChange={updateShipping("address2")}
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <Input aria-label="City" placeholder="City *" value={shipping.city} onChange={updateShipping("city")} />
+                  <Input aria-label="State or region" placeholder="State / region" value={shipping.region} onChange={updateShipping("region")} />
+                  <Input aria-label="Postal code" placeholder="Postal code *" value={shipping.postcode} onChange={updateShipping("postcode")} />
+                  <Input aria-label="Country" placeholder="Country *" value={shipping.country} onChange={updateShipping("country")} />
+                </div>
+                <Input
+                  aria-label="Phone number"
+                  type="tel"
+                  autoComplete="tel"
+                  placeholder="Phone number (optional)"
+                  value={shipping.phone}
+                  onChange={updateShipping("phone")}
+                />
+              </div>
+            )}
             {error && <p className="text-sm text-accent-600 font-label">{error}</p>}
             <Button type="submit" variant="primary" className="w-full" disabled={submitting}>
               {submitting ? "Starting…" : "Continue to payment"}
@@ -331,8 +462,7 @@ function BuyModal({ product, onClose }) {
                 clientId={paymentConfig.paypalClientId}
                 createOrder={async () => {
                   const result = await createVendorProductPaypalOrder(product.id, {
-                    name: name.trim(),
-                    email: email.trim(),
+                    ...checkoutDetails,
                   });
                   return { orderId: result.orderId, paypalOrderId: result.paypalOrderId };
                 }}

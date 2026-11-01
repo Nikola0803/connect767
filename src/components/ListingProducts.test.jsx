@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import ListingProducts from "./ListingProducts";
@@ -39,5 +39,32 @@ describe("ListingProducts", () => {
     );
 
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it("lets a buyer choose shipping or local pickup when the seller offers both", () => {
+    render(
+      <MemoryRouter>
+        <ListingProducts
+          slug="kalinago-tours"
+          initialProducts={[
+            {
+              ...products[0],
+              fulfillmentMode: "both",
+              shippingFeeCents: 1200,
+              pickupInstructions: "Pickup in Roseau, Monday to Friday.",
+            },
+          ]}
+        />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /buy now/i }));
+    expect(screen.getByRole("radio", { name: /shipping/i })).toBeChecked();
+    expect(screen.getByLabelText(/street address/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("radio", { name: /local pickup/i }));
+    expect(screen.queryByLabelText(/street address/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/pickup in roseau/i)).toBeInTheDocument();
+    expect(screen.getByText(/total \$72\.00/i)).toBeInTheDocument();
   });
 });
