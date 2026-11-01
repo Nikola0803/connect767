@@ -38,7 +38,7 @@ export default function ProductDetailPage() {
       return undefined;
     }
 
-    detectLegacySizeChart(product.gallery, product.description).then((chart) => {
+    detectLegacySizeChart(product.gallery, product.description, product.attributes).then((chart) => {
       if (!cancelled) setDetectedSizeChart(chart);
     });
     return () => {
