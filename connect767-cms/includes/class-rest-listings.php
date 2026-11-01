@@ -494,6 +494,7 @@ class C767_REST_Listings
                 'bookingType' => self::sanitize_booking_type(get_post_meta($post->ID, 'booking_type', true)),
                 'bookingPriceCents' => (int) get_post_meta($post->ID, 'booking_price_cents', true),
                 'bookingDurationMinutes' => (int) (get_post_meta($post->ID, 'booking_duration_minutes', true) ?: 30),
+                'payoutConfigured' => in_array((string) get_post_meta($post->ID, '_booking_payout_method', true), ['bank', 'digital'], true),
                 'submittedAt' => $post->post_date,
                 'viewUrl' => $post->post_status === 'publish' ? get_permalink($post->ID) : null,
             ];
