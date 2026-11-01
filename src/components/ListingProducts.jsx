@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import {
   getListingProducts,
@@ -31,13 +32,27 @@ function formatPrice(cents) {
  * used for Shop checkout and the Classified listing fee. The site owner is
  * responsible for paying vendors out themselves, outside the app.
  */
-export default function ListingProducts({ slug, isPreview }) {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(!isPreview);
+export default function ListingProducts({
+  slug,
+  isPreview = false,
+  listingTitle = "this listing",
+  onAvailabilityChange,
+  fullStorefront = false,
+  initialProducts = null,
+}) {
+  const suppliedProducts = Array.isArray(initialProducts) ? initialProducts : null;
+  const [products, setProducts] = useState(suppliedProducts || []);
+  const [loading, setLoading] = useState(!isPreview && !suppliedProducts);
   const [activeProduct, setActiveProduct] = useState(null);
 
   useEffect(() => {
     if (isPreview) {
+      setLoading(false);
+      setProducts([]);
+      return;
+    }
+    if (suppliedProducts) {
+      setProducts(suppliedProducts);
       setLoading(false);
       return;
     }
@@ -56,51 +71,119 @@ export default function ListingProducts({ slug, isPreview }) {
     return () => {
       cancelled = true;
     };
-  }, [slug, isPreview]);
+  }, [slug, isPreview, initialProducts]);
 
-  if (isPreview || loading || products.length === 0) {
+  useEffect(() => {
+    onAvailabilityChange?.(!loading && products.length > 0);
+    return () => onAvailabilityChange?.(false);
+  }, [loading, products.length, onAvailabilityChange]);
+
+  if (isPreview) {
     return null;
   }
 
-  return (
-    <section className="mt-10 pt-10 border-t border-background-200/70">
-      <h2 className="font-heading text-2xl font-light text-foreground-950 mb-6">
-        Buy from {products.length > 0 ? "this business" : ""}
-      </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {products.map((p) => (
-          <div
-            key={p.id}
-            className="rounded-2xl border border-background-200/70 bg-background-50 overflow-hidden flex flex-col"
-          >
-            <div className="w-full h-36 bg-background-100 flex items-center justify-center overflow-hidden">
-              {p.imageUrl ? (
-                <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
-              ) : (
-                <i className="ri-shopping-bag-3-line text-3xl text-foreground-300" />
-              )}
+  if (loading) {
+    return fullStorefront ? (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5" role="status">
+        {[0, 1, 2, 3].map((item) => (
+          <div key={item} className="overflow-hidden rounded-2xl border border-background-200 bg-background-50">
+            <div className="aspect-[4/3] animate-pulse bg-background-100" />
+            <div className="space-y-3 p-5">
+              <div className="h-4 w-2/3 animate-pulse rounded bg-background-200" />
+              <div className="h-3 w-full animate-pulse rounded bg-background-100" />
+              <div className="h-9 w-full animate-pulse rounded-full bg-background-100" />
             </div>
-            <div className="p-4 flex flex-col flex-1">
-              <h3 className="font-heading text-base font-medium text-foreground-950 mb-1">
+          </div>
+        ))}
+        <span className="sr-only">Loading storefront products</span>
+      </div>
+    ) : null;
+  }
+
+  if (products.length === 0) return null;
+
+  const visibleProducts = fullStorefront ? products : products.slice(0, 3);
+
+  return (
+    <section className={fullStorefront ? "" : "mt-10 border-t border-background-200/70 pt-10"}>
+      {!fullStorefront && (
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-primary-700">
+              Shop this listing
+            </p>
+            <h2 className="font-heading text-2xl font-light text-foreground-950">
+              Products from {listingTitle}
+            </h2>
+          </div>
+          {products.length > 3 && (
+            <Link
+              to={`/listings/${slug}/shop`}
+              className="inline-flex items-center gap-2 text-sm font-semibold text-primary-700 transition-colors hover:text-primary-900"
+            >
+              View all {products.length} products
+              <i className="ri-arrow-right-line" />
+            </Link>
+          )}
+        </div>
+      )}
+      <div
+        className={`grid grid-cols-1 gap-5 sm:grid-cols-2 ${
+          fullStorefront ? "lg:grid-cols-3 xl:grid-cols-4" : "lg:grid-cols-3"
+        }`}
+      >
+        {visibleProducts.map((p) => (
+          <article
+            key={p.id}
+            className="group flex flex-col overflow-hidden rounded-2xl border border-background-200/70 bg-background-50 transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_18px_50px_rgba(18,63,44,0.12)]"
+          >
+            <div className="relative aspect-[4/3] w-full overflow-hidden bg-background-100">
+              {p.imageUrl ? (
+                <img
+                  src={p.imageUrl}
+                  alt={p.name}
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-100">
+                  <i className="ri-shopping-bag-3-line text-4xl text-primary-400" />
+                </div>
+              )}
+              <span className="absolute left-3 top-3 rounded-full bg-background-50/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-primary-800 shadow-sm">
+                Sold by this listing
+              </span>
+            </div>
+            <div className="flex flex-1 flex-col p-5">
+              <h3 className="mb-1 font-heading text-lg font-medium leading-snug text-foreground-950">
                 {p.name}
               </h3>
               {p.description && (
-                <p className="text-xs text-foreground-600 font-label mb-3 line-clamp-2 flex-1">
+                <p className="mb-4 line-clamp-2 flex-1 text-xs leading-relaxed text-foreground-600 font-label">
                   {p.description}
                 </p>
               )}
-              <div className="flex items-center justify-between mt-auto pt-2">
+              <div className="mt-auto flex items-center justify-between gap-3 border-t border-background-200/70 pt-4">
                 <span className="font-heading text-lg font-semibold text-foreground-950">
                   {formatPrice(p.priceCents)}
                 </span>
                 <Button variant="primary" size="sm" onClick={() => setActiveProduct(p)}>
-                  Buy
+                  Buy now
                 </Button>
               </div>
             </div>
-          </div>
+          </article>
         ))}
       </div>
+
+      {!fullStorefront && products.length <= 3 && (
+        <Link
+          to={`/listings/${slug}/shop`}
+          className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary-700 transition-colors hover:text-primary-900"
+        >
+          Open the complete storefront
+          <i className="ri-arrow-right-line" />
+        </Link>
+      )}
 
       {activeProduct && (
         <BuyModal product={activeProduct} onClose={() => setActiveProduct(null)} />
@@ -108,7 +191,6 @@ export default function ListingProducts({ slug, isPreview }) {
     </section>
   );
 }
-
 function BuyModal({ product, onClose }) {
   const [step, setStep] = useState("details"); // details -> choosePayment -> payment -> done
   const [name, setName] = useState("");
