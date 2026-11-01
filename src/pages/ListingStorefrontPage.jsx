@@ -1,7 +1,8 @@
+import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import ListingProducts from "../components/ListingProducts";
 import { listingOwnerMessagePath } from "../components/ListingProfile";
-import { getListingBySlug, getListingProducts, getStorefrontSettings } from "../data/repository";
+import { getListingBySlug, getListingProducts, getStorefrontSettings, recordStorefrontView } from "../data/repository";
 import { useAsync } from "../hooks/useAsync";
 import { ErrorState, Spinner } from "../components/ui/States";
 import { imageCropStyle } from "../lib/imagePosition";
@@ -22,6 +23,71 @@ function ProductSection({ eyebrow, title, products, slug, listingTitle, accentCo
     </section>
   );
 }
+
+function StorefrontSeo({ listing, products, slug, coverUrl }) {
+  useEffect(() => {
+    const viewKey = `connect767-storefront-view:${slug}`;
+    if (!window.sessionStorage.getItem(viewKey)) {
+      window.sessionStorage.setItem(viewKey, "1");
+      recordStorefrontView(slug).catch(() => undefined);
+    }
+
+    const canonical = `https://connect767.com/listings/${slug}/shop`;
+    const title = `${listing.title} Store | Connect767`;
+    const description = `Shop products from ${listing.title} on Connect767. View secure checkout, shipping and local pickup options.`;
+    document.title = title;
+    const descriptionMeta = document.head.querySelector('meta[name="description"]');
+    descriptionMeta?.setAttribute("content", description);
+
+    const script = document.createElement("script");
+    script.id = "connect767-storefront-schema";
+    script.type = "application/ld+json";
+    script.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Store",
+      name: `${listing.title} Store`,
+      url: canonical,
+      image: coverUrl || listing.image || undefined,
+      description,
+      address: listing.location || undefined,
+      hasOfferCatalog: {
+        "@type": "OfferCatalog",
+        name: `${listing.title} products`,
+        itemListElement: products.map((product) => ({
+          "@type": "OfferCatalog",
+          name: product.name,
+          itemListElement: [{
+            "@type": "Product",
+            name: product.name,
+            description: product.description || undefined,
+            image: product.image || undefined,
+            sku: product.sku || undefined,
+            aggregateRating: product.reviewCount > 0 ? {
+              "@type": "AggregateRating",
+              ratingValue: product.reviewAverage,
+              reviewCount: product.reviewCount,
+            } : undefined,
+            offers: {
+              "@type": "Offer",
+              priceCurrency: "USD",
+              price: (Number(product.priceCents || 0) / 100).toFixed(2),
+              availability: product.stockStatus === "sold_out"
+                ? "https://schema.org/OutOfStock"
+                : "https://schema.org/InStock",
+              url: canonical,
+            },
+          }],
+        })),
+      },
+    });
+    document.head.querySelector("#connect767-storefront-schema")?.remove();
+    document.head.appendChild(script);
+    return () => script.remove();
+  }, [coverUrl, listing, products, slug]);
+
+  return null;
+}
+
 export default function ListingStorefrontPage() {
   const { slug } = useParams();
   const { data, loading, error, reload } = useAsync(async () => {
@@ -72,6 +138,7 @@ export default function ListingStorefrontPage() {
 
   return (
     <div className="bg-background-50 pt-16 md:pt-20">
+      <StorefrontSeo listing={listing} products={products.all} slug={slug} coverUrl={settings.coverUrl} />
       <div className="px-4 py-5 md:px-8 lg:px-12">
         <div className="mx-auto flex max-w-7xl items-center gap-2 text-[11px] font-medium tracking-wide text-foreground-500 font-label">
           <Link to="/listings" className="hover:text-foreground-800">Directory</Link><span className="text-background-400">/</span>
@@ -95,7 +162,7 @@ export default function ListingStorefrontPage() {
             <div className="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-xs text-foreground-500">{listing.location && <span className="inline-flex items-center gap-1.5"><i className="ri-map-pin-line" />{listing.location}</span>}<span className="inline-flex items-center gap-1.5"><i className="ri-shopping-bag-line" />{products.all.length} product{products.all.length === 1 ? "" : "s"}</span></div>
           </div>
           <div className="relative min-h-[310px] overflow-hidden bg-background-200 sm:min-h-[420px] lg:min-h-full">
-            {settings.coverUrl ? <img src={settings.coverUrl} alt={`${listing.title} storefront`} className="absolute inset-0 h-full w-full object-cover" style={settings.hasCustomCover ? undefined : imageCropStyle(listing.coverPosition, listing.coverZoom, "cover")} /> : <div className="flex h-full min-h-[310px] items-center justify-center bg-primary-50 text-5xl text-primary-300 sm:min-h-[420px]"><i className="ri-store-2-line" /></div>}
+            {settings.coverUrl ? <img src={settings.coverUrl} alt={`${listing.title} storefront`} fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover" style={settings.hasCustomCover ? undefined : imageCropStyle(listing.coverPosition, listing.coverZoom, "cover")} /> : <div className="flex h-full min-h-[310px] items-center justify-center bg-primary-50 text-5xl text-primary-300 sm:min-h-[420px]"><i className="ri-store-2-line" /></div>}
             <Link to={`/listings/${slug}`} className="absolute bottom-5 right-5 inline-flex h-10 items-center gap-2 rounded-full bg-background-50/95 px-4 text-xs font-semibold text-foreground-900 shadow-sm backdrop-blur transition-transform hover:-translate-y-0.5">View profile <i className="ri-arrow-right-up-line" /></Link>
           </div>
         </div>

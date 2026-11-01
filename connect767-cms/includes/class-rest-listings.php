@@ -495,6 +495,9 @@ class C767_REST_Listings
                 'bookingPriceCents' => (int) get_post_meta($post->ID, 'booking_price_cents', true),
                 'bookingDurationMinutes' => (int) (get_post_meta($post->ID, 'booking_duration_minutes', true) ?: 30),
                 'payoutConfigured' => in_array((string) get_post_meta($post->ID, '_booking_payout_method', true), ['bank', 'digital'], true),
+                'storefrontConfigured' => (string) get_post_meta($post->ID, 'storefront_headline', true) !== '' || (string) get_post_meta($post->ID, 'storefront_cover_url', true) !== '',
+                'stripeConnectEnabled' => (bool) get_option('connect767_stripe_connect_enabled', false) && preg_match('/^acct_[A-Za-z0-9]+$/', (string) get_post_meta($post->ID, '_stripe_connect_account_id', true)),
+                'storefrontProductCount' => (int) get_post_meta($post->ID, 'storefront_product_count', true),
                 'submittedAt' => $post->post_date,
                 'viewUrl' => $post->post_status === 'publish' ? get_permalink($post->ID) : null,
             ];

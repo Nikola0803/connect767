@@ -384,6 +384,22 @@ class C767_Post_Types
             'supports' => ['title'],
             'capability_type' => 'post',
         ]);
+
+        register_post_type('vendor_product_review', [
+            'label' => 'Product Reviews',
+            'labels' => [
+                'name' => 'Product Reviews',
+                'singular_name' => 'Product Review',
+                'all_items' => 'Product Reviews',
+                'menu_name' => 'Product Reviews',
+            ],
+            'public' => false,
+            'show_ui' => true,
+            'show_in_menu' => 'edit.php?post_type=listing',
+            'show_in_rest' => false,
+            'supports' => ['title', 'editor'],
+            'capability_type' => 'post',
+        ]);
     }
 
     public static function register_taxonomies()

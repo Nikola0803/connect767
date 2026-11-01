@@ -16,6 +16,8 @@ const empty = {
   logoFile: null,
   featuredProductIds: [],
   productOrder: [],
+  stripeConnectAccountId: "",
+  connectPayoutEnabled: false,
 };
 
 export default function StorefrontCustomizer({ listings, products }) {
@@ -112,6 +114,19 @@ export default function StorefrontCustomizer({ listings, products }) {
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="Shipping & pickup message" htmlFor="store-shipping"><Textarea id="store-shipping" rows={3} maxLength={500} value={form.shippingMessage} onChange={update("shippingMessage")} /></FormField>
             <FormField label="Store policies" htmlFor="store-policies" hint="Returns, exchanges, processing time, and other terms."><Textarea id="store-policies" rows={3} maxLength={1000} value={form.policies} onChange={update("policies")} /></FormField>
+          </div>
+
+          <div className="rounded-xl border border-background-200 bg-background-100/50 p-4">
+            <div className="flex items-start gap-3">
+              <span className={`flex h-9 w-9 items-center justify-center rounded-full ${form.connectPayoutEnabled ? "bg-primary-100 text-primary-800" : "bg-background-200 text-foreground-600"}`}><i className="ri-bank-card-line" /></span>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-semibold text-foreground-900">Automated Stripe payouts</h3>
+                <p className="mb-3 mt-1 text-xs leading-relaxed text-foreground-500">When Connect767 enables Stripe Connect, 10% is retained automatically and the remaining product total plus shipping is routed to your connected account.</p>
+                <FormField label="Stripe Connect account ID" htmlFor="store-connect-account" hint="Optional. It begins with acct_. Connect767 must also enable Stripe Connect before automatic transfers begin.">
+                  <Input id="store-connect-account" value={form.stripeConnectAccountId || ""} onChange={update("stripeConnectAccountId")} placeholder="acct_…" />
+                </FormField>
+              </div>
+            </div>
           </div>
 
           <div>

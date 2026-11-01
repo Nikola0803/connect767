@@ -8,6 +8,9 @@ import {
   confirmVendorOrder,
   createVendorProductPaypalOrder,
   captureVendorProductPaypalOrder,
+  recordVendorProductView,
+  getVendorProductReviews,
+  submitVendorProductReview,
 } from "../data/repository";
 import { getStripe } from "../lib/stripeClient";
 import PaypalButton from "./PaypalButton";
@@ -154,6 +157,8 @@ export default function ListingProducts({
                 <img
                   src={p.imageUrl}
                   alt={p.name}
+                  loading="lazy"
+                  decoding="async"
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.025]"
                 />
               ) : (
@@ -171,6 +176,7 @@ export default function ListingProducts({
                   type="button"
                   onClick={() => setActiveProduct(p)}
                   aria-label={`Buy ${p.name}`}
+                  disabled={p.stockStatus === "sold_out"}
                   className="absolute bottom-4 right-4 flex h-10 w-10 translate-y-2 items-center justify-center rounded-full bg-background-50 text-foreground-950 opacity-0 shadow-sm transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 focus:translate-y-0 focus:opacity-100"
                 >
                   <i className="ri-add-line text-lg" />
@@ -198,6 +204,11 @@ export default function ListingProducts({
                 />
                 {fulfillmentLabel(p)}
               </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-foreground-500">
+                {p.reviewCount > 0 && <span className="inline-flex items-center gap-1"><i className="ri-star-fill text-amber-500" />{Number(p.reviewAverage || 0).toFixed(1)} · {p.reviewCount} verified</span>}
+                {p.stockStatus === "low_stock" && <span className="font-semibold text-amber-700">Low stock</span>}
+                {p.stockStatus === "sold_out" && <span className="font-semibold text-accent-600">Sold out</span>}
+              </div>
               <div className={`mt-auto flex items-center justify-between gap-3 ${fullStorefront ? "pt-4" : "border-t border-background-200/70 pt-4"}`}>
                 <span className={`font-heading font-semibold text-foreground-950 ${fullStorefront ? "text-base" : "text-lg"}`}>
                   {formatPrice(p.priceCents)}
@@ -207,8 +218,9 @@ export default function ListingProducts({
                   size="sm"
                   className={fullStorefront ? "rounded-full px-4" : ""}
                   onClick={() => setActiveProduct(p)}
+                  disabled={p.stockStatus === "sold_out"}
                 >
-                  {fullStorefront ? "View item" : "Buy now"}
+                  {p.stockStatus === "sold_out" ? "Sold out" : fullStorefront ? "View item" : "Buy now"}
                 </Button>
               </div>
             </div>
@@ -232,6 +244,7 @@ export default function ListingProducts({
     </section>
   );
 }
+
 function BuyModal({ product, onClose }) {
   const [step, setStep] = useState("details"); // details -> choosePayment -> payment -> done
   const [name, setName] = useState("");
@@ -257,15 +270,28 @@ function BuyModal({ product, onClose }) {
   const [orderId, setOrderId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [quantity, setQuantity] = useState(1);
+  const [variantId, setVariantId] = useState(product.variants?.find((variant) => Number(variant.stockQuantity) > 0)?.id || product.variants?.[0]?.id || "");
+  const [reviews, setReviews] = useState([]);
+  const selectedVariant = product.variants?.find((variant) => String(variant.id) === String(variantId));
+  const unitPriceCents = Number(selectedVariant?.priceCents || product.priceCents || 0);
+  const availableStock = selectedVariant ? Number(selectedVariant.stockQuantity || 0) : product.trackStock ? Number(product.stockQuantity || 0) : null;
   const shippingFee = fulfillmentMethod === "shipping" ? Number(product.shippingFeeCents || 0) : 0;
-  const totalCents = Number(product.priceCents || 0) + shippingFee;
+  const totalCents = unitPriceCents * quantity + shippingFee;
   const checkoutDetails = {
     name: name.trim(),
     email: email.trim(),
     fulfillmentMethod,
     shipping: fulfillmentMethod === "shipping" ? shipping : {},
+    quantity,
+    variantId,
   };
   const updateShipping = (key) => (e) => setShipping((value) => ({ ...value, [key]: e.target.value }));
+
+  useEffect(() => {
+    recordVendorProductView(product.id).catch(() => null);
+    getVendorProductReviews(product.id).then((items) => setReviews(items || [])).catch(() => setReviews([]));
+  }, [product.id]);
 
   const startCheckout = async (e) => {
     e.preventDefault();
@@ -333,18 +359,28 @@ function BuyModal({ product, onClose }) {
         <div className="mb-5 flex items-center justify-between gap-3 text-sm font-label">
           <span className="text-foreground-600">
             {fulfillmentMethod === "shipping" && shippingFee > 0
-              ? `${formatPrice(product.priceCents)} + ${formatPrice(shippingFee)} shipping`
+              ? `${formatPrice(unitPriceCents)} × ${quantity} + ${formatPrice(shippingFee)} shipping`
               : fulfillmentMethod === "pickup"
                 ? "Local pickup"
                 : fulfillmentMethod === "none"
                   ? "No delivery required"
-                  : "Free shipping"}
+                : "Free shipping"}
           </span>
           <span className="font-semibold text-foreground-950">Total {formatPrice(totalCents)}</span>
         </div>
 
         {step === "details" && (
           <form onSubmit={startCheckout} className="space-y-4">
+            {product.variants?.length > 0 && (
+              <FormField label="Choose an option" htmlFor="buy-variant">
+                <select id="buy-variant" value={variantId} onChange={(event) => { setVariantId(event.target.value); setQuantity(1); }} className="w-full rounded-lg border border-background-300 bg-background-50 px-4 py-2.5 text-sm">
+                  {product.variants.map((variant) => <option key={variant.id} value={variant.id} disabled={Number(variant.stockQuantity) <= 0}>{variant.label} · {formatPrice(Number(variant.priceCents || product.priceCents))}{Number(variant.stockQuantity) <= 0 ? " — sold out" : ""}</option>)}
+                </select>
+              </FormField>
+            )}
+            <FormField label="Quantity" htmlFor="buy-quantity" hint={availableStock !== null ? `${availableStock} available` : ""}>
+              <Input id="buy-quantity" type="number" min="1" max={Math.min(25, availableStock ?? 25)} value={quantity} onChange={(event) => setQuantity(Math.max(1, Math.min(25, availableStock ?? 25, Number(event.target.value) || 1)))} />
+            </FormField>
             <FormField label="Your name" htmlFor="buy-name">
               <Input id="buy-name" value={name} onChange={(e) => setName(e.target.value)} />
             </FormField>
@@ -428,7 +464,7 @@ function BuyModal({ product, onClose }) {
               </div>
             )}
             {error && <p className="text-sm text-accent-600 font-label">{error}</p>}
-            <Button type="submit" variant="primary" className="w-full" disabled={submitting}>
+            <Button type="submit" variant="primary" className="sticky bottom-0 w-full shadow-[0_-10px_24px_rgba(255,255,255,0.92)]" disabled={submitting || availableStock === 0}>
               {submitting ? "Starting…" : "Continue to payment"}
             </Button>
           </form>
@@ -464,6 +500,7 @@ function BuyModal({ product, onClose }) {
                   const result = await createVendorProductPaypalOrder(product.id, {
                     ...checkoutDetails,
                   });
+                  setOrderId(result.orderId);
                   return { orderId: result.orderId, paypalOrderId: result.paypalOrderId };
                 }}
                 captureOrder={(id) => captureVendorProductPaypalOrder(id)}
@@ -484,10 +521,14 @@ function BuyModal({ product, onClose }) {
         )}
 
         {step === "done" && (
-          <p className="text-sm text-primary-700 font-label flex items-start gap-2">
-            <i className="ri-checkbox-circle-fill mt-0.5 flex-shrink-0" />
-            Payment received — a receipt is on its way to {email}.
-          </p>
+          <div>
+            <p className="text-sm text-primary-700 font-label flex items-start gap-2"><i className="ri-checkbox-circle-fill mt-0.5 flex-shrink-0" />Payment received — a receipt is on its way to {email}.</p>
+            {orderId && <VerifiedReviewForm productId={product.id} orderId={orderId} email={email} onSubmitted={(review) => setReviews((items) => [review, ...items])} />}
+          </div>
+        )}
+
+        {reviews.length > 0 && step !== "payment" && (
+          <div className="mt-6 border-t border-background-200 pt-5"><h4 className="text-sm font-semibold text-foreground-900">Verified customer reviews</h4><div className="mt-3 space-y-3">{reviews.slice(0, 3).map((review) => <div key={review.id} className="rounded-xl bg-background-100/70 p-3"><p className="text-xs font-semibold text-foreground-900">{review.name} <span className="ml-1 text-primary-700">Verified purchase</span></p><p className="mt-1 text-xs text-amber-600">{"★".repeat(review.rating)}</p><p className="mt-1 text-xs leading-relaxed text-foreground-600">{review.text}</p></div>)}</div></div>
         )}
       </div>
     </div>
@@ -547,6 +588,34 @@ function BuyPaymentForm({ orderId, onSuccess }) {
       >
         {submitting ? "Processing…" : "Pay & buy"}
       </Button>
+    </form>
+  );
+}
+
+function VerifiedReviewForm({ productId, orderId, email, onSubmitted }) {
+  const [rating, setRating] = useState(5);
+  const [text, setText] = useState("");
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+  const submit = async (event) => {
+    event.preventDefault();
+    setError("");
+    try {
+      const result = await submitVendorProductReview(productId, { orderId, email, rating, text });
+      onSubmitted?.({ id: result.id, name: "You", rating, text, verified: true });
+      setSent(true);
+    } catch {
+      setError("We couldn't submit this review. It may already have been reviewed.");
+    }
+  };
+  if (sent) return <p className="mt-4 text-xs font-semibold text-primary-700">Thank you—your verified review is published.</p>;
+  return (
+    <form onSubmit={submit} className="mt-5 rounded-xl border border-background-200 bg-background-100/50 p-4">
+      <p className="text-sm font-semibold text-foreground-900">Review your purchase</p>
+      <div className="mt-3 flex gap-1">{[1, 2, 3, 4, 5].map((star) => <button key={star} type="button" aria-label={`${star} stars`} onClick={() => setRating(star)} className={star <= rating ? "text-amber-500" : "text-background-300"}><i className="ri-star-fill" /></button>)}</div>
+      <textarea value={text} onChange={(event) => setText(event.target.value)} required maxLength={800} placeholder="Tell other customers about this product" className="mt-3 min-h-20 w-full rounded-lg border border-background-300 bg-background-50 p-3 text-sm" />
+      {error && <p className="mt-2 text-xs text-accent-600">{error}</p>}
+      <Button type="submit" size="sm" className="mt-3">Submit verified review</Button>
     </form>
   );
 }
