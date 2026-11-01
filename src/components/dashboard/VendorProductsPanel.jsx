@@ -27,10 +27,9 @@ const emptyForm = {
 
 /**
  * Dashboard "Products & Services" + "Sales" — the seller side of the
- * marketplace feature that shows "Buy" cards on a Classified listing's
- * public profile (see ListingProducts.jsx). Only listings on the
- * Classified tier can add products — enforced again server-side in
- * class-rest-vendor-products.php regardless of what this form submits.
+ * marketplace feature that shows "Buy" cards on a listing's public profile
+ * (see ListingProducts.jsx). Every listing tier can add products; ownership
+ * is enforced again server-side in class-rest-vendor-products.php.
  *
  * The same form doubles as the "Edit product" form — editingId tracks
  * which existing product (if any) a submit should update, vs. creating a
@@ -41,7 +40,7 @@ const emptyForm = {
  * this site's own Stripe account (platform-collects model), so the owner
  * needs to see what sold in order to pay each vendor out separately.
  */
-export default function VendorProductsPanel({ classifiedListings }) {
+export default function VendorProductsPanel({ listings = [], initialListingId = "" }) {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +69,17 @@ export default function VendorProductsPanel({ classifiedListings }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (classifiedListings.length === 0) {
+  useEffect(() => {
+    if (!initialListingId || !listings.some((listing) => String(listing.id) === String(initialListingId))) {
+      return;
+    }
+    setEditingId(null);
+    setForm({ ...emptyForm, listingId: String(initialListingId) });
+    setError(null);
+    setShowForm(true);
+  }, [initialListingId, listings]);
+
+  if (listings.length === 0) {
     return null;
   }
 
@@ -84,7 +93,10 @@ export default function VendorProductsPanel({ classifiedListings }) {
 
   const openAddForm = () => {
     setEditingId(null);
-    setForm(emptyForm);
+    setForm({
+      ...emptyForm,
+      listingId: listings.length === 1 ? String(listings[0].id) : "",
+    });
     setError(null);
     setShowForm((v) => (editingId ? true : !v));
   };
@@ -181,7 +193,7 @@ export default function VendorProductsPanel({ classifiedListings }) {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-5 mt-12">
+      <div id="products-services" className="flex items-center justify-between mb-5 mt-12 scroll-mt-24">
         <h2 className="font-heading text-xl font-medium text-foreground-950">
           Products &amp; services
         </h2>
@@ -191,7 +203,7 @@ export default function VendorProductsPanel({ classifiedListings }) {
       </div>
 
       <p className="text-sm text-foreground-600 font-label mb-5">
-        Sell directly from your Classified listing's page — customers pay by card or PayPal,
+        Sell directly from any listing page — customers pay by card or PayPal,
         then shipping and pickup details appear in "Sales" below.
       </p>
 
@@ -207,8 +219,8 @@ export default function VendorProductsPanel({ classifiedListings }) {
               onChange={update("listingId")}
               disabled={!!editingId}
             >
-              <option value="">Select a Classified listing…</option>
-              {classifiedListings.map((l) => (
+              <option value="">Select a listing…</option>
+              {listings.map((l) => (
                 <option key={l.id} value={l.id}>
                   {l.title}
                 </option>

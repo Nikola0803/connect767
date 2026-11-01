@@ -27,7 +27,7 @@ function fulfillmentLabel(product) {
 }
 
 /**
- * "Buy" cards on a Classified listing's public profile — the marketplace
+ * "Buy" cards on any listing's public profile — the marketplace
  * feature ("buy things like a multivendor marketplace"). Only ever shows
  * items the owner added from their dashboard's "Products & Services"
  * section and marked active; the backend independently re-checks the

@@ -345,7 +345,7 @@ class C767_Post_Types
             'capability_type' => 'post',
         ]);
 
-        // Marketplace: sellable items a Classified listing owner adds from
+        // Marketplace: sellable items any listing owner adds from
         // their dashboard (class-rest-vendor-products.php). "Platform
         // collects" model — payment goes to this site's own Stripe account
         // (the same one Shop checkout and Classified listing fees already
