@@ -180,6 +180,10 @@ class C767_Meta_Fields
             'cover_zoom' => ['label' => 'Cover photo zoom (1.0-2.5)', 'type' => 'string'],
             'cover_fit' => ['label' => 'Cover photo fit mode (contain or cover)', 'type' => 'string'],
             'fallback_image' => ['label' => 'Fallback image URL (used when no featured image / gallery is set)', 'type' => 'string'],
+            'storefront_product_count' => ['label' => 'Active storefront product count (managed automatically)', 'type' => 'integer'],
+            'storefront_fulfillment_options' => ['label' => 'Storefront delivery options (managed automatically)', 'type' => 'array'],
+            'storefront_view_count' => ['label' => 'Storefront views (managed automatically)', 'type' => 'integer'],
+            'storefront_product_search' => ['label' => 'Storefront product search terms (managed automatically)', 'type' => 'string'],
         ];
     }
 

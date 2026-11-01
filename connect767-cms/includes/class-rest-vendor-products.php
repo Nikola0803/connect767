@@ -97,6 +97,36 @@ class C767_Rest_Vendor_Products
             'callback' => [__CLASS__, 'orders_mine'],
             'permission_callback' => [__CLASS__, 'check_auth'],
         ]);
+
+        register_rest_route(self::NAMESPACE_, '/vendor-orders/(?P<id>\d+)', [
+            'methods' => 'POST',
+            'callback' => [__CLASS__, 'update_order'],
+            'permission_callback' => [__CLASS__, 'check_auth'],
+        ]);
+
+        register_rest_route(self::NAMESPACE_, '/vendor-analytics/mine', [
+            'methods' => 'GET',
+            'callback' => [__CLASS__, 'analytics_mine'],
+            'permission_callback' => [__CLASS__, 'check_auth'],
+        ]);
+
+        register_rest_route(self::NAMESPACE_, '/vendor-products/(?P<id>\d+)/reviews', [
+            'methods' => ['GET', 'POST'],
+            'callback' => [__CLASS__, 'product_reviews'],
+            'permission_callback' => '__return_true',
+        ]);
+
+        register_rest_route(self::NAMESPACE_, '/vendor-products/(?P<id>\d+)/view', [
+            'methods' => 'POST',
+            'callback' => [__CLASS__, 'record_product_view'],
+            'permission_callback' => '__return_true',
+        ]);
+
+        register_rest_route(self::NAMESPACE_, '/listings/(?P<slug>[a-zA-Z0-9-_]+)/storefront-view', [
+            'methods' => 'POST',
+            'callback' => [__CLASS__, 'record_storefront_view'],
+            'permission_callback' => '__return_true',
+        ]);
     }
 
     public static function check_auth(WP_REST_Request $request)
@@ -107,6 +137,11 @@ class C767_Rest_Vendor_Products
 
     private static function format_product($post)
     {
+        $variants = json_decode((string) get_post_meta($post->ID, 'variants', true), true);
+        $variants = is_array($variants) ? $variants : [];
+        $track_stock = get_post_meta($post->ID, 'track_stock', true) === '1';
+        $stock_quantity = max(0, (int) get_post_meta($post->ID, 'stock_quantity', true));
+        $low_stock_threshold = max(0, (int) (get_post_meta($post->ID, 'low_stock_threshold', true) ?: 3));
         return [
             'id' => $post->ID,
             'listingId' => (int) get_post_meta($post->ID, 'listing_id', true),
@@ -118,7 +153,72 @@ class C767_Rest_Vendor_Products
             'fulfillmentMode' => self::product_fulfillment_mode($post->ID),
             'shippingFeeCents' => (int) get_post_meta($post->ID, 'shipping_fee_cents', true),
             'pickupInstructions' => get_post_meta($post->ID, 'pickup_instructions', true),
+            'sku' => (string) get_post_meta($post->ID, 'sku', true),
+            'category' => (string) get_post_meta($post->ID, 'product_category', true),
+            'trackStock' => $track_stock,
+            'stockQuantity' => $track_stock ? $stock_quantity : null,
+            'lowStockThreshold' => $low_stock_threshold,
+            'stockStatus' => !$track_stock ? 'available' : ($stock_quantity <= 0 ? 'sold_out' : ($stock_quantity <= $low_stock_threshold ? 'low_stock' : 'in_stock')),
+            'variants' => array_values($variants),
+            'reviewAverage' => (float) get_post_meta($post->ID, 'review_average', true),
+            'reviewCount' => (int) get_post_meta($post->ID, 'review_count', true),
         ];
+    }
+
+    private static function sanitize_variants($value)
+    {
+        $decoded = is_array($value) ? $value : json_decode((string) $value, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+        $variants = [];
+        foreach (array_slice($decoded, 0, 50) as $index => $variant) {
+            if (!is_array($variant)) {
+                continue;
+            }
+            $label = sanitize_text_field((string) ($variant['label'] ?? ''));
+            if ($label === '') {
+                continue;
+            }
+            $variants[] = [
+                'id' => sanitize_key((string) ($variant['id'] ?? sanitize_title($label) . '-' . ($index + 1))),
+                'label' => $label,
+                'sku' => sanitize_text_field((string) ($variant['sku'] ?? '')),
+                'priceCents' => max(0, (int) ($variant['priceCents'] ?? 0)),
+                'stockQuantity' => max(0, (int) ($variant['stockQuantity'] ?? 0)),
+            ];
+        }
+        return $variants;
+    }
+
+    private static function refresh_listing_storefront_meta($listing_id)
+    {
+        $products = get_posts([
+            'post_type' => 'vendor_product',
+            'post_status' => 'publish',
+            'numberposts' => -1,
+            'meta_query' => [
+                ['key' => 'listing_id', 'value' => (int) $listing_id],
+                ['key' => 'active', 'value' => '1'],
+            ],
+        ]);
+        $options = [];
+        $search_terms = [];
+        foreach ($products as $product) {
+            $search_terms[] = $product->post_title;
+            $search_terms[] = (string) get_post_meta($product->ID, 'product_category', true);
+            $search_terms[] = (string) get_post_meta($product->ID, 'sku', true);
+            $mode = self::product_fulfillment_mode($product->ID);
+            if (in_array($mode, ['shipping', 'both'], true)) {
+                $options[] = 'shipping';
+            }
+            if (in_array($mode, ['pickup', 'both'], true)) {
+                $options[] = 'pickup';
+            }
+        }
+        update_post_meta($listing_id, 'storefront_product_count', count($products));
+        update_post_meta($listing_id, 'storefront_fulfillment_options', array_values(array_unique($options)));
+        update_post_meta($listing_id, 'storefront_product_search', implode(' ', array_filter(array_unique($search_terms))));
     }
 
     /** Older products may be services; do not silently require a delivery address. */
@@ -205,6 +305,13 @@ class C767_Rest_Vendor_Products
         return in_array($method, ['bank', 'digital'], true) ? $method : '';
     }
 
+    private static function cached_public_response($data)
+    {
+        $response = rest_ensure_response($data);
+        $response->header('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+        return $response;
+    }
+
     /** Public — the "Buy" cards on a listing profile only ever show active items. */
     public static function list_for_listing(WP_REST_Request $request)
     {
@@ -224,7 +331,7 @@ class C767_Rest_Vendor_Products
             ],
         ]);
 
-        return rest_ensure_response(array_map([__CLASS__, 'format_product'], $products));
+        return self::cached_public_response(array_map([__CLASS__, 'format_product'], $products));
     }
 
     private static function storefront_settings($listing)
@@ -246,6 +353,7 @@ class C767_Rest_Vendor_Products
             'policies' => (string) get_post_meta($listing->ID, 'storefront_policies', true),
             'featuredProductIds' => array_values(array_map('intval', is_array($featured) ? $featured : [])),
             'productOrder' => array_values(array_map('intval', is_array($order) ? $order : [])),
+            'connectPayoutEnabled' => (bool) get_option('connect767_stripe_connect_enabled', false) && preg_match('/^acct_[A-Za-z0-9]+$/', (string) get_post_meta($listing->ID, '_stripe_connect_account_id', true)),
         ];
     }
 
@@ -255,7 +363,7 @@ class C767_Rest_Vendor_Products
         if (!$listing || $listing->post_status !== 'publish') {
             return new WP_Error('c767_listing_not_found', 'Listing not found.', ['status' => 404]);
         }
-        return rest_ensure_response(self::storefront_settings($listing));
+        return self::cached_public_response(self::storefront_settings($listing));
     }
 
     public static function owner_storefront_settings(WP_REST_Request $request)
@@ -269,7 +377,9 @@ class C767_Rest_Vendor_Products
             return $listing;
         }
         if ($request->get_method() === 'GET') {
-            return rest_ensure_response(self::storefront_settings($listing));
+            return rest_ensure_response(array_merge(self::storefront_settings($listing), [
+                'stripeConnectAccountId' => (string) get_post_meta($listing->ID, '_stripe_connect_account_id', true),
+            ]));
         }
 
         $text_fields = [
@@ -288,6 +398,16 @@ class C767_Rest_Vendor_Products
         if ($accent) {
             update_post_meta($listing->ID, 'storefront_accent_color', $accent);
         }
+        if ($request->get_param('stripeConnectAccountId') !== null) {
+            $account = sanitize_text_field((string) $request->get_param('stripeConnectAccountId'));
+            if ($account === '') {
+                delete_post_meta($listing->ID, '_stripe_connect_account_id');
+            } elseif (preg_match('/^acct_[A-Za-z0-9]+$/', $account)) {
+                update_post_meta($listing->ID, '_stripe_connect_account_id', $account);
+            } else {
+                return new WP_Error('c767_invalid_connect_account', 'Enter a valid Stripe Connect account ID beginning with acct_.', ['status' => 400]);
+            }
+        }
 
         $owned_product_ids = get_posts([
             'post_type' => 'vendor_product', 'post_status' => 'publish', 'numberposts' => -1,
@@ -302,7 +422,9 @@ class C767_Rest_Vendor_Products
         self::handle_storefront_image($listing->ID, 'storefrontCover', 'storefront_cover_url');
         self::handle_storefront_image($listing->ID, 'storefrontLogo', 'storefront_logo_url');
 
-        return rest_ensure_response(self::storefront_settings($listing));
+        return rest_ensure_response(array_merge(self::storefront_settings($listing), [
+            'stripeConnectAccountId' => (string) get_post_meta($listing->ID, '_stripe_connect_account_id', true),
+        ]));
     }
 
     private static function handle_storefront_image($listing_id, $field, $meta_key)
@@ -411,8 +533,15 @@ class C767_Rest_Vendor_Products
         update_post_meta($product_id, 'fulfillment_mode', in_array($fulfillment_mode, ['none', 'shipping', 'pickup', 'both'], true) ? $fulfillment_mode : 'none');
         update_post_meta($product_id, 'shipping_fee_cents', max(0, (int) $request->get_param('shippingFeeCents')));
         update_post_meta($product_id, 'pickup_instructions', sanitize_textarea_field((string) $request->get_param('pickupInstructions')));
+        update_post_meta($product_id, 'sku', sanitize_text_field((string) $request->get_param('sku')));
+        update_post_meta($product_id, 'product_category', sanitize_text_field((string) $request->get_param('category')));
+        update_post_meta($product_id, 'track_stock', filter_var($request->get_param('trackStock'), FILTER_VALIDATE_BOOLEAN) ? '1' : '0');
+        update_post_meta($product_id, 'stock_quantity', max(0, (int) $request->get_param('stockQuantity')));
+        update_post_meta($product_id, 'low_stock_threshold', max(0, (int) ($request->get_param('lowStockThreshold') ?: 3)));
+        update_post_meta($product_id, 'variants', wp_json_encode(self::sanitize_variants($request->get_param('variants'))));
 
         self::handle_image_upload($product_id);
+        self::refresh_listing_storefront_meta($listing_id);
 
         return rest_ensure_response(self::format_product(get_post($product_id)));
     }
@@ -469,7 +598,9 @@ class C767_Rest_Vendor_Products
         }
 
         if ($request->get_method() === 'DELETE') {
+            $listing_id = (int) get_post_meta($product_id, 'listing_id', true);
             wp_delete_post($product_id, true);
+            self::refresh_listing_storefront_meta($listing_id);
             return rest_ensure_response(['id' => $product_id, 'deleted' => true]);
         }
 
@@ -507,10 +638,77 @@ class C767_Rest_Vendor_Products
         if ($request->get_param('pickupInstructions') !== null) {
             update_post_meta($product_id, 'pickup_instructions', sanitize_textarea_field((string) $request->get_param('pickupInstructions')));
         }
+        if ($request->get_param('sku') !== null) {
+            update_post_meta($product_id, 'sku', sanitize_text_field((string) $request->get_param('sku')));
+        }
+        if ($request->get_param('category') !== null) {
+            update_post_meta($product_id, 'product_category', sanitize_text_field((string) $request->get_param('category')));
+        }
+        if ($request->get_param('trackStock') !== null) {
+            update_post_meta($product_id, 'track_stock', filter_var($request->get_param('trackStock'), FILTER_VALIDATE_BOOLEAN) ? '1' : '0');
+        }
+        if ($request->get_param('stockQuantity') !== null) {
+            update_post_meta($product_id, 'stock_quantity', max(0, (int) $request->get_param('stockQuantity')));
+        }
+        if ($request->get_param('lowStockThreshold') !== null) {
+            update_post_meta($product_id, 'low_stock_threshold', max(0, (int) $request->get_param('lowStockThreshold')));
+        }
+        if ($request->get_param('variants') !== null) {
+            update_post_meta($product_id, 'variants', wp_json_encode(self::sanitize_variants($request->get_param('variants'))));
+        }
 
         self::handle_image_upload($product_id);
+        self::refresh_listing_storefront_meta((int) get_post_meta($product_id, 'listing_id', true));
 
         return rest_ensure_response(self::format_product(get_post($product_id)));
+    }
+
+    private static function purchase_selection(WP_REST_Request $request, $product_id)
+    {
+        $quantity = max(1, min(25, (int) ($request->get_param('quantity') ?: 1)));
+        $base_price = (int) get_post_meta($product_id, 'price_cents', true);
+        $track_stock = get_post_meta($product_id, 'track_stock', true) === '1';
+        $stock = max(0, (int) get_post_meta($product_id, 'stock_quantity', true));
+        $variant_id = sanitize_key((string) $request->get_param('variantId'));
+        $selected = null;
+        $variants = self::sanitize_variants(get_post_meta($product_id, 'variants', true));
+        if (!empty($variants)) {
+            foreach ($variants as $variant) {
+                if ((string) $variant['id'] === $variant_id) {
+                    $selected = $variant;
+                    break;
+                }
+            }
+            if (!$selected) {
+                return new WP_Error('c767_variant_required', 'Choose an available product option.', ['status' => 400]);
+            }
+            $base_price = $selected['priceCents'] > 0 ? $selected['priceCents'] : $base_price;
+            $track_stock = true;
+            $stock = $selected['stockQuantity'];
+        }
+        if ($track_stock && $quantity > $stock) {
+            return new WP_Error('c767_insufficient_stock', 'The requested quantity is no longer available.', ['status' => 409]);
+        }
+        return [
+            'quantity' => $quantity,
+            'unit_price_cents' => $base_price,
+            'product_amount_cents' => $base_price * $quantity,
+            'variant_id' => $selected['id'] ?? '',
+            'variant_label' => $selected['label'] ?? '',
+        ];
+    }
+
+    private static function stripe_connect_params($listing_id, $platform_fee_cents)
+    {
+        $account = (string) get_post_meta($listing_id, '_stripe_connect_account_id', true);
+        $enabled = (bool) get_option('connect767_stripe_connect_enabled', false);
+        if (!$enabled || !preg_match('/^acct_[A-Za-z0-9]+$/', $account)) {
+            return [];
+        }
+        return [
+            'application_fee_amount' => max(0, (int) $platform_fee_cents),
+            'transfer_data' => ['destination' => $account],
+        ];
     }
 
     /**
@@ -527,7 +725,10 @@ class C767_Rest_Vendor_Products
             return new WP_Error('c767_product_not_found', 'Product not found or no longer available.', ['status' => 404]);
         }
 
-        $price_cents = (int) get_post_meta($product_id, 'price_cents', true);
+        $selection = self::purchase_selection($request, $product_id);
+        if (is_wp_error($selection)) {
+            return $selection;
+        }
         $listing_id = (int) get_post_meta($product_id, 'listing_id', true);
         $owner_payout_method = self::listing_payout_method($listing_id);
         if ($owner_payout_method === '') {
@@ -539,10 +740,10 @@ class C767_Rest_Vendor_Products
         if (is_wp_error($fulfillment)) {
             return $fulfillment;
         }
-        $breakdown = self::payment_breakdown($price_cents, $fulfillment['fee_cents']);
+        $breakdown = self::payment_breakdown($selection['product_amount_cents'], $fulfillment['fee_cents']);
         $total_cents = $breakdown['gross_amount_cents'];
 
-        $intent = C767_Stripe_Checkout::stripe_request('/payment_intents', [
+        $intent_params = [
             'amount' => $total_cents,
             'currency' => 'usd',
             'metadata' => [
@@ -552,13 +753,17 @@ class C767_Rest_Vendor_Products
                 'platform_fee_percent' => $breakdown['platform_fee_percent'],
                 'platform_fee_amount_cents' => $breakdown['platform_fee_amount_cents'],
                 'owner_payout_amount_cents' => $breakdown['owner_payout_amount_cents'],
+                'quantity' => $selection['quantity'],
+                'variant_id' => $selection['variant_id'],
             ],
             'receipt_email' => $buyer_email ?: null,
             // Card-only — see the matching comment in
             // class-stripe-checkout.php::create_intent() for why this is
             // required to avoid the "must provide a return_url" error.
             'payment_method_types' => ['card'],
-        ]);
+        ];
+        $intent_params = array_merge($intent_params, self::stripe_connect_params($listing_id, $breakdown['platform_fee_amount_cents']));
+        $intent = C767_Stripe_Checkout::stripe_request('/payment_intents', $intent_params);
         if (is_wp_error($intent)) {
             return $intent;
         }
@@ -578,7 +783,11 @@ class C767_Rest_Vendor_Products
             'buyer_name' => $buyer_name,
             'buyer_email' => $buyer_email,
             'amount_cents' => $total_cents,
-            'product_amount_cents' => $price_cents,
+            'product_amount_cents' => $selection['product_amount_cents'],
+            'unit_price_cents' => $selection['unit_price_cents'],
+            'quantity' => $selection['quantity'],
+            'variant_id' => $selection['variant_id'],
+            'variant_label' => $selection['variant_label'],
             'shipping_fee_cents' => $fulfillment['fee_cents'],
             'platform_fee_percent' => $breakdown['platform_fee_percent'],
             'platform_fee_amount_cents' => $breakdown['platform_fee_amount_cents'],
@@ -589,6 +798,8 @@ class C767_Rest_Vendor_Products
             'shipping_address' => wp_json_encode($fulfillment['shipping']),
             'stripe_payment_intent' => $intent['id'],
             'status' => 'pending',
+            'fulfillment_status' => 'new',
+            'review_token' => wp_generate_password(32, false, false),
         ];
         foreach ($meta as $key => $value) {
             update_post_meta($order_id, $key, $value);
@@ -622,8 +833,11 @@ class C767_Rest_Vendor_Products
         if ($intent['status'] === 'succeeded') {
             $was_paid = get_post_meta($order_id, 'status', true) === 'paid';
             update_post_meta($order_id, 'status', 'paid');
-            update_post_meta($order_id, 'owner_payout_status', 'pending');
+            $listing_id = (int) get_post_meta($order_id, 'listing_id', true);
+            $connect = self::stripe_connect_params($listing_id, (int) get_post_meta($order_id, 'platform_fee_amount_cents', true));
+            update_post_meta($order_id, 'owner_payout_status', empty($connect) ? 'pending' : 'automatic');
             if (!$was_paid) {
+                self::adjust_inventory_for_paid_order($order_id);
                 update_post_meta($order_id, 'paid_at', current_time('mysql', true));
                 do_action('c767_vendor_order_paid', $order_id);
             }
@@ -649,7 +863,10 @@ class C767_Rest_Vendor_Products
             return new WP_Error('c767_product_not_found', 'Product not found or no longer available.', ['status' => 404]);
         }
 
-        $price_cents = (int) get_post_meta($product_id, 'price_cents', true);
+        $selection = self::purchase_selection($request, $product_id);
+        if (is_wp_error($selection)) {
+            return $selection;
+        }
         $listing_id = (int) get_post_meta($product_id, 'listing_id', true);
         $owner_payout_method = self::listing_payout_method($listing_id);
         if ($owner_payout_method === '') {
@@ -661,7 +878,7 @@ class C767_Rest_Vendor_Products
         if (is_wp_error($fulfillment)) {
             return $fulfillment;
         }
-        $breakdown = self::payment_breakdown($price_cents, $fulfillment['fee_cents']);
+        $breakdown = self::payment_breakdown($selection['product_amount_cents'], $fulfillment['fee_cents']);
         $total_cents = $breakdown['gross_amount_cents'];
 
         $token = C767_PayPal_Checkout::access_token();
@@ -704,7 +921,11 @@ class C767_Rest_Vendor_Products
             'buyer_name' => $buyer_name,
             'buyer_email' => $buyer_email,
             'amount_cents' => $total_cents,
-            'product_amount_cents' => $price_cents,
+            'product_amount_cents' => $selection['product_amount_cents'],
+            'unit_price_cents' => $selection['unit_price_cents'],
+            'quantity' => $selection['quantity'],
+            'variant_id' => $selection['variant_id'],
+            'variant_label' => $selection['variant_label'],
             'shipping_fee_cents' => $fulfillment['fee_cents'],
             'platform_fee_percent' => $breakdown['platform_fee_percent'],
             'platform_fee_amount_cents' => $breakdown['platform_fee_amount_cents'],
@@ -715,6 +936,8 @@ class C767_Rest_Vendor_Products
             'shipping_address' => wp_json_encode($fulfillment['shipping']),
             'paypal_order_id' => $paypal_order['id'],
             'status' => 'pending',
+            'fulfillment_status' => 'new',
+            'review_token' => wp_generate_password(32, false, false),
         ];
         foreach ($meta as $key => $value) {
             update_post_meta($order_id, $key, $value);
@@ -755,6 +978,7 @@ class C767_Rest_Vendor_Products
             update_post_meta($order_id, 'status', 'paid');
             update_post_meta($order_id, 'owner_payout_status', 'pending');
             if (!$was_paid) {
+                self::adjust_inventory_for_paid_order($order_id);
                 update_post_meta($order_id, 'paid_at', current_time('mysql', true));
                 do_action('c767_vendor_order_paid', $order_id);
             }
@@ -762,6 +986,31 @@ class C767_Rest_Vendor_Products
         }
 
         return rest_ensure_response(['status' => strtolower($capture['status'] ?? 'unknown'), 'orderId' => $order_id]);
+    }
+
+    private static function adjust_inventory_for_paid_order($order_id)
+    {
+        if (get_post_meta($order_id, 'inventory_adjusted', true) === '1') {
+            return;
+        }
+        $product_id = (int) get_post_meta($order_id, 'product_id', true);
+        $quantity = max(1, (int) get_post_meta($order_id, 'quantity', true));
+        $variant_id = (string) get_post_meta($order_id, 'variant_id', true);
+        if ($variant_id !== '') {
+            $variants = self::sanitize_variants(get_post_meta($product_id, 'variants', true));
+            foreach ($variants as &$variant) {
+                if ((string) $variant['id'] === $variant_id) {
+                    $variant['stockQuantity'] = max(0, (int) $variant['stockQuantity'] - $quantity);
+                    break;
+                }
+            }
+            unset($variant);
+            update_post_meta($product_id, 'variants', wp_json_encode($variants));
+        } elseif (get_post_meta($product_id, 'track_stock', true) === '1') {
+            $stock = max(0, (int) get_post_meta($product_id, 'stock_quantity', true));
+            update_post_meta($product_id, 'stock_quantity', max(0, $stock - $quantity));
+        }
+        update_post_meta($order_id, 'inventory_adjusted', '1');
     }
 
     /** Sales across every listing the current user owns — for manual payout bookkeeping. */
@@ -807,10 +1056,190 @@ class C767_Rest_Vendor_Products
                 'fulfillmentMethod' => get_post_meta($post->ID, 'fulfillment_method', true) ?: 'none',
                 'shippingAddress' => json_decode((string) get_post_meta($post->ID, 'shipping_address', true), true) ?: [],
                 'pickupInstructions' => $product ? get_post_meta($product->ID, 'pickup_instructions', true) : '',
+                'quantity' => max(1, (int) get_post_meta($post->ID, 'quantity', true)),
+                'variantLabel' => (string) get_post_meta($post->ID, 'variant_label', true),
+                'fulfillmentStatus' => (string) (get_post_meta($post->ID, 'fulfillment_status', true) ?: 'new'),
+                'trackingNumber' => (string) get_post_meta($post->ID, 'tracking_number', true),
+                'shippingCarrier' => (string) get_post_meta($post->ID, 'shipping_carrier', true),
+                'sellerNote' => (string) get_post_meta($post->ID, 'seller_note', true),
+                'refundStatus' => (string) get_post_meta($post->ID, 'refund_status', true),
                 'submittedAt' => $post->post_date,
             ];
         }, $orders);
 
         return rest_ensure_response($results);
+    }
+
+    private static function owned_order($order_id, $user_id)
+    {
+        $order = get_post($order_id);
+        if (!$order || $order->post_type !== 'vendor_order') {
+            return new WP_Error('c767_order_not_found', 'Order not found.', ['status' => 404]);
+        }
+        $listing = get_post((int) get_post_meta($order_id, 'listing_id', true));
+        if (!$listing || (int) $listing->post_author !== (int) $user_id) {
+            return new WP_Error('c767_not_owner', 'This order does not belong to your storefront.', ['status' => 403]);
+        }
+        return $order;
+    }
+
+    public static function update_order(WP_REST_Request $request)
+    {
+        $user = C767_REST_Auth::user_from_request($request);
+        if (is_wp_error($user)) {
+            return $user;
+        }
+        $order_id = (int) $request->get_param('id');
+        $order = self::owned_order($order_id, $user->ID);
+        if (is_wp_error($order)) {
+            return $order;
+        }
+        $status = sanitize_key((string) $request->get_param('fulfillmentStatus'));
+        if ($status && in_array($status, ['new', 'processing', 'shipped', 'ready_for_pickup', 'completed', 'cancelled'], true)) {
+            update_post_meta($order_id, 'fulfillment_status', $status);
+        }
+        foreach (['trackingNumber' => 'tracking_number', 'shippingCarrier' => 'shipping_carrier', 'sellerNote' => 'seller_note'] as $param => $meta_key) {
+            if ($request->get_param($param) !== null) {
+                update_post_meta($order_id, $meta_key, sanitize_textarea_field((string) $request->get_param($param)));
+            }
+        }
+        if (filter_var($request->get_param('requestRefund'), FILTER_VALIDATE_BOOLEAN)) {
+            update_post_meta($order_id, 'refund_status', 'requested');
+        }
+        return rest_ensure_response(['id' => $order_id, 'updated' => true]);
+    }
+
+    public static function analytics_mine(WP_REST_Request $request)
+    {
+        $user = C767_REST_Auth::user_from_request($request);
+        if (is_wp_error($user)) {
+            return $user;
+        }
+        $listing_ids = self::owned_listing_ids($user->ID);
+        $store_views = 0;
+        $product_views = 0;
+        $active_products = 0;
+        foreach ($listing_ids as $listing_id) {
+            $store_views += (int) get_post_meta($listing_id, 'storefront_view_count', true);
+        }
+        $products = empty($listing_ids) ? [] : get_posts([
+            'post_type' => 'vendor_product', 'post_status' => 'publish', 'numberposts' => -1,
+            'meta_query' => [['key' => 'listing_id', 'value' => $listing_ids, 'compare' => 'IN']],
+        ]);
+        foreach ($products as $product) {
+            $product_views += (int) get_post_meta($product->ID, 'view_count', true);
+            if (get_post_meta($product->ID, 'active', true) === '1') {
+                $active_products++;
+            }
+        }
+        $orders = empty($listing_ids) ? [] : get_posts([
+            'post_type' => 'vendor_order', 'post_status' => 'publish', 'numberposts' => -1,
+            'meta_query' => [
+                ['key' => 'listing_id', 'value' => $listing_ids, 'compare' => 'IN'],
+                ['key' => 'status', 'value' => 'paid'],
+            ],
+        ]);
+        $revenue = 0;
+        $fees = 0;
+        $payouts = 0;
+        foreach ($orders as $order) {
+            $revenue += (int) get_post_meta($order->ID, 'amount_cents', true);
+            $fees += (int) get_post_meta($order->ID, 'platform_fee_amount_cents', true);
+            $payouts += (int) get_post_meta($order->ID, 'owner_payout_amount_cents', true);
+        }
+        return rest_ensure_response([
+            'storeViews' => $store_views,
+            'productViews' => $product_views,
+            'activeProducts' => $active_products,
+            'orders' => count($orders),
+            'revenueCents' => $revenue,
+            'feesCents' => $fees,
+            'payoutsCents' => $payouts,
+        ]);
+    }
+
+    public static function record_storefront_view(WP_REST_Request $request)
+    {
+        $listing = get_page_by_path(sanitize_title((string) $request->get_param('slug')), OBJECT, 'listing');
+        if (!$listing || $listing->post_status !== 'publish') {
+            return new WP_Error('c767_listing_not_found', 'Listing not found.', ['status' => 404]);
+        }
+        $count = (int) get_post_meta($listing->ID, 'storefront_view_count', true) + 1;
+        update_post_meta($listing->ID, 'storefront_view_count', $count);
+        return rest_ensure_response(['count' => $count]);
+    }
+
+    public static function record_product_view(WP_REST_Request $request)
+    {
+        $product_id = (int) $request->get_param('id');
+        $product = get_post($product_id);
+        if (!$product || $product->post_type !== 'vendor_product') {
+            return new WP_Error('c767_product_not_found', 'Product not found.', ['status' => 404]);
+        }
+        $count = (int) get_post_meta($product_id, 'view_count', true) + 1;
+        update_post_meta($product_id, 'view_count', $count);
+        return rest_ensure_response(['count' => $count]);
+    }
+
+    public static function product_reviews(WP_REST_Request $request)
+    {
+        $product_id = (int) $request->get_param('id');
+        $product = get_post($product_id);
+        if (!$product || $product->post_type !== 'vendor_product') {
+            return new WP_Error('c767_product_not_found', 'Product not found.', ['status' => 404]);
+        }
+        if ($request->get_method() === 'GET') {
+            $reviews = get_posts([
+                'post_type' => 'vendor_product_review', 'post_status' => 'publish', 'numberposts' => 50,
+                'orderby' => 'date', 'order' => 'DESC',
+                'meta_query' => [['key' => 'product_id', 'value' => $product_id]],
+            ]);
+            return self::cached_public_response(array_map(function ($review) {
+                return [
+                    'id' => $review->ID,
+                    'name' => get_post_meta($review->ID, 'buyer_name', true),
+                    'rating' => (int) get_post_meta($review->ID, 'rating', true),
+                    'text' => $review->post_content,
+                    'verified' => true,
+                    'submittedAt' => $review->post_date,
+                ];
+            }, $reviews));
+        }
+
+        $order_id = (int) $request->get_param('orderId');
+        $email = sanitize_email((string) $request->get_param('email'));
+        $order = get_post($order_id);
+        if (!$order || $order->post_type !== 'vendor_order' || get_post_meta($order_id, 'status', true) !== 'paid' || (int) get_post_meta($order_id, 'product_id', true) !== $product_id || strtolower((string) get_post_meta($order_id, 'buyer_email', true)) !== strtolower($email)) {
+            return new WP_Error('c767_review_not_verified', 'Only verified purchasers can review this product.', ['status' => 403]);
+        }
+        $existing = get_posts([
+            'post_type' => 'vendor_product_review', 'post_status' => 'publish', 'numberposts' => 1,
+            'meta_query' => [['key' => 'order_id', 'value' => $order_id]],
+        ]);
+        if ($existing) {
+            return new WP_Error('c767_review_exists', 'This purchase has already been reviewed.', ['status' => 409]);
+        }
+        $rating = max(1, min(5, (int) $request->get_param('rating')));
+        $text = sanitize_textarea_field((string) $request->get_param('text'));
+        $review_id = wp_insert_post([
+            'post_type' => 'vendor_product_review', 'post_status' => 'publish',
+            'post_title' => sprintf('Verified review — %s', $product->post_title),
+            'post_content' => $text,
+        ], true);
+        if (is_wp_error($review_id)) {
+            return $review_id;
+        }
+        update_post_meta($review_id, 'product_id', $product_id);
+        update_post_meta($review_id, 'order_id', $order_id);
+        update_post_meta($review_id, 'buyer_name', sanitize_text_field((string) get_post_meta($order_id, 'buyer_name', true)));
+        update_post_meta($review_id, 'rating', $rating);
+        $all_reviews = get_posts([
+            'post_type' => 'vendor_product_review', 'post_status' => 'publish', 'numberposts' => -1,
+            'meta_query' => [['key' => 'product_id', 'value' => $product_id]],
+        ]);
+        $total = array_sum(array_map(function ($review) { return (int) get_post_meta($review->ID, 'rating', true); }, $all_reviews));
+        update_post_meta($product_id, 'review_count', count($all_reviews));
+        update_post_meta($product_id, 'review_average', count($all_reviews) ? round($total / count($all_reviews), 1) : 0);
+        return rest_ensure_response(['id' => $review_id, 'verified' => true]);
     }
 }

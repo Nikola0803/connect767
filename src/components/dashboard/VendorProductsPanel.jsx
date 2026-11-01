@@ -5,6 +5,8 @@ import {
   updateVendorProduct,
   deleteVendorProduct,
   getMyVendorOrders,
+  getMyVendorAnalytics,
+  updateMyVendorOrder,
 } from "../../data/repository";
 import Button from "../ui/Button";
 import { FormField, Input, Textarea, Select } from "../ui/FormField";
@@ -24,7 +26,24 @@ const emptyForm = {
   fulfillmentMode: "shipping",
   shippingFeeDollars: "0.00",
   pickupInstructions: "",
+  sku: "",
+  category: "",
+  trackStock: false,
+  stockQuantity: "",
+  lowStockThreshold: "3",
+  variantsText: "",
 };
+
+function variantsToText(variants = []) {
+  return variants.map((item) => [item.label, item.sku, (Number(item.priceCents || 0) / 100).toFixed(2), item.stockQuantity].join(" | ")).join("\n");
+}
+
+function parseVariants(text) {
+  return String(text || "").split("\n").map((line, index) => {
+    const [label = "", sku = "", price = "0", stock = "0"] = line.split("|").map((part) => part.trim());
+    return { id: `${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${index + 1}`, label, sku, priceCents: Math.max(0, Math.round(Number(price) * 100)), stockQuantity: Math.max(0, Number(stock) || 0) };
+  }).filter((item) => item.label);
+}
 
 /**
  * Dashboard "Products & Services" + "Sales" — the seller side of the
@@ -50,13 +69,15 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
 
   const load = () => {
     setLoading(true);
-    Promise.all([getMyVendorProducts(), getMyVendorOrders()])
-      .then(([p, o]) => {
+    Promise.all([getMyVendorProducts(), getMyVendorOrders(), getMyVendorAnalytics().catch(() => null)])
+      .then(([p, o, stats]) => {
         setProducts(p || []);
         setOrders(o || []);
+        setAnalytics(stats || null);
       })
       .catch(() => {
         setProducts([]);
@@ -114,6 +135,12 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
       fulfillmentMode: product.fulfillmentMode || "shipping",
       shippingFeeDollars: (Number(product.shippingFeeCents || 0) / 100).toFixed(2),
       pickupInstructions: product.pickupInstructions || "",
+      sku: product.sku || "",
+      category: product.category || "",
+      trackStock: product.trackStock === true,
+      stockQuantity: product.stockQuantity ?? "",
+      lowStockThreshold: product.lowStockThreshold ?? "3",
+      variantsText: variantsToText(product.variants),
     });
     setError(null);
     setShowForm(true);
@@ -131,6 +158,14 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
     setError(null);
     const priceCents = Math.round(parseFloat(form.priceDollars || "0") * 100);
     const shippingFeeCents = Math.max(0, Math.round(parseFloat(form.shippingFeeDollars || "0") * 100));
+    const inventory = {
+      sku: form.sku.trim(),
+      category: form.category.trim(),
+      trackStock: form.trackStock,
+      stockQuantity: Math.max(0, Number(form.stockQuantity) || 0),
+      lowStockThreshold: Math.max(0, Number(form.lowStockThreshold) || 3),
+      variants: parseVariants(form.variantsText),
+    };
     const selectedListing = listings.find((listing) => String(listing.id) === String(form.listingId));
     if (!form.listingId || !form.name.trim() || !priceCents) {
       setError("Pick a listing, add a name, and a price above $0.");
@@ -150,6 +185,7 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
           fulfillmentMode: form.fulfillmentMode,
           shippingFeeCents,
           pickupInstructions: form.pickupInstructions.trim(),
+          ...inventory,
           ...(form.imageFile ? { imageFile: form.imageFile } : {}),
         });
       } else {
@@ -161,6 +197,7 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
           fulfillmentMode: form.fulfillmentMode,
           shippingFeeCents,
           pickupInstructions: form.pickupInstructions.trim(),
+          ...inventory,
           ...(form.imageFile ? { imageFile: form.imageFile } : {}),
         });
       }
@@ -197,6 +234,16 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
     }
   };
 
+  const updateOrder = async (id, changes) => {
+    const previous = orders;
+    setOrders((items) => items.map((item) => item.id === id ? { ...item, ...changes } : item));
+    try {
+      await updateMyVendorOrder(id, changes);
+    } catch {
+      setOrders(previous);
+    }
+  };
+
   return (
     <>
       <div id="products-services" className="flex items-center justify-between mb-5 mt-12 scroll-mt-24">
@@ -218,6 +265,25 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
         Connect767 retains 10% of each product price. Shipping charges are passed through to you in full,
         and your payout is recorded automatically after payment.
       </div>
+
+      <SellerReadiness listings={listings} products={products} />
+
+      {analytics && (
+        <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[
+            ["Store visits", analytics.storeViews, "ri-eye-line"],
+            ["Product views", analytics.productViews, "ri-bar-chart-line"],
+            ["Paid orders", analytics.orders, "ri-shopping-bag-3-line"],
+            ["Your payouts", formatPrice(analytics.payoutsCents), "ri-wallet-3-line"],
+          ].map(([label, value, icon]) => (
+            <div key={label} className="rounded-xl border border-background-200 bg-background-50 p-4">
+              <i className={`${icon} text-lg text-primary-700`} />
+              <p className="mt-3 text-xl font-semibold text-foreground-950">{value}</p>
+              <p className="text-xs text-foreground-500">{label}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       <StorefrontCustomizer listings={listings} products={products} />
 
@@ -264,6 +330,29 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
           </div>
           <FormField label="Description (optional)" htmlFor="vp-description">
             <Textarea id="vp-description" rows={2} value={form.description} onChange={update("description")} />
+          </FormField>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField label="SKU" htmlFor="vp-sku" hint="Your internal product code.">
+              <Input id="vp-sku" value={form.sku} onChange={update("sku")} placeholder="C767-001" />
+            </FormField>
+            <FormField label="Product category" htmlFor="vp-category">
+              <Input id="vp-category" value={form.category} onChange={update("category")} placeholder="e.g. Clothing, Food, Art" />
+            </FormField>
+          </div>
+          <div className="rounded-xl border border-background-200 bg-background-50 p-4">
+            <label className="flex items-center gap-3 text-sm font-semibold text-foreground-800">
+              <input type="checkbox" checked={form.trackStock} onChange={(event) => setForm((value) => ({ ...value, trackStock: event.target.checked }))} />
+              Track inventory and prevent overselling
+            </label>
+            {form.trackStock && (
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <FormField label="Stock quantity" htmlFor="vp-stock"><Input id="vp-stock" type="number" min="0" value={form.stockQuantity} onChange={update("stockQuantity")} /></FormField>
+                <FormField label="Low-stock warning" htmlFor="vp-low-stock"><Input id="vp-low-stock" type="number" min="0" value={form.lowStockThreshold} onChange={update("lowStockThreshold")} /></FormField>
+              </div>
+            )}
+          </div>
+          <FormField label="Product options / variations" htmlFor="vp-variants" hint="One option per line: Label | SKU | Price | Stock. Example: Large / Blue | TEE-L-BLU | 25.00 | 8">
+            <Textarea id="vp-variants" rows={4} value={form.variantsText} onChange={update("variantsText")} placeholder="Small / Green | SHIRT-S-GRN | 20.00 | 5" />
           </FormField>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Fulfillment" htmlFor="vp-fulfillment" required>
@@ -378,11 +467,18 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
                     {p.fulfillmentMode === "none"
                       ? "No delivery required"
                       : p.fulfillmentMode === "pickup"
-                        ? "Local pickup"
-                        : p.fulfillmentMode === "both"
-                          ? `Shipping (${formatPrice(p.shippingFeeCents)}) or pickup`
-                          : `Shipping ${p.shippingFeeCents ? formatPrice(p.shippingFeeCents) : "free"}`}
+                      ? "Local pickup"
+                      : p.fulfillmentMode === "both"
+                        ? `Shipping (${formatPrice(p.shippingFeeCents)}) or pickup`
+                        : `Shipping ${p.shippingFeeCents ? formatPrice(p.shippingFeeCents) : "free"}`}
                   </span>
+                  {p.sku && <span className="text-foreground-500">SKU {p.sku}</span>}
+                  {p.trackStock && (
+                    <span className={p.stockStatus === "sold_out" ? "font-semibold text-accent-600" : p.stockStatus === "low_stock" ? "font-semibold text-amber-700" : "text-foreground-500"}>
+                      {p.stockQuantity} in stock{p.stockStatus === "low_stock" ? " · Low stock" : ""}
+                    </span>
+                  )}
+                  {p.variants?.length > 0 && <span className="text-foreground-500">{p.variants.length} options</span>}
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
@@ -462,11 +558,54 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
                 <p>Connect767 fee ({o.platformFeePercent || 10}%) <strong className="text-foreground-950">−{formatPrice(o.platformFeeAmountCents)}</strong></p>
                 <p className="mt-1 text-sm text-primary-800">Your payout <strong>{formatPrice(o.ownerPayoutAmountCents)}</strong></p>
                 <p className="mt-1 capitalize text-foreground-500">Payout {o.ownerPayoutStatus || "pending"}</p>
+                <div className="mt-3 space-y-2 text-left">
+                  <Select aria-label={`Fulfillment status for ${o.productName}`} value={o.fulfillmentStatus || "new"} onChange={(event) => updateOrder(o.id, { fulfillmentStatus: event.target.value })} className="py-2 text-xs">
+                    <option value="new">New order</option>
+                    <option value="processing">Processing</option>
+                    <option value="shipped">Shipped</option>
+                    <option value="ready_for_pickup">Ready for pickup</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </Select>
+                  {o.fulfillmentMethod === "shipping" && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input aria-label={`Shipping carrier for ${o.productName}`} defaultValue={o.shippingCarrier || ""} placeholder="Carrier" className="py-2 text-xs" onBlur={(event) => updateOrder(o.id, { shippingCarrier: event.target.value })} />
+                      <Input aria-label={`Tracking number for ${o.productName}`} defaultValue={o.trackingNumber || ""} placeholder="Tracking #" className="py-2 text-xs" onBlur={(event) => updateOrder(o.id, { trackingNumber: event.target.value })} />
+                    </div>
+                  )}
+                  <button type="button" disabled={o.refundStatus === "requested"} onClick={() => updateOrder(o.id, { requestRefund: true, refundStatus: "requested" })} className="text-[11px] font-semibold text-accent-600 disabled:text-foreground-400">
+                    {o.refundStatus === "requested" ? "Refund requested" : "Request refund / cancellation"}
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
     </>
+  );
+}
+
+function SellerReadiness({ listings, products }) {
+  const listing = listings[0];
+  const ownProducts = listing ? products.filter((product) => String(product.listingId) === String(listing.id)) : [];
+  const steps = [
+    ["Payout method connected", Boolean(listing?.payoutConfigured)],
+    ["Store design published", Boolean(listing?.storefrontConfigured)],
+    ["At least one active product", ownProducts.some((product) => product.active)],
+    ["Shipping or pickup configured", ownProducts.some((product) => product.fulfillmentMode && product.fulfillmentMode !== "none")],
+    ["Inventory ready", ownProducts.some((product) => !product.trackStock || Number(product.stockQuantity) > 0 || product.variants?.some((variant) => Number(variant.stockQuantity) > 0))],
+  ];
+  const complete = steps.filter(([, done]) => done).length;
+  return (
+    <section className="mb-8 rounded-2xl border border-background-200 bg-background-50 p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-700">Store readiness</p><h3 className="mt-1 font-heading text-lg text-foreground-950">{complete} of {steps.length} steps complete</h3></div>
+        <div className="h-2 w-36 overflow-hidden rounded-full bg-background-200"><div className="h-full rounded-full bg-primary-600" style={{ width: `${complete / steps.length * 100}%` }} /></div>
+      </div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+        {steps.map(([label, done]) => <div key={label} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${done ? "bg-primary-50 text-primary-800" : "bg-background-100 text-foreground-500"}`}><i className={done ? "ri-checkbox-circle-fill" : "ri-checkbox-blank-circle-line"} /><span>{label}</span></div>)}
+      </div>
+    </section>
   );
 }

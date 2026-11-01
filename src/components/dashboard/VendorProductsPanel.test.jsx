@@ -8,6 +8,8 @@ const repository = vi.hoisted(() => ({
   updateVendorProduct: vi.fn(),
   deleteVendorProduct: vi.fn(),
   getMyVendorOrders: vi.fn(),
+  getMyVendorAnalytics: vi.fn(),
+  updateMyVendorOrder: vi.fn(),
 }));
 
 vi.mock("../../data/repository", () => repository);
@@ -15,6 +17,13 @@ vi.mock("../../data/repository", () => repository);
 describe("VendorProductsPanel storefront fees", () => {
   beforeEach(() => {
     repository.getMyVendorProducts.mockResolvedValue([]);
+    repository.getMyVendorAnalytics.mockResolvedValue({
+      storeViews: 12,
+      productViews: 24,
+      paidOrders: 1,
+      payoutsCents: 10200,
+    });
+    repository.updateMyVendorOrder.mockResolvedValue({ updated: true });
     repository.getMyVendorOrders.mockResolvedValue([
       {
         id: 91,
@@ -40,7 +49,7 @@ describe("VendorProductsPanel storefront fees", () => {
     expect(screen.getByText(/Connect767 retains 10% of each product price/i)).toBeInTheDocument();
     expect(await screen.findByText("Island Gift Box")).toBeInTheDocument();
     expect(screen.getByText("−$10.00")).toBeInTheDocument();
-    expect(screen.getByText("$102.00")).toBeInTheDocument();
+    expect(screen.getAllByText("$102.00")).toHaveLength(2);
     expect(screen.getByText(/Payout pending/i)).toBeInTheDocument();
   });
 

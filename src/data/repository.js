@@ -873,6 +873,7 @@ export async function updateMyStorefrontSettings(listingId, form) {
   payload.append("productOrder", JSON.stringify(form.productOrder || []));
   if (form.coverFile) payload.append("storefrontCover", form.coverFile);
   if (form.logoFile) payload.append("storefrontLogo", form.logoFile);
+  payload.append("stripeConnectAccountId", form.stripeConnectAccountId || "");
   return customClient.post(`/vendor-storefronts/${listingId}`, payload);
 }
 
@@ -895,6 +896,12 @@ export async function createVendorProduct(form) {
   if (form.fulfillmentMode) payload.append("fulfillmentMode", form.fulfillmentMode);
   if (form.shippingFeeCents !== undefined) payload.append("shippingFeeCents", form.shippingFeeCents);
   if (form.pickupInstructions !== undefined) payload.append("pickupInstructions", form.pickupInstructions);
+  if (form.sku !== undefined) payload.append("sku", form.sku);
+  if (form.category !== undefined) payload.append("category", form.category);
+  if (form.trackStock !== undefined) payload.append("trackStock", form.trackStock ? "1" : "0");
+  if (form.stockQuantity !== undefined) payload.append("stockQuantity", form.stockQuantity);
+  if (form.lowStockThreshold !== undefined) payload.append("lowStockThreshold", form.lowStockThreshold);
+  if (form.variants !== undefined) payload.append("variants", JSON.stringify(form.variants || []));
   if (form.imageFile) payload.append("image", form.imageFile);
   return customClient.post("/vendor-products", payload);
 }
@@ -912,6 +919,12 @@ export async function updateVendorProduct(id, form) {
   if (form.fulfillmentMode !== undefined) payload.append("fulfillmentMode", form.fulfillmentMode);
   if (form.shippingFeeCents !== undefined) payload.append("shippingFeeCents", form.shippingFeeCents);
   if (form.pickupInstructions !== undefined) payload.append("pickupInstructions", form.pickupInstructions);
+  if (form.sku !== undefined) payload.append("sku", form.sku);
+  if (form.category !== undefined) payload.append("category", form.category);
+  if (form.trackStock !== undefined) payload.append("trackStock", form.trackStock ? "1" : "0");
+  if (form.stockQuantity !== undefined) payload.append("stockQuantity", form.stockQuantity);
+  if (form.lowStockThreshold !== undefined) payload.append("lowStockThreshold", form.lowStockThreshold);
+  if (form.variants !== undefined) payload.append("variants", JSON.stringify(form.variants || []));
   if (form.active !== undefined) payload.append("active", form.active ? "1" : "0");
   if (form.imageFile) payload.append("image", form.imageFile);
   return customClient.post(`/vendor-products/${id}`, payload);
@@ -928,8 +941,38 @@ export async function getMyVendorOrders() {
   return customClient.get("/vendor-orders/mine");
 }
 
+export async function updateMyVendorOrder(id, form) {
+  if (!isLiveApi) return { id, ...form };
+  return customClient.post(`/vendor-orders/${id}`, form);
+}
+
+export async function getMyVendorAnalytics() {
+  if (!isLiveApi) return { storeViews: 0, productViews: 0, activeProducts: 0, orders: 0, revenueCents: 0, feesCents: 0, payoutsCents: 0 };
+  return customClient.get("/vendor-analytics/mine");
+}
+
+export async function recordStorefrontView(slug) {
+  if (!isLiveApi) return null;
+  return customClient.post(`/listings/${slug}/storefront-view`, {});
+}
+
+export async function recordVendorProductView(productId) {
+  if (!isLiveApi) return null;
+  return customClient.post(`/vendor-products/${productId}/view`, {});
+}
+
+export async function getVendorProductReviews(productId) {
+  if (!isLiveApi) return [];
+  return customClient.get(`/vendor-products/${productId}/reviews`);
+}
+
+export async function submitVendorProductReview(productId, form) {
+  if (!isLiveApi) return { id: `preview-review-${Date.now()}`, verified: true };
+  return customClient.post(`/vendor-products/${productId}/reviews`, form);
+}
+
 /** Card payment for a vendor product — see PaypalButton's sibling Stripe path in ListingProducts.jsx. */
-export async function createVendorProductCheckout(productId, { name, email, fulfillmentMethod, shipping }) {
+export async function createVendorProductCheckout(productId, { name, email, fulfillmentMethod, shipping, quantity, variantId }) {
   if (!isLiveApi) {
     throw new Error("Checkout needs a live WordPress backend — set VITE_WP_BASE_URL to enable it.");
   }
@@ -938,6 +981,8 @@ export async function createVendorProductCheckout(productId, { name, email, fulf
     email,
     fulfillmentMethod,
     shipping,
+    quantity,
+    variantId,
   });
 }
 
@@ -947,7 +992,7 @@ export async function confirmVendorOrder(orderId) {
 }
 
 /** PayPal's counterpart to createVendorProductCheckout() — see PaypalButton.jsx. */
-export async function createVendorProductPaypalOrder(productId, { name, email, fulfillmentMethod, shipping }) {
+export async function createVendorProductPaypalOrder(productId, { name, email, fulfillmentMethod, shipping, quantity, variantId }) {
   if (!isLiveApi) {
     throw new Error("Checkout needs a live WordPress backend — set VITE_WP_BASE_URL to enable it.");
   }
@@ -956,6 +1001,8 @@ export async function createVendorProductPaypalOrder(productId, { name, email, f
     email,
     fulfillmentMethod,
     shipping,
+    quantity,
+    variantId,
   });
 }
 

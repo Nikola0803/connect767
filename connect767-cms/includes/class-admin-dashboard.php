@@ -155,6 +155,12 @@ class C767_Admin_Dashboard
             wp_die(esc_html__('You do not have permission to manage payouts.', 'connect767-cms'));
         }
 
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['c767_storefront_connect_settings'])) {
+            check_admin_referer('c767_storefront_connect_settings');
+            update_option('connect767_stripe_connect_enabled', isset($_POST['stripe_connect_enabled']) ? '1' : '0');
+            echo '<div class="notice notice-success is-dismissible"><p>Stripe Connect payout setting updated.</p></div>';
+        }
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['c767_storefront_payout_action'])) {
             check_admin_referer('c767_update_storefront_payout');
             $order_id = isset($_POST['order_id']) ? (int) $_POST['order_id'] : 0;
@@ -187,6 +193,16 @@ class C767_Admin_Dashboard
         <div class="wrap">
             <h1>Storefront Payouts</h1>
             <p class="description">Connect767 retains 10% of each product price. Shipping is passed through in full. Process only the recorded owner payout.</p>
+            <div class="card" style="max-width:760px;margin-top:18px;padding:18px 22px">
+                <h2 style="margin-top:0">Automated Stripe Connect payouts</h2>
+                <p>When enabled, Stripe sends 90% of each product amount to a seller's connected account and records Connect767's 10% platform fee. Shipping is passed through to the seller. Keep this disabled until Stripe Connect is approved and every participating seller has a valid <code>acct_...</code> account ID.</p>
+                <form method="post">
+                    <?php wp_nonce_field('c767_storefront_connect_settings'); ?>
+                    <input type="hidden" name="c767_storefront_connect_settings" value="1">
+                    <label><input type="checkbox" name="stripe_connect_enabled" value="1" <?php checked((bool) get_option('connect767_stripe_connect_enabled', false)); ?>> Enable automated Stripe Connect destination charges</label>
+                    <p><button type="submit" class="button button-primary">Save payout setting</button></p>
+                </form>
+            </div>
             <table class="widefat striped" style="margin-top:18px">
                 <thead><tr><th>Order</th><th>Listing owner</th><th>Accounting</th><th>Private payout destination</th><th>Status</th><th>Action</th></tr></thead>
                 <tbody>

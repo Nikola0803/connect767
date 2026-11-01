@@ -18,6 +18,7 @@ export default function DirectoryPage() {
   const [industry, setIndustry] = useState("all");
   const [tier, setTier] = useState(searchParams.get("tier") || "all");
   const [bookingOnly, setBookingOnly] = useState(searchParams.get("booking") === "true");
+  const [storefrontFilter, setStorefrontFilter] = useState(searchParams.get("storefront") || "all");
   const [priceTier, setPriceTier] = useState("all");
   const [educationFilter, setEducationFilter] = useState("all");
   const [experienceRange, setExperienceRange] = useState("all");
@@ -54,6 +55,7 @@ export default function DirectoryPage() {
     experienceRange !== "all",
     educationFilter !== "all",
     bookingOnly,
+    storefrontFilter !== "all",
   ].filter(Boolean).length;
 
   const selectedCategory = category !== "all" ? findCategory(category) : null;
@@ -99,6 +101,14 @@ export default function DirectoryPage() {
       label: tierOptions.find((item) => item.value === tier)?.label || tier,
     },
     bookingOnly && { key: "booking", label: "Booking available" },
+    storefrontFilter !== "all" && {
+      key: "storefront",
+      label: {
+        products: "Products available",
+        pickup: "Local pickup",
+        shipping: "Delivery available",
+      }[storefrontFilter],
+    },
   ].filter(Boolean);
 
   const filtered = useMemo(() => {
@@ -113,7 +123,12 @@ export default function DirectoryPage() {
         educationFilter === "all" || (l.education || "").toLowerCase() === educationFilter.toLowerCase();
       const matchesExperience = matchesExperienceRange(l.yearsExperience, experienceRange);
       const matchesBooking = listingMatchesBookingAvailability(l, bookingOnly);
-      return matchesSearch && matchesCategory && matchesIndustry && matchesTier && matchesPrice && matchesEducation && matchesExperience && matchesBooking;
+      const fulfillmentOptions = l.storefrontFulfillmentOptions || [];
+      const matchesStorefront = storefrontFilter === "all"
+        || (storefrontFilter === "products" && l.hasStorefrontProducts)
+        || (storefrontFilter === "pickup" && fulfillmentOptions.includes("pickup"))
+        || (storefrontFilter === "shipping" && fulfillmentOptions.some((option) => option !== "pickup"));
+      return matchesSearch && matchesCategory && matchesIndustry && matchesTier && matchesPrice && matchesEducation && matchesExperience && matchesBooking && matchesStorefront;
     });
 
     switch (sort) {
@@ -135,7 +150,7 @@ export default function DirectoryPage() {
         break;
     }
     return list;
-  }, [directoryListings, search, category, industry, tier, priceTier, educationFilter, experienceRange, bookingOnly, sort]);
+  }, [directoryListings, search, category, industry, tier, priceTier, educationFilter, experienceRange, bookingOnly, storefrontFilter, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -158,6 +173,7 @@ export default function DirectoryPage() {
     setEducationFilter("all");
     setExperienceRange("all");
     setBookingOnly(false);
+    setStorefrontFilter("all");
     setPage(1);
   };
 
@@ -173,6 +189,7 @@ export default function DirectoryPage() {
     if (key === "price") setPriceTier("all");
     if (key === "tier") setTier("all");
     if (key === "booking") setBookingOnly(false);
+    if (key === "storefront") setStorefrontFilter("all");
     setPage(1);
   };
 
@@ -308,6 +325,17 @@ export default function DirectoryPage() {
                 <i className="ri-arrow-down-s-line absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground-400 pointer-events-none" />
               </label>
 
+              <label className="relative flex-shrink-0">
+                <span className="sr-only">Storefront</span>
+                <select value={storefrontFilter} onChange={(e) => updateFilter(setStorefrontFilter)(e.target.value)} className="appearance-none h-10 min-w-40 pl-3.5 pr-8 rounded-xl border border-background-300 bg-white text-xs font-semibold text-foreground-700 focus:outline-none focus:border-primary-400 cursor-pointer">
+                  <option value="all">Storefront</option>
+                  <option value="products">Products available</option>
+                  <option value="pickup">Local pickup</option>
+                  <option value="shipping">Delivery available</option>
+                </select>
+                <i className="ri-arrow-down-s-line absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground-400 pointer-events-none" />
+              </label>
+
               {(activeFilterCount > 0 || search) && (
                 <button type="button" onClick={clearAll} className="h-9 inline-flex items-center gap-1.5 px-3 text-xs font-semibold text-accent-700 hover:text-accent-800 hover:bg-accent-50 rounded-full cursor-pointer whitespace-nowrap flex-shrink-0 transition-colors">
                   <i className="ri-close-circle-line" />
@@ -385,6 +413,14 @@ export default function DirectoryPage() {
                   </select>
                 </label>
               </div>
+              <label className="text-xs font-bold text-foreground-700">Storefront
+                <select value={storefrontFilter} onChange={(e) => updateFilter(setStorefrontFilter)(e.target.value)} className="mt-2 h-12 w-full rounded-xl border border-background-300 bg-white px-3 text-sm font-semibold text-foreground-800">
+                  <option value="all">All listings</option>
+                  <option value="products">Products available</option>
+                  <option value="pickup">Local pickup</option>
+                  <option value="shipping">Delivery available</option>
+                </select>
+              </label>
             </div>
 
             <div className="sticky bottom-0 mt-6 flex gap-3 bg-background-50 pt-3">
