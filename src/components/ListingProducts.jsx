@@ -128,46 +128,67 @@ export default function ListingProducts({
         </div>
       )}
       <div
-        className={`grid grid-cols-1 gap-5 sm:grid-cols-2 ${
-          fullStorefront ? "lg:grid-cols-3 xl:grid-cols-4" : "lg:grid-cols-3"
+        className={`grid grid-cols-1 sm:grid-cols-2 ${
+          fullStorefront ? "gap-x-6 gap-y-12 lg:grid-cols-3" : "gap-5 lg:grid-cols-3"
         }`}
       >
         {visibleProducts.map((p) => (
           <article
             key={p.id}
-            className="group flex flex-col overflow-hidden rounded-2xl border border-background-200/70 bg-background-50 transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_18px_50px_rgba(18,63,44,0.12)]"
+            className={
+              fullStorefront
+                ? "group flex min-w-0 flex-col"
+                : "group flex flex-col overflow-hidden rounded-2xl border border-background-200/70 bg-background-50 transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_18px_50px_rgba(18,63,44,0.12)]"
+            }
           >
-            <div className="relative aspect-[4/3] w-full overflow-hidden bg-background-100">
+            <div className={`relative w-full overflow-hidden bg-background-100 ${fullStorefront ? "aspect-[5/4] rounded-[20px]" : "aspect-[4/3]"}`}>
               {p.imageUrl ? (
                 <img
                   src={p.imageUrl}
                   alt={p.name}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.025]"
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-100">
                   <i className="ri-shopping-bag-3-line text-4xl text-primary-400" />
                 </div>
               )}
-              <span className="absolute left-3 top-3 rounded-full bg-background-50/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-primary-800 shadow-sm">
-                Sold by this listing
-              </span>
+              {!fullStorefront && (
+                <span className="absolute left-3 top-3 rounded-full bg-background-50/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-primary-800 shadow-sm">
+                  Sold by this listing
+                </span>
+              )}
+              {fullStorefront && (
+                <button
+                  type="button"
+                  onClick={() => setActiveProduct(p)}
+                  aria-label={`Buy ${p.name}`}
+                  className="absolute bottom-4 right-4 flex h-10 w-10 translate-y-2 items-center justify-center rounded-full bg-background-50 text-foreground-950 opacity-0 shadow-sm transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 focus:translate-y-0 focus:opacity-100"
+                >
+                  <i className="ri-add-line text-lg" />
+                </button>
+              )}
             </div>
-            <div className="flex flex-1 flex-col p-5">
-              <h3 className="mb-1 font-heading text-lg font-medium leading-snug text-foreground-950">
+            <div className={`flex flex-1 flex-col ${fullStorefront ? "pt-4" : "p-5"}`}>
+              <h3 className={`font-heading font-medium leading-snug text-foreground-950 ${fullStorefront ? "text-base" : "mb-1 text-lg"}`}>
                 {p.name}
               </h3>
               {p.description && (
-                <p className="mb-4 line-clamp-2 flex-1 text-xs leading-relaxed text-foreground-600 font-label">
+                <p className={`line-clamp-2 flex-1 text-xs leading-relaxed text-foreground-600 font-label ${fullStorefront ? "mt-1.5" : "mb-4"}`}>
                   {p.description}
                 </p>
               )}
-              <div className="mt-auto flex items-center justify-between gap-3 border-t border-background-200/70 pt-4">
-                <span className="font-heading text-lg font-semibold text-foreground-950">
+              <div className={`mt-auto flex items-center justify-between gap-3 ${fullStorefront ? "pt-4" : "border-t border-background-200/70 pt-4"}`}>
+                <span className={`font-heading font-semibold text-foreground-950 ${fullStorefront ? "text-base" : "text-lg"}`}>
                   {formatPrice(p.priceCents)}
                 </span>
-                <Button variant="primary" size="sm" onClick={() => setActiveProduct(p)}>
-                  Buy now
+                <Button
+                  variant={fullStorefront ? "outline" : "primary"}
+                  size="sm"
+                  className={fullStorefront ? "rounded-full px-4" : ""}
+                  onClick={() => setActiveProduct(p)}
+                >
+                  {fullStorefront ? "View item" : "Buy now"}
                 </Button>
               </div>
             </div>

@@ -64,85 +64,111 @@ export default function ListingStorefrontPage() {
   const messagePath = listingOwnerMessagePath(listing);
 
   return (
-    <div className="pt-16 md:pt-20">
-      <div className="border-b border-background-200/70 bg-background-50 px-4 py-4 md:px-8 lg:px-12">
-        <div className="mx-auto flex max-w-7xl items-center gap-2 text-xs text-foreground-500 font-label">
+    <div className="bg-background-50 pt-16 md:pt-20">
+      <div className="px-4 py-5 md:px-8 lg:px-12">
+        <div className="mx-auto flex max-w-7xl items-center gap-2 text-[11px] font-medium tracking-wide text-foreground-500 font-label">
           <Link to="/listings" className="hover:text-foreground-800">Directory</Link>
-          <i className="ri-arrow-right-s-line" />
+          <span className="text-background-400">/</span>
           <Link to={`/listings/${slug}`} className="max-w-56 truncate hover:text-foreground-800">{listing.title}</Link>
-          <i className="ri-arrow-right-s-line" />
-          <span className="font-medium text-foreground-800">Storefront</span>
+          <span className="text-background-400">/</span>
+          <span className="font-medium text-foreground-800">Store</span>
         </div>
       </div>
 
-      <section className="relative overflow-hidden bg-primary-950 text-background-50">
-        {cover && (
-          <>
-            <img
-              src={cover}
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 h-full w-full object-cover opacity-20"
-              style={imageCropStyle(listing.coverPosition, listing.coverZoom, "cover")}
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-primary-950 via-primary-950/95 to-primary-950/70" />
-          </>
-        )}
-        <div className="relative mx-auto grid max-w-7xl gap-8 px-4 py-10 md:px-8 md:py-14 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-end lg:px-12">
-          <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-background-50/15 bg-background-50/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-primary-100">
-              <i className="ri-shield-check-fill text-accent-400" />
-              Listing-owner storefront
+      <section className="px-4 pb-8 md:px-8 md:pb-12 lg:px-12">
+        <div className="mx-auto grid max-w-7xl overflow-hidden rounded-[28px] border border-background-200/80 bg-background-100/60 lg:grid-cols-[minmax(0,0.88fr)_minmax(460px,1.12fr)]">
+          <div className="flex flex-col justify-center px-6 py-12 sm:px-10 md:py-16 lg:px-14 lg:py-20">
+            <div className="mb-7 flex items-center gap-3">
+              {listing.logo ? (
+                <img
+                  src={listing.logo}
+                  alt={`${listing.title} logo`}
+                  className="h-11 w-11 rounded-full border border-background-200 bg-background-50 object-cover"
+                />
+              ) : (
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-900 font-heading text-lg text-background-50">
+                  {listing.title?.charAt(0) || "C"}
+                </span>
+              )}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">Connect767 Store</p>
+                <p className="mt-1 text-xs text-foreground-500">Sold by {listing.title}</p>
+              </div>
             </div>
-            <h1 className="font-heading text-4xl font-medium tracking-[-0.035em] md:text-5xl">
+
+            <h1 className="max-w-xl font-heading text-[2.65rem] font-light leading-[1.02] tracking-[-0.04em] text-foreground-950 sm:text-5xl lg:text-[3.6rem]">
               Shop {listing.title}
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-background-200 md:text-base">
-              Purchase directly from this Connect767 listing through secure checkout.
+            <p className="mt-5 max-w-lg text-sm leading-7 text-foreground-600 md:text-base">
+              A curated selection from this Connect767 business, available through secure checkout.
             </p>
-            <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-background-200">
+
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <a
+                href="#store-products"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary-900 px-5 text-sm font-semibold text-background-50 transition-colors hover:bg-primary-800"
+              >
+                Browse products <i className="ri-arrow-down-line" />
+              </a>
+              <Link
+                to={messagePath}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-background-300 bg-background-50 px-5 text-sm font-semibold text-foreground-800 transition-colors hover:border-background-400"
+              >
+                <i className="ri-chat-3-line" /> Message owner
+              </Link>
+            </div>
+
+            <div className="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-xs text-foreground-500">
               {listing.location && <span className="inline-flex items-center gap-1.5"><i className="ri-map-pin-line" />{listing.location}</span>}
-              <span className="inline-flex items-center gap-1.5"><i className="ri-shopping-bag-3-line" />{products.length} product{products.length === 1 ? "" : "s"}</span>
+              <span className="inline-flex items-center gap-1.5"><i className="ri-shopping-bag-line" />{products.length} product{products.length === 1 ? "" : "s"}</span>
             </div>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
-            <Link
-              to={messagePath}
-              className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-accent-500 px-5 text-sm font-bold text-background-50 hover:bg-accent-600"
-            >
-              <i className="ri-chat-3-line text-lg" /> Message Listing Owner
-            </Link>
+
+          <div className="relative min-h-[310px] overflow-hidden bg-background-200 sm:min-h-[420px] lg:min-h-full">
+            {cover ? (
+              <img
+                src={cover}
+                alt={`${listing.title} storefront`}
+                className="absolute inset-0 h-full w-full object-cover"
+                style={imageCropStyle(listing.coverPosition, listing.coverZoom, "cover")}
+              />
+            ) : (
+              <div className="flex h-full min-h-[310px] items-center justify-center bg-primary-50 text-5xl text-primary-300 sm:min-h-[420px]">
+                <i className="ri-store-2-line" />
+              </div>
+            )}
             <Link
               to={`/listings/${slug}`}
-              className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-full border border-background-50/20 bg-background-50/5 px-5 text-sm font-semibold text-background-50 hover:bg-background-50/10"
+              className="absolute bottom-5 right-5 inline-flex h-10 items-center gap-2 rounded-full bg-background-50/95 px-4 text-xs font-semibold text-foreground-900 shadow-sm backdrop-blur transition-transform hover:-translate-y-0.5"
             >
-              View business profile <i className="ri-arrow-right-up-line" />
+              View profile <i className="ri-arrow-right-up-line" />
             </Link>
           </div>
         </div>
       </section>
 
-      <section className="border-b border-background-200 bg-background-50">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 md:grid-cols-4">
+      <section className="border-y border-background-200/70 bg-background-50 px-4 md:px-8 lg:px-12">
+        <div className="mx-auto grid max-w-7xl gap-6 py-6 sm:grid-cols-3">
           {[
-            ["ri-shield-check-line", "Secure checkout", "Protected payments"],
-            ["ri-truck-line", "Seller fulfillment", "Delivery details per item"],
-            ["ri-refresh-line", "Clear policies", "Terms shown before purchase"],
-            ["ri-customer-service-2-line", "Direct support", "Message the listing owner"],
+            ["ri-shield-check-line", "Secure checkout", "Protected payment processing"],
+            ["ri-store-2-line", "Local seller", `Fulfilled by ${listing.title}`],
+            ["ri-chat-3-line", "Direct support", "Message the owner anytime"],
           ].map(([icon, title, detail]) => (
-            <div key={title} className="flex items-start gap-3 border-r border-background-200 px-4 py-5 last:border-r-0 md:px-6">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-700"><i className={icon} /></span>
-              <div><p className="text-xs font-bold text-foreground-900">{title}</p><p className="mt-0.5 text-[11px] leading-snug text-foreground-500">{detail}</p></div>
+            <div key={title} className="flex items-center gap-3 sm:justify-center">
+              <i className={`${icon} text-lg text-primary-700`} />
+              <div><p className="text-xs font-semibold text-foreground-900">{title}</p><p className="mt-0.5 text-[11px] text-foreground-500">{detail}</p></div>
             </div>
           ))}
         </div>
       </section>
 
-      <main className="mx-auto max-w-7xl px-4 py-10 md:px-8 md:py-14 lg:px-12">
-        <div className="mb-7">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-700">Shop this listing</p>
-          <h2 className="mt-2 font-heading text-3xl font-light text-foreground-950 md:text-4xl">Products for sale</h2>
-          <p className="mt-2 text-sm text-foreground-500">Available products published by {listing.title}.</p>
+      <main id="store-products" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-14 md:px-8 md:py-20 lg:px-12">
+        <div className="mb-10 flex flex-col gap-3 border-b border-background-200/70 pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">The collection</p>
+            <h2 className="mt-2 font-heading text-3xl font-light tracking-[-0.02em] text-foreground-950 md:text-4xl">Products</h2>
+          </div>
+          <p className="text-xs text-foreground-500">{products.length} item{products.length === 1 ? "" : "s"} available</p>
         </div>
         <ListingProducts
           slug={slug}
