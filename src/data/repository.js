@@ -853,6 +853,29 @@ export async function getListingProducts(slug) {
   return customClient.get(`/listings/${slug}/products`);
 }
 
+export async function getStorefrontSettings(slug) {
+  if (!isLiveApi) return null;
+  return customClient.get(`/listings/${slug}/storefront-settings`);
+}
+
+export async function getMyStorefrontSettings(listingId) {
+  if (!isLiveApi) return null;
+  return customClient.get(`/vendor-storefronts/${listingId}`);
+}
+
+export async function updateMyStorefrontSettings(listingId, form) {
+  if (!isLiveApi) return form;
+  const payload = new FormData();
+  ["headline", "welcomeText", "accentColor", "aboutText", "shippingMessage", "policies"].forEach((key) => {
+    payload.append(key, form[key] || "");
+  });
+  payload.append("featuredProductIds", JSON.stringify(form.featuredProductIds || []));
+  payload.append("productOrder", JSON.stringify(form.productOrder || []));
+  if (form.coverFile) payload.append("storefrontCover", form.coverFile);
+  if (form.logoFile) payload.append("storefrontLogo", form.logoFile);
+  return customClient.post(`/vendor-storefronts/${listingId}`, payload);
+}
+
 /** Dashboard "Products & services" — every product the current user owns, active or not. */
 export async function getMyVendorProducts() {
   if (!isLiveApi) return [];
