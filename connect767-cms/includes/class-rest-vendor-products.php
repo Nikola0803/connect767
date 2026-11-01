@@ -102,6 +102,63 @@ class C767_Rest_Vendor_Products
             'priceCents' => (int) get_post_meta($post->ID, 'price_cents', true),
             'imageUrl' => get_post_meta($post->ID, 'image_url', true),
             'active' => get_post_meta($post->ID, 'active', true) === '1',
+            'fulfillmentMode' => self::product_fulfillment_mode($post->ID),
+            'shippingFeeCents' => (int) get_post_meta($post->ID, 'shipping_fee_cents', true),
+            'pickupInstructions' => get_post_meta($post->ID, 'pickup_instructions', true),
+        ];
+    }
+
+    /** Older products may be services; do not silently require a delivery address. */
+    private static function product_fulfillment_mode($product_id)
+    {
+        $mode = (string) get_post_meta($product_id, 'fulfillment_mode', true);
+        return in_array($mode, ['none', 'shipping', 'pickup', 'both'], true) ? $mode : 'none';
+    }
+
+    private static function sanitize_shipping_address($value)
+    {
+        $address = is_array($value) ? $value : [];
+        return [
+            'address1' => sanitize_text_field((string) ($address['address1'] ?? '')),
+            'address2' => sanitize_text_field((string) ($address['address2'] ?? '')),
+            'city' => sanitize_text_field((string) ($address['city'] ?? '')),
+            'region' => sanitize_text_field((string) ($address['region'] ?? '')),
+            'postcode' => sanitize_text_field((string) ($address['postcode'] ?? '')),
+            'country' => sanitize_text_field((string) ($address['country'] ?? '')),
+            'phone' => sanitize_text_field((string) ($address['phone'] ?? '')),
+        ];
+    }
+
+    /** Resolve and validate fulfillment from server-owned product settings. */
+    private static function checkout_fulfillment(WP_REST_Request $request, $product_id)
+    {
+        $mode = self::product_fulfillment_mode($product_id);
+        $method = sanitize_key((string) $request->get_param('fulfillmentMethod'));
+        if ($method === '') {
+            $method = in_array($mode, ['pickup', 'none'], true) ? $mode : 'shipping';
+        }
+        $allowed = $mode === 'both' ? ['shipping', 'pickup'] : [$mode];
+        if (!in_array($method, $allowed, true)) {
+            return new WP_Error('c767_invalid_fulfillment', 'That fulfillment option is not available for this product.', ['status' => 400]);
+        }
+
+        $shipping = self::sanitize_shipping_address($request->get_param('shipping'));
+        if ($method === 'shipping') {
+            foreach (['address1', 'city', 'postcode', 'country'] as $required) {
+                if ($shipping[$required] === '') {
+                    return new WP_Error('c767_shipping_required', 'A complete delivery address is required.', ['status' => 400]);
+                }
+            }
+        } else {
+            $shipping = [];
+        }
+
+        return [
+            'method' => $method,
+            'shipping' => $shipping,
+            'fee_cents' => $method === 'shipping'
+                ? max(0, (int) get_post_meta($product_id, 'shipping_fee_cents', true))
+                : 0,
         ];
     }
 
@@ -219,6 +276,10 @@ class C767_Rest_Vendor_Products
         update_post_meta($product_id, 'price_cents', $price_cents);
         update_post_meta($product_id, 'image_url', esc_url_raw((string) $request->get_param('imageUrl')));
         update_post_meta($product_id, 'active', '1');
+        $fulfillment_mode = sanitize_key((string) $request->get_param('fulfillmentMode'));
+        update_post_meta($product_id, 'fulfillment_mode', in_array($fulfillment_mode, ['none', 'shipping', 'pickup', 'both'], true) ? $fulfillment_mode : 'none');
+        update_post_meta($product_id, 'shipping_fee_cents', max(0, (int) $request->get_param('shippingFeeCents')));
+        update_post_meta($product_id, 'pickup_instructions', sanitize_textarea_field((string) $request->get_param('pickupInstructions')));
 
         self::handle_image_upload($product_id);
 
@@ -303,6 +364,18 @@ class C767_Rest_Vendor_Products
             $active = filter_var($request->get_param('active'), FILTER_VALIDATE_BOOLEAN);
             update_post_meta($product_id, 'active', $active ? '1' : '0');
         }
+        if ($request->get_param('fulfillmentMode') !== null) {
+            $fulfillment_mode = sanitize_key((string) $request->get_param('fulfillmentMode'));
+            if (in_array($fulfillment_mode, ['none', 'shipping', 'pickup', 'both'], true)) {
+                update_post_meta($product_id, 'fulfillment_mode', $fulfillment_mode);
+            }
+        }
+        if ($request->get_param('shippingFeeCents') !== null) {
+            update_post_meta($product_id, 'shipping_fee_cents', max(0, (int) $request->get_param('shippingFeeCents')));
+        }
+        if ($request->get_param('pickupInstructions') !== null) {
+            update_post_meta($product_id, 'pickup_instructions', sanitize_textarea_field((string) $request->get_param('pickupInstructions')));
+        }
 
         self::handle_image_upload($product_id);
 
@@ -327,11 +400,20 @@ class C767_Rest_Vendor_Products
         $listing_id = (int) get_post_meta($product_id, 'listing_id', true);
         $buyer_email = sanitize_email((string) $request->get_param('email'));
         $buyer_name = sanitize_text_field((string) $request->get_param('name'));
+        $fulfillment = self::checkout_fulfillment($request, $product_id);
+        if (is_wp_error($fulfillment)) {
+            return $fulfillment;
+        }
+        $total_cents = $price_cents + $fulfillment['fee_cents'];
 
         $intent = C767_Stripe_Checkout::stripe_request('/payment_intents', [
-            'amount' => $price_cents,
+            'amount' => $total_cents,
             'currency' => 'usd',
-            'metadata' => ['vendor_product_id' => $product_id, 'listing_id' => $listing_id],
+            'metadata' => [
+                'vendor_product_id' => $product_id,
+                'listing_id' => $listing_id,
+                'fulfillment_method' => $fulfillment['method'],
+            ],
             'receipt_email' => $buyer_email ?: null,
             // Card-only — see the matching comment in
             // class-stripe-checkout.php::create_intent() for why this is
@@ -356,7 +438,11 @@ class C767_Rest_Vendor_Products
             'listing_id' => $listing_id,
             'buyer_name' => $buyer_name,
             'buyer_email' => $buyer_email,
-            'amount_cents' => $price_cents,
+            'amount_cents' => $total_cents,
+            'product_amount_cents' => $price_cents,
+            'shipping_fee_cents' => $fulfillment['fee_cents'],
+            'fulfillment_method' => $fulfillment['method'],
+            'shipping_address' => wp_json_encode($fulfillment['shipping']),
             'stripe_payment_intent' => $intent['id'],
             'status' => 'pending',
         ];
@@ -418,6 +504,11 @@ class C767_Rest_Vendor_Products
         $listing_id = (int) get_post_meta($product_id, 'listing_id', true);
         $buyer_email = sanitize_email((string) $request->get_param('email'));
         $buyer_name = sanitize_text_field((string) $request->get_param('name'));
+        $fulfillment = self::checkout_fulfillment($request, $product_id);
+        if (is_wp_error($fulfillment)) {
+            return $fulfillment;
+        }
+        $total_cents = $price_cents + $fulfillment['fee_cents'];
 
         $token = C767_PayPal_Checkout::access_token();
         if (is_wp_error($token)) {
@@ -430,7 +521,7 @@ class C767_Rest_Vendor_Products
                 'reference_id' => (string) $product_id,
                 'amount' => [
                     'currency_code' => 'USD',
-                    'value' => number_format($price_cents / 100, 2, '.', ''),
+                    'value' => number_format($total_cents / 100, 2, '.', ''),
                 ],
             ]],
         ]);
@@ -452,7 +543,11 @@ class C767_Rest_Vendor_Products
             'listing_id' => $listing_id,
             'buyer_name' => $buyer_name,
             'buyer_email' => $buyer_email,
-            'amount_cents' => $price_cents,
+            'amount_cents' => $total_cents,
+            'product_amount_cents' => $price_cents,
+            'shipping_fee_cents' => $fulfillment['fee_cents'],
+            'fulfillment_method' => $fulfillment['method'],
+            'shipping_address' => wp_json_encode($fulfillment['shipping']),
             'paypal_order_id' => $paypal_order['id'],
             'status' => 'pending',
         ];
@@ -533,6 +628,10 @@ class C767_Rest_Vendor_Products
                 'buyerName' => get_post_meta($post->ID, 'buyer_name', true),
                 'buyerEmail' => get_post_meta($post->ID, 'buyer_email', true),
                 'amountCents' => (int) get_post_meta($post->ID, 'amount_cents', true),
+                'shippingFeeCents' => (int) get_post_meta($post->ID, 'shipping_fee_cents', true),
+                'fulfillmentMethod' => get_post_meta($post->ID, 'fulfillment_method', true) ?: 'none',
+                'shippingAddress' => json_decode((string) get_post_meta($post->ID, 'shipping_address', true), true) ?: [],
+                'pickupInstructions' => $product ? get_post_meta($product->ID, 'pickup_instructions', true) : '',
                 'submittedAt' => $post->post_date,
             ];
         }, $orders);

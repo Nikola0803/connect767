@@ -20,6 +20,9 @@ const emptyForm = {
   description: "",
   imageFile: null,
   imagePreview: "",
+  fulfillmentMode: "shipping",
+  shippingFeeDollars: "0.00",
+  pickupInstructions: "",
 };
 
 /**
@@ -95,6 +98,9 @@ export default function VendorProductsPanel({ classifiedListings }) {
       description: product.description || "",
       imageFile: null,
       imagePreview: product.imageUrl || "",
+      fulfillmentMode: product.fulfillmentMode || "shipping",
+      shippingFeeDollars: (Number(product.shippingFeeCents || 0) / 100).toFixed(2),
+      pickupInstructions: product.pickupInstructions || "",
     });
     setError(null);
     setShowForm(true);
@@ -111,6 +117,7 @@ export default function VendorProductsPanel({ classifiedListings }) {
     e.preventDefault();
     setError(null);
     const priceCents = Math.round(parseFloat(form.priceDollars || "0") * 100);
+    const shippingFeeCents = Math.max(0, Math.round(parseFloat(form.shippingFeeDollars || "0") * 100));
     if (!form.listingId || !form.name.trim() || !priceCents) {
       setError("Pick a listing, add a name, and a price above $0.");
       return;
@@ -122,6 +129,9 @@ export default function VendorProductsPanel({ classifiedListings }) {
           name: form.name.trim(),
           priceCents,
           description: form.description.trim(),
+          fulfillmentMode: form.fulfillmentMode,
+          shippingFeeCents,
+          pickupInstructions: form.pickupInstructions.trim(),
           ...(form.imageFile ? { imageFile: form.imageFile } : {}),
         });
       } else {
@@ -130,6 +140,9 @@ export default function VendorProductsPanel({ classifiedListings }) {
           name: form.name.trim(),
           priceCents,
           description: form.description.trim(),
+          fulfillmentMode: form.fulfillmentMode,
+          shippingFeeCents,
+          pickupInstructions: form.pickupInstructions.trim(),
           ...(form.imageFile ? { imageFile: form.imageFile } : {}),
         });
       }
@@ -178,8 +191,8 @@ export default function VendorProductsPanel({ classifiedListings }) {
       </div>
 
       <p className="text-sm text-foreground-600 font-label mb-5">
-        Sell directly from your Classified listing's page — customers pay by card, you get
-        notified in "Sales" below to fulfill and pay out.
+        Sell directly from your Classified listing's page — customers pay by card or PayPal,
+        then shipping and pickup details appear in "Sales" below.
       </p>
 
       {showForm && (
@@ -221,6 +234,43 @@ export default function VendorProductsPanel({ classifiedListings }) {
           <FormField label="Description (optional)" htmlFor="vp-description">
             <Textarea id="vp-description" rows={2} value={form.description} onChange={update("description")} />
           </FormField>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField label="Fulfillment" htmlFor="vp-fulfillment" required>
+              <Select id="vp-fulfillment" value={form.fulfillmentMode} onChange={update("fulfillmentMode")}>
+                <option value="none">No delivery required / service</option>
+                <option value="shipping">Shipping only</option>
+                <option value="pickup">Local pickup only</option>
+                <option value="both">Shipping or local pickup</option>
+              </Select>
+            </FormField>
+            {form.fulfillmentMode !== "pickup" && form.fulfillmentMode !== "none" && (
+              <FormField label="Flat shipping fee (USD)" htmlFor="vp-shipping-fee" hint="Enter 0 for free shipping.">
+                <Input
+                  id="vp-shipping-fee"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.shippingFeeDollars}
+                  onChange={update("shippingFeeDollars")}
+                />
+              </FormField>
+            )}
+          </div>
+          {form.fulfillmentMode !== "shipping" && form.fulfillmentMode !== "none" && (
+            <FormField
+              label="Pickup location & instructions"
+              htmlFor="vp-pickup-instructions"
+              hint="Share the pickup area, available times, and how the buyer should arrange collection."
+            >
+              <Textarea
+                id="vp-pickup-instructions"
+                rows={3}
+                value={form.pickupInstructions}
+                onChange={update("pickupInstructions")}
+                placeholder="Example: Roseau. Pickup Monday–Friday, 9 AM–5 PM. We will email the exact address after payment."
+              />
+            </FormField>
+          )}
           <FormField label="Photo (optional)" htmlFor="vp-image">
             <div className="flex items-center gap-4">
               {form.imagePreview && (
@@ -291,9 +341,18 @@ export default function VendorProductsPanel({ classifiedListings }) {
                     {p.active ? "Active" : "Hidden"}
                   </span>
                 </div>
-                <span className="text-sm text-foreground-700 font-label">
-                  {formatPrice(p.priceCents)}
-                </span>
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-foreground-700 font-label">
+                  <span>{formatPrice(p.priceCents)}</span>
+                  <span className="text-foreground-500">
+                    {p.fulfillmentMode === "none"
+                      ? "No delivery required"
+                      : p.fulfillmentMode === "pickup"
+                        ? "Local pickup"
+                        : p.fulfillmentMode === "both"
+                          ? `Shipping (${formatPrice(p.shippingFeeCents)}) or pickup`
+                          : `Shipping ${p.shippingFeeCents ? formatPrice(p.shippingFeeCents) : "free"}`}
+                  </span>
+                </div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
@@ -345,7 +404,27 @@ export default function VendorProductsPanel({ classifiedListings }) {
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-foreground-600 font-label mt-1">
                   <span>{o.buyerName}</span>
                   <span>{o.buyerEmail}</span>
+                  <span className="font-semibold text-primary-700">
+                    {o.fulfillmentMethod === "pickup"
+                      ? "Local pickup"
+                      : o.fulfillmentMethod === "shipping"
+                        ? "Ship order"
+                        : "No delivery required"}
+                  </span>
                 </div>
+                {o.fulfillmentMethod === "shipping" && o.shippingAddress && (
+                  <p className="mt-2 text-xs leading-relaxed text-foreground-600 font-label">
+                    {[o.shippingAddress.address1, o.shippingAddress.address2, o.shippingAddress.city, o.shippingAddress.region, o.shippingAddress.postcode, o.shippingAddress.country]
+                      .filter(Boolean)
+                      .join(", ")}
+                    {o.shippingAddress.phone ? ` · ${o.shippingAddress.phone}` : ""}
+                  </p>
+                )}
+                {o.fulfillmentMethod === "pickup" && o.pickupInstructions && (
+                  <p className="mt-2 text-xs leading-relaxed text-foreground-600 font-label">
+                    {o.pickupInstructions}
+                  </p>
+                )}
               </div>
               <span className="font-heading text-base font-semibold text-foreground-950 flex-shrink-0">
                 {formatPrice(o.amountCents)}

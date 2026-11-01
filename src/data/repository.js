@@ -869,6 +869,9 @@ export async function createVendorProduct(form) {
   payload.append("name", form.name);
   payload.append("priceCents", form.priceCents);
   if (form.description) payload.append("description", form.description);
+  if (form.fulfillmentMode) payload.append("fulfillmentMode", form.fulfillmentMode);
+  if (form.shippingFeeCents !== undefined) payload.append("shippingFeeCents", form.shippingFeeCents);
+  if (form.pickupInstructions !== undefined) payload.append("pickupInstructions", form.pickupInstructions);
   if (form.imageFile) payload.append("image", form.imageFile);
   return customClient.post("/vendor-products", payload);
 }
@@ -883,6 +886,9 @@ export async function updateVendorProduct(id, form) {
   if (form.name !== undefined) payload.append("name", form.name);
   if (form.priceCents !== undefined) payload.append("priceCents", form.priceCents);
   if (form.description !== undefined) payload.append("description", form.description);
+  if (form.fulfillmentMode !== undefined) payload.append("fulfillmentMode", form.fulfillmentMode);
+  if (form.shippingFeeCents !== undefined) payload.append("shippingFeeCents", form.shippingFeeCents);
+  if (form.pickupInstructions !== undefined) payload.append("pickupInstructions", form.pickupInstructions);
   if (form.active !== undefined) payload.append("active", form.active ? "1" : "0");
   if (form.imageFile) payload.append("image", form.imageFile);
   return customClient.post(`/vendor-products/${id}`, payload);
@@ -900,11 +906,16 @@ export async function getMyVendorOrders() {
 }
 
 /** Card payment for a vendor product — see PaypalButton's sibling Stripe path in ListingProducts.jsx. */
-export async function createVendorProductCheckout(productId, { name, email }) {
+export async function createVendorProductCheckout(productId, { name, email, fulfillmentMethod, shipping }) {
   if (!isLiveApi) {
     throw new Error("Checkout needs a live WordPress backend — set VITE_WP_BASE_URL to enable it.");
   }
-  return customClient.post(`/vendor-products/${productId}/checkout`, { name, email });
+  return customClient.post(`/vendor-products/${productId}/checkout`, {
+    name,
+    email,
+    fulfillmentMethod,
+    shipping,
+  });
 }
 
 export async function confirmVendorOrder(orderId) {
@@ -913,11 +924,16 @@ export async function confirmVendorOrder(orderId) {
 }
 
 /** PayPal's counterpart to createVendorProductCheckout() — see PaypalButton.jsx. */
-export async function createVendorProductPaypalOrder(productId, { name, email }) {
+export async function createVendorProductPaypalOrder(productId, { name, email, fulfillmentMethod, shipping }) {
   if (!isLiveApi) {
     throw new Error("Checkout needs a live WordPress backend — set VITE_WP_BASE_URL to enable it.");
   }
-  return customClient.post(`/vendor-products/${productId}/paypal-order`, { name, email });
+  return customClient.post(`/vendor-products/${productId}/paypal-order`, {
+    name,
+    email,
+    fulfillmentMethod,
+    shipping,
+  });
 }
 
 export async function captureVendorProductPaypalOrder(orderId) {
