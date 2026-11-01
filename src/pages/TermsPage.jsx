@@ -29,7 +29,7 @@ export default function TermsPage() {
           <h1 className="font-heading text-4xl md:text-5xl font-light text-foreground-950 leading-tight mb-4">
             Clear terms for a <span className="italic text-primary-700">trusted marketplace.</span>
           </h1>
-          <p className="text-foreground-600 font-label text-sm">Effective October 23, 2026</p>
+          <p className="text-foreground-600 font-label text-sm">Effective November 1, 2026</p>
         </div>
       </div>
 
@@ -53,6 +53,26 @@ export default function TermsPage() {
                   </p>
                   <p>
                     You must expressly accept these Paid Booking Terms before Connect767 will create or process a paid booking. Your acceptance, the applicable terms version, and the transaction-fee percentage are recorded with the booking.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="storefront-sales" className="scroll-mt-28 rounded-2xl border border-primary-200 bg-primary-50/60 p-6 md:p-8">
+            <div className="flex items-start gap-3">
+              <i className="ri-store-2-line text-xl text-primary-700 mt-0.5" />
+              <div>
+                <h2 className="font-heading text-2xl font-medium text-foreground-950 mb-3">Storefront Sales and 10% Transaction Fee</h2>
+                <div className="space-y-3 text-sm text-foreground-700 leading-relaxed">
+                  <p>
+                    Connect767 charges and retains a platform service fee equal to <strong>10% of the product price for every paid storefront sale</strong> processed through a listing owner&apos;s Connect767 storefront.
+                  </p>
+                  <p>
+                    The fee is deducted from the listing owner&apos;s proceeds and is not added to the buyer&apos;s displayed product price. Shipping charges are excluded from the fee and are passed through to the listing owner in full. The listing owner&apos;s payout is the customer total, including shipping where applicable, less the 10% fee on the product price.
+                  </p>
+                  <p>
+                    Connect767 records the gross sale, platform fee, and owner payout for each completed card or PayPal transaction. Listing owners remain responsible for product accuracy, inventory, fulfillment, returns, taxes, and compliance with applicable law.
                   </p>
                 </div>
               </div>

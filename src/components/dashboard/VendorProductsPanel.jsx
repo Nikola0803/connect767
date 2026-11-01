@@ -130,8 +130,13 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
     setError(null);
     const priceCents = Math.round(parseFloat(form.priceDollars || "0") * 100);
     const shippingFeeCents = Math.max(0, Math.round(parseFloat(form.shippingFeeDollars || "0") * 100));
+    const selectedListing = listings.find((listing) => String(listing.id) === String(form.listingId));
     if (!form.listingId || !form.name.trim() || !priceCents) {
       setError("Pick a listing, add a name, and a price above $0.");
+      return;
+    }
+    if (selectedListing && !selectedListing.payoutConfigured) {
+      setError("Add a bank account or digital payout method to this listing before selling products.");
       return;
     }
     setSubmitting(true);
@@ -207,6 +212,12 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
         then shipping and pickup details appear in "Sales" below.
       </p>
 
+      <div className="mb-5 rounded-xl border border-primary-200 bg-primary-50/70 px-4 py-3 text-xs leading-relaxed text-foreground-700 font-label">
+        <strong className="text-primary-900">Storefront transaction fee:</strong>{" "}
+        Connect767 retains 10% of each product price. Shipping charges are passed through to you in full,
+        and your payout is recorded automatically after payment.
+      </div>
+
       {showForm && (
         <form
           onSubmit={handleSubmit}
@@ -222,11 +233,16 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
               <option value="">Select a listing…</option>
               {listings.map((l) => (
                 <option key={l.id} value={l.id}>
-                  {l.title}
+                  {l.title}{l.payoutConfigured ? "" : " — payout setup required"}
                 </option>
               ))}
             </Select>
           </FormField>
+          {form.listingId && !listings.find((listing) => String(listing.id) === String(form.listingId))?.payoutConfigured && (
+            <p className="rounded-lg border border-accent-200 bg-accent-50 px-3 py-2 text-xs text-accent-700 font-label">
+              Edit this listing and add its bank account or digital payout details before publishing products for sale.
+            </p>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Name" htmlFor="vp-name">
               <Input id="vp-name" value={form.name} onChange={update("name")} placeholder="e.g. Consultation session" />
@@ -438,9 +454,12 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
                   </p>
                 )}
               </div>
-              <span className="font-heading text-base font-semibold text-foreground-950 flex-shrink-0">
-                {formatPrice(o.amountCents)}
-              </span>
+              <div className="flex-shrink-0 text-right font-label text-xs text-foreground-600">
+                <p>Customer total <strong className="text-foreground-950">{formatPrice(o.amountCents)}</strong></p>
+                <p>Connect767 fee ({o.platformFeePercent || 10}%) <strong className="text-foreground-950">−{formatPrice(o.platformFeeAmountCents)}</strong></p>
+                <p className="mt-1 text-sm text-primary-800">Your payout <strong>{formatPrice(o.ownerPayoutAmountCents)}</strong></p>
+                <p className="mt-1 capitalize text-foreground-500">Payout {o.ownerPayoutStatus || "pending"}</p>
+              </div>
             </div>
           ))}
         </div>

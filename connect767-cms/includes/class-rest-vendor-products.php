@@ -23,6 +23,7 @@ if (!defined('ABSPATH')) {
 class C767_Rest_Vendor_Products
 {
     const NAMESPACE_ = 'connect767/v1';
+    const PLATFORM_FEE_PERCENT = 10;
 
     public static function init()
     {
@@ -160,6 +161,36 @@ class C767_Rest_Vendor_Products
                 ? max(0, (int) get_post_meta($product_id, 'shipping_fee_cents', true))
                 : 0,
         ];
+    }
+
+    /**
+     * Connect767 retains 10% of the product price. Delivery charges are
+     * passed through in full to the listing owner and are never included in
+     * the platform commission.
+     */
+    private static function payment_breakdown($product_amount_cents, $shipping_fee_cents)
+    {
+        $product_amount_cents = max(0, (int) $product_amount_cents);
+        $shipping_fee_cents = max(0, (int) $shipping_fee_cents);
+        $platform_fee_amount_cents = (int) round(
+            $product_amount_cents * self::PLATFORM_FEE_PERCENT / 100,
+            0,
+            PHP_ROUND_HALF_UP
+        );
+        $gross_amount_cents = $product_amount_cents + $shipping_fee_cents;
+
+        return [
+            'gross_amount_cents' => $gross_amount_cents,
+            'platform_fee_percent' => self::PLATFORM_FEE_PERCENT,
+            'platform_fee_amount_cents' => $platform_fee_amount_cents,
+            'owner_payout_amount_cents' => max(0, $gross_amount_cents - $platform_fee_amount_cents),
+        ];
+    }
+
+    private static function listing_payout_method($listing_id)
+    {
+        $method = (string) get_post_meta((int) $listing_id, '_booking_payout_method', true);
+        return in_array($method, ['bank', 'digital'], true) ? $method : '';
     }
 
     /** Public — the "Buy" cards on a listing profile only ever show active items. */
@@ -394,13 +425,18 @@ class C767_Rest_Vendor_Products
 
         $price_cents = (int) get_post_meta($product_id, 'price_cents', true);
         $listing_id = (int) get_post_meta($product_id, 'listing_id', true);
+        $owner_payout_method = self::listing_payout_method($listing_id);
+        if ($owner_payout_method === '') {
+            return new WP_Error('c767_owner_payout_unavailable', 'This seller must add a payout method before accepting storefront payments.', ['status' => 409]);
+        }
         $buyer_email = sanitize_email((string) $request->get_param('email'));
         $buyer_name = sanitize_text_field((string) $request->get_param('name'));
         $fulfillment = self::checkout_fulfillment($request, $product_id);
         if (is_wp_error($fulfillment)) {
             return $fulfillment;
         }
-        $total_cents = $price_cents + $fulfillment['fee_cents'];
+        $breakdown = self::payment_breakdown($price_cents, $fulfillment['fee_cents']);
+        $total_cents = $breakdown['gross_amount_cents'];
 
         $intent = C767_Stripe_Checkout::stripe_request('/payment_intents', [
             'amount' => $total_cents,
@@ -409,6 +445,9 @@ class C767_Rest_Vendor_Products
                 'vendor_product_id' => $product_id,
                 'listing_id' => $listing_id,
                 'fulfillment_method' => $fulfillment['method'],
+                'platform_fee_percent' => $breakdown['platform_fee_percent'],
+                'platform_fee_amount_cents' => $breakdown['platform_fee_amount_cents'],
+                'owner_payout_amount_cents' => $breakdown['owner_payout_amount_cents'],
             ],
             'receipt_email' => $buyer_email ?: null,
             // Card-only — see the matching comment in
@@ -437,6 +476,11 @@ class C767_Rest_Vendor_Products
             'amount_cents' => $total_cents,
             'product_amount_cents' => $price_cents,
             'shipping_fee_cents' => $fulfillment['fee_cents'],
+            'platform_fee_percent' => $breakdown['platform_fee_percent'],
+            'platform_fee_amount_cents' => $breakdown['platform_fee_amount_cents'],
+            'owner_payout_amount_cents' => $breakdown['owner_payout_amount_cents'],
+            'owner_payout_method' => $owner_payout_method,
+            'owner_payout_status' => 'awaiting_payment',
             'fulfillment_method' => $fulfillment['method'],
             'shipping_address' => wp_json_encode($fulfillment['shipping']),
             'stripe_payment_intent' => $intent['id'],
@@ -472,8 +516,13 @@ class C767_Rest_Vendor_Products
         }
 
         if ($intent['status'] === 'succeeded') {
+            $was_paid = get_post_meta($order_id, 'status', true) === 'paid';
             update_post_meta($order_id, 'status', 'paid');
-            do_action('c767_vendor_order_paid', $order_id);
+            update_post_meta($order_id, 'owner_payout_status', 'pending');
+            if (!$was_paid) {
+                update_post_meta($order_id, 'paid_at', current_time('mysql', true));
+                do_action('c767_vendor_order_paid', $order_id);
+            }
             return rest_ensure_response(['status' => 'paid', 'orderId' => $order_id]);
         }
 
@@ -498,13 +547,18 @@ class C767_Rest_Vendor_Products
 
         $price_cents = (int) get_post_meta($product_id, 'price_cents', true);
         $listing_id = (int) get_post_meta($product_id, 'listing_id', true);
+        $owner_payout_method = self::listing_payout_method($listing_id);
+        if ($owner_payout_method === '') {
+            return new WP_Error('c767_owner_payout_unavailable', 'This seller must add a payout method before accepting storefront payments.', ['status' => 409]);
+        }
         $buyer_email = sanitize_email((string) $request->get_param('email'));
         $buyer_name = sanitize_text_field((string) $request->get_param('name'));
         $fulfillment = self::checkout_fulfillment($request, $product_id);
         if (is_wp_error($fulfillment)) {
             return $fulfillment;
         }
-        $total_cents = $price_cents + $fulfillment['fee_cents'];
+        $breakdown = self::payment_breakdown($price_cents, $fulfillment['fee_cents']);
+        $total_cents = $breakdown['gross_amount_cents'];
 
         $token = C767_PayPal_Checkout::access_token();
         if (is_wp_error($token)) {
@@ -519,6 +573,12 @@ class C767_Rest_Vendor_Products
                     'currency_code' => 'USD',
                     'value' => number_format($total_cents / 100, 2, '.', ''),
                 ],
+                'custom_id' => sprintf(
+                    'listing:%d;product:%d;fee:%d',
+                    $listing_id,
+                    $product_id,
+                    $breakdown['platform_fee_amount_cents']
+                ),
             ]],
         ]);
         if (is_wp_error($paypal_order)) {
@@ -542,6 +602,11 @@ class C767_Rest_Vendor_Products
             'amount_cents' => $total_cents,
             'product_amount_cents' => $price_cents,
             'shipping_fee_cents' => $fulfillment['fee_cents'],
+            'platform_fee_percent' => $breakdown['platform_fee_percent'],
+            'platform_fee_amount_cents' => $breakdown['platform_fee_amount_cents'],
+            'owner_payout_amount_cents' => $breakdown['owner_payout_amount_cents'],
+            'owner_payout_method' => $owner_payout_method,
+            'owner_payout_status' => 'awaiting_payment',
             'fulfillment_method' => $fulfillment['method'],
             'shipping_address' => wp_json_encode($fulfillment['shipping']),
             'paypal_order_id' => $paypal_order['id'],
@@ -582,8 +647,13 @@ class C767_Rest_Vendor_Products
         }
 
         if (($capture['status'] ?? '') === 'COMPLETED') {
+            $was_paid = get_post_meta($order_id, 'status', true) === 'paid';
             update_post_meta($order_id, 'status', 'paid');
-            do_action('c767_vendor_order_paid', $order_id);
+            update_post_meta($order_id, 'owner_payout_status', 'pending');
+            if (!$was_paid) {
+                update_post_meta($order_id, 'paid_at', current_time('mysql', true));
+                do_action('c767_vendor_order_paid', $order_id);
+            }
             return rest_ensure_response(['status' => 'paid', 'orderId' => $order_id]);
         }
 
@@ -624,7 +694,12 @@ class C767_Rest_Vendor_Products
                 'buyerName' => get_post_meta($post->ID, 'buyer_name', true),
                 'buyerEmail' => get_post_meta($post->ID, 'buyer_email', true),
                 'amountCents' => (int) get_post_meta($post->ID, 'amount_cents', true),
+                'productAmountCents' => (int) get_post_meta($post->ID, 'product_amount_cents', true),
                 'shippingFeeCents' => (int) get_post_meta($post->ID, 'shipping_fee_cents', true),
+                'platformFeePercent' => (int) (get_post_meta($post->ID, 'platform_fee_percent', true) ?: self::PLATFORM_FEE_PERCENT),
+                'platformFeeAmountCents' => (int) get_post_meta($post->ID, 'platform_fee_amount_cents', true),
+                'ownerPayoutAmountCents' => (int) get_post_meta($post->ID, 'owner_payout_amount_cents', true),
+                'ownerPayoutStatus' => get_post_meta($post->ID, 'owner_payout_status', true) ?: 'pending',
                 'fulfillmentMethod' => get_post_meta($post->ID, 'fulfillment_method', true) ?: 'none',
                 'shippingAddress' => json_decode((string) get_post_meta($post->ID, 'shipping_address', true), true) ?: [],
                 'pickupInstructions' => $product ? get_post_meta($product->ID, 'pickup_instructions', true) : '',

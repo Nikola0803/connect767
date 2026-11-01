@@ -49,6 +49,8 @@ class C767_Notifications
         add_action('c767_booking_confirmed', [__CLASS__, 'on_booking_confirmed']);
         add_action('c767_booking_cashout_requested', [__CLASS__, 'on_booking_cashout_requested'], 10, 3);
         add_action('c767_booking_payout_paid', [__CLASS__, 'on_booking_payout_paid']);
+        add_action('c767_vendor_order_paid', [__CLASS__, 'on_vendor_order_paid']);
+        add_action('c767_vendor_payout_paid', [__CLASS__, 'on_vendor_payout_paid']);
     }
 
     public static function mail_from()
@@ -524,6 +526,79 @@ class C767_Notifications
                 number_format($amount_cents / 100, 2),
                 $booking_id,
                 self::frontend_url('/dashboard')
+            )
+        );
+    }
+
+    public static function on_vendor_order_paid($order_id)
+    {
+        $listing_id = (int) get_post_meta($order_id, 'listing_id', true);
+        $product_id = (int) get_post_meta($order_id, 'product_id', true);
+        $listing = get_post($listing_id);
+        $product = get_post($product_id);
+        $owner = $listing ? get_userdata($listing->post_author) : null;
+        if (!$listing || !$product || !$owner) {
+            return;
+        }
+
+        $gross = (int) get_post_meta($order_id, 'amount_cents', true);
+        $fee = (int) get_post_meta($order_id, 'platform_fee_amount_cents', true);
+        $payout = (int) get_post_meta($order_id, 'owner_payout_amount_cents', true);
+        $buyer_email = sanitize_email((string) get_post_meta($order_id, 'buyer_email', true));
+
+        wp_mail(
+            $owner->user_email,
+            sprintf('New paid storefront order — %s', $product->post_title),
+            sprintf(
+                "Hi %s,\n\nYou received a paid order for \"%s\" from your %s storefront.\n\nCustomer total: $%s USD\nConnect767 platform fee (10%% of product price): $%s USD\nYour payout: $%s USD\n\nReview delivery details and payout status in your dashboard:\n%s",
+                $owner->display_name ?: $owner->user_login,
+                $product->post_title,
+                $listing->post_title,
+                number_format($gross / 100, 2),
+                number_format($fee / 100, 2),
+                number_format($payout / 100, 2),
+                self::frontend_url('/dashboard?products=' . $listing_id . '#products-services')
+            ),
+            self::reply_to($buyer_email)
+        );
+
+        wp_mail(
+            get_option('admin_email'),
+            sprintf('[Connect767] Paid storefront order #%d — %s', $order_id, $product->post_title),
+            sprintf(
+                "Listing: %s\nOwner: %s\nGross: $%s USD\nConnect767 fee retained: $%s USD\nOwner payout due: $%s USD\n\nManage storefront payouts:\n%s",
+                $listing->post_title,
+                $owner->display_name ?: $owner->user_login,
+                number_format($gross / 100, 2),
+                number_format($fee / 100, 2),
+                number_format($payout / 100, 2),
+                admin_url('admin.php?page=connect767-storefront-payouts')
+            ),
+            self::reply_to($owner->user_email)
+        );
+    }
+
+    public static function on_vendor_payout_paid($order_id)
+    {
+        $listing_id = (int) get_post_meta($order_id, 'listing_id', true);
+        $product_id = (int) get_post_meta($order_id, 'product_id', true);
+        $listing = get_post($listing_id);
+        $product = get_post($product_id);
+        $owner = $listing ? get_userdata($listing->post_author) : null;
+        if (!$listing || !$owner) {
+            return;
+        }
+
+        $payout = (int) get_post_meta($order_id, 'owner_payout_amount_cents', true);
+        wp_mail(
+            $owner->user_email,
+            sprintf('Your storefront payout was sent — %s', $product ? $product->post_title : $listing->post_title),
+            sprintf(
+                "Hi %s,\n\nYour $%s USD payout for storefront order #%d has been marked paid. The Connect767 10%% platform fee was retained before this payout.\n\nTrack your sales:\n%s",
+                $owner->display_name ?: $owner->user_login,
+                number_format($payout / 100, 2),
+                $order_id,
+                self::frontend_url('/dashboard?products=' . $listing_id . '#products-services')
             )
         );
     }

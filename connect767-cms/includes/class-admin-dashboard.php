@@ -47,6 +47,15 @@ class C767_Admin_Dashboard
             'connect767-booking-payouts',
             [__CLASS__, 'render_booking_payouts']
         );
+
+        add_submenu_page(
+            'connect767-cms',
+            'Storefront Payouts',
+            'Storefront Payouts',
+            'manage_options',
+            'connect767-storefront-payouts',
+            [__CLASS__, 'render_storefront_payouts']
+        );
     }
 
     private static function count($post_type, $status = 'publish')
@@ -128,6 +137,95 @@ class C767_Admin_Dashboard
                                 <?php wp_nonce_field('c767_update_booking_payout'); ?>
                                 <input type="hidden" name="c767_payout_action" value="1">
                                 <input type="hidden" name="booking_id" value="<?php echo esc_attr($booking_id); ?>">
+                                <select name="payout_status"><option value="processing">Mark processing</option><option value="paid">Mark paid</option></select>
+                                <button type="submit" class="button button-primary">Update</button>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endforeach; endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php
+    }
+
+    public static function render_storefront_payouts()
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('You do not have permission to manage payouts.', 'connect767-cms'));
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['c767_storefront_payout_action'])) {
+            check_admin_referer('c767_update_storefront_payout');
+            $order_id = isset($_POST['order_id']) ? (int) $_POST['order_id'] : 0;
+            $status = isset($_POST['payout_status']) ? sanitize_key(wp_unslash($_POST['payout_status'])) : '';
+            $order = get_post($order_id);
+            if ($order && $order->post_type === 'vendor_order' && in_array($status, ['processing', 'paid'], true)) {
+                update_post_meta($order_id, 'owner_payout_status', $status);
+                update_post_meta($order_id, 'owner_payout_' . $status . '_at', current_time('mysql', true));
+                if ($status === 'paid') {
+                    do_action('c767_vendor_payout_paid', $order_id);
+                }
+                echo '<div class="notice notice-success is-dismissible"><p>Storefront payout status updated.</p></div>';
+            }
+        }
+
+        $order_ids = get_posts([
+            'post_type' => 'vendor_order',
+            'post_status' => 'publish',
+            'numberposts' => -1,
+            'fields' => 'ids',
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'meta_query' => [
+                'relation' => 'AND',
+                ['key' => 'status', 'value' => 'paid'],
+                ['key' => 'owner_payout_status', 'value' => ['pending', 'processing'], 'compare' => 'IN'],
+            ],
+        ]);
+        ?>
+        <div class="wrap">
+            <h1>Storefront Payouts</h1>
+            <p class="description">Connect767 retains 10% of each product price. Shipping is passed through in full. Process only the recorded owner payout.</p>
+            <table class="widefat striped" style="margin-top:18px">
+                <thead><tr><th>Order</th><th>Listing owner</th><th>Accounting</th><th>Private payout destination</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody>
+                <?php if (empty($order_ids)) : ?>
+                    <tr><td colspan="6">No paid storefront orders are awaiting payout.</td></tr>
+                <?php else : foreach ($order_ids as $order_id) :
+                    $listing_id = (int) get_post_meta($order_id, 'listing_id', true);
+                    $product_id = (int) get_post_meta($order_id, 'product_id', true);
+                    $listing = get_post($listing_id);
+                    $product = get_post($product_id);
+                    $owner = $listing ? get_userdata($listing->post_author) : null;
+                    $gross = (int) get_post_meta($order_id, 'amount_cents', true);
+                    $product_amount = (int) get_post_meta($order_id, 'product_amount_cents', true);
+                    $shipping = (int) get_post_meta($order_id, 'shipping_fee_cents', true);
+                    $fee = (int) get_post_meta($order_id, 'platform_fee_amount_cents', true);
+                    $payout = (int) get_post_meta($order_id, 'owner_payout_amount_cents', true);
+                    $status = (string) get_post_meta($order_id, 'owner_payout_status', true);
+                    $destination = C767_REST_Listings::payout_destination_for_admin($listing_id);
+                    $details = $destination['details'] ?? [];
+                    if (($destination['method'] ?? '') === 'digital') {
+                        $destination_text = trim(($details['digitalProvider'] ?? '') . ': ' . ($details['digitalAccount'] ?? ''), ': ');
+                    } else {
+                        $destination_text = implode(' · ', array_filter([
+                            $details['accountName'] ?? '', $details['bankName'] ?? '', $details['bankCountry'] ?? '',
+                            $details['accountNumber'] ?? '', $details['routingNumber'] ?? '', $details['swiftCode'] ?? '',
+                        ]));
+                    }
+                    ?>
+                    <tr>
+                        <td><strong>#<?php echo esc_html($order_id); ?></strong><br><?php echo esc_html($product ? $product->post_title : 'Product unavailable'); ?><br><small><?php echo esc_html($listing ? $listing->post_title : 'Listing unavailable'); ?></small></td>
+                        <td><?php echo esc_html($owner ? ($owner->display_name ?: $owner->user_login) : 'Unknown'); ?><br><a href="mailto:<?php echo esc_attr($owner ? $owner->user_email : ''); ?>"><?php echo esc_html($owner ? $owner->user_email : ''); ?></a></td>
+                        <td>Gross: <strong>$<?php echo esc_html(number_format($gross / 100, 2)); ?></strong><br>Product: $<?php echo esc_html(number_format($product_amount / 100, 2)); ?><br>Shipping: $<?php echo esc_html(number_format($shipping / 100, 2)); ?><br>Connect767 fee (10%): <strong>$<?php echo esc_html(number_format($fee / 100, 2)); ?></strong><br>Owner payout: <strong>$<?php echo esc_html(number_format($payout / 100, 2)); ?></strong></td>
+                        <td><?php echo esc_html($destination_text ?: 'Destination unavailable — contact owner'); ?></td>
+                        <td><strong><?php echo esc_html(ucfirst($status)); ?></strong></td>
+                        <td>
+                            <form method="post">
+                                <?php wp_nonce_field('c767_update_storefront_payout'); ?>
+                                <input type="hidden" name="c767_storefront_payout_action" value="1">
+                                <input type="hidden" name="order_id" value="<?php echo esc_attr($order_id); ?>">
                                 <select name="payout_status"><option value="processing">Mark processing</option><option value="paid">Mark paid</option></select>
                                 <button type="submit" class="button button-primary">Update</button>
                             </form>
