@@ -10,6 +10,15 @@ function loadImageDimensions(src) {
   });
 }
 
+function hasSizeAttribute(attributes = []) {
+  return attributes.some((attribute) => {
+    const name = String(attribute?.name || "")
+      .replace(/^pa[_-]?/i, "")
+      .trim();
+    return /^(size|sizes|sizing)$/i.test(name);
+  });
+}
+
 export function explicitSizeChart(gallery = []) {
   return (
     gallery.find((image) => image?.isSizeChart) ||
@@ -18,12 +27,20 @@ export function explicitSizeChart(gallery = []) {
   );
 }
 
-export async function detectLegacySizeChart(gallery = [], description = "") {
+export async function detectLegacySizeChart(gallery = [], description = "", attributes = []) {
   const explicit = explicitSizeChart(gallery);
-  if (explicit || !SIZE_GUIDE_REFERENCE.test(description)) return explicit;
+  const mayHaveUnlabelledChart =
+    SIZE_GUIDE_REFERENCE.test(description) || hasSizeAttribute(attributes);
+  if (explicit || !mayHaveUnlabelledChart) return explicit;
 
   const dimensions = await Promise.all(
-    gallery.filter((image) => image?.src).map((image) => loadImageDimensions(image.src))
+    gallery
+      .filter((image) => image?.src)
+      .map((image) =>
+        image.width > 0 && image.height > 0
+          ? Promise.resolve({ src: image.src, width: image.width, height: image.height })
+          : loadImageDimensions(image.src)
+      )
   );
   const chart = dimensions
     .filter((image) => image.height > 0 && image.width / image.height >= 2.5)

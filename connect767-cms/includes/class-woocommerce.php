@@ -193,7 +193,15 @@ class C767_WooCommerce
             '/size\s*(chart|guide)|sizing|measurement/i',
             wp_strip_all_tags($description . ' ' . $product->get_short_description())
         );
-        $images = array_values(array_filter(array_map(function ($attachment_id) use ($description_mentions_size_guide) {
+        $has_size_attribute = false;
+        foreach ($product->get_attributes() as $attribute) {
+            $attribute_name = self::normalize_image_match_text(wc_attribute_label($attribute->get_name()));
+            if (in_array($attribute_name, ['size', 'sizes', 'sizing'], true)) {
+                $has_size_attribute = true;
+                break;
+            }
+        }
+        $images = array_values(array_filter(array_map(function ($attachment_id) use ($description_mentions_size_guide, $has_size_attribute) {
             $src = wp_get_attachment_url($attachment_id);
             if (!$src) {
                 return null;
@@ -212,7 +220,7 @@ class C767_WooCommerce
                 pathinfo(wp_parse_url($src, PHP_URL_PATH) ?: '', PATHINFO_FILENAME),
             ]));
             $explicit_size_chart = preg_match('/(sizechart|sizeguide|sizingchart|measurement)/', $search_text);
-            $likely_legacy_chart = $description_mentions_size_guide
+            $likely_legacy_chart = ($description_mentions_size_guide || $has_size_attribute)
                 && $height > 0
                 && ($width / $height) >= 2.5;
 
