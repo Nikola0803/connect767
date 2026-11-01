@@ -9,6 +9,7 @@ import BookingForm from "./BookingForm";
 import ShareMenu from "./ShareMenu";
 import { WriteReviewButton } from "./WriteReviewModal";
 import DefaultListingCover from "./ui/DefaultListingCover";
+import ListingProducts from "./ListingProducts";
 
 export function listingOwnerMessagePath(data, isPreview = false) {
   if (isPreview || !data?.slug) return "";
@@ -30,6 +31,7 @@ export function listingOwnerMessagePath(data, isPreview = false) {
 export default function ListingProfile({ data, isPreview = false }) {
   const [activeImage, setActiveImage] = useState(0);
   const [mapCoords, setMapCoords] = useState(null);
+  const [hasProducts, setHasProducts] = useState(false);
   const { isSaved, toggleSaved } = useSavedListings();
   const gallery = data.gallery.length > 0 ? data.gallery : [{ alt: data.title, src: "" }];
   const saved = !isPreview && isSaved(data.slug);
@@ -261,6 +263,16 @@ export default function ListingProfile({ data, isPreview = false }) {
                     })()}
                   </div>
                   <div className="flex items-center gap-2">
+                    {hasProducts && !isPreview && (
+                      <Link
+                        to={`/listings/${data.slug}/shop`}
+                        className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-background-50 transition-colors hover:bg-primary-700"
+                      >
+                        <i className="ri-store-3-line" />
+                        <span className="hidden sm:inline">Shop Products</span>
+                        <span className="sm:hidden">Shop</span>
+                      </Link>
+                    )}
                     <button
                       type="button"
                       onClick={handleSave}
@@ -349,6 +361,13 @@ export default function ListingProfile({ data, isPreview = false }) {
                     </div>
                   </div>
                 )}
+
+                <ListingProducts
+                  slug={data.slug}
+                  isPreview={isPreview}
+                  listingTitle={data.title}
+                  onAvailabilityChange={setHasProducts}
+                />
 
                 <section className="mt-10 pt-10 border-t border-background-200/70">
                   <div className="flex items-center justify-between mb-6">

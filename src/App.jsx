@@ -35,6 +35,7 @@ const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const SavedListingsPage = lazy(() => import("./pages/SavedListingsPage"));
 const AIDesignStudioPage = lazy(() => import("./pages/AIDesignStudioPage"));
+const ListingStorefrontPage = lazy(() => import("./pages/ListingStorefrontPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 
 function RouteLoading() {
@@ -90,6 +91,7 @@ function App() {
                   <Route path="/listings" element={<DirectoryPage />} />
                   <Route path="/listings/submit" element={<AddListingPage />} />
                   <Route path="/listings/:slug/edit" element={<AddListingPage />} />
+                  <Route path="/listings/:slug/shop" element={<ListingStorefrontPage />} />
                   <Route path="/match" element={<MatchPage />} />
                   <Route path="/listings/:slug" element={<ListingDetailPage />} />
                   <Route path="/saved" element={<SavedListingsPage />} />
