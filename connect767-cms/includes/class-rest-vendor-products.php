@@ -38,6 +38,18 @@ class C767_Rest_Vendor_Products
             'permission_callback' => '__return_true',
         ]);
 
+        register_rest_route(self::NAMESPACE_, '/listings/(?P<slug>[a-zA-Z0-9-_]+)/storefront-settings', [
+            'methods' => 'GET',
+            'callback' => [__CLASS__, 'public_storefront_settings'],
+            'permission_callback' => '__return_true',
+        ]);
+
+        register_rest_route(self::NAMESPACE_, '/vendor-storefronts/(?P<id>\d+)', [
+            'methods' => ['GET', 'POST'],
+            'callback' => [__CLASS__, 'owner_storefront_settings'],
+            'permission_callback' => [__CLASS__, 'check_auth'],
+        ]);
+
         register_rest_route(self::NAMESPACE_, '/vendor-products/mine', [
             'methods' => 'GET',
             'callback' => [__CLASS__, 'mine'],
@@ -213,6 +225,98 @@ class C767_Rest_Vendor_Products
         ]);
 
         return rest_ensure_response(array_map([__CLASS__, 'format_product'], $products));
+    }
+
+    private static function storefront_settings($listing)
+    {
+        $featured = json_decode((string) get_post_meta($listing->ID, 'storefront_featured_product_ids', true), true);
+        $order = json_decode((string) get_post_meta($listing->ID, 'storefront_product_order', true), true);
+        $accent = sanitize_hex_color((string) get_post_meta($listing->ID, 'storefront_accent_color', true));
+        $custom_cover = (string) get_post_meta($listing->ID, 'storefront_cover_url', true);
+        return [
+            'listingId' => (int) $listing->ID,
+            'coverUrl' => (string) ($custom_cover ?: get_the_post_thumbnail_url($listing->ID, 'full')),
+            'hasCustomCover' => $custom_cover !== '',
+            'logoUrl' => (string) (get_post_meta($listing->ID, 'storefront_logo_url', true) ?: get_post_meta($listing->ID, 'logo', true)),
+            'headline' => (string) (get_post_meta($listing->ID, 'storefront_headline', true) ?: 'Shop ' . $listing->post_title),
+            'welcomeText' => (string) (get_post_meta($listing->ID, 'storefront_welcome_text', true) ?: 'A curated selection from this Connect767 business, available through secure checkout.'),
+            'accentColor' => $accent ?: '#0f6b4f',
+            'aboutText' => (string) get_post_meta($listing->ID, 'storefront_about_text', true),
+            'shippingMessage' => (string) (get_post_meta($listing->ID, 'storefront_shipping_message', true) ?: 'Shipping and local pickup options are shown with each product.'),
+            'policies' => (string) get_post_meta($listing->ID, 'storefront_policies', true),
+            'featuredProductIds' => array_values(array_map('intval', is_array($featured) ? $featured : [])),
+            'productOrder' => array_values(array_map('intval', is_array($order) ? $order : [])),
+        ];
+    }
+
+    public static function public_storefront_settings(WP_REST_Request $request)
+    {
+        $listing = get_page_by_path(sanitize_title((string) $request->get_param('slug')), OBJECT, 'listing');
+        if (!$listing || $listing->post_status !== 'publish') {
+            return new WP_Error('c767_listing_not_found', 'Listing not found.', ['status' => 404]);
+        }
+        return rest_ensure_response(self::storefront_settings($listing));
+    }
+
+    public static function owner_storefront_settings(WP_REST_Request $request)
+    {
+        $user = C767_REST_Auth::user_from_request($request);
+        if (is_wp_error($user)) {
+            return $user;
+        }
+        $listing = self::require_owned_listing((int) $request->get_param('id'), $user->ID);
+        if (is_wp_error($listing)) {
+            return $listing;
+        }
+        if ($request->get_method() === 'GET') {
+            return rest_ensure_response(self::storefront_settings($listing));
+        }
+
+        $text_fields = [
+            'headline' => 'storefront_headline',
+            'welcomeText' => 'storefront_welcome_text',
+            'aboutText' => 'storefront_about_text',
+            'shippingMessage' => 'storefront_shipping_message',
+            'policies' => 'storefront_policies',
+        ];
+        foreach ($text_fields as $param => $meta_key) {
+            if ($request->get_param($param) !== null) {
+                update_post_meta($listing->ID, $meta_key, sanitize_textarea_field((string) $request->get_param($param)));
+            }
+        }
+        $accent = sanitize_hex_color((string) $request->get_param('accentColor'));
+        if ($accent) {
+            update_post_meta($listing->ID, 'storefront_accent_color', $accent);
+        }
+
+        $owned_product_ids = get_posts([
+            'post_type' => 'vendor_product', 'post_status' => 'publish', 'numberposts' => -1,
+            'fields' => 'ids', 'meta_query' => [['key' => 'listing_id', 'value' => $listing->ID]],
+        ]);
+        foreach (['featuredProductIds' => 'storefront_featured_product_ids', 'productOrder' => 'storefront_product_order'] as $param => $meta_key) {
+            $decoded = json_decode((string) $request->get_param($param), true);
+            $ids = array_values(array_intersect(array_map('intval', is_array($decoded) ? $decoded : []), array_map('intval', $owned_product_ids)));
+            update_post_meta($listing->ID, $meta_key, wp_json_encode($ids));
+        }
+
+        self::handle_storefront_image($listing->ID, 'storefrontCover', 'storefront_cover_url');
+        self::handle_storefront_image($listing->ID, 'storefrontLogo', 'storefront_logo_url');
+
+        return rest_ensure_response(self::storefront_settings($listing));
+    }
+
+    private static function handle_storefront_image($listing_id, $field, $meta_key)
+    {
+        if (empty($_FILES[$field]['tmp_name'])) {
+            return;
+        }
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+        $attachment_id = media_handle_upload($field, $listing_id);
+        if (!is_wp_error($attachment_id)) {
+            update_post_meta($listing_id, $meta_key, wp_get_attachment_url($attachment_id));
+        }
     }
 
     /** Owner's dashboard — every product across every listing they own, active or not. */

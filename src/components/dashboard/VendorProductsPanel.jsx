@@ -8,6 +8,7 @@ import {
 } from "../../data/repository";
 import Button from "../ui/Button";
 import { FormField, Input, Textarea, Select } from "../ui/FormField";
+import StorefrontCustomizer from "./StorefrontCustomizer";
 
 function formatPrice(cents) {
   return `$${(Number(cents || 0) / 100).toFixed(2)}`;
@@ -217,6 +218,8 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
         Connect767 retains 10% of each product price. Shipping charges are passed through to you in full,
         and your payout is recorded automatically after payment.
       </div>
+
+      <StorefrontCustomizer listings={listings} products={products} />
 
       {showForm && (
         <form
