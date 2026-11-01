@@ -12,6 +12,7 @@ const listingTierPlans = {
     features: [
       ["ri-calendar-line", "Online bookings"],
       ["ri-price-tag-3-line", "Display pricing"],
+      ["ri-store-2-line", "Connect767 Built-in Storefront"],
       ["ri-file-list-3-line", "1 listing"],
       ["ri-customer-service-2-line", "24/7 support"],
     ],
@@ -29,6 +30,7 @@ const listingTierPlans = {
       ["ri-shield-check-line", "Verified profile badge"],
       ["ri-calendar-line", "Online bookings"],
       ["ri-price-tag-3-line", "Display pricing"],
+      ["ri-store-2-line", "Connect767 Built-in Storefront"],
       ["ri-file-list-3-line", "Up to 15 listings"],
       ["ri-star-line", "Premium homepage placement (up to 3 months)"],
       ["ri-user-line", "Featured business profile (provided by client)"],

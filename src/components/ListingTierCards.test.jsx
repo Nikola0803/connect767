@@ -19,6 +19,7 @@ describe("ListingTierCards", () => {
       "href",
       "/listings/submit?tier=classified",
     );
+    expect(screen.getAllByText("Connect767 Built-in Storefront")).toHaveLength(2);
   });
 
   it("selects a plan in the listing form", () => {
