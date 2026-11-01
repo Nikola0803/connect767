@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useAsync } from "../hooks/useAsync";
 import {
@@ -14,6 +14,7 @@ import Button from "../components/ui/Button";
 import { bookingRateUnit, isRentalBookingType } from "../lib/bookingTypes";
 import TierBadge from "../components/ui/TierBadge";
 import { CardSkeleton, ErrorState } from "../components/ui/States";
+import VendorProductsPanel from "../components/dashboard/VendorProductsPanel";
 
 const statusMeta = {
   publish: { label: "Live", className: "bg-primary-100 text-primary-800" },
@@ -31,10 +32,17 @@ export default function DashboardPage() {
     reload: reloadBookings,
   } = useAsync(() => getMyBookings(), []);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const productListingId = searchParams.get("products") || "";
   const [tierBusy, setTierBusy] = useState(null);
   const [tierError, setTierError] = useState(null);
   const [bookingBusy, setBookingBusy] = useState(null);
   const [bookingError, setBookingError] = useState(null);
+
+  useEffect(() => {
+    if (!productListingId || !listings?.length) return;
+    document.getElementById("products-services")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [productListingId, listings]);
 
   const changeBookingStatus = async (booking, status) => {
     setBookingBusy(booking.id);
@@ -192,7 +200,14 @@ export default function DashboardPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+                      <Link
+                        to={`/dashboard?products=${item.id}#products-services`}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md border border-primary-300 bg-primary-50 text-sm font-semibold text-primary-800 hover:bg-primary-100 cursor-pointer whitespace-nowrap"
+                      >
+                        <i className="ri-store-2-line" />
+                        Products
+                      </Link>
                       {/* Tier change without re-running the whole wizard —
                           upgrading was previously only possible at submission
                           time, so an existing Free listing had no route to
@@ -244,6 +259,13 @@ export default function DashboardPage() {
                 );
               })}
             </div>
+          )}
+
+          {!loading && !error && listings.length > 0 && (
+            <VendorProductsPanel
+              listings={listings}
+              initialListingId={productListingId}
+            />
           )}
 
           <div className="mt-12 pt-10 border-t border-background-200/70">

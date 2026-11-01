@@ -87,6 +87,7 @@ const initialForm = {
   coverFit: "cover",
   galleryFiles: [],
   galleryPreviews: [],
+  sellProducts: false,
   bookingEnabled: false,
   hideContactInfo: false,
   bookingType: "appointment",
@@ -409,6 +410,9 @@ export default function AddListingPage() {
         return;
       }
       const result = await submitListing(form);
+      if (result?.id) {
+        setListingId(result.id);
+      }
       if (form.tier === "classified" && result?.id) {
         setPendingPayment({ listingId: result.id });
       } else {
@@ -502,9 +506,19 @@ export default function AddListingPage() {
                 </>
               )}
             </p>
-            <Button to="/listings" icon="ri-arrow-right-line">
-              Browse the directory
-            </Button>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {form.sellProducts && listingId && (
+                <Button
+                  to={`/dashboard?products=${listingId}#products-services`}
+                  icon="ri-store-2-line"
+                >
+                  Add products to sell
+                </Button>
+              )}
+              <Button to="/listings" variant={form.sellProducts && listingId ? "outline" : "primary"} icon="ri-arrow-right-line">
+                Browse the directory
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -806,6 +820,39 @@ export default function AddListingPage() {
                     value={form.whatsapp}
                     onChange={update("whatsapp")}
                   />
+                </FormField>
+
+                <FormField label="Storefront products">
+                  <div className="rounded-xl border border-background-300 bg-background-50 p-4">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 rounded border-background-300 cursor-pointer"
+                        checked={form.sellProducts}
+                        onChange={(e) =>
+                          setForm((current) => ({ ...current, sellProducts: e.target.checked }))
+                        }
+                      />
+                      <span>
+                        <span className="block text-sm font-semibold text-foreground-900">
+                          Sell products from this listing
+                        </span>
+                        <span className="block text-xs text-foreground-600 font-label mt-0.5">
+                          Available to every listing. After saving, add product photos, prices,
+                          shipping and local-pickup options in your dashboard.
+                        </span>
+                      </span>
+                    </label>
+                    {isEditing && listingId && (
+                      <Link
+                        to={`/dashboard?products=${listingId}#products-services`}
+                        className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-primary-700 hover:text-primary-800"
+                      >
+                        <i className="ri-store-2-line" />
+                        Manage this listing&apos;s products now
+                      </Link>
+                    )}
+                  </div>
                 </FormField>
 
                 {/* Bookings were listed as a Classified feature on the pricing
@@ -1203,6 +1250,7 @@ export default function AddListingPage() {
                   ["Phone", form.phone || "—"],
                   ["Email", form.email || "—"],
                   ["Website", form.website || "—"],
+                  ["Storefront", form.sellProducts ? "Add products after saving" : "No products selected"],
                 ].map(([label, value]) => (
                   <div key={label} className="flex items-center justify-between text-sm">
                     <span className="text-foreground-600 font-label">{label}</span>

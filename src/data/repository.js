@@ -834,7 +834,7 @@ export async function getUnreadMessageCount() {
   return customClient.get("/messages/unread-count");
 }
 
-// ---------- Vendor marketplace ("Buy" cards on a Classified listing) ----------
+// ---------- Vendor marketplace ("Buy" cards on a directory listing) ----------
 // See connect767-cms's class-rest-vendor-products.php for the matching
 // backend routes. These were previously imported by ListingProducts.jsx
 // (the public storefront) and VendorProductsPanel.jsx (the dashboard's

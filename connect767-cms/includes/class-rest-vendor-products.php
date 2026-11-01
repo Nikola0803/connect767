@@ -1,6 +1,6 @@
 <?php
 /**
- * Marketplace: lets a Classified-tier listing owner list sellable
+ * Marketplace: lets any listing owner list sellable
  * products/services from their dashboard, shown as "Buy" cards on their
  * public listing profile. "Platform collects" model per the product
  * decision this was built to — payment goes through this site's own
@@ -223,12 +223,11 @@ class C767_Rest_Vendor_Products
     }
 
     /**
-     * Gated to Classified tier — this is the paid tier's marketplace perk.
-     * A Free listing owner can't add products until they upgrade, same
-     * spirit as Classified being the only tier with the $40/yr Stripe
-     * payment step in AddListingPage.jsx.
+     * Storefronts are available to every listing tier. Ownership is the
+     * security boundary: a seller may only attach products to their own
+     * directory profile.
      */
-    private static function require_owned_classified_listing($listing_id, $user_id)
+    private static function require_owned_listing($listing_id, $user_id)
     {
         $post = get_post($listing_id);
         if (!$post || $post->post_type !== 'listing') {
@@ -236,9 +235,6 @@ class C767_Rest_Vendor_Products
         }
         if ((int) $post->post_author !== (int) $user_id) {
             return new WP_Error('c767_not_owner', 'This listing does not belong to you.', ['status' => 403]);
-        }
-        if (get_post_meta($post->ID, 'tier', true) !== 'Classified') {
-            return new WP_Error('c767_not_classified', 'Only Classified listings can sell products.', ['status' => 400]);
         }
         return $post;
     }
@@ -251,7 +247,7 @@ class C767_Rest_Vendor_Products
         }
 
         $listing_id = (int) $request->get_param('listingId');
-        $listing = self::require_owned_classified_listing($listing_id, $user->ID);
+        $listing = self::require_owned_listing($listing_id, $user->ID);
         if (is_wp_error($listing)) {
             return $listing;
         }
