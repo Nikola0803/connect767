@@ -377,9 +377,16 @@ class C767_Rest_Vendor_Products
             return $listing;
         }
         if ($request->get_method() === 'GET') {
-            return rest_ensure_response(array_merge(self::storefront_settings($listing), [
+            return rest_ensure_response(array_merge(self::storefront_settings($listing), C767_REST_Listings::payout_settings_for_owner($listing->ID), [
                 'stripeConnectAccountId' => (string) get_post_meta($listing->ID, '_stripe_connect_account_id', true),
             ]));
+        }
+
+        if ($request->get_param('bookingPayoutMethod') !== null) {
+            $payout = C767_REST_Listings::save_payout_settings_for_owner($listing->ID, $request);
+            if (is_wp_error($payout)) {
+                return $payout;
+            }
         }
 
         $text_fields = [
@@ -422,7 +429,7 @@ class C767_Rest_Vendor_Products
         self::handle_storefront_image($listing->ID, 'storefrontCover', 'storefront_cover_url');
         self::handle_storefront_image($listing->ID, 'storefrontLogo', 'storefront_logo_url');
 
-        return rest_ensure_response(array_merge(self::storefront_settings($listing), [
+        return rest_ensure_response(array_merge(self::storefront_settings($listing), C767_REST_Listings::payout_settings_for_owner($listing->ID), [
             'stripeConnectAccountId' => (string) get_post_meta($listing->ID, '_stripe_connect_account_id', true),
         ]));
     }

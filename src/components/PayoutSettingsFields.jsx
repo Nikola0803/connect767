@@ -4,9 +4,10 @@ import {
   DIGITAL_PAYOUT_PROVIDER_HELP,
 } from "../lib/payoutSettings";
 
-export default function PayoutSettingsFields({ form, onChange }) {
-  const paidBookings = Number(form.bookingPrice || 0) > 0;
+export default function PayoutSettingsFields({ form, onChange, forceVisible = false, context = "booking" }) {
+  const paidBookings = forceVisible || Number(form.bookingPrice || 0) > 0;
   const providerHelp = DIGITAL_PAYOUT_PROVIDER_HELP[form.bookingPayoutDigitalProvider];
+  const isStorefront = context === "storefront";
 
   if (!paidBookings) {
     return (
@@ -34,10 +35,12 @@ export default function PayoutSettingsFields({ form, onChange }) {
             <i className="ri-secure-payment-line text-xl" />
           </span>
           <div>
-            <p className="text-sm font-semibold text-foreground-950">Where should we send your payouts?</p>
+            <p className="text-sm font-semibold text-foreground-950">
+              Where should we send your {isStorefront ? "storefront " : ""}payouts?
+            </p>
             <p className="mt-1 text-xs leading-5 text-foreground-600 font-label">
-              Customers pay securely through Connect767. We retain the 10% platform fee and send
-              the remaining balance to this private payout destination.
+              Customers pay securely through Connect767. We retain the 10% platform fee and send the
+              {isStorefront ? " remaining product balance plus shipping" : " remaining balance"} to this private payout destination.
             </p>
           </div>
         </div>
