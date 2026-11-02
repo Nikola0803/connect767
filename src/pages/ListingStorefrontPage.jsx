@@ -184,6 +184,9 @@ export default function ListingStorefrontPage() {
   const settings = { ...defaults, ...(data?.settings || {}) };
   const products = arrangeStorefrontProducts(rawProducts, settings);
   const messagePath = listingOwnerMessagePath(listing);
+  const aboutStoreHeading = !settings.headline || settings.headline === `Shop ${listing.title}`
+    ? "About Store"
+    : settings.headline;
 
   return (
     <div className="min-h-screen bg-background-100/35 pt-16 md:pt-20">
@@ -224,7 +227,7 @@ export default function ListingStorefrontPage() {
                 <div className="grid gap-6 py-8 lg:grid-cols-[minmax(0,1fr)_260px]">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: settings.accentColor }}>Storefront</p>
-                    <h2 className="mt-2 font-heading text-xl font-medium tracking-[-0.02em] text-foreground-950 sm:text-2xl">{settings.headline}</h2>
+                    <h2 className="mt-2 font-heading text-xl font-medium text-foreground-950">{aboutStoreHeading}</h2>
                     <p className="mt-3 max-w-3xl whitespace-pre-line text-sm leading-7 text-foreground-600">{settings.welcomeText}</p>
                   </div>
                   <div className="grid gap-3 text-xs text-foreground-600">

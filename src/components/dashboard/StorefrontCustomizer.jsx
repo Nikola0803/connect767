@@ -149,12 +149,15 @@ export default function StorefrontCustomizer({ listings, products }) {
 }
 
 function StorefrontPreview({ listing, form, products }) {
+  const aboutStoreHeading = !form.headline || form.headline === `Shop ${listing?.title}`
+    ? "About Store"
+    : form.headline;
   return (
     <div className="overflow-hidden rounded-2xl border border-background-200 bg-background-100/40">
       <div>
         <div className="p-6">
           <span className="text-xs text-foreground-500">{listing?.title}</span>
-          <h3 className="mt-5 font-heading text-xl font-medium text-foreground-950 sm:text-2xl">{form.headline || `Shop ${listing?.title}`}</h3>
+          <h3 className="mt-5 font-heading text-xl font-medium text-foreground-950">{aboutStoreHeading}</h3>
           <p className="mt-3 whitespace-pre-line text-sm text-foreground-600">{form.welcomeText}</p>
           <span className="mt-5 inline-flex rounded-full px-4 py-2 text-xs font-semibold text-white" style={{ backgroundColor: form.accentColor }}>Browse products</span>
         </div>
