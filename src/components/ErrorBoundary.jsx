@@ -1,5 +1,32 @@
 import { Component } from "react";
 
+const ASSET_RECOVERY_KEY = "c767-asset-recovery";
+const ASSET_RECOVERY_COOLDOWN_MS = 60_000;
+
+export function isRecoverableAssetError(error) {
+  const message = String(error?.message || error || "").toLowerCase();
+  return [
+    "failed to fetch dynamically imported module",
+    "error loading dynamically imported module",
+    "importing a module script failed",
+    "loading chunk",
+    "chunkloaderror",
+    "unable to preload css",
+  ].some((fragment) => message.includes(fragment));
+}
+
+function recoverFromStaleDeployment(error) {
+  if (!isRecoverableAssetError(error) || typeof window === "undefined") return false;
+
+  const now = Date.now();
+  const lastAttempt = Number(window.sessionStorage.getItem(ASSET_RECOVERY_KEY) || 0);
+  if (now - lastAttempt < ASSET_RECOVERY_COOLDOWN_MS) return false;
+
+  window.sessionStorage.setItem(ASSET_RECOVERY_KEY, String(now));
+  window.location.reload();
+  return true;
+}
+
 /**
  * Without this, any uncaught error anywhere in the render tree — a bad
  * API response shape, a third-party data surprise, anything — takes down
@@ -22,6 +49,7 @@ export default class ErrorBoundary extends Component {
   componentDidCatch(error, info) {
     // eslint-disable-next-line no-console
     console.error("Uncaught render error:", error, info);
+    recoverFromStaleDeployment(error);
   }
 
   render() {
