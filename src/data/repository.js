@@ -535,6 +535,25 @@ export async function submitReview(slug, { rating, name, text }) {
   return customClient.post(`/listings/${slug}/reviews`, { stars: rating, name, text });
 }
 
+export async function getStorefrontReviews(slug) {
+  if (!isLiveApi) return [];
+  return customClient.get(`/storefronts/${slug}/reviews`);
+}
+
+export async function submitStorefrontReview(slug, { rating, name, text }) {
+  if (!isLiveApi) {
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    return {
+      id: `local-store-review-${Date.now()}`,
+      name,
+      rating,
+      text,
+      submittedAt: new Date().toISOString(),
+    };
+  }
+  return customClient.post(`/storefronts/${slug}/reviews`, { stars: rating, name, text });
+}
+
 /**
  * Change an existing listing's plan from the account dashboard.
  *
