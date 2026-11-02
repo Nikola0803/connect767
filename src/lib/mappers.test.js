@@ -319,6 +319,24 @@ describe("mapListingCpt", () => {
     expect(mapped).not.toHaveProperty("bookingMeetingUrl");
   });
 
+  it("maps the saved storefront choice back into the listing editor model", () => {
+    const enabled = mapListingCpt({
+      id: 40,
+      slug: "storefront-enabled",
+      title: "Storefront Enabled",
+      acf: { sell_products: "1" },
+    });
+    const disabled = mapListingCpt({
+      id: 41,
+      slug: "storefront-disabled",
+      title: "Storefront Disabled",
+      acf: { sell_products: "0" },
+    });
+
+    expect(enabled.sellProducts).toBe(true);
+    expect(disabled.sellProducts).toBe(false);
+  });
+
   it("maps the concise profile information used by directory cards", () => {
     const mapped = mapListingCpt({
       id: 5,

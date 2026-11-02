@@ -331,6 +331,7 @@ export default function AddListingPage() {
           galleryPreviews: (data.gallery || [])
             .filter((g) => g.src && g.src !== data.coverPhoto)
             .map((g) => g.src),
+          sellProducts: Boolean(data.sellProducts),
         }));
         getBookingSettings(data.id)
           .then((settings) => {

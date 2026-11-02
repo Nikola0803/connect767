@@ -428,6 +428,7 @@ export function mapListingCpt(wp) {
     // simply never read or wrote it, so the owner had no way to turn bookings
     // on despite it being advertised as a Classified feature.
     bookingEnabled: isTruthyMeta(acf.booking_enabled),
+    sellProducts: isTruthyMeta(acf.sell_products),
     hasStorefrontProducts: Number(acf.storefront_product_count || 0) > 0,
     storefrontProductCount: Math.max(0, Number(acf.storefront_product_count) || 0),
     storefrontFulfillmentOptions: Array.isArray(acf.storefront_fulfillment_options)

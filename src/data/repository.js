@@ -474,6 +474,10 @@ export async function submitListing(form) {
     if (form[key]) payload.append(key, form[key]);
   });
 
+  // Boolean fields must always be submitted, including the unchecked state.
+  // Omitting false would leave an earlier storefront choice saved forever.
+  payload.append("sellProducts", form.sellProducts ? "1" : "0");
+
 
   if (form.logoFile) payload.append("logo", form.logoFile);
   if (form.photoFile) payload.append("coverPhoto", form.photoFile);
@@ -665,6 +669,9 @@ export async function updateListing(id, form) {
   textFields.forEach((key) => {
     if (form[key]) payload.append(key, form[key]);
   });
+
+  // Persist the storefront choice on edits as well as new submissions.
+  payload.append("sellProducts", form.sellProducts ? "1" : "0");
 
 
   if (form.logoFile) payload.append("logo", form.logoFile);
