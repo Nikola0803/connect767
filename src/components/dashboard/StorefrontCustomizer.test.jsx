@@ -30,6 +30,7 @@ describe("StorefrontCustomizer", () => {
   it("loads owner settings, previews changes, and publishes them", async () => {
     render(
       <StorefrontCustomizer
+        initialListingId="7"
         listings={[{ id: 7, title: "Kalinago Tours" }]}
         products={[
           { id: 11, listingId: 7, name: "Basket" },
@@ -38,14 +39,12 @@ describe("StorefrontCustomizer", () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText("Choose a storefront"), { target: { value: "7" } });
     expect(await screen.findByDisplayValue("Welcome to our store.")).toBeInTheDocument();
     expect(screen.queryByText("Store logo")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Choose storefront logo image")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Choose storefront banner image")).not.toBeInTheDocument();
     expect(screen.queryByText("Reposition storefront banner")).not.toBeInTheDocument();
-    expect(screen.getByText(/Where should we send your storefront payouts/i)).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: /Digital payment/i })).toBeChecked();
+    expect(screen.queryByText(/Where should we send your storefront payouts/i)).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Storefront text"), { target: { value: "Discover Kalinago craft" } });
     fireEvent.click(screen.getByRole("button", { name: "Preview changes" }));
     expect(screen.getAllByText("Discover Kalinago craft")).toHaveLength(2);
@@ -71,8 +70,23 @@ describe("StorefrontCustomizer", () => {
       />,
     );
 
-    expect(screen.getByLabelText("Choose a storefront")).toHaveValue("7");
+    expect(screen.getByText("Kalinago Tours")).toBeInTheDocument();
     expect(await screen.findByDisplayValue("Welcome to our store.")).toBeInTheDocument();
     expect(repository.getMyStorefrontSettings).toHaveBeenCalledWith("7");
+  });
+
+  it("shows payout controls only in the payout section", async () => {
+    render(
+      <StorefrontCustomizer
+        mode="payouts"
+        initialListingId="7"
+        listings={[{ id: 7, title: "Kalinago Tours" }]}
+        products={[]}
+      />,
+    );
+
+    expect(await screen.findByText(/Where should we send your storefront payouts/i)).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Digital payment/i })).toBeChecked();
+    expect(screen.queryByLabelText("Storefront text")).not.toBeInTheDocument();
   });
 });

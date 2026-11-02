@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   getMyVendorProducts,
   createVendorProduct,
@@ -71,7 +70,19 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [analytics, setAnalytics] = useState(null);
+  const [activeTab, setActiveTab] = useState(initialStorefrontListingId ? "design" : initialListingId ? "products" : "overview");
   const productFormRef = useRef(null);
+
+  const existingStoreListingId = products.find((product) =>
+    listings.some((listing) => String(listing.id) === String(product.listingId)),
+  )?.listingId;
+  const requestedStoreListingId = initialStorefrontListingId || initialListingId;
+  const storefrontListing = listings.find((listing) => String(listing.id) === String(existingStoreListingId))
+    || listings.find((listing) => String(listing.id) === String(requestedStoreListingId))
+    || listings[0];
+  const storefrontListingId = storefrontListing ? String(storefrontListing.id) : "";
+  const storefrontListings = storefrontListing ? [storefrontListing] : [];
+  const storefrontProducts = products.filter((product) => String(product.listingId) === storefrontListingId);
 
   const load = () => {
     setLoading(true);
@@ -104,6 +115,16 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
   }, [initialListingId, listings]);
 
   useEffect(() => {
+    if (initialStorefrontListingId) setActiveTab("design");
+    else if (initialListingId) setActiveTab("products");
+  }, [initialListingId, initialStorefrontListingId]);
+
+  useEffect(() => {
+    if (!showForm || editingId || !storefrontListingId) return;
+    setForm((current) => ({ ...current, listingId: storefrontListingId }));
+  }, [editingId, showForm, storefrontListingId]);
+
+  useEffect(() => {
     if (!showForm) return;
     const frame = window.requestAnimationFrame(() => {
       productFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -125,21 +146,18 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
   };
 
   const openAddForm = () => {
-    const preferredListingId = listings.some((listing) => String(listing.id) === String(initialListingId))
-      ? String(initialListingId)
-      : listings.length === 1
-        ? String(listings[0].id)
-        : "";
+    setActiveTab("products");
     setEditingId(null);
     setForm({
       ...emptyForm,
-      listingId: preferredListingId,
+      listingId: storefrontListingId,
     });
     setError(null);
     setShowForm(true);
   };
 
   const openEditForm = (product) => {
+    setActiveTab("products");
     setEditingId(product.id);
     setForm({
       listingId: String(product.listingId),
@@ -265,22 +283,59 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
       <SellerCenterSummary
         ownerName={ownerName}
         listings={listings}
-        products={products}
+        products={storefrontProducts}
         orders={orders}
         analytics={analytics}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
       />
+
+      {activeTab === "overview" && (
+        <div className="mt-8">
+          <SellerReadiness listings={storefrontListings} products={storefrontProducts} />
+          {analytics && (
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {[
+                ["Store visits", analytics.storeViews, "ri-eye-line"],
+                ["Product views", analytics.productViews, "ri-bar-chart-line"],
+                ["Paid orders", analytics.orders, "ri-shopping-bag-3-line"],
+                ["Your payouts", formatPrice(analytics.payoutsCents), "ri-wallet-3-line"],
+              ].map(([label, value, icon]) => (
+                <div key={label} className="rounded-xl border border-background-200 bg-background-50 p-4">
+                  <i className={`${icon} text-lg text-primary-700`} />
+                  <p className="mt-3 text-xl font-semibold text-foreground-950">{value}</p>
+                  <p className="text-xs text-foreground-500">{label}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "design" && (
+        <div id="store-settings" className="mt-8 scroll-mt-24">
+          <StorefrontCustomizer
+            listings={storefrontListings}
+            products={storefrontProducts}
+            initialListingId={storefrontListingId}
+            mode="design"
+          />
+        </div>
+      )}
+
+      {activeTab === "products" && <>
 
       <div id="products-services" className="flex items-center justify-between mb-5 mt-12 scroll-mt-24">
         <h2 className="font-heading text-xl font-medium text-foreground-950">
           Products &amp; services
         </h2>
         <Button variant="outline" size="sm" onClick={openAddForm} icon="ri-add-line">
-          Add product
+          List a product
         </Button>
       </div>
 
       <p className="text-sm text-foreground-600 font-label mb-5">
-        Sell directly from any listing page — customers pay by card or PayPal,
+        Sell directly from your Connect767 storefront — customers pay by card or PayPal,
         then shipping and pickup details appear in "Sales" below.
       </p>
 
@@ -290,33 +345,6 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
         and your payout is recorded automatically after payment.
       </div>
 
-      <SellerReadiness listings={listings} products={products} />
-
-      {analytics && (
-        <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {[
-            ["Store visits", analytics.storeViews, "ri-eye-line"],
-            ["Product views", analytics.productViews, "ri-bar-chart-line"],
-            ["Paid orders", analytics.orders, "ri-shopping-bag-3-line"],
-            ["Your payouts", formatPrice(analytics.payoutsCents), "ri-wallet-3-line"],
-          ].map(([label, value, icon]) => (
-            <div key={label} className="rounded-xl border border-background-200 bg-background-50 p-4">
-              <i className={`${icon} text-lg text-primary-700`} />
-              <p className="mt-3 text-xl font-semibold text-foreground-950">{value}</p>
-              <p className="text-xs text-foreground-500">{label}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div id="store-settings" className="scroll-mt-24">
-        <StorefrontCustomizer
-          listings={listings}
-          products={products}
-          initialListingId={initialStorefrontListingId}
-        />
-      </div>
-
       {showForm && (
         <form
           ref={productFormRef}
@@ -324,24 +352,13 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
           onSubmit={handleSubmit}
           className="mb-6 scroll-mt-24 p-5 rounded-2xl border border-background-200/70 bg-background-100/40 space-y-4"
         >
-          <FormField label="Listing" htmlFor="vp-listing">
-            <Select
-              id="vp-listing"
-              value={form.listingId}
-              onChange={update("listingId")}
-              disabled={!!editingId}
-            >
-              <option value="">Select a listing…</option>
-              {listings.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.title}{l.payoutConfigured ? "" : " — payout setup required"}
-                </option>
-              ))}
-            </Select>
-          </FormField>
-          {form.listingId && !listings.find((listing) => String(listing.id) === String(form.listingId))?.payoutConfigured && (
+          <div className="rounded-xl border border-background-200 bg-background-50 px-4 py-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-700">Product details</p>
+            <p className="mt-1 text-sm text-foreground-600">This product will appear in your one Connect767 storefront{storefrontListing?.title ? `, ${storefrontListing.title}` : ""}.</p>
+          </div>
+          {form.listingId && !storefrontListing?.payoutConfigured && (
             <p className="rounded-lg border border-accent-200 bg-accent-50 px-3 py-2 text-xs text-accent-700 font-label">
-              Edit this listing and add its bank account or digital payout details before publishing products for sale.
+              Open the Payouts tab and add a bank account or digital payout method before publishing products for sale.
             </p>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -462,15 +479,15 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
         </form>
       )}
 
-      {!loading && products.length === 0 && (
+      {!loading && storefrontProducts.length === 0 && (
         <p className="text-sm text-foreground-500 font-label mb-10">
           No products yet — add one to start selling from your listing page.
         </p>
       )}
 
-      {products.length > 0 && (
+      {storefrontProducts.length > 0 && (
         <div id="product-list" className="scroll-mt-24 space-y-3 mb-10">
-          {products.map((p) => (
+          {storefrontProducts.map((p) => (
             <div
               key={p.id}
               className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 rounded-xl border border-background-200/70 bg-background-50 p-4 sm:p-5"
@@ -540,6 +557,18 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
           ))}
         </div>
       )}
+
+      </>}
+
+      {activeTab === "payouts" && <>
+      <div id="store-payouts" className="mt-8 scroll-mt-24">
+        <StorefrontCustomizer
+          listings={storefrontListings}
+          products={storefrontProducts}
+          initialListingId={storefrontListingId}
+          mode="payouts"
+        />
+      </div>
 
       <h2 id="seller-orders" className="scroll-mt-24 font-heading text-xl font-medium text-foreground-950 mb-5">Orders &amp; sales</h2>
 
@@ -614,24 +643,20 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
           ))}
         </div>
       )}
+      </>}
     </>
   );
 }
 
-function SellerCenterSummary({ ownerName, listings, products, orders, analytics }) {
+function SellerCenterSummary({ ownerName, products, orders, analytics, activeTab, onTabChange }) {
   const activeProducts = products.filter((product) => product.active).length;
   const openOrders = orders.filter((order) => !["completed", "cancelled"].includes(order.fulfillmentStatus)).length;
   const grossSales = orders.reduce((total, order) => total + Number(order.amountCents || 0), 0);
-  const firstListing = listings[0];
-  const navigation = [
-    ["ri-building-4-line", "My Business Listings", "Profile and contact details", "#my-listings"],
-    ["ri-box-3-line", "My Products", "Add, edit and manage stock", "#products-services"],
-    ["ri-shopping-cart-2-line", "Orders", "Checkout purchases", "#seller-orders"],
-    ["ri-chat-3-line", "Inquiries", "Customer messages", "/messages"],
-    ["ri-truck-line", "Shipping", "Delivery and pickup", "#seller-orders"],
-    ["ri-wallet-3-line", "Earnings & Payouts", "Sales and commissions", "#seller-orders"],
-    ["ri-star-line", "Reviews", "Customer feedback", firstListing ? `/listings/${firstListing.slug}/shop?tab=reviews` : "#my-listings"],
-    ["ri-settings-3-line", "Store Settings", "Brand, policies and payouts", "#store-settings"],
+  const tabs = [
+    ["overview", "Store Front Overview", "ri-store-2-line"],
+    ["products", "Products & Services", "ri-box-3-line"],
+    ["design", "Store Design", "ri-palette-line"],
+    ["payouts", "Payouts", "ri-wallet-3-line"],
   ];
   const metrics = [
     ["ri-box-3-line", activeProducts, "Active Products"],
@@ -661,15 +686,21 @@ function SellerCenterSummary({ ownerName, listings, products, orders, analytics 
         ))}
       </div>
 
-      <div className="p-5 sm:p-7">
-        <h3 className="font-heading text-lg font-semibold text-foreground-950">Dashboard navigation</h3>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {navigation.map(([icon, title, detail, href]) => {
-            const content = <><span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background-100 text-foreground-600 transition group-hover:bg-primary-100 group-hover:text-primary-800"><i className={icon} /></span><span className="min-w-0 flex-1 text-left"><span className="block text-sm font-semibold text-foreground-900">{title}</span><span className="mt-1 block text-xs text-foreground-500">{detail}</span></span><i className="ri-arrow-right-s-line mt-2 text-foreground-300 transition group-hover:translate-x-0.5 group-hover:text-primary-700" /></>;
-            const className = "group flex w-full items-start gap-3 rounded-2xl border border-background-200 px-4 py-4 transition hover:border-primary-200 hover:bg-primary-50/35";
-            if (!href.startsWith("#")) return <Link key={title} to={href} className={className}>{content}</Link>;
-            return <button key={title} type="button" onClick={() => document.getElementById(href.slice(1))?.scrollIntoView({ behavior: "smooth", block: "start" })} className={className}>{content}</button>;
-          })}
+      <div className="overflow-x-auto border-t border-background-200 px-4 py-4 sm:px-7" role="tablist" aria-label="Storefront management">
+        <div className="flex min-w-max items-center gap-2">
+          {tabs.map(([id, label, icon]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === id}
+              onClick={() => onTabChange(id)}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition ${activeTab === id ? "bg-foreground-950 text-background-50 shadow-sm" : "text-foreground-600 hover:bg-background-100 hover:text-foreground-950"}`}
+            >
+              <i className={icon} />
+              {label}
+            </button>
+          ))}
         </div>
       </div>
     </section>

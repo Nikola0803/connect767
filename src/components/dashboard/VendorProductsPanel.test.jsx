@@ -11,6 +11,8 @@ const repository = vi.hoisted(() => ({
   getMyVendorOrders: vi.fn(),
   getMyVendorAnalytics: vi.fn(),
   updateMyVendorOrder: vi.fn(),
+  getMyStorefrontSettings: vi.fn(),
+  updateMyStorefrontSettings: vi.fn(),
 }));
 
 vi.mock("../../data/repository", () => repository);
@@ -28,6 +30,15 @@ describe("VendorProductsPanel storefront fees", () => {
       payoutsCents: 10200,
     });
     repository.updateMyVendorOrder.mockResolvedValue({ updated: true });
+    repository.getMyStorefrontSettings.mockResolvedValue({
+      accentColor: "#0f6b4f",
+      bookingPayoutMethod: "digital",
+      bookingPayoutDigitalProvider: "PayPal",
+      bookingPayoutDigitalAccount: "seller@example.com",
+      featuredProductIds: [],
+      productOrder: [],
+    });
+    repository.updateMyStorefrontSettings.mockImplementation(async (_id, form) => form);
     repository.getMyVendorOrders.mockResolvedValue([
       {
         id: 91,
@@ -50,26 +61,30 @@ describe("VendorProductsPanel storefront fees", () => {
   it("discloses the fee and shows the seller's net payout", async () => {
     renderPanel({ listings: [{ id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: true }] });
 
+    fireEvent.click(screen.getByRole("tab", { name: /Products & Services/i }));
     expect(screen.getByText(/Connect767 retains 10% of each product price/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: /Payouts/i }));
     expect(await screen.findByText("Island Gift Box")).toBeInTheDocument();
     expect(screen.getByText("−$10.00")).toBeInTheDocument();
-    expect(screen.getAllByText("$102.00")).toHaveLength(2);
+    expect(screen.getByText("$102.00")).toBeInTheDocument();
     expect(screen.getByText(/Payout pending/i)).toBeInTheDocument();
   });
 
   it("warns sellers to configure payouts before offering products", async () => {
     renderPanel({ listings: [{ id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: false }], initialListingId: "7" });
 
-    expect(await screen.findByText(/add its bank account or digital payout details/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Open the Payouts tab and add a bank account or digital payout method/i)).toBeInTheDocument();
   });
 
-  it("opens dashboard sections and routes reviews to the storefront", async () => {
+  it("switches between the storefront management tabs", async () => {
     renderPanel({ listings: [{ id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: true }] });
 
-    fireEvent.click(await screen.findByRole("button", { name: /My Products/i }));
-    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
-    expect(screen.getByRole("link", { name: /Reviews/i })).toHaveAttribute("href", "/listings/kalinago-tours/shop?tab=reviews");
-    expect(screen.getByRole("link", { name: /Inquiries/i })).toHaveAttribute("href", "/messages");
+    fireEvent.click(screen.getByRole("tab", { name: /Products & Services/i }));
+    expect(screen.getByRole("button", { name: /List a product/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: /Store Design/i }));
+    expect(await screen.findByRole("heading", { name: /Customize storefront/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: /Payouts/i }));
+    expect(await screen.findByRole("heading", { name: /Payout settings/i })).toBeInTheDocument();
   });
 
   it("opens the add-product form with the active storefront selected", async () => {
@@ -79,7 +94,25 @@ describe("VendorProductsPanel storefront fees", () => {
     });
 
     expect(await screen.findByLabelText("Name")).toBeInTheDocument();
-    expect(screen.getByLabelText("Listing")).toHaveValue("7");
+    expect(screen.getByText(/one Connect767 storefront, Kalinago Tours/i)).toBeInTheDocument();
     await waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" }));
+  });
+
+  it("keeps one storefront when the account owns multiple listings", async () => {
+    repository.getMyVendorProducts.mockResolvedValueOnce([
+      { id: 41, listingId: 7, name: "Basket", priceCents: 2500, active: true },
+    ]);
+
+    renderPanel({
+      listings: [
+        { id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: true },
+        { id: 8, title: "Second Profile", slug: "second-profile", payoutConfigured: true },
+      ],
+      initialStorefrontListingId: "8",
+    });
+
+    expect(await screen.findByText("Kalinago Tours")).toBeInTheDocument();
+    await waitFor(() => expect(repository.getMyStorefrontSettings).toHaveBeenCalledWith("7"));
+    expect(screen.queryByText("Second Profile")).not.toBeInTheDocument();
   });
 });
