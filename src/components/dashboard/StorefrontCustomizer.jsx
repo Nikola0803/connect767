@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getMyStorefrontSettings, updateMyStorefrontSettings } from "../../data/repository";
 import Button from "../ui/Button";
-import { FormField, Input, Select, Textarea } from "../ui/FormField";
+import { FormField, Input, Textarea } from "../ui/FormField";
 import PayoutSettingsFields from "../PayoutSettingsFields";
 
 const empty = {
@@ -24,7 +24,7 @@ const empty = {
   bookingPayoutDigitalAccount: "",
 };
 
-export default function StorefrontCustomizer({ listings, products, initialListingId = "" }) {
+export default function StorefrontCustomizer({ listings, products, initialListingId = "", mode = "design" }) {
   const [listingId, setListingId] = useState(() => String(initialListingId || ""));
   const [form, setForm] = useState(empty);
   const [loading, setLoading] = useState(false);
@@ -44,9 +44,11 @@ export default function StorefrontCustomizer({ listings, products, initialListin
   }, [products, listingId, form.productOrder]);
 
   useEffect(() => {
-    if (!initialListingId) return;
-    if (!listings.some((item) => String(item.id) === String(initialListingId))) return;
-    setListingId(String(initialListingId));
+    if (initialListingId && listings.some((item) => String(item.id) === String(initialListingId))) {
+      setListingId(String(initialListingId));
+      return;
+    }
+    if (listings.length === 1) setListingId(String(listings[0].id));
   }, [initialListingId, listings]);
 
   useEffect(() => {
@@ -82,7 +84,7 @@ export default function StorefrontCustomizer({ listings, products, initialListin
     try {
       const saved = await updateMyStorefrontSettings(listingId, form);
       setForm({ ...empty, ...saved });
-      setMessage("Storefront design published.");
+      setMessage(mode === "payouts" ? "Payout settings saved." : "Storefront design published.");
       setPreview(false);
     } catch {
       setMessage("Couldn't publish the storefront design. Please try again.");
@@ -95,31 +97,22 @@ export default function StorefrontCustomizer({ listings, products, initialListin
     <section className="mb-10 rounded-2xl border border-background-200 bg-background-50 p-5 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">Store design</p>
-          <h2 className="mt-1 font-heading text-xl font-medium text-foreground-950">Customize storefront</h2>
-          <p className="mt-1 text-xs text-foreground-500">Preview every change before publishing it to customers.</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">{mode === "payouts" ? "Store finances" : "Store design"}</p>
+          <h2 className="mt-1 font-heading text-xl font-medium text-foreground-950">{mode === "payouts" ? "Payout settings" : "Customize storefront"}</h2>
+          <p className="mt-1 text-xs text-foreground-500">{mode === "payouts" ? "Choose where proceeds from storefront sales should be sent." : "Preview every change before publishing it to customers."}</p>
         </div>
-        <Select aria-label="Choose a storefront" value={listingId} onChange={(event) => setListingId(event.target.value)} className="sm:max-w-xs">
-          <option value="">Choose a listing…</option>
-          {listings.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
-        </Select>
+        {listing && <span className="inline-flex items-center gap-2 rounded-full bg-primary-50 px-3 py-2 text-xs font-semibold text-primary-800"><i className="ri-store-2-line" />{listing.title}</span>}
       </div>
 
       {listingId && !loading && (
         <div className="mt-6 space-y-5">
+          {mode === "design" && <>
           <FormField label="Brand color" htmlFor="store-color"><Input id="store-color" type="color" value={form.accentColor} onChange={update("accentColor")} className="h-11 sm:max-w-xs" /></FormField>
           <FormField label="Storefront text" htmlFor="store-welcome" hint="Shown in the Storefront section of your store."><Textarea id="store-welcome" rows={2} maxLength={240} value={form.welcomeText} onChange={update("welcomeText")} /></FormField>
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="Shipping & pickup message" htmlFor="store-shipping"><Textarea id="store-shipping" rows={3} maxLength={500} value={form.shippingMessage} onChange={update("shippingMessage")} /></FormField>
             <FormField label="Store policies" htmlFor="store-policies" hint="Returns, exchanges, processing time, and other terms."><Textarea id="store-policies" rows={3} maxLength={1000} value={form.policies} onChange={update("policies")} /></FormField>
           </div>
-
-          <PayoutSettingsFields
-            form={form}
-            onChange={updateValue}
-            forceVisible
-            context="storefront"
-          />
 
           <div>
             <h3 className="text-sm font-semibold text-foreground-900">Featured products & display order</h3>
@@ -138,10 +131,19 @@ export default function StorefrontCustomizer({ listings, products, initialListin
           </div>
 
           {preview && <StorefrontPreview listing={listing} form={form} products={listingProducts} />}
-          {message && <p className={`text-sm ${message.includes("published") ? "text-primary-700" : "text-accent-600"}`}>{message}</p>}
+          </>}
+          {mode === "payouts" && (
+            <PayoutSettingsFields
+              form={form}
+              onChange={updateValue}
+              forceVisible
+              context="storefront"
+            />
+          )}
+          {message && <p className={`text-sm ${message.includes("published") || message.includes("saved") ? "text-primary-700" : "text-accent-600"}`}>{message}</p>}
           <div className="flex flex-wrap gap-3">
-            <Button type="button" variant="outline" onClick={() => setPreview((value) => !value)}>{preview ? "Hide preview" : "Preview changes"}</Button>
-            <Button type="button" variant="primary" onClick={save} disabled={saving}>{saving ? "Publishing…" : "Save & publish"}</Button>
+            {mode === "design" && <Button type="button" variant="outline" onClick={() => setPreview((value) => !value)}>{preview ? "Hide preview" : "Preview changes"}</Button>}
+            <Button type="button" variant="primary" onClick={save} disabled={saving}>{saving ? "Saving…" : mode === "payouts" ? "Save payout settings" : "Save & publish"}</Button>
           </div>
         </div>
       )}

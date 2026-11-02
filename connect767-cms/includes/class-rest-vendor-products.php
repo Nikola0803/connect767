@@ -320,6 +320,9 @@ class C767_Rest_Vendor_Products
         if (!$listing || $listing->post_status !== 'publish') {
             return new WP_Error('c767_listing_not_found', 'Listing not found.', ['status' => 404]);
         }
+        if (!self::is_account_storefront($listing)) {
+            return self::cached_public_response([]);
+        }
 
         $products = get_posts([
             'post_type' => 'vendor_product',
@@ -365,6 +368,9 @@ class C767_Rest_Vendor_Products
         if (!$listing || $listing->post_status !== 'publish') {
             return new WP_Error('c767_listing_not_found', 'Listing not found.', ['status' => 404]);
         }
+        if (!self::is_account_storefront($listing)) {
+            return new WP_Error('c767_not_account_storefront', 'This profile does not host the account storefront.', ['status' => 404]);
+        }
         return self::cached_public_response(self::storefront_settings($listing));
     }
 
@@ -374,7 +380,7 @@ class C767_Rest_Vendor_Products
         if (is_wp_error($user)) {
             return $user;
         }
-        $listing = self::require_owned_listing((int) $request->get_param('id'), $user->ID);
+        $listing = self::require_account_storefront((int) $request->get_param('id'), $user->ID);
         if (is_wp_error($listing)) {
             return $listing;
         }
@@ -482,8 +488,8 @@ class C767_Rest_Vendor_Products
             return $user;
         }
 
-        $listing_ids = self::owned_listing_ids($user->ID);
-        if (empty($listing_ids)) {
+        $storefront_listing_id = self::account_storefront_listing_id($user->ID);
+        if (!$storefront_listing_id) {
             return rest_ensure_response([]);
         }
 
@@ -494,7 +500,7 @@ class C767_Rest_Vendor_Products
             'orderby' => 'date',
             'order' => 'DESC',
             'meta_query' => [
-                ['key' => 'listing_id', 'value' => $listing_ids, 'compare' => 'IN'],
+                ['key' => 'listing_id', 'value' => $storefront_listing_id],
             ],
         ]);
 
@@ -510,6 +516,68 @@ class C767_Rest_Vendor_Products
             'numberposts' => -1,
             'fields' => 'ids',
         ]);
+    }
+
+    /**
+     * A Connect767 account may own several directory profiles, but it may
+     * operate only one storefront. The selected profile ID is persisted on
+     * the WordPress user so every dashboard and API request resolves to the
+     * same store. Existing sellers keep the profile that already has products
+     * whenever possible.
+     */
+    private static function account_storefront_listing_id($user_id, $requested_id = 0)
+    {
+        $owned_ids = array_map('intval', self::owned_listing_ids($user_id));
+        if (empty($owned_ids)) {
+            return 0;
+        }
+
+        $saved_id = (int) get_user_meta($user_id, '_c767_storefront_listing_id', true);
+        if ($saved_id && in_array($saved_id, $owned_ids, true)) {
+            return $saved_id;
+        }
+
+        $product_ids = get_posts([
+            'post_type' => 'vendor_product',
+            'post_status' => 'publish',
+            'numberposts' => -1,
+            'fields' => 'ids',
+            'orderby' => 'date',
+            'order' => 'ASC',
+        ]);
+        foreach ($product_ids as $product_id) {
+            $product_listing_id = (int) get_post_meta($product_id, 'listing_id', true);
+            if (in_array($product_listing_id, $owned_ids, true)) {
+                update_user_meta($user_id, '_c767_storefront_listing_id', $product_listing_id);
+                return $product_listing_id;
+            }
+        }
+
+        $requested_id = (int) $requested_id;
+        $selected_id = $requested_id && in_array($requested_id, $owned_ids, true)
+            ? $requested_id
+            : (int) $owned_ids[0];
+        update_user_meta($user_id, '_c767_storefront_listing_id', $selected_id);
+        return $selected_id;
+    }
+
+    private static function require_account_storefront($listing_id, $user_id)
+    {
+        $listing = self::require_owned_listing($listing_id, $user_id);
+        if (is_wp_error($listing)) {
+            return $listing;
+        }
+        $storefront_id = self::account_storefront_listing_id($user_id, $listing_id);
+        if ((int) $listing->ID !== (int) $storefront_id) {
+            return new WP_Error('c767_storefront_limit', 'Each account can operate one storefront. Manage products from your existing storefront.', ['status' => 409]);
+        }
+        return $listing;
+    }
+
+    private static function is_account_storefront($listing)
+    {
+        return $listing
+            && (int) $listing->ID === self::account_storefront_listing_id((int) $listing->post_author);
     }
 
     /**
@@ -537,7 +605,7 @@ class C767_Rest_Vendor_Products
         }
 
         $listing_id = (int) $request->get_param('listingId');
-        $listing = self::require_owned_listing($listing_id, $user->ID);
+        $listing = self::require_account_storefront($listing_id, $user->ID);
         if (is_wp_error($listing)) {
             return $listing;
         }
@@ -763,6 +831,9 @@ class C767_Rest_Vendor_Products
             return $selection;
         }
         $listing_id = (int) get_post_meta($product_id, 'listing_id', true);
+        if (!self::is_account_storefront(get_post($listing_id))) {
+            return new WP_Error('c767_storefront_limit', 'This product is not part of the seller’s active storefront.', ['status' => 409]);
+        }
         $owner_payout_method = self::listing_payout_method($listing_id);
         if ($owner_payout_method === '') {
             return new WP_Error('c767_owner_payout_unavailable', 'This seller must add a payout method before accepting storefront payments.', ['status' => 409]);
@@ -901,6 +972,9 @@ class C767_Rest_Vendor_Products
             return $selection;
         }
         $listing_id = (int) get_post_meta($product_id, 'listing_id', true);
+        if (!self::is_account_storefront(get_post($listing_id))) {
+            return new WP_Error('c767_storefront_limit', 'This product is not part of the seller’s active storefront.', ['status' => 409]);
+        }
         $owner_payout_method = self::listing_payout_method($listing_id);
         if ($owner_payout_method === '') {
             return new WP_Error('c767_owner_payout_unavailable', 'This seller must add a payout method before accepting storefront payments.', ['status' => 409]);
@@ -1054,7 +1128,8 @@ class C767_Rest_Vendor_Products
             return $user;
         }
 
-        $listing_ids = self::owned_listing_ids($user->ID);
+        $storefront_listing_id = self::account_storefront_listing_id($user->ID);
+        $listing_ids = $storefront_listing_id ? [$storefront_listing_id] : [];
         if (empty($listing_ids)) {
             return rest_ensure_response([]);
         }
@@ -1148,7 +1223,8 @@ class C767_Rest_Vendor_Products
         if (is_wp_error($user)) {
             return $user;
         }
-        $listing_ids = self::owned_listing_ids($user->ID);
+        $storefront_listing_id = self::account_storefront_listing_id($user->ID);
+        $listing_ids = $storefront_listing_id ? [$storefront_listing_id] : [];
         $store_views = 0;
         $product_views = 0;
         $active_products = 0;
@@ -1196,6 +1272,9 @@ class C767_Rest_Vendor_Products
         $listing = get_page_by_path(sanitize_title((string) $request->get_param('slug')), OBJECT, 'listing');
         if (!$listing || $listing->post_status !== 'publish') {
             return new WP_Error('c767_listing_not_found', 'Listing not found.', ['status' => 404]);
+        }
+        if (!self::is_account_storefront($listing)) {
+            return new WP_Error('c767_not_account_storefront', 'This profile does not host the account storefront.', ['status' => 404]);
         }
         $count = (int) get_post_meta($listing->ID, 'storefront_view_count', true) + 1;
         update_post_meta($listing->ID, 'storefront_view_count', $count);
