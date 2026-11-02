@@ -239,6 +239,13 @@ export default function DashboardPage() {
                         </button>
                       )}
                       <Link
+                        to={`/listings/${item.slug}/edit`}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md border border-background-300 text-sm font-semibold text-foreground-800 hover:bg-background-100 cursor-pointer whitespace-nowrap"
+                      >
+                        <i className="ri-file-edit-line" />
+                        Edit directory listing
+                      </Link>
+                      <Link
                         to={`/dashboard?storefront=${item.id}#store-settings`}
                         className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md border border-background-300 text-sm font-semibold text-foreground-800 hover:bg-background-100 cursor-pointer whitespace-nowrap"
                       >
