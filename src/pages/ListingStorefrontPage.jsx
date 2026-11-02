@@ -184,10 +184,6 @@ export default function ListingStorefrontPage() {
   const settings = { ...defaults, ...(data?.settings || {}) };
   const products = arrangeStorefrontProducts(rawProducts, settings);
   const messagePath = listingOwnerMessagePath(listing);
-  const aboutStoreHeading = !settings.headline || settings.headline === `Shop ${listing.title}`
-    ? "About Store"
-    : settings.headline;
-
   return (
     <div className="min-h-screen bg-background-100/35 pt-16 md:pt-20">
       <StorefrontSeo listing={listing} products={products.all} slug={slug} coverUrl={settings.coverUrl} />
@@ -227,7 +223,6 @@ export default function ListingStorefrontPage() {
                 <div className="grid gap-6 py-8 lg:grid-cols-[minmax(0,1fr)_260px]">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: settings.accentColor }}>Storefront</p>
-                    <h2 className="mt-2 font-heading text-xl font-medium text-foreground-950">{aboutStoreHeading}</h2>
                     <p className="mt-3 max-w-3xl whitespace-pre-line text-sm leading-7 text-foreground-600">{settings.welcomeText}</p>
                   </div>
                   <div className="grid gap-3 text-xs text-foreground-600">
@@ -235,10 +230,8 @@ export default function ListingStorefrontPage() {
                   </div>
                 </div>
 
-                {settings.aboutText && <div className="border-t border-background-200 py-8"><p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: settings.accentColor }}>About the store</p><p className="mt-3 max-w-4xl whitespace-pre-line text-sm leading-7 text-foreground-600">{settings.aboutText}</p></div>}
                 <div className="border-t border-background-200 py-8">
                   <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: settings.accentColor }}>Store Policy</p>
-                  <h3 className="mt-2 font-heading text-xl font-medium text-foreground-950">Shopping with {listing.title}</h3>
                   <p className="mt-3 max-w-4xl whitespace-pre-line text-sm leading-7 text-foreground-600">{settings.policies || "Store policy information has not been added yet."}</p>
                 </div>
               </div>
