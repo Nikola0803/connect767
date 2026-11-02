@@ -34,6 +34,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const productListingId = searchParams.get("products") || "";
+  const storefrontListingId = searchParams.get("storefront") || "";
   const [tierBusy, setTierBusy] = useState(null);
   const [tierError, setTierError] = useState(null);
   const [bookingBusy, setBookingBusy] = useState(null);
@@ -43,6 +44,11 @@ export default function DashboardPage() {
     if (!productListingId || !listings?.length) return;
     document.getElementById("products-services")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [productListingId, listings]);
+
+  useEffect(() => {
+    if (!storefrontListingId || !listings?.length) return;
+    document.getElementById("store-settings")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [storefrontListingId, listings]);
 
   const changeBookingStatus = async (booking, status) => {
     setBookingBusy(booking.id);
@@ -233,11 +239,11 @@ export default function DashboardPage() {
                         </button>
                       )}
                       <Link
-                        to={`/listings/${item.slug}/edit`}
+                        to={`/dashboard?storefront=${item.id}#store-settings`}
                         className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md border border-background-300 text-sm font-semibold text-foreground-800 hover:bg-background-100 cursor-pointer whitespace-nowrap"
                       >
                         <i className="ri-edit-line" />
-                        Edit
+                        Edit storefront
                       </Link>
                       {item.viewUrl ? (
                         <Link
@@ -264,6 +270,7 @@ export default function DashboardPage() {
             <VendorProductsPanel
               listings={listings}
               initialListingId={productListingId}
+              initialStorefrontListingId={storefrontListingId}
               ownerName={name}
             />
           )}

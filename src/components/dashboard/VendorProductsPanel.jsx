@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   getMyVendorProducts,
@@ -61,7 +61,7 @@ function parseVariants(text) {
  * this site's own Stripe account (platform-collects model), so the owner
  * needs to see what sold in order to pay each vendor out separately.
  */
-export default function VendorProductsPanel({ listings = [], initialListingId = "", ownerName = "" }) {
+export default function VendorProductsPanel({ listings = [], initialListingId = "", initialStorefrontListingId = "", ownerName = "" }) {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -71,6 +71,7 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [analytics, setAnalytics] = useState(null);
+  const productFormRef = useRef(null);
 
   const load = () => {
     setLoading(true);
@@ -102,6 +103,15 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
     setShowForm(true);
   }, [initialListingId, listings]);
 
+  useEffect(() => {
+    if (!showForm) return;
+    const frame = window.requestAnimationFrame(() => {
+      productFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      productFormRef.current?.querySelector("input:not([type='hidden'])")?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [showForm, editingId]);
+
   if (listings.length === 0) {
     return null;
   }
@@ -115,13 +125,18 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
   };
 
   const openAddForm = () => {
+    const preferredListingId = listings.some((listing) => String(listing.id) === String(initialListingId))
+      ? String(initialListingId)
+      : listings.length === 1
+        ? String(listings[0].id)
+        : "";
     setEditingId(null);
     setForm({
       ...emptyForm,
-      listingId: listings.length === 1 ? String(listings[0].id) : "",
+      listingId: preferredListingId,
     });
     setError(null);
-    setShowForm((v) => (editingId ? true : !v));
+    setShowForm(true);
   };
 
   const openEditForm = (product) => {
@@ -295,13 +310,19 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
       )}
 
       <div id="store-settings" className="scroll-mt-24">
-        <StorefrontCustomizer listings={listings} products={products} />
+        <StorefrontCustomizer
+          listings={listings}
+          products={products}
+          initialListingId={initialStorefrontListingId}
+        />
       </div>
 
       {showForm && (
         <form
+          ref={productFormRef}
+          id="product-editor"
           onSubmit={handleSubmit}
-          className="mb-6 p-5 rounded-2xl border border-background-200/70 bg-background-100/40 space-y-4"
+          className="mb-6 scroll-mt-24 p-5 rounded-2xl border border-background-200/70 bg-background-100/40 space-y-4"
         >
           <FormField label="Listing" htmlFor="vp-listing">
             <Select

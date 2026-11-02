@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import VendorProductsPanel from "./VendorProductsPanel";
@@ -70,5 +70,16 @@ describe("VendorProductsPanel storefront fees", () => {
     expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
     expect(screen.getByRole("link", { name: /Reviews/i })).toHaveAttribute("href", "/listings/kalinago-tours/shop?tab=reviews");
     expect(screen.getByRole("link", { name: /Inquiries/i })).toHaveAttribute("href", "/messages");
+  });
+
+  it("opens the add-product form with the active storefront selected", async () => {
+    renderPanel({
+      listings: [{ id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: true }],
+      initialListingId: "7",
+    });
+
+    expect(await screen.findByLabelText("Name")).toBeInTheDocument();
+    expect(screen.getByLabelText("Listing")).toHaveValue("7");
+    await waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" }));
   });
 });

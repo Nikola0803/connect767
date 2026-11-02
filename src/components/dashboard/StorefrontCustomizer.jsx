@@ -24,8 +24,8 @@ const empty = {
   bookingPayoutDigitalAccount: "",
 };
 
-export default function StorefrontCustomizer({ listings, products }) {
-  const [listingId, setListingId] = useState("");
+export default function StorefrontCustomizer({ listings, products, initialListingId = "" }) {
+  const [listingId, setListingId] = useState(() => String(initialListingId || ""));
   const [form, setForm] = useState(empty);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -42,6 +42,12 @@ export default function StorefrontCustomizer({ listings, products }) {
       return (ai < 0 ? 9999 : ai) - (bi < 0 ? 9999 : bi);
     });
   }, [products, listingId, form.productOrder]);
+
+  useEffect(() => {
+    if (!initialListingId) return;
+    if (!listings.some((item) => String(item.id) === String(initialListingId))) return;
+    setListingId(String(initialListingId));
+  }, [initialListingId, listings]);
 
   useEffect(() => {
     if (!listingId) return;
