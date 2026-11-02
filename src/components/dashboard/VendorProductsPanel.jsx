@@ -609,7 +609,7 @@ function SellerCenterSummary({ ownerName, listings, products, orders, analytics 
     ["ri-chat-3-line", "Inquiries", "Customer messages", "/messages"],
     ["ri-truck-line", "Shipping", "Delivery and pickup", "#seller-orders"],
     ["ri-wallet-3-line", "Earnings & Payouts", "Sales and commissions", "#seller-orders"],
-    ["ri-star-line", "Reviews", "Customer feedback", firstListing ? `/listings/${firstListing.slug}#reviews` : "#my-listings"],
+    ["ri-star-line", "Reviews", "Customer feedback", firstListing ? `/listings/${firstListing.slug}/shop?tab=reviews` : "#my-listings"],
     ["ri-settings-3-line", "Store Settings", "Brand, policies and payouts", "#store-settings"],
   ];
   const metrics = [
@@ -643,13 +643,12 @@ function SellerCenterSummary({ ownerName, listings, products, orders, analytics 
       <div className="p-5 sm:p-7">
         <h3 className="font-heading text-lg font-semibold text-foreground-950">Dashboard navigation</h3>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {navigation.map(([icon, title, detail, href]) => (
-            <Link key={title} to={href} className="group flex items-start gap-3 rounded-2xl border border-background-200 px-4 py-4 transition hover:border-primary-200 hover:bg-primary-50/35">
-              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background-100 text-foreground-600 transition group-hover:bg-primary-100 group-hover:text-primary-800"><i className={icon} /></span>
-              <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-foreground-900">{title}</span><span className="mt-1 block text-xs text-foreground-500">{detail}</span></span>
-              <i className="ri-arrow-right-s-line mt-2 text-foreground-300 transition group-hover:translate-x-0.5 group-hover:text-primary-700" />
-            </Link>
-          ))}
+          {navigation.map(([icon, title, detail, href]) => {
+            const content = <><span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background-100 text-foreground-600 transition group-hover:bg-primary-100 group-hover:text-primary-800"><i className={icon} /></span><span className="min-w-0 flex-1 text-left"><span className="block text-sm font-semibold text-foreground-900">{title}</span><span className="mt-1 block text-xs text-foreground-500">{detail}</span></span><i className="ri-arrow-right-s-line mt-2 text-foreground-300 transition group-hover:translate-x-0.5 group-hover:text-primary-700" /></>;
+            const className = "group flex w-full items-start gap-3 rounded-2xl border border-background-200 px-4 py-4 transition hover:border-primary-200 hover:bg-primary-50/35";
+            if (!href.startsWith("#")) return <Link key={title} to={href} className={className}>{content}</Link>;
+            return <button key={title} type="button" onClick={() => document.getElementById(href.slice(1))?.scrollIntoView({ behavior: "smooth", block: "start" })} className={className}>{content}</button>;
+          })}
         </div>
       </div>
     </section>
