@@ -215,7 +215,6 @@ export default function ListingStorefrontPage() {
             <nav className="flex gap-1 overflow-x-auto border-b border-background-200 py-4 text-sm" aria-label="Business profile sections">
               <button type="button" onClick={() => setActiveTab("overview")} className={`whitespace-nowrap rounded-full px-4 py-2 ${activeTab === "overview" ? "font-semibold text-white" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "overview" ? { backgroundColor: settings.accentColor } : undefined}>Overview</button>
               <button type="button" onClick={() => setActiveTab("products")} className={`whitespace-nowrap rounded-full px-5 py-2 ${activeTab === "products" ? "font-semibold text-white" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "products" ? { backgroundColor: settings.accentColor } : undefined}>Products</button>
-              <button type="button" onClick={() => setActiveTab("services")} className={`whitespace-nowrap rounded-full px-4 py-2 ${activeTab === "services" ? "font-semibold text-white" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "services" ? { backgroundColor: settings.accentColor } : undefined}>Services</button>
               <Link to={`/listings/${slug}#reviews`} className="whitespace-nowrap rounded-full px-4 py-2 text-foreground-600 hover:bg-background-100">Reviews</Link>
               <button type="button" onClick={() => setActiveTab("contact")} className={`whitespace-nowrap rounded-full px-4 py-2 ${activeTab === "contact" ? "font-semibold text-white" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "contact" ? { backgroundColor: settings.accentColor } : undefined}>Contact</button>
             </nav>
@@ -244,15 +243,10 @@ export default function ListingStorefrontPage() {
               </div>
             )}
 
-            {(activeTab === "services" || activeTab === "contact") && (
+            {activeTab === "contact" && (
               <div className="py-9">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: settings.accentColor }}>{activeTab === "services" ? "Services & contact" : "Contact"}</p>
-                <h2 className="mt-2 font-heading text-3xl font-medium tracking-[-0.03em] text-foreground-950">{activeTab === "services" ? `Work with ${listing.title}` : `Contact ${listing.title}`}</h2>
-                {activeTab === "services" && (listing.amenities?.length > 0 || listing.tags?.length > 0) && (
-                  <div className="my-6 flex flex-wrap gap-2">
-                    {(listing.amenities?.length ? listing.amenities : listing.tags).map((service) => <span key={service} className="rounded-full border border-background-200 bg-background-100/60 px-3 py-1.5 text-xs text-foreground-700">{service}</span>)}
-                  </div>
-                )}
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: settings.accentColor }}>Contact</p>
+                <h2 className="mt-2 font-heading text-3xl font-medium tracking-[-0.03em] text-foreground-950">Contact {listing.title}</h2>
                 <div className="mt-6"><StorefrontContactDetails listing={listing} messagePath={messagePath} accentColor={settings.accentColor} /></div>
               </div>
             )}
