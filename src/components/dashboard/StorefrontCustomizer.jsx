@@ -101,12 +101,8 @@ export default function StorefrontCustomizer({ listings, products }) {
 
       {listingId && !loading && (
         <div className="mt-6 space-y-5">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Banner headline" htmlFor="store-headline"><Input id="store-headline" maxLength={80} value={form.headline} onChange={update("headline")} /></FormField>
-            <FormField label="Brand color" htmlFor="store-color"><Input id="store-color" type="color" value={form.accentColor} onChange={update("accentColor")} className="h-11" /></FormField>
-          </div>
-          <FormField label="Welcome text" htmlFor="store-welcome" hint="Shown directly below the banner headline."><Textarea id="store-welcome" rows={2} maxLength={240} value={form.welcomeText} onChange={update("welcomeText")} /></FormField>
-          <FormField label="About the store" htmlFor="store-about"><Textarea id="store-about" rows={4} maxLength={1200} value={form.aboutText} onChange={update("aboutText")} /></FormField>
+          <FormField label="Brand color" htmlFor="store-color"><Input id="store-color" type="color" value={form.accentColor} onChange={update("accentColor")} className="h-11 sm:max-w-xs" /></FormField>
+          <FormField label="Storefront text" htmlFor="store-welcome" hint="Shown in the Storefront section of your store."><Textarea id="store-welcome" rows={2} maxLength={240} value={form.welcomeText} onChange={update("welcomeText")} /></FormField>
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="Shipping & pickup message" htmlFor="store-shipping"><Textarea id="store-shipping" rows={3} maxLength={500} value={form.shippingMessage} onChange={update("shippingMessage")} /></FormField>
             <FormField label="Store policies" htmlFor="store-policies" hint="Returns, exchanges, processing time, and other terms."><Textarea id="store-policies" rows={3} maxLength={1000} value={form.policies} onChange={update("policies")} /></FormField>
@@ -149,25 +145,20 @@ export default function StorefrontCustomizer({ listings, products }) {
 }
 
 function StorefrontPreview({ listing, form, products }) {
-  const aboutStoreHeading = !form.headline || form.headline === `Shop ${listing?.title}`
-    ? "About Store"
-    : form.headline;
   return (
     <div className="overflow-hidden rounded-2xl border border-background-200 bg-background-100/40">
       <div>
         <div className="p-6">
           <span className="text-xs text-foreground-500">{listing?.title}</span>
-          <h3 className="mt-5 font-heading text-xl font-medium text-foreground-950">{aboutStoreHeading}</h3>
-          <p className="mt-3 whitespace-pre-line text-sm text-foreground-600">{form.welcomeText}</p>
+          <p className="mt-5 whitespace-pre-line text-sm text-foreground-600">{form.welcomeText}</p>
           <span className="mt-5 inline-flex rounded-full px-4 py-2 text-xs font-semibold text-white" style={{ backgroundColor: form.accentColor }}>Browse products</span>
         </div>
       </div>
       <div className="grid gap-3 border-t border-background-200 p-4 sm:grid-cols-3">
         {products.slice(0, 3).map((product) => <div key={product.id} className="rounded-xl bg-background-50 p-3"><p className="truncate text-xs font-semibold">{product.name}</p>{form.featuredProductIds.includes(Number(product.id)) && <span className="mt-2 inline-block text-[10px] font-bold uppercase" style={{ color: form.accentColor }}>Featured</span>}</div>)}
       </div>
-      {(form.aboutText || form.shippingMessage || form.policies) && (
+      {(form.shippingMessage || form.policies) && (
         <div className="grid gap-4 border-t border-background-200 p-5 text-xs text-foreground-600 sm:grid-cols-3">
-          <PreviewText title="About" text={form.aboutText} />
           <PreviewText title="Shipping & pickup" text={form.shippingMessage} />
           <PreviewText title="Policies" text={form.policies} />
         </div>
