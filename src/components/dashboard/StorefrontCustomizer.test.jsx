@@ -44,6 +44,7 @@ describe("StorefrontCustomizer", () => {
     expect(screen.queryByText("Store logo")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Choose storefront logo image")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Choose storefront banner image")).toBeInTheDocument();
+    expect(screen.getByText(/1600 × 900 px \(16:9\).*maximum 2 MB/i)).toBeInTheDocument();
     expect(screen.getByText(/Where should we send your storefront payouts/i)).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /Digital payment/i })).toBeChecked();
     fireEvent.change(screen.getByLabelText("Banner headline"), { target: { value: "Discover Kalinago craft" } });

@@ -178,6 +178,13 @@ function StorefrontImagePicker({ form, onCoverChange }) {
         </label>
       </div>
       <p className="mt-2 text-xs text-foreground-500">Click the banner to add or replace the cover image.</p>
+      <div className="mt-3 flex items-start gap-2 rounded-xl border border-background-200 bg-background-100/60 px-3 py-2.5 text-xs leading-5 text-foreground-600">
+        <i className="ri-information-line mt-0.5 shrink-0 text-primary-700" />
+        <p>
+          <strong className="font-semibold text-foreground-800">Recommended:</strong>{" "}
+          1600 × 900 px (16:9), JPG, PNG or WebP, maximum 2 MB. Keep important text and subjects centered so the banner crops cleanly on desktop and mobile.
+        </p>
+      </div>
       <input id="store-cover" aria-label="Choose storefront banner image" type="file" accept="image/*" onChange={onCoverChange} className="hidden" />
     </div>
   );
