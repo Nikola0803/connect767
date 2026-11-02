@@ -19,7 +19,6 @@ describe("StorefrontCustomizer", () => {
       shippingMessage: "Ships island-wide or collect in Roseau.",
       policies: "Returns within seven days.",
       coverUrl: "/cover.jpg",
-      logoUrl: "/logo.jpg",
       bookingPayoutMethod: "digital",
       bookingPayoutDigitalProvider: "PayPal",
       bookingPayoutDigitalAccount: "payments@example.com",
@@ -43,7 +42,7 @@ describe("StorefrontCustomizer", () => {
     fireEvent.change(screen.getByLabelText("Choose a storefront"), { target: { value: "7" } });
     expect(await screen.findByDisplayValue("Island-made essentials")).toBeInTheDocument();
     expect(screen.queryByText("Store logo")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Choose storefront logo image")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Choose storefront logo image")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Choose storefront banner image")).toBeInTheDocument();
     expect(screen.getByText(/Where should we send your storefront payouts/i)).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /Digital payment/i })).toBeChecked();
