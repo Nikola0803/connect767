@@ -158,8 +158,7 @@ export default function ListingStorefrontPage() {
 
           <section className="px-5 sm:px-8 md:px-10">
             <div className="flex flex-col gap-5 border-b border-background-200 py-7 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 items-center gap-4">
-                {settings.logoUrl ? <img src={settings.logoUrl} alt={`${listing.title} logo`} className="h-20 w-20 shrink-0 rounded-2xl border-4 border-background-50 bg-background-50 object-cover shadow-sm sm:h-24 sm:w-24" /> : <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-4 border-background-50 font-heading text-3xl text-white shadow-sm sm:h-24 sm:w-24" style={{ backgroundColor: settings.accentColor }}>{listing.title?.charAt(0) || "C"}</span>}
+              <div className="min-w-0">
                 <div className="min-w-0">
                   <h1 className="truncate font-heading text-2xl font-semibold tracking-[-0.025em] text-foreground-950 sm:text-3xl">{listing.title}</h1>
                   <p className="mt-1.5 text-sm text-foreground-500">{[listing.location, listing.industry || listing.category].filter(Boolean).join(" · ")}</p>
