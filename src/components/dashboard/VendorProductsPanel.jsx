@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   getMyVendorProducts,
   createVendorProduct,
@@ -60,7 +61,7 @@ function parseVariants(text) {
  * this site's own Stripe account (platform-collects model), so the owner
  * needs to see what sold in order to pay each vendor out separately.
  */
-export default function VendorProductsPanel({ listings = [], initialListingId = "" }) {
+export default function VendorProductsPanel({ listings = [], initialListingId = "", ownerName = "" }) {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -246,6 +247,14 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
 
   return (
     <>
+      <SellerCenterSummary
+        ownerName={ownerName}
+        listings={listings}
+        products={products}
+        orders={orders}
+        analytics={analytics}
+      />
+
       <div id="products-services" className="flex items-center justify-between mb-5 mt-12 scroll-mt-24">
         <h2 className="font-heading text-xl font-medium text-foreground-950">
           Products &amp; services
@@ -285,7 +294,9 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
         </div>
       )}
 
-      <StorefrontCustomizer listings={listings} products={products} />
+      <div id="store-settings" className="scroll-mt-24">
+        <StorefrontCustomizer listings={listings} products={products} />
+      </div>
 
       {showForm && (
         <form
@@ -437,7 +448,7 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
       )}
 
       {products.length > 0 && (
-        <div className="space-y-3 mb-10">
+        <div id="product-list" className="scroll-mt-24 space-y-3 mb-10">
           {products.map((p) => (
             <div
               key={p.id}
@@ -509,7 +520,7 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
         </div>
       )}
 
-      <h2 className="font-heading text-xl font-medium text-foreground-950 mb-5">Sales</h2>
+      <h2 id="seller-orders" className="scroll-mt-24 font-heading text-xl font-medium text-foreground-950 mb-5">Orders &amp; sales</h2>
 
       {!loading && orders.length === 0 && (
         <p className="text-sm text-foreground-500 font-label">
@@ -583,6 +594,65 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
         </div>
       )}
     </>
+  );
+}
+
+function SellerCenterSummary({ ownerName, listings, products, orders, analytics }) {
+  const activeProducts = products.filter((product) => product.active).length;
+  const openOrders = orders.filter((order) => !["completed", "cancelled"].includes(order.fulfillmentStatus)).length;
+  const grossSales = orders.reduce((total, order) => total + Number(order.amountCents || 0), 0);
+  const firstListing = listings[0];
+  const navigation = [
+    ["ri-building-4-line", "My Business Listings", "Profile and contact details", "#my-listings"],
+    ["ri-box-3-line", "My Products", "Add, edit and manage stock", "#products-services"],
+    ["ri-shopping-cart-2-line", "Orders", "Checkout purchases", "#seller-orders"],
+    ["ri-chat-3-line", "Inquiries", "Customer messages", "/messages"],
+    ["ri-truck-line", "Shipping", "Delivery and pickup", "#seller-orders"],
+    ["ri-wallet-3-line", "Earnings & Payouts", "Sales and commissions", "#seller-orders"],
+    ["ri-star-line", "Reviews", "Customer feedback", firstListing ? `/listings/${firstListing.slug}#reviews` : "#my-listings"],
+    ["ri-settings-3-line", "Store Settings", "Brand, policies and payouts", "#store-settings"],
+  ];
+  const metrics = [
+    ["ri-box-3-line", activeProducts, "Active Products"],
+    ["ri-shopping-bag-3-line", openOrders, "Open Orders"],
+    ["ri-eye-line", analytics?.storeViews ?? 0, "Store Visits"],
+    ["ri-wallet-3-line", formatPrice(grossSales), "Gross Sales"],
+  ];
+
+  return (
+    <section className="mt-12 overflow-hidden rounded-[28px] border border-background-200 bg-background-50 shadow-[0_16px_50px_rgba(29,45,38,0.05)]">
+      <div className="flex items-start justify-between gap-4 border-b border-background-200 px-5 py-6 sm:px-7">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">Seller workspace</p>
+          <h2 className="mt-1 font-heading text-2xl font-semibold tracking-[-0.02em] text-foreground-950">Storefront overview</h2>
+          <p className="mt-1 text-sm text-foreground-500">{ownerName ? `Welcome back, ${ownerName}` : "Manage your business and storefront in one place."}</p>
+        </div>
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-50 text-xl text-primary-800"><i className="ri-store-2-line" /></span>
+      </div>
+
+      <div className="grid grid-cols-2 border-b border-background-200 sm:grid-cols-4">
+        {metrics.map(([icon, value, label], index) => (
+          <div key={label} className={`px-5 py-6 sm:px-6 ${index % 2 ? "border-l border-background-200" : ""} ${index > 1 ? "border-t border-background-200 sm:border-t-0 sm:border-l" : ""}`}>
+            <i className={`${icon} text-lg text-foreground-500`} />
+            <p className="mt-3 font-heading text-2xl font-semibold text-foreground-950">{value}</p>
+            <p className="mt-1 text-xs text-foreground-500">{label}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="p-5 sm:p-7">
+        <h3 className="font-heading text-lg font-semibold text-foreground-950">Dashboard navigation</h3>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {navigation.map(([icon, title, detail, href]) => (
+            <Link key={title} to={href} className="group flex items-start gap-3 rounded-2xl border border-background-200 px-4 py-4 transition hover:border-primary-200 hover:bg-primary-50/35">
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background-100 text-foreground-600 transition group-hover:bg-primary-100 group-hover:text-primary-800"><i className={icon} /></span>
+              <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-foreground-900">{title}</span><span className="mt-1 block text-xs text-foreground-500">{detail}</span></span>
+              <i className="ri-arrow-right-s-line mt-2 text-foreground-300 transition group-hover:translate-x-0.5 group-hover:text-primary-700" />
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 

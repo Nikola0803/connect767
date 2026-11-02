@@ -106,11 +106,10 @@ export default function DashboardPage() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-100 text-primary-800 text-xs font-medium mb-3">
               <i className="ri-dashboard-line" />
-              Dashboard
+              Seller Center
             </div>
-            <h1 className="font-heading text-3xl md:text-4xl font-light text-foreground-950">
-              Welcome back{name ? `, ${name}` : ""}.
-            </h1>
+            <h1 className="font-heading text-3xl md:text-4xl font-light text-foreground-950">Connect767 Seller Center</h1>
+            <p className="mt-2 text-sm font-medium text-foreground-700">Welcome back{name ? `, ${name}` : ""}.</p>
             <p className="text-sm text-foreground-600 font-label mt-1">{email}</p>
           </div>
           <Button to="/listings/submit" variant="primary" icon="ri-add-line">
@@ -121,7 +120,7 @@ export default function DashboardPage() {
 
       <div className="w-full px-4 md:px-8 lg:px-12 py-10 md:py-14">
         <div className="max-w-5xl mx-auto">
-          <h2 className="font-heading text-xl font-medium text-foreground-950 mb-5">
+          <h2 id="my-listings" className="scroll-mt-24 font-heading text-xl font-medium text-foreground-950 mb-5">
             Your listings
           </h2>
 
@@ -265,10 +264,11 @@ export default function DashboardPage() {
             <VendorProductsPanel
               listings={listings}
               initialListingId={productListingId}
+              ownerName={name}
             />
           )}
 
-          <div className="mt-12 pt-10 border-t border-background-200/70">
+          <div id="bookings-rentals" className="mt-12 scroll-mt-24 pt-10 border-t border-background-200/70">
             <div className="flex items-end justify-between gap-4 mb-5">
               <div>
                 <h2 className="font-heading text-xl font-medium text-foreground-950">
