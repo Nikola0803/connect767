@@ -36,10 +36,10 @@ export default function BrandLogo({
         aria-hidden="true"
         className={`${
           compactOnNarrow ? "hidden min-[350px]:inline-flex" : "inline-flex"
-        } -ml-0.5 items-baseline font-label ${textSize} font-extrabold leading-none tracking-[-0.055em]`}
+        } -ml-0.5 items-baseline font-body ${textSize} font-extrabold leading-none tracking-[-0.045em]`}
       >
         <span>ONNECT</span>
-        <span className="ml-0.5 text-accent-500 tracking-[-0.035em]">767</span>
+        <span className="text-accent-500">767</span>
       </span>
     </span>
   );
