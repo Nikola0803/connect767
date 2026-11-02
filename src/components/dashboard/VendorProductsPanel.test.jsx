@@ -1,5 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 import VendorProductsPanel from "./VendorProductsPanel";
 
 const repository = vi.hoisted(() => ({
@@ -15,7 +16,10 @@ const repository = vi.hoisted(() => ({
 vi.mock("../../data/repository", () => repository);
 
 describe("VendorProductsPanel storefront fees", () => {
+  const renderPanel = (props) => render(<MemoryRouter><VendorProductsPanel {...props} /></MemoryRouter>);
+
   beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
     repository.getMyVendorProducts.mockResolvedValue([]);
     repository.getMyVendorAnalytics.mockResolvedValue({
       storeViews: 12,
@@ -44,7 +48,7 @@ describe("VendorProductsPanel storefront fees", () => {
   });
 
   it("discloses the fee and shows the seller's net payout", async () => {
-    render(<VendorProductsPanel listings={[{ id: 7, title: "Kalinago Tours", payoutConfigured: true }]} />);
+    renderPanel({ listings: [{ id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: true }] });
 
     expect(screen.getByText(/Connect767 retains 10% of each product price/i)).toBeInTheDocument();
     expect(await screen.findByText("Island Gift Box")).toBeInTheDocument();
@@ -54,13 +58,17 @@ describe("VendorProductsPanel storefront fees", () => {
   });
 
   it("warns sellers to configure payouts before offering products", async () => {
-    render(
-      <VendorProductsPanel
-        listings={[{ id: 7, title: "Kalinago Tours", payoutConfigured: false }]}
-        initialListingId="7"
-      />,
-    );
+    renderPanel({ listings: [{ id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: false }], initialListingId: "7" });
 
     expect(await screen.findByText(/add its bank account or digital payout details/i)).toBeInTheDocument();
+  });
+
+  it("opens dashboard sections and routes reviews to the storefront", async () => {
+    renderPanel({ listings: [{ id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: true }] });
+
+    fireEvent.click(await screen.findByRole("button", { name: /My Products/i }));
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
+    expect(screen.getByRole("link", { name: /Reviews/i })).toHaveAttribute("href", "/listings/kalinago-tours/shop?tab=reviews");
+    expect(screen.getByRole("link", { name: /Inquiries/i })).toHaveAttribute("href", "/messages");
   });
 });

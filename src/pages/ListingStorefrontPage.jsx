@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import ListingProducts from "../components/ListingProducts";
 import { listingOwnerMessagePath } from "../components/ListingProfile";
 import { getListingBySlug, getListingProducts, getStorefrontReviews, getStorefrontSettings, recordStorefrontView, submitStorefrontReview } from "../data/repository";
@@ -214,7 +214,9 @@ function StorefrontSeo({ listing, products, slug, coverUrl }) {
 
 export default function ListingStorefrontPage() {
   const { slug } = useParams();
-  const [activeTab, setActiveTab] = useState("products");
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(["overview", "products", "reviews", "contact"].includes(requestedTab) ? requestedTab : "products");
   const { data, loading, error, reload } = useAsync(async () => {
     const [listing, products, settings, storefrontReviews] = await Promise.all([
       getListingBySlug(slug),
