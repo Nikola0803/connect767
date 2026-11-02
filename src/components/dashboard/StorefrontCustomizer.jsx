@@ -3,6 +3,11 @@ import { getMyStorefrontSettings, updateMyStorefrontSettings } from "../../data/
 import Button from "../ui/Button";
 import { FormField, Input, Textarea } from "../ui/FormField";
 import PayoutSettingsFields from "../PayoutSettingsFields";
+import {
+  DASHBOARD_EYEBROW,
+  DASHBOARD_SECTION_HEADING,
+  DASHBOARD_SECTION_SUBTITLE,
+} from "./dashboardStyles";
 
 const empty = {
   headline: "",
@@ -97,9 +102,9 @@ export default function StorefrontCustomizer({ listings, products, initialListin
     <section className="mb-10 rounded-2xl border border-background-200 bg-background-50 p-5 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">{mode === "payouts" ? "Store finances" : "Store design"}</p>
-          <h2 className="mt-1 font-heading text-xl font-medium text-foreground-950">{mode === "payouts" ? "Payout settings" : "Customize storefront"}</h2>
-          <p className="mt-1 text-xs text-foreground-500">{mode === "payouts" ? "Choose where proceeds from storefront sales should be sent." : "Preview every change before publishing it to customers."}</p>
+          <p className={DASHBOARD_EYEBROW}>{mode === "payouts" ? "Store finances" : "Store design"}</p>
+          <h2 className={DASHBOARD_SECTION_HEADING}>{mode === "payouts" ? "Payout settings" : "Customize storefront"}</h2>
+          <p className={DASHBOARD_SECTION_SUBTITLE}>{mode === "payouts" ? "Choose where proceeds from storefront sales should be sent." : "Preview every change before publishing it to customers."}</p>
         </div>
         {listing && <span className="inline-flex items-center gap-2 rounded-full bg-primary-50 px-3 py-2 text-xs font-semibold text-primary-800"><i className="ri-store-2-line" />{listing.title}</span>}
       </div>
