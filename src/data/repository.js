@@ -872,7 +872,6 @@ export async function updateMyStorefrontSettings(listingId, form) {
   payload.append("featuredProductIds", JSON.stringify(form.featuredProductIds || []));
   payload.append("productOrder", JSON.stringify(form.productOrder || []));
   if (form.coverFile) payload.append("storefrontCover", form.coverFile);
-  if (form.logoFile) payload.append("storefrontLogo", form.logoFile);
   [
     "bookingPayoutMethod",
     "bookingPayoutAccountName",

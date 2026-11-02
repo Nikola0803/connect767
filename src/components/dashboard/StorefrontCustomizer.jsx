@@ -12,9 +12,7 @@ const empty = {
   shippingMessage: "",
   policies: "",
   coverUrl: "",
-  logoUrl: "",
   coverFile: null,
-  logoFile: null,
   featuredProductIds: [],
   productOrder: [],
   bookingPayoutMethod: "",
@@ -52,7 +50,7 @@ export default function StorefrontCustomizer({ listings, products }) {
     setLoading(true);
     setMessage("");
     getMyStorefrontSettings(listingId)
-      .then((settings) => setForm({ ...empty, ...(settings || {}), coverFile: null, logoFile: null }))
+      .then((settings) => setForm({ ...empty, ...(settings || {}), coverFile: null }))
       .catch(() => setMessage("Couldn't load this storefront's design."))
       .finally(() => setLoading(false));
   }, [listingId]);
@@ -84,7 +82,7 @@ export default function StorefrontCustomizer({ listings, products }) {
     setMessage("");
     try {
       const saved = await updateMyStorefrontSettings(listingId, form);
-      setForm({ ...empty, ...saved, coverFile: null, logoFile: null });
+      setForm({ ...empty, ...saved, coverFile: null });
       setMessage("Storefront design published.");
       setPreview(false);
     } catch {
@@ -111,9 +109,7 @@ export default function StorefrontCustomizer({ listings, products }) {
       {listingId && !loading && (
         <div className="mt-6 space-y-5">
           <StorefrontImagePicker
-            listing={listing}
             form={form}
-            onLogoChange={upload("logoFile", "logoUrl")}
             onCoverChange={upload("coverFile", "coverUrl")}
           />
           <div className="grid gap-4 sm:grid-cols-2">
@@ -163,7 +159,7 @@ export default function StorefrontCustomizer({ listings, products }) {
   );
 }
 
-function StorefrontImagePicker({ listing, form, onLogoChange, onCoverChange }) {
+function StorefrontImagePicker({ form, onCoverChange }) {
   return (
     <div>
       <p className="mb-2 text-sm font-semibold text-foreground-800">Storefront images</p>
@@ -180,18 +176,9 @@ function StorefrontImagePicker({ listing, form, onLogoChange, onCoverChange }) {
             <span className="rounded-full bg-foreground-950/70 px-4 py-2"><i className="ri-camera-line mr-1" /> Add or change banner</span>
           </span>
         </label>
-        <label
-          htmlFor="store-logo"
-          className="absolute bottom-4 left-4 z-10 flex h-20 w-20 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-primary-700 text-2xl font-semibold text-white shadow-lg"
-          title="Add or change store logo"
-        >
-          {form.logoUrl ? <img src={form.logoUrl} alt="" className="h-full w-full object-cover" /> : <span>{listing?.title?.[0] || <i className="ri-camera-line" />}</span>}
-          <span className="absolute inset-0 flex items-center justify-center bg-foreground-950/55 text-lg opacity-0 transition hover:opacity-100"><i className="ri-camera-line" /></span>
-        </label>
       </div>
-      <p className="mt-2 text-xs text-foreground-500">Click the banner or logo to add or replace an image.</p>
+      <p className="mt-2 text-xs text-foreground-500">Click the banner to add or replace the cover image.</p>
       <input id="store-cover" aria-label="Choose storefront banner image" type="file" accept="image/*" onChange={onCoverChange} className="hidden" />
-      <input id="store-logo" aria-label="Choose storefront logo image" type="file" accept="image/*" onChange={onLogoChange} className="hidden" />
     </div>
   );
 }
@@ -201,10 +188,7 @@ function StorefrontPreview({ listing, form, products }) {
     <div className="overflow-hidden rounded-2xl border border-background-200 bg-background-100/40">
       <div className="grid sm:grid-cols-2">
         <div className="p-6">
-          <div className="flex items-center gap-3">
-            {form.logoUrl ? <img src={form.logoUrl} alt="" className="h-10 w-10 rounded-full object-cover" /> : <span className="flex h-10 w-10 items-center justify-center rounded-full text-white" style={{ backgroundColor: form.accentColor }}>{listing?.title?.[0]}</span>}
-            <span className="text-xs text-foreground-500">{listing?.title}</span>
-          </div>
+          <span className="text-xs text-foreground-500">{listing?.title}</span>
           <h3 className="mt-5 font-heading text-3xl text-foreground-950">{form.headline || `Shop ${listing?.title}`}</h3>
           <p className="mt-3 whitespace-pre-line text-sm text-foreground-600">{form.welcomeText}</p>
           <span className="mt-5 inline-flex rounded-full px-4 py-2 text-xs font-semibold text-white" style={{ backgroundColor: form.accentColor }}>Browse products</span>
