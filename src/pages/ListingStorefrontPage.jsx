@@ -121,6 +121,8 @@ export default function ListingStorefrontPage() {
 
   const defaults = {
     coverUrl: listing.gallery?.[0]?.src || listing.image || "",
+    coverPosition: listing.coverPosition || "center",
+    coverZoom: listing.coverZoom || 1,
     logoUrl: listing.logo || "",
     headline: `Shop ${listing.title}`,
     welcomeText: "A curated selection from this Connect767 business, available through secure checkout.",
@@ -162,7 +164,7 @@ export default function ListingStorefrontPage() {
             <div className="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-xs text-foreground-500">{listing.location && <span className="inline-flex items-center gap-1.5"><i className="ri-map-pin-line" />{listing.location}</span>}<span className="inline-flex items-center gap-1.5"><i className="ri-shopping-bag-line" />{products.all.length} product{products.all.length === 1 ? "" : "s"}</span></div>
           </div>
           <div className="relative min-h-[310px] overflow-hidden bg-background-200 sm:min-h-[420px] lg:min-h-full">
-            {settings.coverUrl ? <img src={settings.coverUrl} alt={`${listing.title} storefront`} fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover" style={settings.hasCustomCover ? undefined : imageCropStyle(listing.coverPosition, listing.coverZoom, "cover")} /> : <div className="flex h-full min-h-[310px] items-center justify-center bg-primary-50 text-5xl text-primary-300 sm:min-h-[420px]"><i className="ri-store-2-line" /></div>}
+            {settings.coverUrl ? <img src={settings.coverUrl} alt={`${listing.title} storefront`} fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover" style={imageCropStyle(settings.hasCustomCover ? settings.coverPosition : listing.coverPosition, settings.hasCustomCover ? settings.coverZoom : listing.coverZoom, "cover")} /> : <div className="flex h-full min-h-[310px] items-center justify-center bg-primary-50 text-5xl text-primary-300 sm:min-h-[420px]"><i className="ri-store-2-line" /></div>}
             <Link to={`/listings/${slug}`} className="absolute bottom-5 right-5 inline-flex h-10 items-center gap-2 rounded-full bg-background-50/95 px-4 text-xs font-semibold text-foreground-900 shadow-sm backdrop-blur transition-transform hover:-translate-y-0.5">View profile <i className="ri-arrow-right-up-line" /></Link>
           </div>
         </div>

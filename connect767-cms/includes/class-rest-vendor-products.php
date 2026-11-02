@@ -344,6 +344,8 @@ class C767_Rest_Vendor_Products
             'listingId' => (int) $listing->ID,
             'coverUrl' => (string) ($custom_cover ?: get_the_post_thumbnail_url($listing->ID, 'full')),
             'hasCustomCover' => $custom_cover !== '',
+            'coverPosition' => self::sanitize_storefront_position(get_post_meta($listing->ID, 'storefront_cover_position', true)),
+            'coverZoom' => self::sanitize_storefront_zoom(get_post_meta($listing->ID, 'storefront_cover_zoom', true) ?: 1),
             'logoUrl' => (string) (get_post_meta($listing->ID, 'storefront_logo_url', true) ?: get_post_meta($listing->ID, 'logo', true)),
             'headline' => (string) (get_post_meta($listing->ID, 'storefront_headline', true) ?: 'Shop ' . $listing->post_title),
             'welcomeText' => (string) (get_post_meta($listing->ID, 'storefront_welcome_text', true) ?: 'A curated selection from this Connect767 business, available through secure checkout.'),
@@ -405,6 +407,12 @@ class C767_Rest_Vendor_Products
         if ($accent) {
             update_post_meta($listing->ID, 'storefront_accent_color', $accent);
         }
+        if ($request->get_param('coverPosition') !== null) {
+            update_post_meta($listing->ID, 'storefront_cover_position', self::sanitize_storefront_position($request->get_param('coverPosition')));
+        }
+        if ($request->get_param('coverZoom') !== null) {
+            update_post_meta($listing->ID, 'storefront_cover_zoom', self::sanitize_storefront_zoom($request->get_param('coverZoom')));
+        }
         if ($request->get_param('stripeConnectAccountId') !== null) {
             $account = sanitize_text_field((string) $request->get_param('stripeConnectAccountId'));
             if ($account === '') {
@@ -446,6 +454,24 @@ class C767_Rest_Vendor_Products
         if (!is_wp_error($attachment_id)) {
             update_post_meta($listing_id, $meta_key, wp_get_attachment_url($attachment_id));
         }
+    }
+
+    private static function sanitize_storefront_position($value)
+    {
+        $raw = trim((string) $value);
+        if (preg_match('/^(-?\d{1,3}(?:\.\d+)?)%\s+(-?\d{1,3}(?:\.\d+)?)%$/', $raw, $matches)) {
+            $x = max(0, min(100, (float) $matches[1]));
+            $y = max(0, min(100, (float) $matches[2]));
+            return round($x) . '% ' . round($y) . '%';
+        }
+        $keyword = sanitize_key($raw);
+        $allowed = ['top-left', 'top', 'top-right', 'left', 'center', 'right', 'bottom-left', 'bottom', 'bottom-right'];
+        return in_array($keyword, $allowed, true) ? $keyword : 'center';
+    }
+
+    private static function sanitize_storefront_zoom($value)
+    {
+        return max(1, min(2.5, (float) $value));
     }
 
     /** Owner's dashboard — every product across every listing they own, active or not. */
