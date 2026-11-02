@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useAsync } from "../hooks/useAsync";
 import {
@@ -7,7 +7,6 @@ import {
   getMyListings,
   requestBookingCashout,
   setBookingStatus,
-  setListingTier,
 } from "../data/repository";
 import { isLiveApi } from "../lib/config";
 import Button from "../components/ui/Button";
@@ -15,6 +14,13 @@ import { bookingRateUnit, isRentalBookingType } from "../lib/bookingTypes";
 import TierBadge from "../components/ui/TierBadge";
 import { CardSkeleton, ErrorState } from "../components/ui/States";
 import VendorProductsPanel from "../components/dashboard/VendorProductsPanel";
+import {
+  DASHBOARD_ACTION,
+  DASHBOARD_EYEBROW,
+  DASHBOARD_PANEL,
+  DASHBOARD_SECTION_HEADING,
+  DASHBOARD_SECTION_SUBTITLE,
+} from "../components/dashboard/dashboardStyles";
 
 const statusMeta = {
   publish: { label: "Live", className: "bg-primary-100 text-primary-800" },
@@ -31,12 +37,9 @@ export default function DashboardPage() {
     error: bookingsError,
     reload: reloadBookings,
   } = useAsync(() => getMyBookings(), []);
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const productListingId = searchParams.get("products") || "";
   const storefrontListingId = searchParams.get("storefront") || "";
-  const [tierBusy, setTierBusy] = useState(null);
-  const [tierError, setTierError] = useState(null);
   const [bookingBusy, setBookingBusy] = useState(null);
   const [bookingError, setBookingError] = useState(null);
 
@@ -76,45 +79,20 @@ export default function DashboardPage() {
     }
   };
 
-  /**
-   * Switch a listing between Free and Classified.
-   *
-   * Upgrading marks it Classified/unpaid server-side and hands back
-   * `paymentRequired`; the owner is then sent to the same payment step the
-   * submission wizard uses. Nothing grants a paid tier without payment.
-   */
-  const changeTier = async (item, tier) => {
-    if (tier === "free" && !window.confirm(`Move "${item.title}" down to the Free plan?`)) return;
-    setTierError(null);
-    setTierBusy(item.id);
-    try {
-      const result = await setListingTier(item.id, tier);
-      if (result?.paymentRequired) {
-        navigate(`/listings/${item.slug}/edit?upgrade=1`);
-        return;
-      }
-      reload();
-    } catch (err) {
-      setTierError(err.message || "Couldn't change the plan. Please try again.");
-    } finally {
-      setTierBusy(null);
-    }
-  };
-
   if (!isAuthenticated) {
     return <Navigate to="/auth/login" state={{ from: "/dashboard" }} replace />;
   }
 
   return (
-    <div className="pt-16 md:pt-20">
-      <div className="w-full px-4 md:px-8 lg:px-12 py-10 md:py-14 bg-background-100/50 border-b border-background-200/70">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+    <div className="min-h-screen bg-background-50 pt-16 md:pt-20">
+      <div className="w-full border-b border-background-200 bg-gradient-to-br from-background-100/80 to-background-50 px-4 py-10 md:px-8 md:py-14 lg:px-12">
+        <div className="mx-auto flex max-w-6xl flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-100 text-primary-800 text-xs font-medium mb-3">
               <i className="ri-dashboard-line" />
               Seller Center
             </div>
-            <h1 className="font-heading text-3xl md:text-4xl font-light text-foreground-950">Connect767 Seller Center</h1>
+            <h1 className="font-heading text-3xl font-semibold tracking-[-0.025em] text-foreground-950 md:text-4xl">Connect767 Seller Center</h1>
             <p className="mt-2 text-sm font-medium text-foreground-700">Welcome back{name ? `, ${name}` : ""}.</p>
             <p className="text-sm text-foreground-600 font-label mt-1">{email}</p>
           </div>
@@ -124,11 +102,15 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="w-full px-4 md:px-8 lg:px-12 py-10 md:py-14">
-        <div className="max-w-5xl mx-auto">
-          <h2 id="my-listings" className="scroll-mt-24 font-heading text-xl font-medium text-foreground-950 mb-5">
-            Your listings
-          </h2>
+      <div className="w-full px-4 py-10 md:px-8 md:py-14 lg:px-12">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-5">
+            <p className={DASHBOARD_EYEBROW}>Directory management</p>
+            <h2 id="my-listings" className={`scroll-mt-24 ${DASHBOARD_SECTION_HEADING}`}>
+              Your listings
+            </h2>
+            <p className={DASHBOARD_SECTION_SUBTITLE}>Manage directory profiles, storefronts, and listing plans.</p>
+          </div>
 
           {!isLiveApi && (
             <div className="mb-6 px-3.5 py-2.5 rounded-lg bg-secondary-100 border border-secondary-200 text-xs text-secondary-900 flex items-start gap-2">
@@ -139,13 +121,6 @@ export default function DashboardPage() {
                 <code className="font-mono">VITE_WP_BASE_URL</code> is set.
               </span>
             </div>
-          )}
-
-          {tierError && (
-            <p className="mb-4 text-xs text-accent-600 font-label flex items-start gap-1.5">
-              <i className="ri-error-warning-line mt-0.5 flex-shrink-0" />
-              {tierError}
-            </p>
           )}
 
           {loading && <CardSkeleton count={3} className="space-y-3" />}
@@ -177,7 +152,7 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={item.id}
-                    className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 rounded-xl border border-background-200/70 bg-background-50 p-4 sm:p-5"
+                    className={`${DASHBOARD_PANEL} flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:gap-5 sm:p-5`}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1.5">
@@ -208,46 +183,21 @@ export default function DashboardPage() {
                     <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
                       <Link
                         to={`/dashboard?products=${item.id}#products-services`}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md border border-primary-300 bg-primary-50 text-sm font-semibold text-primary-800 hover:bg-primary-100 cursor-pointer whitespace-nowrap"
+                        className={`${DASHBOARD_ACTION} border border-primary-300 bg-primary-50 text-primary-800 hover:bg-primary-100`}
                       >
                         <i className="ri-store-2-line" />
                         Products
                       </Link>
-                      {/* Tier change without re-running the whole wizard —
-                          upgrading was previously only possible at submission
-                          time, so an existing Free listing had no route to
-                          Classified at all. */}
-                      {item.tier === "Classified" ? (
-                        <button
-                          type="button"
-                          onClick={() => changeTier(item, "free")}
-                          disabled={tierBusy === item.id}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md border border-background-300 text-sm font-semibold text-foreground-700 hover:bg-background-100 cursor-pointer whitespace-nowrap disabled:opacity-50"
-                        >
-                          <i className="ri-arrow-down-line" />
-                          {tierBusy === item.id ? "Saving…" : "Downgrade"}
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => changeTier(item, "classified")}
-                          disabled={tierBusy === item.id}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md bg-primary-500 text-background-50 text-sm font-semibold hover:bg-primary-600 cursor-pointer whitespace-nowrap disabled:opacity-50"
-                        >
-                          <i className="ri-vip-crown-line" />
-                          {tierBusy === item.id ? "Saving…" : "Upgrade"}
-                        </button>
-                      )}
                       <Link
                         to={`/listings/${item.slug}/edit`}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md border border-background-300 text-sm font-semibold text-foreground-800 hover:bg-background-100 cursor-pointer whitespace-nowrap"
+                        className={`${DASHBOARD_ACTION} border border-background-300 text-foreground-800 hover:bg-background-100`}
                       >
                         <i className="ri-file-edit-line" />
                         Edit directory listing
                       </Link>
                       <Link
                         to={`/dashboard?storefront=${item.id}#store-settings`}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md border border-background-300 text-sm font-semibold text-foreground-800 hover:bg-background-100 cursor-pointer whitespace-nowrap"
+                        className={`${DASHBOARD_ACTION} border border-background-300 text-foreground-800 hover:bg-background-100`}
                       >
                         <i className="ri-edit-line" />
                         Edit storefront
@@ -255,13 +205,13 @@ export default function DashboardPage() {
                       {item.viewUrl ? (
                         <Link
                           to={`/listings/${item.slug}`}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md border border-background-300 text-sm font-semibold text-foreground-800 hover:bg-background-100 cursor-pointer whitespace-nowrap"
+                          className={`${DASHBOARD_ACTION} border border-background-300 text-foreground-800 hover:bg-background-100`}
                         >
                           View listing
                           <i className="ri-arrow-right-line" />
                         </Link>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-background-100 text-sm text-foreground-500 whitespace-nowrap">
+                        <span className={`${DASHBOARD_ACTION} bg-background-100 text-foreground-500`}>
                           <i className="ri-time-line" />
                           Pending review
                         </span>
@@ -282,13 +232,14 @@ export default function DashboardPage() {
             />
           )}
 
-          <div id="bookings-rentals" className="mt-12 scroll-mt-24 pt-10 border-t border-background-200/70">
+          <div id="bookings-rentals" className="mt-12 scroll-mt-24 border-t border-background-200 pt-10">
             <div className="flex items-end justify-between gap-4 mb-5">
               <div>
-                <h2 className="font-heading text-xl font-medium text-foreground-950">
+                <p className={DASHBOARD_EYEBROW}>Scheduling</p>
+                <h2 className={DASHBOARD_SECTION_HEADING}>
                   Bookings & rentals
                 </h2>
-                <p className="text-xs text-foreground-500 font-label mt-1">
+                <p className={DASHBOARD_SECTION_SUBTITLE}>
                   Paid bookings confirm automatically. Free requests need your approval.
                 </p>
               </div>

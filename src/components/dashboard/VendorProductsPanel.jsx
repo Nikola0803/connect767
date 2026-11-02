@@ -11,6 +11,12 @@ import {
 import Button from "../ui/Button";
 import { FormField, Input, Textarea, Select } from "../ui/FormField";
 import StorefrontCustomizer from "./StorefrontCustomizer";
+import {
+  DASHBOARD_EYEBROW,
+  DASHBOARD_PANEL,
+  DASHBOARD_SECTION_HEADING,
+  DASHBOARD_SECTION_SUBTITLE,
+} from "./dashboardStyles";
 
 function formatPrice(cents) {
   return `$${(Number(cents || 0) / 100).toFixed(2)}`;
@@ -301,10 +307,10 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
                 ["Paid orders", analytics.orders, "ri-shopping-bag-3-line"],
                 ["Your payouts", formatPrice(analytics.payoutsCents), "ri-wallet-3-line"],
               ].map(([label, value, icon]) => (
-                <div key={label} className="rounded-xl border border-background-200 bg-background-50 p-4">
+                <div key={label} className={`${DASHBOARD_PANEL} p-4`}>
                   <i className={`${icon} text-lg text-primary-700`} />
-                  <p className="mt-3 text-xl font-semibold text-foreground-950">{value}</p>
-                  <p className="text-xs text-foreground-500">{label}</p>
+                  <p className="mt-3 text-xl font-semibold tabular-nums text-foreground-950">{value}</p>
+                  <p className="mt-1 text-xs font-medium text-foreground-500">{label}</p>
                 </div>
               ))}
             </div>
@@ -325,16 +331,17 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
 
       {activeTab === "products" && <>
 
-      <div id="products-services" className="flex items-center justify-between mb-5 mt-12 scroll-mt-24">
-        <h2 className="font-heading text-xl font-medium text-foreground-950">
-          Products &amp; services
-        </h2>
+      <div id="products-services" className="mb-5 mt-12 flex scroll-mt-24 items-end justify-between gap-4">
+        <div>
+          <p className={DASHBOARD_EYEBROW}>Catalog</p>
+          <h2 className={DASHBOARD_SECTION_HEADING}>Products &amp; services</h2>
+        </div>
         <Button variant="outline" size="sm" onClick={openAddForm} icon="ri-add-line">
           List a product
         </Button>
       </div>
 
-      <p className="text-sm text-foreground-600 font-label mb-5">
+      <p className={`${DASHBOARD_SECTION_SUBTITLE} mb-5`}>
         Sell directly from your Connect767 storefront — customers pay by card or PayPal,
         then shipping and pickup details appear in "Sales" below.
       </p>
@@ -570,7 +577,11 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
         />
       </div>
 
-      <h2 id="seller-orders" className="scroll-mt-24 font-heading text-xl font-medium text-foreground-950 mb-5">Orders &amp; sales</h2>
+      <div className="mb-5">
+        <p className={DASHBOARD_EYEBROW}>Transactions</p>
+        <h2 id="seller-orders" className={`scroll-mt-24 ${DASHBOARD_SECTION_HEADING}`}>Orders &amp; sales</h2>
+        <p className={DASHBOARD_SECTION_SUBTITLE}>Review purchases, fulfillment progress, and storefront payouts.</p>
+      </div>
 
       {!loading && orders.length === 0 && (
         <p className="text-sm text-foreground-500 font-label">
@@ -666,12 +677,12 @@ function SellerCenterSummary({ ownerName, products, orders, analytics, activeTab
   ];
 
   return (
-    <section className="mt-12 overflow-hidden rounded-[28px] border border-background-200 bg-background-50 shadow-[0_16px_50px_rgba(29,45,38,0.05)]">
+    <section className={`${DASHBOARD_PANEL} mt-12 overflow-hidden`}>
       <div className="flex items-start justify-between gap-4 border-b border-background-200 px-5 py-6 sm:px-7">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">Seller workspace</p>
-          <h2 className="mt-1 font-heading text-2xl font-semibold tracking-[-0.02em] text-foreground-950">Storefront overview</h2>
-          <p className="mt-1 text-sm text-foreground-500">{ownerName ? `Welcome back, ${ownerName}` : "Manage your business and storefront in one place."}</p>
+          <p className={DASHBOARD_EYEBROW}>Seller workspace</p>
+          <h2 className={DASHBOARD_SECTION_HEADING}>Storefront overview</h2>
+          <p className={DASHBOARD_SECTION_SUBTITLE}>{ownerName ? `Welcome back, ${ownerName}` : "Manage your business and storefront in one place."}</p>
         </div>
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-50 text-xl text-primary-800"><i className="ri-store-2-line" /></span>
       </div>
@@ -680,8 +691,8 @@ function SellerCenterSummary({ ownerName, products, orders, analytics, activeTab
         {metrics.map(([icon, value, label], index) => (
           <div key={label} className={`px-5 py-6 sm:px-6 ${index % 2 ? "border-l border-background-200" : ""} ${index > 1 ? "border-t border-background-200 sm:border-t-0 sm:border-l" : ""}`}>
             <i className={`${icon} text-lg text-foreground-500`} />
-            <p className="mt-3 font-heading text-2xl font-semibold text-foreground-950">{value}</p>
-            <p className="mt-1 text-xs text-foreground-500">{label}</p>
+            <p className="mt-3 text-2xl font-semibold tabular-nums text-foreground-950">{value}</p>
+            <p className="mt-1 text-xs font-medium text-foreground-500">{label}</p>
           </div>
         ))}
       </div>
@@ -719,9 +730,9 @@ function SellerReadiness({ listings, products }) {
   ];
   const complete = steps.filter(([, done]) => done).length;
   return (
-    <section className="mb-8 rounded-2xl border border-background-200 bg-background-50 p-5">
+    <section className={`${DASHBOARD_PANEL} mb-8 p-5`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-700">Store readiness</p><h3 className="mt-1 font-heading text-lg text-foreground-950">{complete} of {steps.length} steps complete</h3></div>
+        <div><p className={DASHBOARD_EYEBROW}>Store readiness</p><h3 className="mt-1 text-base font-semibold text-foreground-950">{complete} of {steps.length} steps complete</h3></div>
         <div className="h-2 w-36 overflow-hidden rounded-full bg-background-200"><div className="h-full rounded-full bg-primary-600" style={{ width: `${complete / steps.length * 100}%` }} /></div>
       </div>
       <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
