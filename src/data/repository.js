@@ -873,7 +873,17 @@ export async function updateMyStorefrontSettings(listingId, form) {
   payload.append("productOrder", JSON.stringify(form.productOrder || []));
   if (form.coverFile) payload.append("storefrontCover", form.coverFile);
   if (form.logoFile) payload.append("storefrontLogo", form.logoFile);
-  payload.append("stripeConnectAccountId", form.stripeConnectAccountId || "");
+  [
+    "bookingPayoutMethod",
+    "bookingPayoutAccountName",
+    "bookingPayoutBankName",
+    "bookingPayoutBankCountry",
+    "bookingPayoutAccountNumber",
+    "bookingPayoutRoutingNumber",
+    "bookingPayoutSwiftCode",
+    "bookingPayoutDigitalProvider",
+    "bookingPayoutDigitalAccount",
+  ].forEach((key) => payload.append(key, form[key] || ""));
   return customClient.post(`/vendor-storefronts/${listingId}`, payload);
 }
 

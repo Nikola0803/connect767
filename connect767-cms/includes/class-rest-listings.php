@@ -88,6 +88,40 @@ class C767_REST_Listings
         ];
     }
 
+    /** Owner-only payout fields shared by paid bookings and storefront sales. */
+    public static function payout_settings_for_owner($listing_id)
+    {
+        $details = self::decrypt_payout_details(get_post_meta((int) $listing_id, '_booking_payout_details', true));
+        return [
+            'bookingPayoutMethod' => (string) get_post_meta((int) $listing_id, '_booking_payout_method', true),
+            'bookingPayoutAccountName' => (string) ($details['accountName'] ?? ''),
+            'bookingPayoutBankName' => (string) ($details['bankName'] ?? ''),
+            'bookingPayoutBankCountry' => (string) ($details['bankCountry'] ?? ''),
+            'bookingPayoutAccountNumber' => (string) ($details['accountNumber'] ?? ''),
+            'bookingPayoutRoutingNumber' => (string) ($details['routingNumber'] ?? ''),
+            'bookingPayoutSwiftCode' => (string) ($details['swiftCode'] ?? ''),
+            'bookingPayoutDigitalProvider' => (string) ($details['digitalProvider'] ?? ''),
+            'bookingPayoutDigitalAccount' => (string) ($details['digitalAccount'] ?? ''),
+        ];
+    }
+
+    /** Save the same encrypted destination used for bookings without changing booking settings. */
+    public static function save_payout_settings_for_owner($listing_id, WP_REST_Request $request)
+    {
+        $method = sanitize_key((string) $request->get_param('bookingPayoutMethod'));
+        $payout = self::sanitize_payout_details($request, in_array($method, ['bank', 'digital'], true));
+        if (is_wp_error($payout)) {
+            return $payout;
+        }
+        $encrypted = self::encrypt_payout_details($payout['details']);
+        if (is_wp_error($encrypted)) {
+            return $encrypted;
+        }
+        update_post_meta((int) $listing_id, '_booking_payout_method', $payout['method']);
+        update_post_meta((int) $listing_id, '_booking_payout_details', $encrypted);
+        return $payout;
+    }
+
     private static function sanitize_payout_details(WP_REST_Request $request, $required)
     {
         $method = sanitize_key((string) $request->get_param('bookingPayoutMethod'));

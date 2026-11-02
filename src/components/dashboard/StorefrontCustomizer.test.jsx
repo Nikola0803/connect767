@@ -20,6 +20,9 @@ describe("StorefrontCustomizer", () => {
       policies: "Returns within seven days.",
       coverUrl: "/cover.jpg",
       logoUrl: "/logo.jpg",
+      bookingPayoutMethod: "digital",
+      bookingPayoutDigitalProvider: "PayPal",
+      bookingPayoutDigitalAccount: "payments@example.com",
       featuredProductIds: [11],
       productOrder: [12, 11],
     });
@@ -39,6 +42,11 @@ describe("StorefrontCustomizer", () => {
 
     fireEvent.change(screen.getByLabelText("Choose a storefront"), { target: { value: "7" } });
     expect(await screen.findByDisplayValue("Island-made essentials")).toBeInTheDocument();
+    expect(screen.queryByText("Store logo")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Choose storefront logo image")).toBeInTheDocument();
+    expect(screen.getByLabelText("Choose storefront banner image")).toBeInTheDocument();
+    expect(screen.getByText(/Where should we send your storefront payouts/i)).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Digital payment/i })).toBeChecked();
     fireEvent.change(screen.getByLabelText("Banner headline"), { target: { value: "Discover Kalinago craft" } });
     fireEvent.click(screen.getByRole("button", { name: "Preview changes" }));
     expect(screen.getByText("Discover Kalinago craft")).toBeInTheDocument();
@@ -46,7 +54,11 @@ describe("StorefrontCustomizer", () => {
 
     await waitFor(() => expect(repository.updateMyStorefrontSettings).toHaveBeenCalledWith(
       "7",
-      expect.objectContaining({ headline: "Discover Kalinago craft", productOrder: [12, 11] }),
+      expect.objectContaining({
+        headline: "Discover Kalinago craft",
+        productOrder: [12, 11],
+        bookingPayoutMethod: "digital",
+      }),
     ));
     expect(await screen.findByText("Storefront design published.")).toBeInTheDocument();
   });

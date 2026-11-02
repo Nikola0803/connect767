@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getMyStorefrontSettings, updateMyStorefrontSettings } from "../../data/repository";
 import Button from "../ui/Button";
 import { FormField, Input, Select, Textarea } from "../ui/FormField";
+import PayoutSettingsFields from "../PayoutSettingsFields";
 
 const empty = {
   headline: "",
@@ -16,8 +17,15 @@ const empty = {
   logoFile: null,
   featuredProductIds: [],
   productOrder: [],
-  stripeConnectAccountId: "",
-  connectPayoutEnabled: false,
+  bookingPayoutMethod: "",
+  bookingPayoutAccountName: "",
+  bookingPayoutBankName: "",
+  bookingPayoutBankCountry: "Dominica",
+  bookingPayoutAccountNumber: "",
+  bookingPayoutRoutingNumber: "",
+  bookingPayoutSwiftCode: "",
+  bookingPayoutDigitalProvider: "",
+  bookingPayoutDigitalAccount: "",
 };
 
 export default function StorefrontCustomizer({ listings, products }) {
@@ -50,6 +58,7 @@ export default function StorefrontCustomizer({ listings, products }) {
   }, [listingId]);
 
   const update = (key) => (event) => setForm((value) => ({ ...value, [key]: event.target.value }));
+  const updateValue = (key, value) => setForm((current) => ({ ...current, [key]: value }));
   const upload = (key, urlKey) => (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -101,10 +110,12 @@ export default function StorefrontCustomizer({ listings, products }) {
 
       {listingId && !loading && (
         <div className="mt-6 space-y-5">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <ImageField label="Store logo" id="store-logo" url={form.logoUrl} onChange={upload("logoFile", "logoUrl")} square />
-            <ImageField label="Banner cover photo" id="store-cover" url={form.coverUrl} onChange={upload("coverFile", "coverUrl")} />
-          </div>
+          <StorefrontImagePicker
+            listing={listing}
+            form={form}
+            onLogoChange={upload("logoFile", "logoUrl")}
+            onCoverChange={upload("coverFile", "coverUrl")}
+          />
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="Banner headline" htmlFor="store-headline"><Input id="store-headline" maxLength={80} value={form.headline} onChange={update("headline")} /></FormField>
             <FormField label="Brand color" htmlFor="store-color"><Input id="store-color" type="color" value={form.accentColor} onChange={update("accentColor")} className="h-11" /></FormField>
@@ -116,18 +127,12 @@ export default function StorefrontCustomizer({ listings, products }) {
             <FormField label="Store policies" htmlFor="store-policies" hint="Returns, exchanges, processing time, and other terms."><Textarea id="store-policies" rows={3} maxLength={1000} value={form.policies} onChange={update("policies")} /></FormField>
           </div>
 
-          <div className="rounded-xl border border-background-200 bg-background-100/50 p-4">
-            <div className="flex items-start gap-3">
-              <span className={`flex h-9 w-9 items-center justify-center rounded-full ${form.connectPayoutEnabled ? "bg-primary-100 text-primary-800" : "bg-background-200 text-foreground-600"}`}><i className="ri-bank-card-line" /></span>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-semibold text-foreground-900">Automated Stripe payouts</h3>
-                <p className="mb-3 mt-1 text-xs leading-relaxed text-foreground-500">When Connect767 enables Stripe Connect, 10% is retained automatically and the remaining product total plus shipping is routed to your connected account.</p>
-                <FormField label="Stripe Connect account ID" htmlFor="store-connect-account" hint="Optional. It begins with acct_. Connect767 must also enable Stripe Connect before automatic transfers begin.">
-                  <Input id="store-connect-account" value={form.stripeConnectAccountId || ""} onChange={update("stripeConnectAccountId")} placeholder="acct_…" />
-                </FormField>
-              </div>
-            </div>
-          </div>
+          <PayoutSettingsFields
+            form={form}
+            onChange={updateValue}
+            forceVisible
+            context="storefront"
+          />
 
           <div>
             <h3 className="text-sm font-semibold text-foreground-900">Featured products & display order</h3>
@@ -158,8 +163,37 @@ export default function StorefrontCustomizer({ listings, products }) {
   );
 }
 
-function ImageField({ label, id, url, onChange, square = false }) {
-  return <div><p className="mb-2 text-sm font-semibold text-foreground-800">{label}</p><div className={`overflow-hidden rounded-xl border border-background-200 bg-background-100 ${square ? "h-24 w-24" : "h-24 w-full"}`}>{url ? <img src={url} alt="" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-2xl text-background-400"><i className="ri-image-add-line" /></div>}</div><label htmlFor={id} className="mt-2 inline-flex cursor-pointer text-xs font-semibold text-primary-700">Upload new image</label><input id={id} type="file" accept="image/*" onChange={onChange} className="hidden" /></div>;
+function StorefrontImagePicker({ listing, form, onLogoChange, onCoverChange }) {
+  return (
+    <div>
+      <p className="mb-2 text-sm font-semibold text-foreground-800">Storefront images</p>
+      <div className="relative min-h-48 overflow-hidden rounded-2xl border border-background-200 bg-background-100">
+        <label htmlFor="store-cover" className="absolute inset-0 cursor-pointer">
+          {form.coverUrl ? (
+            <img src={form.coverUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <span className="flex h-full items-center justify-center bg-gradient-to-br from-primary-50 to-background-200 text-3xl text-primary-300">
+              <i className="ri-image-add-line" />
+            </span>
+          )}
+          <span className="absolute inset-0 flex items-center justify-center bg-foreground-950/0 text-xs font-semibold text-white opacity-0 transition hover:bg-foreground-950/35 hover:opacity-100 focus-within:opacity-100">
+            <span className="rounded-full bg-foreground-950/70 px-4 py-2"><i className="ri-camera-line mr-1" /> Add or change banner</span>
+          </span>
+        </label>
+        <label
+          htmlFor="store-logo"
+          className="absolute bottom-4 left-4 z-10 flex h-20 w-20 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-primary-700 text-2xl font-semibold text-white shadow-lg"
+          title="Add or change store logo"
+        >
+          {form.logoUrl ? <img src={form.logoUrl} alt="" className="h-full w-full object-cover" /> : <span>{listing?.title?.[0] || <i className="ri-camera-line" />}</span>}
+          <span className="absolute inset-0 flex items-center justify-center bg-foreground-950/55 text-lg opacity-0 transition hover:opacity-100"><i className="ri-camera-line" /></span>
+        </label>
+      </div>
+      <p className="mt-2 text-xs text-foreground-500">Click the banner or logo to add or replace an image.</p>
+      <input id="store-cover" aria-label="Choose storefront banner image" type="file" accept="image/*" onChange={onCoverChange} className="hidden" />
+      <input id="store-logo" aria-label="Choose storefront logo image" type="file" accept="image/*" onChange={onLogoChange} className="hidden" />
+    </div>
+  );
 }
 
 function StorefrontPreview({ listing, form, products }) {
