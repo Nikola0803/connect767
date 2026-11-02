@@ -139,8 +139,10 @@ export default function ListingProducts({
         </div>
       )}
       <div
-        className={`grid grid-cols-1 sm:grid-cols-2 ${
-          fullStorefront ? "gap-x-4 gap-y-10 lg:grid-cols-2" : "gap-5 lg:grid-cols-3"
+        className={`grid ${
+          fullStorefront
+            ? "grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-4"
+            : "grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
         }`}
       >
         {visibleProducts.map((p) => (
@@ -152,7 +154,7 @@ export default function ListingProducts({
                 : "group flex flex-col overflow-hidden rounded-2xl border border-background-200/70 bg-background-50 transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_18px_50px_rgba(18,63,44,0.12)]"
             }
           >
-            <div className={`relative w-full overflow-hidden bg-background-100 ${fullStorefront ? "aspect-[4/3]" : "aspect-[4/3]"}`}>
+            <div className={`relative w-full overflow-hidden bg-background-100 ${fullStorefront ? "aspect-square" : "aspect-[4/3]"}`}>
               {p.imageUrl ? (
                 <img
                   src={p.imageUrl}
