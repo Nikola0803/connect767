@@ -23,6 +23,53 @@ function ProductSection({ eyebrow, title, products, slug, listingTitle, accentCo
   );
 }
 
+function StorefrontContactDetails({ listing, messagePath, accentColor }) {
+  const contact = listing.contact || {};
+  const address = contact.address || listing.location || "";
+  const contactRows = [
+    contact.phone && ["ri-phone-line", "Phone", contact.phone, `tel:${contact.phone.replace(/\s/g, "")}`],
+    contact.websiteUrl && ["ri-global-line", "Website", contact.website || contact.websiteUrl, contact.websiteUrl],
+    address && ["ri-map-pin-line", "Location", address, ""],
+  ].filter(Boolean);
+  const socialLinks = [
+    ["Instagram", "ri-instagram-line", contact.instagram],
+    ["Facebook", "ri-facebook-line", contact.facebook],
+    ["YouTube", "ri-youtube-line", contact.youtube],
+    ["X", "ri-twitter-x-line", contact.twitter],
+    ["WhatsApp", "ri-whatsapp-line", contact.whatsapp ? `https://wa.me/${contact.whatsapp.replace(/[^\d]/g, "")}` : ""],
+  ].filter(([, , href]) => href);
+
+  if (listing.contactHidden) {
+    return (
+      <div className="rounded-2xl border border-primary-200 bg-primary-50/45 p-5">
+        <p className="text-sm font-semibold text-foreground-900">Contact details are private</p>
+        <p className="mt-1 text-xs leading-6 text-foreground-600">This owner accepts secure messages through Connect767.</p>
+        <Link to={messagePath} className="mt-4 inline-flex h-10 items-center gap-2 rounded-full px-5 text-xs font-semibold text-white" style={{ backgroundColor: accentColor }}><i className="ri-chat-3-line" /> Message Listing Owner</Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      <div className="overflow-hidden rounded-2xl border border-background-200">
+        {contactRows.map(([icon, label, value, href]) => {
+          const content = <><i className={`${icon} text-lg`} style={{ color: accentColor }} /><span><span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-400">{label}</span><span className="mt-0.5 block text-sm text-foreground-800">{value}</span></span></>;
+          return href ? <a key={label} href={href} target={href.startsWith("http") ? "_blank" : undefined} rel={href.startsWith("http") ? "noreferrer" : undefined} className="flex items-center gap-3 border-b border-background-200 px-4 py-3.5 last:border-b-0 hover:bg-background-100/70">{content}</a> : <div key={label} className="flex items-center gap-3 border-b border-background-200 px-4 py-3.5 last:border-b-0">{content}</div>;
+        })}
+        {contactRows.length === 0 && <p className="px-4 py-5 text-sm text-foreground-500">Use Connect767 messaging to contact this owner.</p>}
+      </div>
+      <div className="flex flex-col justify-between rounded-2xl border border-background-200 bg-background-100/45 p-5">
+        <div>
+          <p className="text-sm font-semibold text-foreground-900">Contact this business</p>
+          <p className="mt-1 text-xs leading-6 text-foreground-500">Send a private inquiry directly to the listing owner.</p>
+          {socialLinks.length > 0 && <div className="mt-4 flex flex-wrap gap-2">{socialLinks.map(([label, icon, href]) => <a key={label} aria-label={label} href={href} target="_blank" rel="noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full border border-background-200 bg-background-50 text-foreground-600 hover:text-primary-700"><i className={icon} /></a>)}</div>}
+        </div>
+        <Link to={messagePath} className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-full px-5 text-xs font-semibold text-white" style={{ backgroundColor: accentColor }}><i className="ri-chat-3-line" /> Message Listing Owner</Link>
+      </div>
+    </div>
+  );
+}
+
 function StorefrontSeo({ listing, products, slug, coverUrl }) {
   useEffect(() => {
     const viewKey = `connect767-storefront-view:${slug}`;
@@ -168,9 +215,9 @@ export default function ListingStorefrontPage() {
             <nav className="flex gap-1 overflow-x-auto border-b border-background-200 py-4 text-sm" aria-label="Business profile sections">
               <button type="button" onClick={() => setActiveTab("overview")} className={`whitespace-nowrap rounded-full px-4 py-2 ${activeTab === "overview" ? "font-semibold text-white" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "overview" ? { backgroundColor: settings.accentColor } : undefined}>Overview</button>
               <button type="button" onClick={() => setActiveTab("products")} className={`whitespace-nowrap rounded-full px-5 py-2 ${activeTab === "products" ? "font-semibold text-white" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "products" ? { backgroundColor: settings.accentColor } : undefined}>Products</button>
-              <Link to={`/listings/${slug}#services`} className="whitespace-nowrap rounded-full px-4 py-2 text-foreground-600 hover:bg-background-100">Services</Link>
+              <button type="button" onClick={() => setActiveTab("services")} className={`whitespace-nowrap rounded-full px-4 py-2 ${activeTab === "services" ? "font-semibold text-white" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "services" ? { backgroundColor: settings.accentColor } : undefined}>Services</button>
               <Link to={`/listings/${slug}#reviews`} className="whitespace-nowrap rounded-full px-4 py-2 text-foreground-600 hover:bg-background-100">Reviews</Link>
-              <Link to={messagePath} className="whitespace-nowrap rounded-full px-4 py-2 text-foreground-600 hover:bg-background-100">Contact</Link>
+              <button type="button" onClick={() => setActiveTab("contact")} className={`whitespace-nowrap rounded-full px-4 py-2 ${activeTab === "contact" ? "font-semibold text-white" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "contact" ? { backgroundColor: settings.accentColor } : undefined}>Contact</button>
             </nav>
 
             {activeTab === "overview" && (
@@ -194,6 +241,19 @@ export default function ListingStorefrontPage() {
               <div id="store-products" className="scroll-mt-28 space-y-14 py-10">
                 <ProductSection eyebrow="Featured by the seller" title="Featured products" products={products.featured} slug={slug} listingTitle={listing.title} accentColor={settings.accentColor} />
                 <ProductSection eyebrow={products.featured.length ? "More from the store" : "The collection"} title="Products" products={products.collection} slug={slug} listingTitle={listing.title} accentColor={settings.accentColor} />
+              </div>
+            )}
+
+            {(activeTab === "services" || activeTab === "contact") && (
+              <div className="py-9">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: settings.accentColor }}>{activeTab === "services" ? "Services & contact" : "Contact"}</p>
+                <h2 className="mt-2 font-heading text-3xl font-medium tracking-[-0.03em] text-foreground-950">{activeTab === "services" ? `Work with ${listing.title}` : `Contact ${listing.title}`}</h2>
+                {activeTab === "services" && (listing.amenities?.length > 0 || listing.tags?.length > 0) && (
+                  <div className="my-6 flex flex-wrap gap-2">
+                    {(listing.amenities?.length ? listing.amenities : listing.tags).map((service) => <span key={service} className="rounded-full border border-background-200 bg-background-100/60 px-3 py-1.5 text-xs text-foreground-700">{service}</span>)}
+                  </div>
+                )}
+                <div className="mt-6"><StorefrontContactDetails listing={listing} messagePath={messagePath} accentColor={settings.accentColor} /></div>
               </div>
             )}
 
