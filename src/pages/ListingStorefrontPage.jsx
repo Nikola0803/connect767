@@ -5,7 +5,6 @@ import { listingOwnerMessagePath } from "../components/ListingProfile";
 import { getListingBySlug, getListingProducts, getStorefrontSettings, recordStorefrontView } from "../data/repository";
 import { useAsync } from "../hooks/useAsync";
 import { ErrorState, Spinner } from "../components/ui/States";
-import { imageCropStyle } from "../lib/imagePosition";
 import { arrangeStorefrontProducts } from "../lib/storefront";
 
 function ProductSection({ eyebrow, title, products, slug, listingTitle, accentColor, id }) {
@@ -151,12 +150,6 @@ export default function ListingStorefrontPage() {
 
       <main className="px-4 pb-16 md:px-8">
         <div className="mx-auto max-w-6xl overflow-hidden rounded-[30px] border border-background-200 bg-background-50 shadow-[0_18px_60px_rgba(29,45,38,0.06)]">
-          <div className="relative h-52 overflow-hidden bg-background-200 sm:h-64 md:h-72">
-            {settings.coverUrl ? <img src={settings.coverUrl} alt={`${listing.title} storefront`} fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover" style={imageCropStyle(settings.hasCustomCover ? settings.coverPosition : listing.coverPosition, settings.hasCustomCover ? settings.coverZoom : listing.coverZoom, "cover")} /> : <div className="flex h-full items-center justify-center bg-primary-50 text-5xl text-primary-300"><i className="ri-store-2-line" /></div>}
-            <div className="absolute inset-0 bg-gradient-to-t from-foreground-950/25 via-transparent to-transparent" />
-            <span className="absolute right-5 top-5 rounded-full bg-background-50/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-800 shadow-sm backdrop-blur">Connect767 Store</span>
-          </div>
-
           <section className="px-5 sm:px-8 md:px-10">
             <div className="flex flex-col gap-5 border-b border-background-200 py-7 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
