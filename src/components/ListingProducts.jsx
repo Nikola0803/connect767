@@ -140,7 +140,7 @@ export default function ListingProducts({
       )}
       <div
         className={`grid grid-cols-1 sm:grid-cols-2 ${
-          fullStorefront ? "gap-x-6 gap-y-12 lg:grid-cols-3" : "gap-5 lg:grid-cols-3"
+          fullStorefront ? "gap-x-4 gap-y-10 lg:grid-cols-2" : "gap-5 lg:grid-cols-3"
         }`}
       >
         {visibleProducts.map((p) => (
@@ -148,11 +148,11 @@ export default function ListingProducts({
             key={p.id}
             className={
               fullStorefront
-                ? "group flex min-w-0 flex-col"
+                ? "group flex min-w-0 flex-col overflow-hidden rounded-[22px] border border-background-200 bg-background-50"
                 : "group flex flex-col overflow-hidden rounded-2xl border border-background-200/70 bg-background-50 transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_18px_50px_rgba(18,63,44,0.12)]"
             }
           >
-            <div className={`relative w-full overflow-hidden bg-background-100 ${fullStorefront ? "aspect-[5/4] rounded-[20px]" : "aspect-[4/3]"}`}>
+            <div className={`relative w-full overflow-hidden bg-background-100 ${fullStorefront ? "aspect-[4/3]" : "aspect-[4/3]"}`}>
               {p.imageUrl ? (
                 <img
                   src={p.imageUrl}
@@ -183,7 +183,7 @@ export default function ListingProducts({
                 </button>
               )}
             </div>
-            <div className={`flex flex-1 flex-col ${fullStorefront ? "pt-4" : "p-5"}`}>
+            <div className={`flex flex-1 flex-col ${fullStorefront ? "p-4 sm:p-5" : "p-5"}`}>
               <h3 className={`font-heading font-medium leading-snug text-foreground-950 ${fullStorefront ? "text-base" : "mb-1 text-lg"}`}>
                 {p.name}
               </h3>
@@ -209,14 +209,14 @@ export default function ListingProducts({
                 {p.stockStatus === "low_stock" && <span className="font-semibold text-amber-700">Low stock</span>}
                 {p.stockStatus === "sold_out" && <span className="font-semibold text-accent-600">Sold out</span>}
               </div>
-              <div className={`mt-auto flex items-center justify-between gap-3 ${fullStorefront ? "pt-4" : "border-t border-background-200/70 pt-4"}`}>
+              <div className={`mt-auto ${fullStorefront ? "pt-4" : "flex items-center justify-between gap-3 border-t border-background-200/70 pt-4"}`}>
                 <span className={`font-heading font-semibold text-foreground-950 ${fullStorefront ? "text-base" : "text-lg"}`}>
                   {formatPrice(p.priceCents)}
                 </span>
                 <Button
-                  variant={fullStorefront ? "outline" : "primary"}
+                  variant="primary"
                   size="sm"
-                  className={fullStorefront ? "rounded-full px-4" : ""}
+                  className={fullStorefront ? "mt-3 w-full justify-center rounded-full bg-foreground-950 px-4 text-white hover:bg-foreground-800" : ""}
                   onClick={() => setActiveProduct(p)}
                   disabled={p.stockStatus === "sold_out"}
                 >
