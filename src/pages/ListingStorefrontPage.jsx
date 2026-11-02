@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import ListingProducts from "../components/ListingProducts";
 import { listingOwnerMessagePath } from "../components/ListingProfile";
@@ -90,6 +90,7 @@ function StorefrontSeo({ listing, products, slug, coverUrl }) {
 
 export default function ListingStorefrontPage() {
   const { slug } = useParams();
+  const [activeTab, setActiveTab] = useState("products");
   const { data, loading, error, reload } = useAsync(async () => {
     const [listing, products, settings] = await Promise.all([
       getListingBySlug(slug),
@@ -172,30 +173,36 @@ export default function ListingStorefrontPage() {
             </div>
 
             <nav className="flex gap-1 overflow-x-auto border-b border-background-200 py-4 text-sm" aria-label="Business profile sections">
-              <Link to={`/listings/${slug}`} className="whitespace-nowrap rounded-full px-4 py-2 text-foreground-600 hover:bg-background-100">Overview</Link>
-              <a href="#store-products" className="whitespace-nowrap rounded-full px-5 py-2 font-semibold text-white" style={{ backgroundColor: settings.accentColor }}>Products</a>
+              <button type="button" onClick={() => setActiveTab("overview")} className={`whitespace-nowrap rounded-full px-4 py-2 ${activeTab === "overview" ? "font-semibold text-white" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "overview" ? { backgroundColor: settings.accentColor } : undefined}>Overview</button>
+              <button type="button" onClick={() => setActiveTab("products")} className={`whitespace-nowrap rounded-full px-5 py-2 ${activeTab === "products" ? "font-semibold text-white" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "products" ? { backgroundColor: settings.accentColor } : undefined}>Products</button>
               <Link to={`/listings/${slug}#services`} className="whitespace-nowrap rounded-full px-4 py-2 text-foreground-600 hover:bg-background-100">Services</Link>
               <Link to={`/listings/${slug}#reviews`} className="whitespace-nowrap rounded-full px-4 py-2 text-foreground-600 hover:bg-background-100">Reviews</Link>
               <Link to={messagePath} className="whitespace-nowrap rounded-full px-4 py-2 text-foreground-600 hover:bg-background-100">Contact</Link>
             </nav>
 
-            <div className="grid gap-6 py-8 lg:grid-cols-[minmax(0,1fr)_260px]">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: settings.accentColor }}>Storefront</p>
-                <h2 className="mt-2 font-heading text-3xl font-medium tracking-[-0.03em] text-foreground-950">{settings.headline}</h2>
-                <p className="mt-3 max-w-3xl whitespace-pre-line text-sm leading-7 text-foreground-600">{settings.welcomeText}</p>
-              </div>
-              <div className="grid gap-3 text-xs text-foreground-600">
-                {[["ri-shield-check-line", "Secure checkout"], ["ri-truck-line", settings.shippingMessage], ["ri-shopping-bag-line", `${products.all.length} product${products.all.length === 1 ? "" : "s"}`]].map(([icon, text]) => <div key={text} className="flex items-center gap-2.5 rounded-xl bg-background-100/70 px-3 py-2.5"><i className={`${icon} text-base`} style={{ color: settings.accentColor }} /><span className="line-clamp-2">{text}</span></div>)}
-              </div>
-            </div>
+            {activeTab === "overview" && (
+              <div id="store-overview" className="scroll-mt-28">
+                <div className="grid gap-6 py-8 lg:grid-cols-[minmax(0,1fr)_260px]">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: settings.accentColor }}>Storefront</p>
+                    <h2 className="mt-2 font-heading text-3xl font-medium tracking-[-0.03em] text-foreground-950">{settings.headline}</h2>
+                    <p className="mt-3 max-w-3xl whitespace-pre-line text-sm leading-7 text-foreground-600">{settings.welcomeText}</p>
+                  </div>
+                  <div className="grid gap-3 text-xs text-foreground-600">
+                    {[["ri-shield-check-line", "Secure checkout"], ["ri-truck-line", settings.shippingMessage], ["ri-shopping-bag-line", `${products.all.length} product${products.all.length === 1 ? "" : "s"}`]].map(([icon, text]) => <div key={text} className="flex items-center gap-2.5 rounded-xl bg-background-100/70 px-3 py-2.5"><i className={`${icon} text-base`} style={{ color: settings.accentColor }} /><span className="line-clamp-2">{text}</span></div>)}
+                  </div>
+                </div>
 
-            {settings.aboutText && <div className="border-t border-background-200 py-8"><p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: settings.accentColor }}>About the store</p><p className="mt-3 max-w-4xl whitespace-pre-line text-sm leading-7 text-foreground-600">{settings.aboutText}</p></div>}
+                {settings.aboutText && <div className="border-t border-background-200 py-8"><p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: settings.accentColor }}>About the store</p><p className="mt-3 max-w-4xl whitespace-pre-line text-sm leading-7 text-foreground-600">{settings.aboutText}</p></div>}
+              </div>
+            )}
 
-            <div id="store-products" className="scroll-mt-28 space-y-14 border-t border-background-200 py-10">
-              <ProductSection eyebrow="Featured by the seller" title="Featured products" products={products.featured} slug={slug} listingTitle={listing.title} accentColor={settings.accentColor} />
-              <ProductSection eyebrow={products.featured.length ? "More from the store" : "The collection"} title="Products" products={products.collection} slug={slug} listingTitle={listing.title} accentColor={settings.accentColor} />
-            </div>
+            {activeTab === "products" && (
+              <div id="store-products" className="scroll-mt-28 space-y-14 py-10">
+                <ProductSection eyebrow="Featured by the seller" title="Featured products" products={products.featured} slug={slug} listingTitle={listing.title} accentColor={settings.accentColor} />
+                <ProductSection eyebrow={products.featured.length ? "More from the store" : "The collection"} title="Products" products={products.collection} slug={slug} listingTitle={listing.title} accentColor={settings.accentColor} />
+              </div>
+            )}
 
             {settings.policies && <div className="border-t border-background-200 py-9"><p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: settings.accentColor }}>Store information</p><h2 className="mt-2 font-heading text-2xl font-medium text-foreground-950">Policies</h2><p className="mt-4 whitespace-pre-line text-sm leading-7 text-foreground-600">{settings.policies}</p></div>}
           </section>
