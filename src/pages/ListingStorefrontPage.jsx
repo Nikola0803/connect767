@@ -14,7 +14,7 @@ function ProductSection({ eyebrow, title, products, slug, listingTitle, accentCo
       <div className="mb-7 flex flex-col gap-3 border-b border-background-200/70 pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: accentColor }}>{eyebrow}</p>
-          <h2 className="mt-2 font-heading text-2xl font-medium tracking-[-0.02em] text-foreground-950 md:text-3xl">{title}</h2>
+          {title && <h2 className="mt-2 font-heading text-2xl font-medium tracking-[-0.02em] text-foreground-950 md:text-3xl">{title}</h2>}
         </div>
         <p className="text-xs text-foreground-500">{products.length} item{products.length === 1 ? "" : "s"}</p>
       </div>
@@ -239,7 +239,7 @@ export default function ListingStorefrontPage() {
 
             {activeTab === "products" && (
               <div id="store-products" className="scroll-mt-28 space-y-14 py-10">
-                <ProductSection eyebrow="Featured by the seller" title="Featured products" products={products.featured} slug={slug} listingTitle={listing.title} accentColor={settings.accentColor} />
+                <ProductSection eyebrow="Featured by the seller" products={products.featured} slug={slug} listingTitle={listing.title} accentColor={settings.accentColor} />
                 <ProductSection eyebrow={products.featured.length ? "More from the store" : "The collection"} title="Products" products={products.collection} slug={slug} listingTitle={listing.title} accentColor={settings.accentColor} />
               </div>
             )}
