@@ -371,7 +371,15 @@ class C767_Meta_Fields
         foreach ($fields as $key => $def) {
             $value = get_post_meta($post_id, $key, true);
             if ($def['type'] === 'array') {
-                $decoded = json_decode($value, true);
+                // WordPress returns array-typed registered meta as a native
+                // PHP array, while older Connect767 records store the same
+                // fields as JSON text. Passing a native array to json_decode
+                // raises a TypeError on PHP 8 and breaks the entire listing
+                // REST collection as soon as one storefront has fulfillment
+                // options. Accept both storage formats during migration.
+                $decoded = is_array($value)
+                    ? $value
+                    : json_decode((string) $value, true);
                 // An empty array is truthy in JavaScript — `acf.body ||
                 // fallback` on the frontend never falls through to real
                 // post content if this returns `[]` for a post that
