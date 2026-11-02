@@ -2,9 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getMyStorefrontSettings, updateMyStorefrontSettings } from "../../data/repository";
 import Button from "../ui/Button";
 import { FormField, Input, Select, Textarea } from "../ui/FormField";
-import PositionPicker from "../ui/PositionPicker";
 import PayoutSettingsFields from "../PayoutSettingsFields";
-import { imageCropStyle } from "../../lib/imagePosition";
 
 const empty = {
   headline: "",
@@ -13,10 +11,6 @@ const empty = {
   aboutText: "",
   shippingMessage: "",
   policies: "",
-  coverUrl: "",
-  coverFile: null,
-  coverPosition: "center",
-  coverZoom: 1,
   featuredProductIds: [],
   productOrder: [],
   bookingPayoutMethod: "",
@@ -54,24 +48,13 @@ export default function StorefrontCustomizer({ listings, products }) {
     setLoading(true);
     setMessage("");
     getMyStorefrontSettings(listingId)
-      .then((settings) => setForm({ ...empty, ...(settings || {}), coverFile: null }))
+      .then((settings) => setForm({ ...empty, ...(settings || {}) }))
       .catch(() => setMessage("Couldn't load this storefront's design."))
       .finally(() => setLoading(false));
   }, [listingId]);
 
   const update = (key) => (event) => setForm((value) => ({ ...value, [key]: event.target.value }));
   const updateValue = (key, value) => setForm((current) => ({ ...current, [key]: value }));
-  const uploadCover = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setForm((value) => ({
-      ...value,
-      coverFile: file,
-      coverUrl: URL.createObjectURL(file),
-      coverPosition: "center",
-      coverZoom: 1,
-    }));
-  };
   const toggleFeatured = (id) => setForm((value) => ({
     ...value,
     featuredProductIds: value.featuredProductIds.includes(Number(id))
@@ -92,7 +75,7 @@ export default function StorefrontCustomizer({ listings, products }) {
     setMessage("");
     try {
       const saved = await updateMyStorefrontSettings(listingId, form);
-      setForm({ ...empty, ...saved, coverFile: null });
+      setForm({ ...empty, ...saved });
       setMessage("Storefront design published.");
       setPreview(false);
     } catch {
@@ -118,12 +101,6 @@ export default function StorefrontCustomizer({ listings, products }) {
 
       {listingId && !loading && (
         <div className="mt-6 space-y-5">
-          <StorefrontImagePicker
-            form={form}
-            onCoverChange={uploadCover}
-            onPositionChange={(value) => updateValue("coverPosition", value)}
-            onZoomChange={(value) => updateValue("coverZoom", value)}
-          />
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="Banner headline" htmlFor="store-headline"><Input id="store-headline" maxLength={80} value={form.headline} onChange={update("headline")} /></FormField>
             <FormField label="Brand color" htmlFor="store-color"><Input id="store-color" type="color" value={form.accentColor} onChange={update("accentColor")} className="h-11" /></FormField>
@@ -171,65 +148,16 @@ export default function StorefrontCustomizer({ listings, products }) {
   );
 }
 
-function StorefrontImagePicker({ form, onCoverChange, onPositionChange, onZoomChange }) {
-  return (
-    <div>
-      <p className="mb-2 text-sm font-semibold text-foreground-800">Storefront images</p>
-      <div className="relative min-h-48 overflow-hidden rounded-2xl border border-background-200 bg-background-100">
-        <label htmlFor="store-cover" className="absolute inset-0 cursor-pointer">
-          {form.coverUrl ? (
-            <img
-              src={form.coverUrl}
-              alt=""
-              className="h-full w-full object-cover"
-              style={imageCropStyle(form.coverPosition, form.coverZoom, "cover")}
-            />
-          ) : (
-            <span className="flex h-full items-center justify-center bg-gradient-to-br from-primary-50 to-background-200 text-3xl text-primary-300">
-              <i className="ri-image-add-line" />
-            </span>
-          )}
-          <span className="absolute inset-0 flex items-center justify-center bg-foreground-950/0 text-xs font-semibold text-white opacity-0 transition hover:bg-foreground-950/35 hover:opacity-100 focus-within:opacity-100">
-            <span className="rounded-full bg-foreground-950/70 px-4 py-2"><i className="ri-camera-line mr-1" /> Add or change banner</span>
-          </span>
-        </label>
-      </div>
-      <p className="mt-2 text-xs text-foreground-500">Click the banner to add or replace the cover image.</p>
-      <div className="mt-3 flex items-start gap-2 rounded-xl border border-background-200 bg-background-100/60 px-3 py-2.5 text-xs leading-5 text-foreground-600">
-        <i className="ri-information-line mt-0.5 shrink-0 text-primary-700" />
-        <p>
-          <strong className="font-semibold text-foreground-800">Recommended:</strong>{" "}
-          1600 × 900 px (16:9), JPG, PNG or WebP, maximum 2 MB. Keep important text and subjects centered so the banner crops cleanly on desktop and mobile.
-        </p>
-      </div>
-      {form.coverUrl && (
-        <PositionPicker
-          label="Reposition storefront banner"
-          src={form.coverUrl}
-          shape="cover"
-          position={form.coverPosition}
-          zoom={form.coverZoom}
-          fit="cover"
-          onPositionChange={onPositionChange}
-          onZoomChange={onZoomChange}
-        />
-      )}
-      <input id="store-cover" aria-label="Choose storefront banner image" type="file" accept="image/*" onChange={onCoverChange} className="hidden" />
-    </div>
-  );
-}
-
 function StorefrontPreview({ listing, form, products }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-background-200 bg-background-100/40">
-      <div className="grid sm:grid-cols-2">
+      <div>
         <div className="p-6">
           <span className="text-xs text-foreground-500">{listing?.title}</span>
           <h3 className="mt-5 font-heading text-3xl text-foreground-950">{form.headline || `Shop ${listing?.title}`}</h3>
           <p className="mt-3 whitespace-pre-line text-sm text-foreground-600">{form.welcomeText}</p>
           <span className="mt-5 inline-flex rounded-full px-4 py-2 text-xs font-semibold text-white" style={{ backgroundColor: form.accentColor }}>Browse products</span>
         </div>
-        <div className="min-h-52 overflow-hidden bg-background-200">{form.coverUrl && <img src={form.coverUrl} alt="" className="h-full w-full object-cover" style={imageCropStyle(form.coverPosition, form.coverZoom, "cover")} />}</div>
       </div>
       <div className="grid gap-3 border-t border-background-200 p-4 sm:grid-cols-3">
         {products.slice(0, 3).map((product) => <div key={product.id} className="rounded-xl bg-background-50 p-3"><p className="truncate text-xs font-semibold">{product.name}</p>{form.featuredProductIds.includes(Number(product.id)) && <span className="mt-2 inline-block text-[10px] font-bold uppercase" style={{ color: form.accentColor }}>Featured</span>}</div>)}

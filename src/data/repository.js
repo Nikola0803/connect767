@@ -866,12 +866,11 @@ export async function getMyStorefrontSettings(listingId) {
 export async function updateMyStorefrontSettings(listingId, form) {
   if (!isLiveApi) return form;
   const payload = new FormData();
-  ["headline", "welcomeText", "accentColor", "aboutText", "shippingMessage", "policies", "coverPosition", "coverZoom"].forEach((key) => {
+  ["headline", "welcomeText", "accentColor", "aboutText", "shippingMessage", "policies"].forEach((key) => {
     payload.append(key, form[key] || "");
   });
   payload.append("featuredProductIds", JSON.stringify(form.featuredProductIds || []));
   payload.append("productOrder", JSON.stringify(form.productOrder || []));
-  if (form.coverFile) payload.append("storefrontCover", form.coverFile);
   [
     "bookingPayoutMethod",
     "bookingPayoutAccountName",

@@ -18,9 +18,6 @@ describe("StorefrontCustomizer", () => {
       aboutText: "Made in Dominica.",
       shippingMessage: "Ships island-wide or collect in Roseau.",
       policies: "Returns within seven days.",
-      coverUrl: "/cover.jpg",
-      coverPosition: "35% 60%",
-      coverZoom: 1.25,
       bookingPayoutMethod: "digital",
       bookingPayoutDigitalProvider: "PayPal",
       bookingPayoutDigitalAccount: "payments@example.com",
@@ -45,10 +42,8 @@ describe("StorefrontCustomizer", () => {
     expect(await screen.findByDisplayValue("Island-made essentials")).toBeInTheDocument();
     expect(screen.queryByText("Store logo")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Choose storefront logo image")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Choose storefront banner image")).toBeInTheDocument();
-    expect(screen.getByText("Reposition storefront banner")).toBeInTheDocument();
-    expect(screen.getByText("125%")).toBeInTheDocument();
-    expect(screen.getByText(/1600 × 900 px \(16:9\).*maximum 2 MB/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Choose storefront banner image")).not.toBeInTheDocument();
+    expect(screen.queryByText("Reposition storefront banner")).not.toBeInTheDocument();
     expect(screen.getByText(/Where should we send your storefront payouts/i)).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /Digital payment/i })).toBeChecked();
     fireEvent.change(screen.getByLabelText("Banner headline"), { target: { value: "Discover Kalinago craft" } });
@@ -62,8 +57,6 @@ describe("StorefrontCustomizer", () => {
         headline: "Discover Kalinago craft",
         productOrder: [12, 11],
         bookingPayoutMethod: "digital",
-        coverPosition: "35% 60%",
-        coverZoom: 1.25,
       }),
     ));
     expect(await screen.findByText("Storefront design published.")).toBeInTheDocument();
