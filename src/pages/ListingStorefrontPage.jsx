@@ -224,7 +224,7 @@ export default function ListingStorefrontPage() {
                 <div className="grid gap-6 py-8 lg:grid-cols-[minmax(0,1fr)_260px]">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: settings.accentColor }}>Storefront</p>
-                    <h2 className="mt-2 font-heading text-3xl font-medium tracking-[-0.03em] text-foreground-950">{settings.headline}</h2>
+                    <h2 className="mt-2 font-heading text-xl font-medium tracking-[-0.02em] text-foreground-950 sm:text-2xl">{settings.headline}</h2>
                     <p className="mt-3 max-w-3xl whitespace-pre-line text-sm leading-7 text-foreground-600">{settings.welcomeText}</p>
                   </div>
                   <div className="grid gap-3 text-xs text-foreground-600">
@@ -233,6 +233,11 @@ export default function ListingStorefrontPage() {
                 </div>
 
                 {settings.aboutText && <div className="border-t border-background-200 py-8"><p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: settings.accentColor }}>About the store</p><p className="mt-3 max-w-4xl whitespace-pre-line text-sm leading-7 text-foreground-600">{settings.aboutText}</p></div>}
+                <div className="border-t border-background-200 py-8">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: settings.accentColor }}>Store Policy</p>
+                  <h3 className="mt-2 font-heading text-xl font-medium text-foreground-950">Shopping with {listing.title}</h3>
+                  <p className="mt-3 max-w-4xl whitespace-pre-line text-sm leading-7 text-foreground-600">{settings.policies || "Store policy information has not been added yet."}</p>
+                </div>
               </div>
             )}
 
@@ -251,7 +256,6 @@ export default function ListingStorefrontPage() {
               </div>
             )}
 
-            {settings.policies && <div className="border-t border-background-200 py-9"><p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: settings.accentColor }}>Store information</p><h2 className="mt-2 font-heading text-2xl font-medium text-foreground-950">Policies</h2><p className="mt-4 whitespace-pre-line text-sm leading-7 text-foreground-600">{settings.policies}</p></div>}
           </section>
         </div>
       </main>
