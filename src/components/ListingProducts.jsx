@@ -168,11 +168,6 @@ export default function ListingProducts({
                   <i className="ri-shopping-bag-3-line text-4xl text-primary-400" />
                 </div>
               )}
-              {!fullStorefront && (
-                <span className="absolute left-3 top-3 rounded-full bg-background-50/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-primary-800 shadow-sm">
-                  Sold by this listing
-                </span>
-              )}
               {fullStorefront && (
                 <button
                   type="button"
