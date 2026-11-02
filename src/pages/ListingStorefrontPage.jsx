@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import ListingProducts from "../components/ListingProducts";
 import { listingOwnerMessagePath } from "../components/ListingProfile";
-import { getListingBySlug, getListingProducts, getStorefrontSettings, recordStorefrontView } from "../data/repository";
+import { getListingBySlug, getListingProducts, getStorefrontReviews, getStorefrontSettings, recordStorefrontView, submitStorefrontReview } from "../data/repository";
 import { useAsync } from "../hooks/useAsync";
 import { ErrorState, Spinner } from "../components/ui/States";
 import { arrangeStorefrontProducts } from "../lib/storefront";
@@ -66,6 +66,84 @@ function StorefrontContactDetails({ listing, messagePath, accentColor }) {
         </div>
         <Link to={messagePath} className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-full px-5 text-xs font-semibold text-white" style={{ backgroundColor: accentColor }}><i className="ri-chat-3-line" /> Message Listing Owner</Link>
       </div>
+    </div>
+  );
+}
+
+function StorefrontReviews({ listing, initialReviews, accentColor }) {
+  const [reviews, setReviews] = useState(initialReviews || []);
+  const [rating, setRating] = useState(0);
+  const [name, setName] = useState("");
+  const [text, setText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const submit = async (event) => {
+    event.preventDefault();
+    if (!rating || !name.trim() || !text.trim()) {
+      setMessage("Choose a rating and enter your name and review.");
+      return;
+    }
+    setSubmitting(true);
+    setMessage("");
+    try {
+      const review = await submitStorefrontReview(listing.slug, { rating, name: name.trim(), text: text.trim() });
+      setReviews((items) => [review, ...items]);
+      setRating(0);
+      setName("");
+      setText("");
+      setMessage("Thank you. Your storefront review has been submitted.");
+    } catch {
+      setMessage("We couldn't submit your review. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="grid gap-8 py-9 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <section>
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: accentColor }}>Store reviews</p>
+        <h2 className="mt-2 font-heading text-3xl font-medium tracking-[-0.03em] text-foreground-950">Customer experiences</h2>
+        {reviews.length ? (
+          <div className="mt-6 space-y-3">
+            {reviews.map((review, index) => (
+              <article key={review.id || `${review.name}-${index}`} className="rounded-2xl border border-background-200 bg-background-50 p-5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-foreground-900">{review.name}</p>
+                  <p className="text-sm text-amber-500" aria-label={`${review.rating || review.stars} out of 5 stars`}>{"★".repeat(review.rating || review.stars || 0)}</p>
+                </div>
+                <p className="mt-3 whitespace-pre-line text-sm leading-7 text-foreground-600">{review.text}</p>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-6 rounded-2xl border border-dashed border-background-300 bg-background-100/45 px-5 py-8 text-center">
+            <i className="ri-star-smile-line text-2xl" style={{ color: accentColor }} />
+            <p className="mt-2 text-sm font-semibold text-foreground-900">No storefront reviews yet</p>
+            <p className="mt-1 text-xs text-foreground-500">Be the first customer to share an experience with this store.</p>
+          </div>
+        )}
+      </section>
+
+      <form onSubmit={submit} className="h-fit rounded-2xl border border-background-200 bg-background-100/45 p-5 sm:p-6">
+        <h3 className="font-heading text-xl font-medium text-foreground-950">Write a store review</h3>
+        <p className="mt-1 text-xs leading-6 text-foreground-500">Your review will appear on this storefront, not on the directory profile.</p>
+        <fieldset className="mt-5">
+          <legend className="text-xs font-semibold text-foreground-800">Your rating</legend>
+          <div className="mt-2 flex gap-1">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button key={star} type="button" onClick={() => setRating(star)} aria-label={`${star} star${star === 1 ? "" : "s"}`} className={`text-2xl ${star <= rating ? "text-amber-500" : "text-background-400"}`}><i className={star <= rating ? "ri-star-fill" : "ri-star-line"} /></button>
+            ))}
+          </div>
+        </fieldset>
+        <label className="mt-4 block text-xs font-semibold text-foreground-800" htmlFor="store-review-name">Your name</label>
+        <input id="store-review-name" value={name} onChange={(event) => setName(event.target.value)} maxLength={80} className="mt-2 h-11 w-full rounded-xl border border-background-300 bg-background-50 px-3 text-sm outline-none focus:border-primary-400" placeholder="Your name" />
+        <label className="mt-4 block text-xs font-semibold text-foreground-800" htmlFor="store-review-text">Your review</label>
+        <textarea id="store-review-text" value={text} onChange={(event) => setText(event.target.value)} maxLength={1200} rows={5} className="mt-2 w-full resize-y rounded-xl border border-background-300 bg-background-50 px-3 py-3 text-sm outline-none focus:border-primary-400" placeholder="Share your experience with this store…" />
+        {message && <p className={`mt-3 text-xs ${message.startsWith("Thank") ? "text-primary-700" : "text-accent-700"}`}>{message}</p>}
+        <button type="submit" disabled={submitting} className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-full px-5 text-sm font-semibold text-white disabled:opacity-60" style={{ backgroundColor: accentColor }}>{submitting ? "Submitting…" : "Submit store review"}</button>
+      </form>
     </div>
   );
 }
@@ -138,12 +216,13 @@ export default function ListingStorefrontPage() {
   const { slug } = useParams();
   const [activeTab, setActiveTab] = useState("products");
   const { data, loading, error, reload } = useAsync(async () => {
-    const [listing, products, settings] = await Promise.all([
+    const [listing, products, settings, storefrontReviews] = await Promise.all([
       getListingBySlug(slug),
       getListingProducts(slug),
       getStorefrontSettings(slug).catch(() => null),
+      getStorefrontReviews(slug).catch(() => []),
     ]);
-    return { listing, products: products || [], settings };
+    return { listing, products: products || [], settings, storefrontReviews };
   }, [slug]);
 
   if (loading) return <Spinner className="min-h-[60vh] pt-16 md:pt-20" />;
@@ -214,7 +293,7 @@ export default function ListingStorefrontPage() {
             <nav className="flex gap-1 overflow-x-auto border-b border-background-200 py-4 text-sm" aria-label="Business profile sections">
               <button type="button" onClick={() => setActiveTab("overview")} className={`whitespace-nowrap rounded-full px-4 py-2 ${activeTab === "overview" ? "font-semibold text-white" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "overview" ? { backgroundColor: settings.accentColor } : undefined}>Overview</button>
               <button type="button" onClick={() => setActiveTab("products")} className={`whitespace-nowrap rounded-full px-5 py-2 ${activeTab === "products" ? "font-semibold text-white" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "products" ? { backgroundColor: settings.accentColor } : undefined}>Products</button>
-              <Link to={`/listings/${slug}#reviews`} className="whitespace-nowrap rounded-full px-4 py-2 text-foreground-600 hover:bg-background-100">Reviews</Link>
+              <button type="button" onClick={() => setActiveTab("reviews")} className={`whitespace-nowrap rounded-full px-4 py-2 ${activeTab === "reviews" ? "font-semibold text-white" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "reviews" ? { backgroundColor: settings.accentColor } : undefined}>Reviews</button>
               <button type="button" onClick={() => setActiveTab("contact")} className={`whitespace-nowrap rounded-full px-4 py-2 ${activeTab === "contact" ? "font-semibold text-white" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "contact" ? { backgroundColor: settings.accentColor } : undefined}>Contact</button>
             </nav>
 
@@ -243,6 +322,8 @@ export default function ListingStorefrontPage() {
                 <ProductSection eyebrow={products.featured.length ? "More from the store" : "The collection"} title="Products" products={products.collection} slug={slug} listingTitle={listing.title} accentColor={settings.accentColor} />
               </div>
             )}
+
+            {activeTab === "reviews" && <StorefrontReviews listing={listing} initialReviews={data.storefrontReviews} accentColor={settings.accentColor} />}
 
             {activeTab === "contact" && (
               <div className="py-9">

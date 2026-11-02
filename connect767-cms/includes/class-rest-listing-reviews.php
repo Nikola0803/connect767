@@ -41,6 +41,71 @@ class C767_Rest_Listing_Reviews
                 'slug' => ['required' => true],
             ],
         ]);
+
+        register_rest_route(self::NAMESPACE_, '/storefronts/(?P<slug>[a-zA-Z0-9-_]+)/reviews', [
+            [
+                'methods' => 'GET',
+                'callback' => [__CLASS__, 'storefront_reviews'],
+                'permission_callback' => '__return_true',
+            ],
+            [
+                'methods' => 'POST',
+                'callback' => [__CLASS__, 'submit_storefront_review'],
+                'permission_callback' => '__return_true',
+            ],
+        ]);
+    }
+
+    private static function storefront_listing($slug)
+    {
+        $post = get_page_by_path(sanitize_title((string) $slug), OBJECT, 'listing');
+        return $post && $post->post_status === 'publish' ? $post : null;
+    }
+
+    private static function storefront_review_rows($post_id)
+    {
+        $rows = json_decode((string) get_post_meta($post_id, 'storefront_reviews', true), true);
+        return is_array($rows) ? $rows : [];
+    }
+
+    public static function storefront_reviews(WP_REST_Request $request)
+    {
+        $post = self::storefront_listing($request->get_param('slug'));
+        if (!$post) {
+            return new WP_Error('c767_storefront_not_found', 'Storefront not found.', ['status' => 404]);
+        }
+        return rest_ensure_response(array_reverse(self::storefront_review_rows($post->ID)));
+    }
+
+    public static function submit_storefront_review(WP_REST_Request $request)
+    {
+        $post = self::storefront_listing($request->get_param('slug'));
+        if (!$post) {
+            return new WP_Error('c767_storefront_not_found', 'Storefront not found.', ['status' => 404]);
+        }
+
+        $name = sanitize_text_field((string) $request->get_param('name'));
+        $text = sanitize_textarea_field((string) $request->get_param('text'));
+        $rating = max(1, min(5, (int) $request->get_param('stars')));
+        if ($name === '' || $text === '') {
+            return new WP_Error('c767_missing_storefront_review_fields', 'Name, rating, and review text are required.', ['status' => 400]);
+        }
+
+        $rows = self::storefront_review_rows($post->ID);
+        $entry = [
+            'id' => 'store-review-' . wp_generate_uuid4(),
+            'name' => $name,
+            'rating' => $rating,
+            'text' => $text,
+            'submittedAt' => current_time('mysql'),
+        ];
+        $rows[] = $entry;
+        update_post_meta($post->ID, 'storefront_reviews', wp_json_encode($rows));
+        update_post_meta($post->ID, 'storefront_review_count', count($rows));
+        update_post_meta($post->ID, 'storefront_rating', round(array_sum(array_column($rows, 'rating')) / count($rows), 1));
+
+        do_action('c767_storefront_review_submitted', $post->ID, $entry);
+        return rest_ensure_response($entry);
     }
 
     public static function submit(WP_REST_Request $request)
