@@ -102,6 +102,7 @@ class C767_Meta_Fields
             'verified' => ['label' => 'Verified badge', 'type' => 'boolean'],
             'featured' => ['label' => 'Show in homepage Featured section', 'type' => 'boolean'],
             'booking_enabled' => ['label' => 'Accept booking requests (owner-toggled from their dashboard)', 'type' => 'boolean'],
+            'sell_products' => ['label' => 'Sell products from this listing', 'type' => 'boolean'],
             'hide_contact_info' => ['label' => 'Hide contact information while paid bookings are enabled', 'type' => 'boolean'],
             'booking_type' => [
                 'label' => 'Booking type',
@@ -200,6 +201,7 @@ class C767_Meta_Fields
         $excluded = [
             'payment_status',
             'hide_contact_info',
+            'sell_products',
             'logo_position',
             'logo_zoom',
             'cover_position',

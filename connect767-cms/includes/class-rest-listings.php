@@ -811,6 +811,7 @@ class C767_REST_Listings
             // before approving it. 'n/a' for Free listings, which were
             // never meant to be billed.
             'payment_status' => $tier === 'Classified' ? 'unpaid' : 'n/a',
+            'sell_products' => filter_var($request->get_param('sellProducts'), FILTER_VALIDATE_BOOLEAN) ? '1' : '0',
             'price_tier' => $required['price_tier'],
             'description' => $required['description'],
             'location_display' => $location,
@@ -916,6 +917,7 @@ class C767_REST_Listings
         }
         $meta = [
             'price_tier' => $required['price_tier'],
+            'sell_products' => filter_var($request->get_param('sellProducts'), FILTER_VALIDATE_BOOLEAN) ? '1' : '0',
             'description' => $required['description'],
             'location_display' => $location,
             'phone' => sanitize_text_field((string) $request->get_param('phone')),
