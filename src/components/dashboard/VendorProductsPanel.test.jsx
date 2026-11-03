@@ -18,6 +18,20 @@ const repository = vi.hoisted(() => ({
 vi.mock("../../data/repository", () => repository);
 
 describe("VendorProductsPanel storefront fees", () => {
+  it("does not present the account display name as the storefront identity", async () => {
+    render(
+      <MemoryRouter>
+        <VendorProductsPanel
+          listings={[{ id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: true, sellProducts: true }]}
+          ownerName="shop dog"
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByText(/shop dog/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Manage your business and storefront in one place.")).toBeInTheDocument();
+  });
+
   const renderPanel = (props) => render(<MemoryRouter><VendorProductsPanel {...props} /></MemoryRouter>);
 
   beforeEach(() => {
