@@ -59,7 +59,7 @@ describe("VendorProductsPanel storefront fees", () => {
   });
 
   it("discloses the fee and shows the seller's net payout", async () => {
-    renderPanel({ listings: [{ id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: true }] });
+    renderPanel({ listings: [{ id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: true, sellProducts: true }] });
 
     fireEvent.click(screen.getByRole("tab", { name: /^Products$/i }));
     expect(screen.getByText(/Connect767 retains 10% of each product price/i)).toBeInTheDocument();
@@ -71,13 +71,13 @@ describe("VendorProductsPanel storefront fees", () => {
   });
 
   it("warns sellers to configure payouts before offering products", async () => {
-    renderPanel({ listings: [{ id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: false }], initialListingId: "7" });
+    renderPanel({ listings: [{ id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: false, sellProducts: true }], initialListingId: "7" });
 
     expect(await screen.findByText(/Open the Payouts tab and add a bank account or digital payout method/i)).toBeInTheDocument();
   });
 
   it("switches between the storefront management tabs", async () => {
-    renderPanel({ listings: [{ id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: true }] });
+    renderPanel({ listings: [{ id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: true, sellProducts: true }] });
 
     fireEvent.click(screen.getByRole("tab", { name: /^Products$/i }));
     expect(screen.getByRole("button", { name: /List a product/i })).toBeInTheDocument();
@@ -89,7 +89,7 @@ describe("VendorProductsPanel storefront fees", () => {
 
   it("opens the add-product form with the active storefront selected", async () => {
     renderPanel({
-      listings: [{ id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: true }],
+      listings: [{ id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: true, sellProducts: true }],
       initialListingId: "7",
     });
 
@@ -105,8 +105,8 @@ describe("VendorProductsPanel storefront fees", () => {
 
     renderPanel({
       listings: [
-        { id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: true },
-        { id: 8, title: "Second Profile", slug: "second-profile", payoutConfigured: true },
+        { id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: true, sellProducts: true },
+        { id: 8, title: "Second Profile", slug: "second-profile", payoutConfigured: true, sellProducts: true },
       ],
       initialStorefrontListingId: "8",
     });
@@ -114,5 +114,14 @@ describe("VendorProductsPanel storefront fees", () => {
     expect(await screen.findByText("Kalinago Tours")).toBeInTheDocument();
     await waitFor(() => expect(repository.getMyStorefrontSettings).toHaveBeenCalledWith("7"));
     expect(screen.queryByText("Second Profile")).not.toBeInTheDocument();
+  });
+
+  it("hides the seller workspace when no listing has enabled product sales", async () => {
+    const { container } = renderPanel({
+      listings: [{ id: 7, title: "Directory Only", slug: "directory-only", sellProducts: false }],
+    });
+
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByRole("heading", { name: /Storefront overview/i })).not.toBeInTheDocument();
   });
 });
