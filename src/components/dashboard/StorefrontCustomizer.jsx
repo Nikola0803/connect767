@@ -16,6 +16,11 @@ const empty = {
   aboutText: "",
   shippingMessage: "",
   policies: "",
+  productGrid: "auto",
+  imageRatio: "square",
+  cardCorners: "rounded",
+  contentWidth: "standard",
+  defaultTab: "products",
   featuredProductIds: [],
   productOrder: [],
   bookingPayoutMethod: "",
@@ -35,6 +40,7 @@ export default function StorefrontCustomizer({ listings, products, initialListin
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(false);
+  const [previewRevision, setPreviewRevision] = useState(0);
   const [message, setMessage] = useState("");
 
   const listing = listings.find((item) => String(item.id) === String(listingId));
@@ -98,6 +104,20 @@ export default function StorefrontCustomizer({ listings, products, initialListin
     }
   };
 
+  const showPreview = () => {
+    if (!listing?.slug) {
+      setMessage("Save the directory listing before previewing its storefront.");
+      return;
+    }
+    window.sessionStorage.setItem(
+      `connect767-storefront-preview:${listing.slug}`,
+      JSON.stringify({ listingId: listing.id, listing, products: listingProducts, settings: form }),
+    );
+    setPreview(true);
+    setPreviewRevision((value) => value + 1);
+    setMessage("");
+  };
+
   return (
     <section className="mb-10 rounded-2xl border border-background-200 bg-background-50 p-5 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -119,6 +139,18 @@ export default function StorefrontCustomizer({ listings, products, initialListin
             <FormField label="Store policies" htmlFor="store-policies" hint="Returns, exchanges, processing time, and other terms."><Textarea id="store-policies" rows={3} maxLength={1000} value={form.policies} onChange={update("policies")} /></FormField>
           </div>
 
+          <div className="rounded-2xl border border-background-200 bg-background-100/45 p-4 sm:p-5">
+            <h3 className="text-sm font-semibold text-foreground-900">Store layout</h3>
+            <p className="mt-1 text-xs text-foreground-500">Choose how the public storefront presents products and content on desktop and mobile.</p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <SelectField label="Product columns" value={form.productGrid} onChange={update("productGrid")} options={[["auto", "Responsive (recommended)"], ["3", "Three columns"], ["4", "Four columns"]]} />
+              <SelectField label="Product image shape" value={form.imageRatio} onChange={update("imageRatio")} options={[["square", "Square"], ["portrait", "Portrait"], ["landscape", "Landscape"]]} />
+              <SelectField label="Card corners" value={form.cardCorners} onChange={update("cardCorners")} options={[["rounded", "Rounded"], ["soft", "Soft"], ["square", "Square"]]} />
+              <SelectField label="Page width" value={form.contentWidth} onChange={update("contentWidth")} options={[["standard", "Standard"], ["wide", "Wide"]]} />
+              <SelectField label="First tab visitors see" value={form.defaultTab} onChange={update("defaultTab")} options={[["products", "Products"], ["overview", "Overview"]]} />
+            </div>
+          </div>
+
           <div>
             <h3 className="text-sm font-semibold text-foreground-900">Featured products & display order</h3>
             <p className="mt-1 text-xs text-foreground-500">Choose featured items and use the arrows to arrange the storefront.</p>
@@ -135,7 +167,26 @@ export default function StorefrontCustomizer({ listings, products, initialListin
             </div>
           </div>
 
-          {preview && <StorefrontPreview listing={listing} form={form} products={listingProducts} />}
+          {preview && (
+            <div className="overflow-hidden rounded-2xl border border-background-300 bg-background-50 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-background-200 bg-background-100/70 px-4 py-3">
+                <div>
+                  <p className="text-xs font-semibold text-foreground-900">Full customer storefront preview</p>
+                  <p className="text-[11px] text-foreground-500">This is the same page customers will see. Checkout remains disabled in preview mode.</p>
+                </div>
+                <div className="flex gap-2">
+                  <a href={`/listings/${listing.slug}/shop?designPreview=1&revision=${previewRevision}`} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-full border border-background-300 px-3 text-xs font-semibold text-foreground-800">Open full screen <i className="ri-external-link-line" /></a>
+                  <button type="button" onClick={() => setPreview(false)} className="inline-flex h-9 items-center rounded-full border border-background-300 px-3 text-xs font-semibold text-foreground-700">Close</button>
+                </div>
+              </div>
+              <iframe
+                key={previewRevision}
+                title="Full storefront preview"
+                src={`/listings/${listing.slug}/shop?designPreview=1&revision=${previewRevision}`}
+                className="h-[820px] w-full bg-background-50"
+              />
+            </div>
+          )}
           </>}
           {mode === "payouts" && (
             <PayoutSettingsFields
@@ -147,7 +198,7 @@ export default function StorefrontCustomizer({ listings, products, initialListin
           )}
           {message && <p className={`text-sm ${message.includes("published") || message.includes("saved") ? "text-primary-700" : "text-accent-600"}`}>{message}</p>}
           <div className="flex flex-wrap gap-3">
-            {mode === "design" && <Button type="button" variant="outline" onClick={() => setPreview((value) => !value)}>{preview ? "Hide preview" : "Preview changes"}</Button>}
+            {mode === "design" && <Button type="button" variant="outline" onClick={showPreview}>{preview ? "Refresh full preview" : "Preview changes"}</Button>}
             <Button type="button" variant="primary" onClick={save} disabled={saving}>{saving ? "Saving…" : mode === "payouts" ? "Save payout settings" : "Save & publish"}</Button>
           </div>
         </div>
@@ -157,30 +208,13 @@ export default function StorefrontCustomizer({ listings, products, initialListin
   );
 }
 
-function StorefrontPreview({ listing, form, products }) {
+function SelectField({ label, value, onChange, options }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-background-200 bg-background-100/40">
-      <div>
-        <div className="p-6">
-          <span className="text-xs text-foreground-500">{listing?.title}</span>
-          <p className="mt-5 whitespace-pre-line text-sm text-foreground-600">{form.welcomeText}</p>
-          <span className="mt-5 inline-flex rounded-full px-4 py-2 text-xs font-semibold text-white" style={{ backgroundColor: form.accentColor }}>Browse products</span>
-        </div>
-      </div>
-      <div className="grid gap-3 border-t border-background-200 p-4 sm:grid-cols-3">
-        {products.slice(0, 3).map((product) => <div key={product.id} className="rounded-xl bg-background-50 p-3"><p className="truncate text-xs font-semibold">{product.name}</p>{form.featuredProductIds.includes(Number(product.id)) && <span className="mt-2 inline-block text-[10px] font-bold uppercase" style={{ color: form.accentColor }}>Featured</span>}</div>)}
-      </div>
-      {(form.shippingMessage || form.policies) && (
-        <div className="grid gap-4 border-t border-background-200 p-5 text-xs text-foreground-600 sm:grid-cols-3">
-          <PreviewText title="Shipping & pickup" text={form.shippingMessage} />
-          <PreviewText title="Policies" text={form.policies} />
-        </div>
-      )}
-    </div>
+    <label className="block text-xs font-semibold text-foreground-800">
+      {label}
+      <select value={value} onChange={onChange} className="mt-2 h-11 w-full rounded-xl border border-background-300 bg-background-50 px-3 text-sm font-medium text-foreground-800 outline-none focus:border-primary-400">
+        {options.map(([optionValue, optionLabel]) => <option key={optionValue} value={optionValue}>{optionLabel}</option>)}
+      </select>
+    </label>
   );
-}
-
-function PreviewText({ title, text }) {
-  if (!text) return <div />;
-  return <div><p className="font-semibold text-foreground-900">{title}</p><p className="mt-1 line-clamp-3 whitespace-pre-line leading-relaxed">{text}</p></div>;
 }
