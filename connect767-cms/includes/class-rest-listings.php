@@ -525,6 +525,11 @@ class C767_REST_Listings
                 'rating' => get_post_meta($post->ID, 'rating', true) ?: '0',
                 'reviewCount' => get_post_meta($post->ID, 'review_count', true) ?: '0',
                 'bookingEnabled' => get_post_meta($post->ID, 'booking_enabled', true) === '1',
+                // Owner-only listing data is the canonical source for this
+                // setting. The public WordPress response can omit the field
+                // when ACF is active, which made the edit form appear to
+                // forget a storefront selection that was actually saved.
+                'sellProducts' => get_post_meta($post->ID, 'sell_products', true) === '1',
                 'bookingType' => self::sanitize_booking_type(get_post_meta($post->ID, 'booking_type', true)),
                 'bookingPriceCents' => (int) get_post_meta($post->ID, 'booking_price_cents', true),
                 'bookingDurationMinutes' => (int) (get_post_meta($post->ID, 'booking_duration_minutes', true) ?: 30),

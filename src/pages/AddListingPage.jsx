@@ -11,6 +11,7 @@ import {
   submitListing,
   updateListing,
   getListingBySlug,
+  getMyListings,
   getBookingSettings,
   getCheckoutConfig,
   createListingPaymentIntent,
@@ -55,6 +56,16 @@ const steps = [
 const priceChoices = ["$", "$$", "$$$"];
 const hasValidRequiredYears = (value) => /^\d+$/.test(String(value)) && Number(value) <= 80;
 const hasValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
+
+export function savedSellProductsSelection(publicListing, ownedListings = []) {
+  const ownedListing = ownedListings.find(
+    (listing) =>
+      Number(listing.id) === Number(publicListing?.id) || listing.slug === publicListing?.slug
+  );
+  return typeof ownedListing?.sellProducts === "boolean"
+    ? ownedListing.sellProducts
+    : Boolean(publicListing?.sellProducts);
+}
 
 const initialForm = {
   tier: "classified",
@@ -278,14 +289,18 @@ export default function AddListingPage() {
   useEffect(() => {
     if (!isEditing) return;
     let cancelled = false;
-    getListingBySlug(editSlug)
-      .then((data) => {
+    Promise.all([
+      getListingBySlug(editSlug),
+      getMyListings().catch(() => []),
+    ])
+      .then(([data, ownedListings]) => {
         if (cancelled) return;
         if (!data) {
           setLoadError("Couldn't find this listing.");
           return;
         }
         setListingId(data.id);
+        const savedSellProducts = savedSellProductsSelection(data, ownedListings || []);
         setForm((f) => ({
           ...f,
           tier: data.badge === "Classified" ? "classified" : "free",
@@ -331,7 +346,7 @@ export default function AddListingPage() {
           galleryPreviews: (data.gallery || [])
             .filter((g) => g.src && g.src !== data.coverPhoto)
             .map((g) => g.src),
-          sellProducts: Boolean(data.sellProducts),
+          sellProducts: savedSellProducts,
         }));
         getBookingSettings(data.id)
           .then((settings) => {
