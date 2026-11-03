@@ -46,7 +46,7 @@ const sellerCenterPreviewListing = {
 };
 
 export default function DashboardPage() {
-  const { isAuthenticated, name, email } = useAuth();
+  const { isAuthenticated, email } = useAuth();
   const { data: loadedListings, loading, error, reload } = useAsync(() => getMyListings(), []);
   const {
     data: bookings,
@@ -123,7 +123,7 @@ export default function DashboardPage() {
               Seller Center
             </div>
             <h1 className="font-heading text-3xl font-semibold tracking-[-0.025em] text-foreground-950 md:text-4xl">Connect767 Seller Center</h1>
-            <p className="mt-2 text-sm font-medium text-foreground-700">Welcome back{name || isDesignPreview ? `, ${name || "shop dog"}` : ""}.</p>
+            <p className="mt-2 text-sm font-medium text-foreground-700">Welcome back.</p>
             <p className="text-sm text-foreground-600 font-label mt-1">{email || (isDesignPreview ? "seller@connect767.com" : "")}</p>
           </div>
           <Button to="/listings/submit" variant="primary" icon="ri-add-line">
@@ -162,7 +162,6 @@ export default function DashboardPage() {
               listings={storefrontListings}
               initialListingId={productListingId}
               initialStorefrontListingId={storefrontListingId}
-              ownerName={name}
             />
           )}
 

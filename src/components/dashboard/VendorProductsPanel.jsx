@@ -66,7 +66,7 @@ function parseVariants(text) {
  * this site's own Stripe account (platform-collects model), so the owner
  * needs to see what sold in order to pay each vendor out separately.
  */
-export default function VendorProductsPanel({ listings = [], initialListingId = "", initialStorefrontListingId = "", ownerName = "" }) {
+export default function VendorProductsPanel({ listings = [], initialListingId = "", initialStorefrontListingId = "" }) {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -291,7 +291,6 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
   return (
     <>
       <SellerCenterSummary
-        ownerName={ownerName}
         listings={listings}
         products={storefrontProducts}
         orders={orders}
@@ -678,7 +677,7 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
   );
 }
 
-function SellerCenterSummary({ ownerName, products, orders, analytics, activeTab, onTabChange }) {
+function SellerCenterSummary({ products, orders, analytics, activeTab, onTabChange }) {
   const activeProducts = products.filter((product) => product.active).length;
   const openOrders = orders.filter((order) => !["completed", "cancelled"].includes(order.fulfillmentStatus)).length;
   const grossSales = orders.reduce((total, order) => total + Number(order.amountCents || 0), 0);
@@ -708,7 +707,7 @@ function SellerCenterSummary({ ownerName, products, orders, analytics, activeTab
         <div>
           <p className={DASHBOARD_EYEBROW}>Seller workspace</p>
           <h2 className={DASHBOARD_SECTION_HEADING}>Storefront overview</h2>
-          <p className={DASHBOARD_SECTION_SUBTITLE}>{ownerName ? `Welcome back, ${ownerName}` : "Manage your business and storefront in one place."}</p>
+          <p className={DASHBOARD_SECTION_SUBTITLE}>Manage your business and storefront in one place.</p>
         </div>
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary-200 bg-primary-100 text-xl text-primary-800 shadow-sm"><i className="ri-store-2-line" /></span>
       </div>
