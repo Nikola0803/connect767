@@ -306,9 +306,19 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
                 ["Product views", analytics.productViews, "ri-bar-chart-line"],
                 ["Paid orders", analytics.orders, "ri-shopping-bag-3-line"],
                 ["Your payouts", formatPrice(analytics.payoutsCents), "ri-wallet-3-line"],
-              ].map(([label, value, icon]) => (
-                <div key={label} className={`${DASHBOARD_PANEL} p-4`}>
-                  <i className={`${icon} text-lg text-primary-700`} />
+              ].map(([label, value, icon], index) => (
+                <div key={label} className={`${DASHBOARD_PANEL} p-4 ${[
+                  "border-t-4 border-t-primary-500 bg-gradient-to-br from-primary-50 to-background-50",
+                  "border-t-4 border-t-secondary-400 bg-gradient-to-br from-secondary-50 to-background-50",
+                  "border-t-4 border-t-primary-400 bg-gradient-to-br from-primary-50 to-background-50",
+                  "border-t-4 border-t-primary-300 bg-gradient-to-br from-background-100 to-background-50",
+                ][index]}`}>
+                  <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${[
+                    "bg-primary-100 text-primary-800",
+                    "bg-secondary-100 text-secondary-800",
+                    "bg-primary-100 text-primary-800",
+                    "bg-background-200 text-foreground-700",
+                  ][index]}`}><i className={`${icon} text-lg`} /></span>
                   <p className="mt-3 text-xl font-semibold tabular-nums text-foreground-950">{value}</p>
                   <p className="mt-1 text-xs font-medium text-foreground-500">{label}</p>
                 </div>
@@ -675,29 +685,35 @@ function SellerCenterSummary({ ownerName, products, orders, analytics, activeTab
     ["ri-eye-line", analytics?.storeViews ?? 0, "Store Visits"],
     ["ri-wallet-3-line", formatPrice(grossSales), "Gross Sales"],
   ];
+  const metricStyles = [
+    { panel: "bg-gradient-to-br from-primary-50 to-background-50", icon: "bg-primary-100 text-primary-800" },
+    { panel: "bg-gradient-to-br from-secondary-50 to-background-50", icon: "bg-secondary-100 text-secondary-800" },
+    { panel: "bg-gradient-to-br from-primary-50 to-background-50", icon: "bg-primary-100 text-primary-800" },
+    { panel: "bg-gradient-to-br from-background-100 to-background-50", icon: "bg-background-200 text-foreground-700" },
+  ];
 
   return (
-    <section className={`${DASHBOARD_PANEL} mt-12 overflow-hidden`}>
-      <div className="flex items-start justify-between gap-4 border-b border-background-200 px-5 py-6 sm:px-7">
+    <section className={`${DASHBOARD_PANEL} mt-12 overflow-hidden border-secondary-200 shadow-[0_22px_60px_rgba(83,55,35,0.1)]`}>
+      <div className="flex items-start justify-between gap-4 border-b border-secondary-200 bg-gradient-to-r from-secondary-100/80 via-background-50 to-primary-50/80 px-5 py-6 sm:px-7">
         <div>
           <p className={DASHBOARD_EYEBROW}>Seller workspace</p>
           <h2 className={DASHBOARD_SECTION_HEADING}>Storefront overview</h2>
           <p className={DASHBOARD_SECTION_SUBTITLE}>{ownerName ? `Welcome back, ${ownerName}` : "Manage your business and storefront in one place."}</p>
         </div>
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-50 text-xl text-primary-800"><i className="ri-store-2-line" /></span>
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary-200 bg-primary-100 text-xl text-primary-800 shadow-sm"><i className="ri-store-2-line" /></span>
       </div>
 
-      <div className="grid grid-cols-2 border-b border-background-200 sm:grid-cols-4">
+      <div className="grid grid-cols-2 border-b border-secondary-200 sm:grid-cols-4">
         {metrics.map(([icon, value, label], index) => (
-          <div key={label} className={`px-5 py-6 sm:px-6 ${index % 2 ? "border-l border-background-200" : ""} ${index > 1 ? "border-t border-background-200 sm:border-t-0 sm:border-l" : ""}`}>
-            <i className={`${icon} text-lg text-foreground-500`} />
+          <div key={label} className={`px-5 py-6 sm:px-6 ${metricStyles[index].panel} ${index % 2 ? "border-l border-secondary-200" : ""} ${index > 1 ? "border-t border-secondary-200 sm:border-t-0 sm:border-l" : ""}`}>
+            <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${metricStyles[index].icon}`}><i className={`${icon} text-lg`} /></span>
             <p className="mt-3 text-2xl font-semibold tabular-nums text-foreground-950">{value}</p>
             <p className="mt-1 text-xs font-medium text-foreground-500">{label}</p>
           </div>
         ))}
       </div>
 
-      <div className="overflow-x-auto border-t border-background-200 px-4 py-4 sm:px-7" role="tablist" aria-label="Storefront management">
+      <div className="overflow-x-auto border-t border-secondary-200 bg-background-50/80 px-4 py-4 sm:px-7" role="tablist" aria-label="Storefront management">
         <div className="flex min-w-max items-center gap-2">
           {tabs.map(([id, label, icon]) => (
             <button
@@ -706,7 +722,7 @@ function SellerCenterSummary({ ownerName, products, orders, analytics, activeTab
               role="tab"
               aria-selected={activeTab === id}
               onClick={() => onTabChange(id)}
-              className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition ${activeTab === id ? "bg-foreground-950 text-background-50 shadow-sm" : "text-foreground-600 hover:bg-background-100 hover:text-foreground-950"}`}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition ${activeTab === id ? "bg-primary-600 text-white shadow-[0_8px_20px_rgba(31,112,78,0.22)]" : "border border-transparent text-foreground-600 hover:border-primary-200 hover:bg-primary-50 hover:text-primary-900"}`}
             >
               <i className={icon} />
               {label}
@@ -730,13 +746,13 @@ function SellerReadiness({ listings, products }) {
   ];
   const complete = steps.filter(([, done]) => done).length;
   return (
-    <section className={`${DASHBOARD_PANEL} mb-8 p-5`}>
+    <section className={`${DASHBOARD_PANEL} mb-8 border-secondary-200 bg-gradient-to-r from-background-50 via-secondary-50/50 to-primary-50/60 p-5`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div><p className={DASHBOARD_EYEBROW}>Store readiness</p><h3 className="mt-1 text-base font-semibold text-foreground-950">{complete} of {steps.length} steps complete</h3></div>
-        <div className="h-2 w-36 overflow-hidden rounded-full bg-background-200"><div className="h-full rounded-full bg-primary-600" style={{ width: `${complete / steps.length * 100}%` }} /></div>
+        <div className="h-2 w-36 overflow-hidden rounded-full bg-secondary-200"><div className="h-full rounded-full bg-gradient-to-r from-primary-500 to-primary-700" style={{ width: `${complete / steps.length * 100}%` }} /></div>
       </div>
       <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-        {steps.map(([label, done]) => <div key={label} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${done ? "bg-primary-50 text-primary-800" : "bg-background-100 text-foreground-500"}`}><i className={done ? "ri-checkbox-circle-fill" : "ri-checkbox-blank-circle-line"} /><span>{label}</span></div>)}
+        {steps.map(([label, done]) => <div key={label} className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${done ? "border-primary-200 bg-primary-50 text-primary-900" : "border-background-200 bg-background-50/80 text-foreground-500"}`}><i className={done ? "ri-checkbox-circle-fill text-primary-600" : "ri-checkbox-blank-circle-line"} /><span>{label}</span></div>)}
       </div>
     </section>
   );

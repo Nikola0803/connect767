@@ -28,9 +28,24 @@ const statusMeta = {
   draft: { label: "Draft", className: "bg-background-200 text-foreground-700" },
 };
 
+const sellerCenterPreviewListing = {
+  id: "seller-center-preview",
+  title: "James Local Fruits",
+  slug: "james-local-fruits",
+  status: "publish",
+  tier: "free",
+  category: "Catering, Eat & Drink",
+  location: "Roseau, Dominica",
+  rating: 5,
+  reviewCount: 3,
+  viewUrl: "/listings/james-local-fruits",
+  payoutConfigured: true,
+  storefrontConfigured: true,
+};
+
 export default function DashboardPage() {
   const { isAuthenticated, name, email } = useAuth();
-  const { data: listings, loading, error, reload } = useAsync(() => getMyListings(), []);
+  const { data: loadedListings, loading, error, reload } = useAsync(() => getMyListings(), []);
   const {
     data: bookings,
     loading: bookingsLoading,
@@ -38,6 +53,8 @@ export default function DashboardPage() {
     reload: reloadBookings,
   } = useAsync(() => getMyBookings(), []);
   const [searchParams] = useSearchParams();
+  const isDesignPreview = import.meta.env.DEV && searchParams.get("designPreview") === "1";
+  const listings = isDesignPreview ? [sellerCenterPreviewListing] : loadedListings;
   const productListingId = searchParams.get("products") || "";
   const storefrontListingId = searchParams.get("storefront") || "";
   const [bookingBusy, setBookingBusy] = useState(null);
@@ -79,22 +96,24 @@ export default function DashboardPage() {
     }
   };
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isDesignPreview) {
     return <Navigate to="/auth/login" state={{ from: "/dashboard" }} replace />;
   }
 
   return (
-    <div className="min-h-screen bg-background-50 pt-16 md:pt-20">
-      <div className="w-full border-b border-background-200 bg-gradient-to-br from-background-100/80 to-background-50 px-4 py-10 md:px-8 md:py-14 lg:px-12">
-        <div className="mx-auto flex max-w-6xl flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+    <div className="min-h-screen bg-gradient-to-b from-background-100/70 via-background-50 to-background-50 pt-16 md:pt-20">
+      <div className="relative w-full overflow-hidden border-b border-secondary-200 bg-gradient-to-br from-secondary-100 via-background-50 to-primary-50 px-4 py-10 md:px-8 md:py-14 lg:px-12">
+        <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-primary-200/30 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-28 left-1/3 h-56 w-56 rounded-full bg-secondary-300/25 blur-3xl" />
+        <div className="relative mx-auto flex max-w-6xl flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-100 text-primary-800 text-xs font-medium mb-3">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-100/80 px-3 py-1 text-xs font-semibold text-primary-800 shadow-sm">
               <i className="ri-dashboard-line" />
               Seller Center
             </div>
             <h1 className="font-heading text-3xl font-semibold tracking-[-0.025em] text-foreground-950 md:text-4xl">Connect767 Seller Center</h1>
-            <p className="mt-2 text-sm font-medium text-foreground-700">Welcome back{name ? `, ${name}` : ""}.</p>
-            <p className="text-sm text-foreground-600 font-label mt-1">{email}</p>
+            <p className="mt-2 text-sm font-medium text-foreground-700">Welcome back{name || isDesignPreview ? `, ${name || "shop dog"}` : ""}.</p>
+            <p className="text-sm text-foreground-600 font-label mt-1">{email || (isDesignPreview ? "seller@connect767.com" : "")}</p>
           </div>
           <Button to="/listings/submit" variant="primary" icon="ri-add-line">
             Add another listing
@@ -112,7 +131,7 @@ export default function DashboardPage() {
             <p className={DASHBOARD_SECTION_SUBTITLE}>Manage directory profiles, storefronts, and listing plans.</p>
           </div>
 
-          {!isLiveApi && (
+          {!isLiveApi && !isDesignPreview && (
             <div className="mb-6 px-3.5 py-2.5 rounded-lg bg-secondary-100 border border-secondary-200 text-xs text-secondary-900 flex items-start gap-2">
               <i className="ri-flask-line mt-0.5 flex-shrink-0" />
               <span>
@@ -123,11 +142,11 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {loading && <CardSkeleton count={3} className="space-y-3" />}
+          {loading && !isDesignPreview && <CardSkeleton count={3} className="space-y-3" />}
 
-          {error && <ErrorState message="Couldn't load your listings." onRetry={reload} />}
+          {error && !isDesignPreview && <ErrorState message="Couldn't load your listings." onRetry={reload} />}
 
-          {!loading && !error && listings.length === 0 && (
+          {(isDesignPreview || (!loading && !error)) && listings.length === 0 && (
             <div className="rounded-2xl border border-dashed border-background-300 p-10 text-center">
               <div className="w-12 h-12 mx-auto flex items-center justify-center rounded-full bg-background-100 text-foreground-400 mb-4">
                 <i className="ri-store-2-line text-xl" />
@@ -145,14 +164,14 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {!loading && !error && listings.length > 0 && (
+          {(isDesignPreview || (!loading && !error)) && listings.length > 0 && (
             <div className="space-y-3">
               {listings.map((item) => {
                 const status = statusMeta[item.status] || statusMeta.draft;
                 return (
                   <div
                     key={item.id}
-                    className={`${DASHBOARD_PANEL} flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:gap-5 sm:p-5`}
+                    className={`${DASHBOARD_PANEL} flex flex-col gap-4 border-l-4 border-l-primary-500 p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_48px_rgba(83,55,35,0.1)] sm:flex-row sm:items-center sm:gap-5 sm:p-5`}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1.5">
@@ -183,7 +202,7 @@ export default function DashboardPage() {
                     <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
                       <Link
                         to={`/dashboard?products=${item.id}#products-services`}
-                        className={`${DASHBOARD_ACTION} border border-primary-300 bg-primary-50 text-primary-800 hover:bg-primary-100`}
+                        className={`${DASHBOARD_ACTION} border border-secondary-300 bg-secondary-50 text-secondary-900 hover:bg-secondary-100`}
                       >
                         <i className="ri-store-2-line" />
                         Products
@@ -223,7 +242,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {!loading && !error && listings.length > 0 && (
+          {(isDesignPreview || (!loading && !error)) && listings.length > 0 && (
             <VendorProductsPanel
               listings={listings}
               initialListingId={productListingId}
@@ -232,7 +251,7 @@ export default function DashboardPage() {
             />
           )}
 
-          <div id="bookings-rentals" className="mt-12 scroll-mt-24 border-t border-background-200 pt-10">
+          <div id="bookings-rentals" className="mt-12 scroll-mt-24 rounded-3xl border border-secondary-200 bg-gradient-to-br from-background-50 to-secondary-50/60 p-5 shadow-[0_16px_44px_rgba(83,55,35,0.06)] sm:p-7">
             <div className="flex items-end justify-between gap-4 mb-5">
               <div>
                 <p className={DASHBOARD_EYEBROW}>Scheduling</p>
@@ -260,8 +279,8 @@ export default function DashboardPage() {
               <ErrorState message="Couldn't load bookings and rentals." onRetry={reloadBookings} />
             )}
             {!bookingsLoading && !bookingsError && bookings.length === 0 && (
-              <div className="rounded-2xl border border-dashed border-background-300 p-8 text-center">
-                <i className="ri-calendar-event-line text-2xl text-foreground-300" />
+              <div className="rounded-2xl border border-dashed border-secondary-300 bg-background-50/70 p-8 text-center">
+                <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-primary-100 text-primary-700"><i className="ri-calendar-event-line text-xl" /></span>
                 <p className="text-sm text-foreground-600 font-label mt-2">
                   No booking or rental requests yet.
                 </p>
