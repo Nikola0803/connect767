@@ -298,7 +298,6 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
 
       {activeTab === "overview" && (
         <div className="mt-8">
-          <SellerReadiness listings={storefrontListings} products={storefrontProducts} />
           {analytics && (
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               {[
@@ -325,6 +324,12 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === "readiness" && (
+        <div className="mt-8">
+          <SellerReadiness listings={storefrontListings} products={storefrontProducts} />
         </div>
       )}
 
@@ -675,8 +680,9 @@ function SellerCenterSummary({ ownerName, products, orders, analytics, activeTab
   const grossSales = orders.reduce((total, order) => total + Number(order.amountCents || 0), 0);
   const tabs = [
     ["overview", "Store Front Overview", "ri-store-2-line"],
-    ["products", "Products & Services", "ri-box-3-line"],
-    ["design", "Store Design", "ri-palette-line"],
+    ["products", "Products", "ri-box-3-line"],
+    ["design", "Edit Storefront", "ri-edit-line"],
+    ["readiness", "Store Readiness", "ri-checkbox-circle-line"],
     ["payouts", "Payouts", "ri-wallet-3-line"],
   ];
   const metrics = [
@@ -693,7 +699,7 @@ function SellerCenterSummary({ ownerName, products, orders, analytics, activeTab
   ];
 
   return (
-    <section className={`${DASHBOARD_PANEL} mt-12 overflow-hidden border-secondary-200 shadow-[0_22px_60px_rgba(83,55,35,0.1)]`}>
+    <section className={`${DASHBOARD_PANEL} mt-8 overflow-hidden border-secondary-200 shadow-[0_22px_60px_rgba(83,55,35,0.1)]`}>
       <div className="flex items-start justify-between gap-4 border-b border-secondary-200 bg-gradient-to-r from-secondary-100/80 via-background-50 to-primary-50/80 px-5 py-6 sm:px-7">
         <div>
           <p className={DASHBOARD_EYEBROW}>Seller workspace</p>
@@ -746,7 +752,7 @@ function SellerReadiness({ listings, products }) {
   ];
   const complete = steps.filter(([, done]) => done).length;
   return (
-    <section className={`${DASHBOARD_PANEL} mb-8 border-secondary-200 bg-gradient-to-r from-background-50 via-secondary-50/50 to-primary-50/60 p-5`}>
+    <section className={`${DASHBOARD_PANEL} border-secondary-200 bg-gradient-to-r from-background-50 via-secondary-50/50 to-primary-50/60 p-5`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div><p className={DASHBOARD_EYEBROW}>Store readiness</p><h3 className="mt-1 text-base font-semibold text-foreground-950">{complete} of {steps.length} steps complete</h3></div>
         <div className="h-2 w-36 overflow-hidden rounded-full bg-secondary-200"><div className="h-full rounded-full bg-gradient-to-r from-primary-500 to-primary-700" style={{ width: `${complete / steps.length * 100}%` }} /></div>

@@ -61,7 +61,7 @@ describe("VendorProductsPanel storefront fees", () => {
   it("discloses the fee and shows the seller's net payout", async () => {
     renderPanel({ listings: [{ id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: true }] });
 
-    fireEvent.click(screen.getByRole("tab", { name: /Products & Services/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /^Products$/i }));
     expect(screen.getByText(/Connect767 retains 10% of each product price/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("tab", { name: /Payouts/i }));
     expect(await screen.findByText("Island Gift Box")).toBeInTheDocument();
@@ -79,9 +79,9 @@ describe("VendorProductsPanel storefront fees", () => {
   it("switches between the storefront management tabs", async () => {
     renderPanel({ listings: [{ id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: true }] });
 
-    fireEvent.click(screen.getByRole("tab", { name: /Products & Services/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /^Products$/i }));
     expect(screen.getByRole("button", { name: /List a product/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("tab", { name: /Store Design/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /Edit Storefront/i }));
     expect(await screen.findByRole("heading", { name: /Customize storefront/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("tab", { name: /Payouts/i }));
     expect(await screen.findByRole("heading", { name: /Payout settings/i })).toBeInTheDocument();
