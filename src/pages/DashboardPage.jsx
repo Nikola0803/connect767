@@ -113,18 +113,20 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background-100/70 via-background-50 to-background-50 pt-16 md:pt-20">
-      <div className="relative w-full overflow-hidden border-b border-secondary-200 bg-gradient-to-br from-secondary-100 via-background-50 to-primary-50 px-4 py-10 md:px-8 md:py-14 lg:px-12">
+      <div className="relative w-full overflow-hidden border-b border-secondary-200 bg-gradient-to-br from-secondary-100 via-background-50 to-primary-50 px-4 py-8 md:px-8 md:py-10 lg:px-12">
         <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-primary-200/30 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-28 left-1/3 h-56 w-56 rounded-full bg-secondary-300/25 blur-3xl" />
         <div className="relative mx-auto flex max-w-6xl flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-100/80 px-3 py-1 text-xs font-semibold text-primary-800 shadow-sm">
-              <i className="ri-dashboard-line" />
-              Seller Center
-            </div>
-            <h1 className="font-heading text-3xl font-semibold tracking-[-0.025em] text-foreground-950 md:text-4xl">Connect767 Seller Center</h1>
-            <p className="mt-2 text-sm font-medium text-foreground-700">Welcome back.</p>
-            <p className="text-sm text-foreground-600 font-label mt-1">{email || (isDesignPreview ? "seller@connect767.com" : "")}</p>
+            <p className={DASHBOARD_EYEBROW}>
+              <i className="ri-dashboard-line mr-1.5" aria-hidden="true" />
+              Seller center
+            </p>
+            <h1 className={DASHBOARD_SECTION_HEADING}>Connect767 Seller Center</h1>
+            <p className={DASHBOARD_SECTION_SUBTITLE}>Welcome back.</p>
+            <p className="mt-1 font-label text-sm text-foreground-500">
+              {email || (isDesignPreview ? "seller@connect767.com" : "")}
+            </p>
           </div>
           <Button to="/listings/submit" variant="primary" icon="ri-add-line">
             Add another listing
