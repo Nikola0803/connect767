@@ -452,7 +452,11 @@ class C767_Rest_Vendor_Products
             'fields' => 'ids', 'meta_query' => [['key' => 'listing_id', 'value' => $listing->ID]],
         ]);
         foreach (['featuredProductIds' => 'storefront_featured_product_ids', 'productOrder' => 'storefront_product_order'] as $param => $meta_key) {
-            $decoded = json_decode((string) $request->get_param($param), true);
+            $raw = $request->get_param($param);
+            if ($raw === null) {
+                continue;
+            }
+            $decoded = is_array($raw) ? $raw : json_decode((string) $raw, true);
             $ids = array_values(array_intersect(array_map('intval', is_array($decoded) ? $decoded : []), array_map('intval', $owned_product_ids)));
             update_post_meta($listing->ID, $meta_key, wp_json_encode($ids));
         }

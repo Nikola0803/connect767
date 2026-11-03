@@ -885,18 +885,24 @@ export async function getStorefrontSettings(slug) {
 }
 
 export async function getMyStorefrontSettings(listingId) {
-  if (!isLiveApi) return null;
+  if (!isLiveApi) {
+    try {
+      const saved = localStorage.getItem(`c767_storefront_settings:${listingId}`);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  }
   return customClient.get(`/vendor-storefronts/${listingId}`);
 }
 
 export async function updateMyStorefrontSettings(listingId, form) {
-  if (!isLiveApi) return form;
-  const payload = new FormData();
+  const payload = {};
   ["headline", "welcomeText", "accentColor", "aboutText", "shippingMessage", "policies", "productGrid", "imageRatio", "cardCorners", "contentWidth", "defaultTab"].forEach((key) => {
-    payload.append(key, form[key] || "");
+    payload[key] = form[key] ?? "";
   });
-  payload.append("featuredProductIds", JSON.stringify(form.featuredProductIds || []));
-  payload.append("productOrder", JSON.stringify(form.productOrder || []));
+  payload.featuredProductIds = form.featuredProductIds || [];
+  payload.productOrder = form.productOrder || [];
   [
     "bookingPayoutMethod",
     "bookingPayoutAccountName",
@@ -907,7 +913,16 @@ export async function updateMyStorefrontSettings(listingId, form) {
     "bookingPayoutSwiftCode",
     "bookingPayoutDigitalProvider",
     "bookingPayoutDigitalAccount",
-  ].forEach((key) => payload.append(key, form[key] || ""));
+  ].forEach((key) => { payload[key] = form[key] ?? ""; });
+
+  if (!isLiveApi) {
+    try {
+      localStorage.setItem(`c767_storefront_settings:${listingId}`, JSON.stringify(payload));
+    } catch {
+      // Preview persistence is best-effort when storage is unavailable.
+    }
+    return payload;
+  }
   return customClient.post(`/vendor-storefronts/${listingId}`, payload);
 }
 
