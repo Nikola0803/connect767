@@ -41,7 +41,6 @@ const sellerCenterPreviewListing = {
   viewUrl: "/listings/james-local-fruits",
   payoutConfigured: true,
   storefrontConfigured: true,
-  sellProducts: true,
   bookingEnabled: false,
 };
 
@@ -57,14 +56,8 @@ export default function DashboardPage() {
   const [searchParams] = useSearchParams();
   const isDesignPreview = import.meta.env.DEV && searchParams.get("designPreview") === "1";
   const listings = isDesignPreview
-    ? [{
-        ...sellerCenterPreviewListing,
-        sellProducts: searchParams.get("storefrontPreview") !== "0",
-        bookingEnabled: searchParams.get("bookingPreview") === "1",
-      }]
+    ? [{ ...sellerCenterPreviewListing, bookingEnabled: searchParams.get("bookingPreview") === "1" }]
     : loadedListings;
-  const storefrontListings = listings?.filter((listing) => listing?.sellProducts === true) || [];
-  const showSellerWorkspace = storefrontListings.length > 0;
   const showScheduling = Boolean(listings?.some((listing) => listing?.bookingEnabled === true));
   const productListingId = searchParams.get("products") || "";
   const storefrontListingId = searchParams.get("storefront") || "";
@@ -157,9 +150,9 @@ export default function DashboardPage() {
 
           {error && !isDesignPreview && <ErrorState message="Couldn't load your listings." onRetry={reload} />}
 
-          {(isDesignPreview || (!loading && !error)) && showSellerWorkspace && (
+          {(isDesignPreview || (!loading && !error)) && listings.length > 0 && (
             <VendorProductsPanel
-              listings={storefrontListings}
+              listings={listings}
               initialListingId={productListingId}
               initialStorefrontListingId={storefrontListingId}
               ownerName={name}

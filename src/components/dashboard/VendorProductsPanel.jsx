@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   getMyVendorProducts,
   createVendorProduct,
@@ -78,18 +78,14 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
   const [analytics, setAnalytics] = useState(null);
   const [activeTab, setActiveTab] = useState(initialStorefrontListingId ? "design" : initialListingId ? "products" : "overview");
   const productFormRef = useRef(null);
-  const storefrontCandidates = useMemo(
-    () => listings.filter((listing) => listing?.sellProducts === true),
-    [listings],
-  );
 
   const existingStoreListingId = products.find((product) =>
-    storefrontCandidates.some((listing) => String(listing.id) === String(product.listingId)),
+    listings.some((listing) => String(listing.id) === String(product.listingId)),
   )?.listingId;
   const requestedStoreListingId = initialStorefrontListingId || initialListingId;
-  const storefrontListing = storefrontCandidates.find((listing) => String(listing.id) === String(existingStoreListingId))
-    || storefrontCandidates.find((listing) => String(listing.id) === String(requestedStoreListingId))
-    || storefrontCandidates[0];
+  const storefrontListing = listings.find((listing) => String(listing.id) === String(existingStoreListingId))
+    || listings.find((listing) => String(listing.id) === String(requestedStoreListingId))
+    || listings[0];
   const storefrontListingId = storefrontListing ? String(storefrontListing.id) : "";
   const storefrontListings = storefrontListing ? [storefrontListing] : [];
   const storefrontProducts = products.filter((product) => String(product.listingId) === storefrontListingId);
@@ -115,14 +111,14 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
   }, []);
 
   useEffect(() => {
-    if (!initialListingId || !storefrontCandidates.some((listing) => String(listing.id) === String(initialListingId))) {
+    if (!initialListingId || !listings.some((listing) => String(listing.id) === String(initialListingId))) {
       return;
     }
     setEditingId(null);
     setForm({ ...emptyForm, listingId: String(initialListingId) });
     setError(null);
     setShowForm(true);
-  }, [initialListingId, storefrontCandidates]);
+  }, [initialListingId, listings]);
 
   useEffect(() => {
     if (initialStorefrontListingId) setActiveTab("design");
@@ -143,7 +139,7 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
     return () => window.cancelAnimationFrame(frame);
   }, [showForm, editingId]);
 
-  if (storefrontCandidates.length === 0) {
+  if (listings.length === 0) {
     return null;
   }
 
@@ -210,7 +206,7 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
       lowStockThreshold: Math.max(0, Number(form.lowStockThreshold) || 3),
       variants: parseVariants(form.variantsText),
     };
-    const selectedListing = storefrontCandidates.find((listing) => String(listing.id) === String(form.listingId));
+    const selectedListing = listings.find((listing) => String(listing.id) === String(form.listingId));
     if (!form.listingId || !form.name.trim() || !priceCents) {
       setError("Pick a listing, add a name, and a price above $0.");
       return;
