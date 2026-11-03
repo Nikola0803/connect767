@@ -67,6 +67,16 @@ export function savedSellProductsSelection(publicListing, ownedListings = []) {
     : Boolean(publicListing?.sellProducts);
 }
 
+export function savedBookingSelection(publicListing, ownedListings = []) {
+  const ownedListing = ownedListings.find(
+    (listing) =>
+      Number(listing.id) === Number(publicListing?.id) || listing.slug === publicListing?.slug
+  );
+  return typeof ownedListing?.bookingEnabled === "boolean"
+    ? ownedListing.bookingEnabled
+    : Boolean(publicListing?.bookingEnabled);
+}
+
 const initialForm = {
   tier: "classified",
   businessName: "",
@@ -301,6 +311,7 @@ export default function AddListingPage() {
         }
         setListingId(data.id);
         const savedSellProducts = savedSellProductsSelection(data, ownedListings || []);
+        const savedBookingEnabled = savedBookingSelection(data, ownedListings || []);
         setForm((f) => ({
           ...f,
           tier: data.badge === "Classified" ? "classified" : "free",
@@ -330,7 +341,7 @@ export default function AddListingPage() {
           // the cover only by luck — so editing a listing showed an empty
           // cover slot and the owner had to re-upload it every single time,
           // while the logo (which does have its own field) survived fine.
-          bookingEnabled: Boolean(data.bookingEnabled),
+          bookingEnabled: savedBookingEnabled,
           hideContactInfo: Boolean(data.contactHidden),
           bookingType: normalizeBookingType(data.bookingType),
           bookingPrice: ((data.bookingPriceCents || 0) / 100).toFixed(2),
