@@ -31,7 +31,7 @@ describe("StorefrontCustomizer", () => {
     render(
       <StorefrontCustomizer
         initialListingId="7"
-        listings={[{ id: 7, title: "Kalinago Tours" }]}
+        listings={[{ id: 7, title: "Kalinago Tours", slug: "kalinago-tours" }]}
         products={[
           { id: 11, listingId: 7, name: "Basket" },
           { id: 12, listingId: 7, name: "Cocoa tea" },
@@ -47,7 +47,7 @@ describe("StorefrontCustomizer", () => {
     expect(screen.queryByText(/Where should we send your storefront payouts/i)).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Storefront text"), { target: { value: "Discover Kalinago craft" } });
     fireEvent.click(screen.getByRole("button", { name: "Preview changes" }));
-    expect(screen.getAllByText("Discover Kalinago craft")).toHaveLength(2);
+    expect(screen.getByTitle("Full storefront preview")).toHaveAttribute("src", expect.stringContaining("/listings/kalinago-tours/shop?designPreview=1"));
     fireEvent.click(screen.getByRole("button", { name: "Save & publish" }));
 
     await waitFor(() => expect(repository.updateMyStorefrontSettings).toHaveBeenCalledWith(

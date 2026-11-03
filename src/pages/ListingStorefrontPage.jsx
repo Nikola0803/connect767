@@ -7,7 +7,7 @@ import { useAsync } from "../hooks/useAsync";
 import { ErrorState, Spinner } from "../components/ui/States";
 import { arrangeStorefrontProducts } from "../lib/storefront";
 
-function ProductSection({ eyebrow, title, products, slug, listingTitle, accentColor, id }) {
+function ProductSection({ eyebrow, title, products, slug, listingTitle, accentColor, id, layoutSettings, previewMode }) {
   if (!products.length) return null;
   return (
     <section id={id} className="scroll-mt-28">
@@ -18,7 +18,7 @@ function ProductSection({ eyebrow, title, products, slug, listingTitle, accentCo
         </div>
         <p className="text-xs text-foreground-500">{products.length} item{products.length === 1 ? "" : "s"}</p>
       </div>
-      <ListingProducts slug={slug} listingTitle={listingTitle} fullStorefront initialProducts={products} />
+      <ListingProducts slug={slug} listingTitle={listingTitle} fullStorefront initialProducts={products} layoutSettings={layoutSettings} previewMode={previewMode} />
     </section>
   );
 }
@@ -216,8 +216,25 @@ export default function ListingStorefrontPage() {
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
+  const designPreview = searchParams.get("designPreview") === "1";
+  let previewPayload = null;
+  if (designPreview && typeof window !== "undefined") {
+    try {
+      previewPayload = JSON.parse(window.sessionStorage.getItem(`connect767-storefront-preview:${slug}`) || "null");
+    } catch {
+      previewPayload = null;
+    }
+  }
   const [activeTab, setActiveTab] = useState(["overview", "products", "reviews", "contact"].includes(requestedTab) ? requestedTab : "products");
   const { data, loading, error, reload } = useAsync(async () => {
+    if (designPreview && previewPayload?.listing) {
+      return {
+        listing: previewPayload.listing,
+        products: previewPayload.products || [],
+        settings: previewPayload.settings || null,
+        storefrontReviews: [],
+      };
+    }
     const [listing, products, settings, storefrontReviews] = await Promise.all([
       getListingBySlug(slug),
       getListingProducts(slug),
@@ -225,7 +242,19 @@ export default function ListingStorefrontPage() {
       getStorefrontReviews(slug).catch(() => []),
     ]);
     return { listing, products: products || [], settings, storefrontReviews };
-  }, [slug]);
+  }, [slug, designPreview, searchParams.get("revision")]);
+
+  const previewSettings = previewPayload?.settings || null;
+  const previewDefaultTab = previewSettings?.defaultTab || "";
+
+  useEffect(() => {
+    if (["overview", "products", "reviews", "contact"].includes(requestedTab)) {
+      setActiveTab(requestedTab);
+      return;
+    }
+    const preferredTab = previewDefaultTab || data?.settings?.defaultTab;
+    if (["overview", "products"].includes(preferredTab)) setActiveTab(preferredTab);
+  }, [data?.settings?.defaultTab, previewDefaultTab, requestedTab, slug]);
 
   if (loading) return <Spinner className="min-h-[60vh] pt-16 md:pt-20" />;
   if (error) return <div className="pt-16 md:pt-20"><ErrorState message="Couldn't load this storefront." onRetry={reload} /></div>;
@@ -236,7 +265,7 @@ export default function ListingStorefrontPage() {
   }
 
   const rawProducts = data?.products || [];
-  if (rawProducts.length === 0) {
+  if (rawProducts.length === 0 && !designPreview) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-24 pt-32 text-center md:px-8">
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 text-2xl text-primary-700"><i className="ri-store-3-line" /></span>
@@ -260,23 +289,30 @@ export default function ListingStorefrontPage() {
     policies: "",
     featuredProductIds: [],
     productOrder: [],
+    productGrid: "auto",
+    imageRatio: "square",
+    cardCorners: "rounded",
+    contentWidth: "standard",
+    defaultTab: "products",
     hasCustomCover: false,
   };
-  const settings = { ...defaults, ...(data?.settings || {}) };
+  const settings = { ...defaults, ...(data?.settings || {}), ...(previewSettings || {}) };
   const products = arrangeStorefrontProducts(rawProducts, settings);
   const messagePath = listingOwnerMessagePath(listing);
+  const widthClass = settings.contentWidth === "wide" ? "max-w-7xl" : "max-w-6xl";
   return (
     <div className="min-h-screen bg-background-100/35 pt-16 md:pt-20">
-      <StorefrontSeo listing={listing} products={products.all} slug={slug} coverUrl={settings.coverUrl} />
+      {!designPreview && <StorefrontSeo listing={listing} products={products.all} slug={slug} coverUrl={settings.coverUrl} />}
+      {designPreview && <div className="sticky top-16 z-30 border-b border-primary-200 bg-primary-50 px-4 py-2 text-center text-xs font-semibold text-primary-800 md:top-20"><i className="ri-eye-line mr-1.5" /> Draft preview — purchases are disabled</div>}
       <div className="px-4 py-5 md:px-8">
-        <div className="mx-auto flex max-w-6xl items-center gap-2 text-[11px] font-medium tracking-wide text-foreground-500 font-label">
+        <div className={`mx-auto flex ${widthClass} items-center gap-2 text-[11px] font-medium tracking-wide text-foreground-500 font-label`}>
           <Link to="/listings" className="hover:text-foreground-800">Directory</Link><span className="text-background-400">/</span>
           <Link to={`/listings/${slug}`} className="max-w-56 truncate hover:text-foreground-800">{listing.title}</Link><span className="text-background-400">/</span><span className="font-medium text-foreground-800">Store</span>
         </div>
       </div>
 
       <main className="px-4 pb-16 md:px-8">
-        <div className="mx-auto max-w-6xl overflow-hidden rounded-[30px] border border-background-200 bg-background-50 shadow-[0_18px_60px_rgba(29,45,38,0.06)]">
+        <div className={`mx-auto ${widthClass} overflow-hidden rounded-[30px] border border-background-200 bg-background-50 shadow-[0_18px_60px_rgba(29,45,38,0.06)]`}>
           <section className="px-5 sm:px-8 md:px-10">
             <div className="flex flex-col gap-5 border-b border-background-200 py-7 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
@@ -320,8 +356,15 @@ export default function ListingStorefrontPage() {
 
             {activeTab === "products" && (
               <div id="store-products" className="scroll-mt-28 space-y-14 py-10">
-                <ProductSection eyebrow="Featured by the seller" products={products.featured} slug={slug} listingTitle={listing.title} accentColor={settings.accentColor} />
-                <ProductSection eyebrow={products.featured.length ? "More from the store" : "The collection"} title="Products" products={products.collection} slug={slug} listingTitle={listing.title} accentColor={settings.accentColor} />
+                <ProductSection eyebrow="Featured by the seller" products={products.featured} slug={slug} listingTitle={listing.title} accentColor={settings.accentColor} layoutSettings={settings} previewMode={designPreview} />
+                <ProductSection eyebrow={products.featured.length ? "More from the store" : "The collection"} title="Products" products={products.collection} slug={slug} listingTitle={listing.title} accentColor={settings.accentColor} layoutSettings={settings} previewMode={designPreview} />
+                {designPreview && products.all.length === 0 && (
+                  <div className="rounded-2xl border border-dashed border-background-300 bg-background-100/45 px-5 py-12 text-center">
+                    <i className="ri-shopping-bag-3-line text-3xl" style={{ color: settings.accentColor }} />
+                    <p className="mt-3 text-sm font-semibold text-foreground-900">Your products will appear here</p>
+                    <p className="mt-1 text-xs text-foreground-500">Add a product to see its final card design in this storefront preview.</p>
+                  </div>
+                )}
               </div>
             )}
 

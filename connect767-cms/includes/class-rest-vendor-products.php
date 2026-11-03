@@ -356,6 +356,11 @@ class C767_Rest_Vendor_Products
             'aboutText' => (string) get_post_meta($listing->ID, 'storefront_about_text', true),
             'shippingMessage' => (string) (get_post_meta($listing->ID, 'storefront_shipping_message', true) ?: 'Shipping and local pickup options are shown with each product.'),
             'policies' => (string) get_post_meta($listing->ID, 'storefront_policies', true),
+            'productGrid' => self::sanitize_layout_option(get_post_meta($listing->ID, 'storefront_product_grid', true), ['auto', '3', '4'], 'auto'),
+            'imageRatio' => self::sanitize_layout_option(get_post_meta($listing->ID, 'storefront_image_ratio', true), ['square', 'portrait', 'landscape'], 'square'),
+            'cardCorners' => self::sanitize_layout_option(get_post_meta($listing->ID, 'storefront_card_corners', true), ['rounded', 'soft', 'square'], 'rounded'),
+            'contentWidth' => self::sanitize_layout_option(get_post_meta($listing->ID, 'storefront_content_width', true), ['standard', 'wide'], 'standard'),
+            'defaultTab' => self::sanitize_layout_option(get_post_meta($listing->ID, 'storefront_default_tab', true), ['products', 'overview'], 'products'),
             'featuredProductIds' => array_values(array_map('intval', is_array($featured) ? $featured : [])),
             'productOrder' => array_values(array_map('intval', is_array($order) ? $order : [])),
             'connectPayoutEnabled' => (bool) get_option('connect767_stripe_connect_enabled', false) && preg_match('/^acct_[A-Za-z0-9]+$/', (string) get_post_meta($listing->ID, '_stripe_connect_account_id', true)),
@@ -412,6 +417,18 @@ class C767_Rest_Vendor_Products
         $accent = sanitize_hex_color((string) $request->get_param('accentColor'));
         if ($accent) {
             update_post_meta($listing->ID, 'storefront_accent_color', $accent);
+        }
+        $layout_fields = [
+            'productGrid' => ['storefront_product_grid', ['auto', '3', '4'], 'auto'],
+            'imageRatio' => ['storefront_image_ratio', ['square', 'portrait', 'landscape'], 'square'],
+            'cardCorners' => ['storefront_card_corners', ['rounded', 'soft', 'square'], 'rounded'],
+            'contentWidth' => ['storefront_content_width', ['standard', 'wide'], 'standard'],
+            'defaultTab' => ['storefront_default_tab', ['products', 'overview'], 'products'],
+        ];
+        foreach ($layout_fields as $param => [$meta_key, $allowed, $fallback]) {
+            if ($request->get_param($param) !== null) {
+                update_post_meta($listing->ID, $meta_key, self::sanitize_layout_option($request->get_param($param), $allowed, $fallback));
+            }
         }
         if ($request->get_param('coverPosition') !== null) {
             update_post_meta($listing->ID, 'storefront_cover_position', self::sanitize_storefront_position($request->get_param('coverPosition')));
@@ -478,6 +495,12 @@ class C767_Rest_Vendor_Products
     private static function sanitize_storefront_zoom($value)
     {
         return max(1, min(2.5, (float) $value));
+    }
+
+    private static function sanitize_layout_option($value, $allowed, $fallback)
+    {
+        $value = sanitize_key((string) $value);
+        return in_array($value, $allowed, true) ? $value : $fallback;
     }
 
     /** Owner's dashboard — every product across every listing they own, active or not. */

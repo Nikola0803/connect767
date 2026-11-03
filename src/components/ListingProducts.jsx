@@ -50,6 +50,8 @@ export default function ListingProducts({
   onAvailabilityChange,
   fullStorefront = false,
   initialProducts = null,
+  layoutSettings = {},
+  previewMode = false,
 }) {
   const suppliedProducts = Array.isArray(initialProducts) ? initialProducts : null;
   const [products, setProducts] = useState(suppliedProducts || []);
@@ -114,6 +116,13 @@ export default function ListingProducts({
   if (products.length === 0) return null;
 
   const visibleProducts = fullStorefront ? products : products.slice(0, 3);
+  const gridClass = {
+    3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+    4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
+    auto: "grid-cols-[repeat(auto-fill,minmax(230px,1fr))]",
+  }[layoutSettings.productGrid] || "grid-cols-[repeat(auto-fill,minmax(230px,1fr))]";
+  const imageClass = { portrait: "aspect-[4/5]", landscape: "aspect-[4/3]", square: "aspect-square" }[layoutSettings.imageRatio] || "aspect-square";
+  const cornerClass = { square: "rounded-none", soft: "rounded-xl", rounded: "rounded-[22px]" }[layoutSettings.cardCorners] || "rounded-[22px]";
 
   return (
     <section className={fullStorefront ? "" : "mt-10 border-t border-background-200/70 pt-10"}>
@@ -141,7 +150,7 @@ export default function ListingProducts({
       <div
         className={`grid ${
           fullStorefront
-            ? "grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-4"
+            ? `${gridClass} gap-4`
             : "grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
         }`}
       >
@@ -150,11 +159,11 @@ export default function ListingProducts({
             key={p.id}
             className={
               fullStorefront
-                ? "group flex min-w-0 flex-col overflow-hidden rounded-[22px] border border-background-200 bg-background-50"
+                ? `group flex min-w-0 flex-col overflow-hidden ${cornerClass} border border-background-200 bg-background-50`
                 : "group flex flex-col overflow-hidden rounded-2xl border border-background-200/70 bg-background-50 transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_18px_50px_rgba(18,63,44,0.12)]"
             }
           >
-            <div className={`relative w-full overflow-hidden bg-background-100 ${fullStorefront ? "aspect-square" : "aspect-[4/3]"}`}>
+            <div className={`relative w-full overflow-hidden bg-background-100 ${fullStorefront ? imageClass : "aspect-[4/3]"}`}>
               {p.imageUrl ? (
                 <img
                   src={p.imageUrl}
@@ -171,9 +180,9 @@ export default function ListingProducts({
               {fullStorefront && (
                 <button
                   type="button"
-                  onClick={() => setActiveProduct(p)}
+                  onClick={() => !previewMode && setActiveProduct(p)}
                   aria-label={`Buy ${p.name}`}
-                  disabled={p.stockStatus === "sold_out"}
+                  disabled={previewMode || p.stockStatus === "sold_out"}
                   className="absolute bottom-4 right-4 flex h-10 w-10 translate-y-2 items-center justify-center rounded-full bg-background-50 text-foreground-950 opacity-0 shadow-sm transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 focus:translate-y-0 focus:opacity-100"
                 >
                   <i className="ri-add-line text-lg" />
@@ -214,10 +223,10 @@ export default function ListingProducts({
                   variant="primary"
                   size="sm"
                   className={fullStorefront ? "mt-3 w-full justify-center rounded-full bg-foreground-950 px-4 text-white hover:bg-foreground-800" : ""}
-                  onClick={() => setActiveProduct(p)}
-                  disabled={p.stockStatus === "sold_out"}
+                  onClick={() => !previewMode && setActiveProduct(p)}
+                  disabled={previewMode || p.stockStatus === "sold_out"}
                 >
-                  {p.stockStatus === "sold_out" ? "Sold out" : fullStorefront ? "View item" : "Buy now"}
+                  {p.stockStatus === "sold_out" ? "Sold out" : previewMode ? "Preview item" : fullStorefront ? "View item" : "Buy now"}
                 </Button>
               </div>
             </div>

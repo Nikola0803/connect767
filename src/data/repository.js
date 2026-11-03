@@ -892,7 +892,7 @@ export async function getMyStorefrontSettings(listingId) {
 export async function updateMyStorefrontSettings(listingId, form) {
   if (!isLiveApi) return form;
   const payload = new FormData();
-  ["headline", "welcomeText", "accentColor", "aboutText", "shippingMessage", "policies"].forEach((key) => {
+  ["headline", "welcomeText", "accentColor", "aboutText", "shippingMessage", "policies", "productGrid", "imageRatio", "cardCorners", "contentWidth", "defaultTab"].forEach((key) => {
     payload.append(key, form[key] || "");
   });
   payload.append("featuredProductIds", JSON.stringify(form.featuredProductIds || []));
