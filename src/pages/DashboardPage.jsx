@@ -41,6 +41,7 @@ const sellerCenterPreviewListing = {
   viewUrl: "/listings/james-local-fruits",
   payoutConfigured: true,
   storefrontConfigured: true,
+  bookingEnabled: false,
 };
 
 export default function DashboardPage() {
@@ -54,7 +55,10 @@ export default function DashboardPage() {
   } = useAsync(() => getMyBookings(), []);
   const [searchParams] = useSearchParams();
   const isDesignPreview = import.meta.env.DEV && searchParams.get("designPreview") === "1";
-  const listings = isDesignPreview ? [sellerCenterPreviewListing] : loadedListings;
+  const listings = isDesignPreview
+    ? [{ ...sellerCenterPreviewListing, bookingEnabled: searchParams.get("bookingPreview") === "1" }]
+    : loadedListings;
+  const showScheduling = Boolean(listings?.some((listing) => listing?.bookingEnabled === true));
   const productListingId = searchParams.get("products") || "";
   const storefrontListingId = searchParams.get("storefront") || "";
   const [bookingBusy, setBookingBusy] = useState(null);
@@ -125,10 +129,10 @@ export default function DashboardPage() {
         <div className="mx-auto max-w-6xl">
           <div className="mb-5">
             <p className={DASHBOARD_EYEBROW}>Directory management</p>
-            <h2 id="my-listings" className={`scroll-mt-24 ${DASHBOARD_SECTION_HEADING}`}>
-              Your listings
+            <h2 className={DASHBOARD_SECTION_HEADING}>
+              Your business workspace
             </h2>
-            <p className={DASHBOARD_SECTION_SUBTITLE}>Manage directory profiles, storefronts, and listing plans.</p>
+            <p className={DASHBOARD_SECTION_SUBTITLE}>Manage your storefront, directory listings, and scheduling from three focused areas.</p>
           </div>
 
           {!isLiveApi && !isDesignPreview && (
@@ -145,6 +149,26 @@ export default function DashboardPage() {
           {loading && !isDesignPreview && <CardSkeleton count={3} className="space-y-3" />}
 
           {error && !isDesignPreview && <ErrorState message="Couldn't load your listings." onRetry={reload} />}
+
+          {(isDesignPreview || (!loading && !error)) && listings.length > 0 && (
+            <VendorProductsPanel
+              listings={listings}
+              initialListingId={productListingId}
+              initialStorefrontListingId={storefrontListingId}
+              ownerName={name}
+            />
+          )}
+
+          <section id="my-listings" className={`${DASHBOARD_PANEL} mt-8 scroll-mt-24 overflow-hidden`}>
+            <div className="flex items-start justify-between gap-4 border-b border-secondary-200 bg-gradient-to-r from-secondary-100/80 via-background-50 to-primary-50/70 px-5 py-6 sm:px-7">
+              <div>
+                <p className={DASHBOARD_EYEBROW}>Directory listings</p>
+                <h2 className={DASHBOARD_SECTION_HEADING}>Directory listings overview</h2>
+                <p className={DASHBOARD_SECTION_SUBTITLE}>Edit your public directory information or open the published profile.</p>
+              </div>
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-secondary-200 bg-secondary-100 text-xl text-secondary-900 shadow-sm"><i className="ri-profile-line" /></span>
+            </div>
+            <div className="p-5 sm:p-7">
 
           {(isDesignPreview || (!loading && !error)) && listings.length === 0 && (
             <div className="rounded-2xl border border-dashed border-background-300 p-10 text-center">
@@ -199,40 +223,32 @@ export default function DashboardPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
-                      <Link
-                        to={`/dashboard?products=${item.id}#products-services`}
-                        className={`${DASHBOARD_ACTION} border border-secondary-300 bg-secondary-50 text-secondary-900 hover:bg-secondary-100`}
-                      >
-                        <i className="ri-store-2-line" />
-                        Products
-                      </Link>
+                    <div className="grid w-full gap-3 sm:w-auto sm:min-w-[390px] sm:grid-cols-2">
                       <Link
                         to={`/listings/${item.slug}/edit`}
-                        className={`${DASHBOARD_ACTION} border border-background-300 text-foreground-800 hover:bg-background-100`}
+                        className="group flex min-h-24 flex-col justify-between rounded-2xl border border-primary-200 border-t-4 border-t-primary-500 bg-gradient-to-br from-primary-50 to-background-50 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(31,112,78,0.14)]"
                       >
-                        <i className="ri-file-edit-line" />
-                        Edit directory listing
-                      </Link>
-                      <Link
-                        to={`/dashboard?storefront=${item.id}#store-settings`}
-                        className={`${DASHBOARD_ACTION} border border-background-300 text-foreground-800 hover:bg-background-100`}
-                      >
-                        <i className="ri-edit-line" />
-                        Edit storefront
+                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-100 text-lg text-primary-800"><i className="ri-file-edit-line" /></span>
+                        <span className="mt-3 flex items-center justify-between gap-3 text-sm font-semibold text-foreground-950">
+                          Edit directory
+                          <i className="ri-arrow-right-line text-primary-700 transition group-hover:translate-x-0.5" />
+                        </span>
                       </Link>
                       {item.viewUrl ? (
                         <Link
                           to={`/listings/${item.slug}`}
-                          className={`${DASHBOARD_ACTION} border border-background-300 text-foreground-800 hover:bg-background-100`}
+                          className="group flex min-h-24 flex-col justify-between rounded-2xl border border-secondary-200 border-t-4 border-t-secondary-400 bg-gradient-to-br from-secondary-50 to-background-50 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(153,119,72,0.14)]"
                         >
-                          View listing
-                          <i className="ri-arrow-right-line" />
+                          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary-100 text-lg text-secondary-800"><i className="ri-eye-line" /></span>
+                          <span className="mt-3 flex items-center justify-between gap-3 text-sm font-semibold text-foreground-950">
+                            View listing
+                            <i className="ri-arrow-right-line text-secondary-700 transition group-hover:translate-x-0.5" />
+                          </span>
                         </Link>
                       ) : (
-                        <span className={`${DASHBOARD_ACTION} bg-background-100 text-foreground-500`}>
-                          <i className="ri-time-line" />
-                          Pending review
+                        <span className="flex min-h-24 flex-col justify-between rounded-2xl border border-background-200 border-t-4 border-t-background-300 bg-background-100/70 p-4 text-foreground-500">
+                          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-background-200 text-lg"><i className="ri-time-line" /></span>
+                          <span className="mt-3 text-sm font-semibold">Pending review</span>
                         </span>
                       )}
                     </div>
@@ -242,16 +258,11 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {(isDesignPreview || (!loading && !error)) && listings.length > 0 && (
-            <VendorProductsPanel
-              listings={listings}
-              initialListingId={productListingId}
-              initialStorefrontListingId={storefrontListingId}
-              ownerName={name}
-            />
-          )}
+            </div>
+          </section>
 
-          <div id="bookings-rentals" className="mt-12 scroll-mt-24 rounded-3xl border border-secondary-200 bg-gradient-to-br from-background-50 to-secondary-50/60 p-5 shadow-[0_16px_44px_rgba(83,55,35,0.06)] sm:p-7">
+          {showScheduling && (
+          <div id="bookings-rentals" className="mt-8 scroll-mt-24 rounded-3xl border border-secondary-200 bg-gradient-to-br from-background-50 to-secondary-50/60 p-5 shadow-[0_16px_44px_rgba(83,55,35,0.06)] sm:p-7">
             <div className="flex items-end justify-between gap-4 mb-5">
               <div>
                 <p className={DASHBOARD_EYEBROW}>Scheduling</p>
@@ -398,6 +409,7 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
     </div>
