@@ -296,25 +296,30 @@ export default function DashboardPage() {
           </section>
 
           {showScheduling && (
-          <div id="bookings-rentals" className="mt-8 scroll-mt-24 rounded-3xl border border-secondary-200 bg-gradient-to-br from-background-50 to-secondary-50/60 p-5 shadow-[0_16px_44px_rgba(83,55,35,0.06)] sm:p-7">
-            <div className="flex items-end justify-between gap-4 mb-5">
+          <section id="bookings-rentals" className={`${DASHBOARD_PANEL} mt-8 scroll-mt-24 overflow-hidden`}>
+            <div className="flex items-start justify-between gap-4 border-b border-secondary-200 bg-gradient-to-r from-secondary-100/80 via-background-50 to-primary-50/70 px-5 py-6 sm:px-7">
               <div>
                 <p className={DASHBOARD_EYEBROW}>Scheduling</p>
-                <h2 className={DASHBOARD_SECTION_HEADING}>
-                  Bookings & rentals
-                </h2>
+                <h2 className={DASHBOARD_SECTION_HEADING}>Bookings &amp; rentals</h2>
                 <p className={DASHBOARD_SECTION_SUBTITLE}>
                   Paid bookings confirm automatically. Free requests need your approval.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={reloadBookings}
-                className="text-xs font-semibold text-primary-700 hover:text-primary-800 cursor-pointer"
-              >
-                <i className="ri-refresh-line mr-1" /> Refresh
-              </button>
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-secondary-200 bg-secondary-100 text-xl text-secondary-900 shadow-sm">
+                <i className="ri-calendar-event-line" aria-hidden="true" />
+              </span>
             </div>
+
+            <div className="p-5 sm:p-7">
+              <div className="mb-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={reloadBookings}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700 transition hover:bg-primary-100 hover:text-primary-900 cursor-pointer"
+                >
+                  <i className="ri-refresh-line" /> Refresh
+                </button>
+              </div>
 
             {bookingError && (
               <p className="mb-4 text-xs text-accent-600 font-label">{bookingError}</p>
@@ -442,7 +447,8 @@ export default function DashboardPage() {
                 })}
               </div>
             )}
-          </div>
+            </div>
+          </section>
           )}
         </div>
       </div>
