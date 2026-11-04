@@ -93,9 +93,13 @@ describe("VendorProductsPanel storefront fees", () => {
   it("switches between the storefront management tabs", async () => {
     renderPanel({ listings: [{ id: 7, title: "Kalinago Tours", slug: "kalinago-tours", payoutConfigured: true, sellProducts: true }] });
 
-    expect(screen.getByRole("tab", { name: /Store Front Overview/i })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: /Storefront Overview/i })).toHaveAttribute(
       "aria-selected",
       "true",
+    );
+    expect(screen.getByRole("link", { name: /View Storefront/i })).toHaveAttribute(
+      "href",
+      "/listings/kalinago-tours/shop",
     );
 
     fireEvent.click(screen.getByRole("tab", { name: /^Products$/i }));

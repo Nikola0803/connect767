@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   getMyVendorProducts,
   createVendorProduct,
@@ -291,7 +292,7 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
   return (
     <>
       <SellerCenterSummary
-        listings={listings}
+        storefrontListing={storefrontListing}
         products={storefrontProducts}
         orders={orders}
         analytics={analytics}
@@ -677,12 +678,12 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
   );
 }
 
-function SellerCenterSummary({ products, orders, analytics, activeTab, onTabChange }) {
+function SellerCenterSummary({ storefrontListing, products, orders, analytics, activeTab, onTabChange }) {
   const activeProducts = products.filter((product) => product.active).length;
   const openOrders = orders.filter((order) => !["completed", "cancelled"].includes(order.fulfillmentStatus)).length;
   const grossSales = orders.reduce((total, order) => total + Number(order.amountCents || 0), 0);
   const tabs = [
-    ["overview", "Store Front Overview", "ri-store-2-line"],
+    ["overview", "Storefront Overview", "ri-store-2-line"],
     ["products", "Products", "ri-box-3-line"],
     ["design", "Edit Storefront", "ri-edit-line"],
     ["readiness", "Store Readiness", "ri-checkbox-circle-line"],
@@ -737,6 +738,17 @@ function SellerCenterSummary({ products, orders, analytics, activeTab, onTabChan
               {label}
             </button>
           ))}
+          {storefrontListing?.slug && (
+            <Link
+              to={`/listings/${storefrontListing.slug}/shop`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-4 py-2.5 text-sm font-semibold text-primary-800 transition hover:border-primary-300 hover:bg-primary-100 hover:text-primary-950"
+            >
+              <i className="ri-external-link-line" />
+              View Storefront
+            </Link>
+          )}
         </div>
       </div>
     </section>
