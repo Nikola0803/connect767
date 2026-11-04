@@ -117,16 +117,22 @@ export default function DashboardPage() {
         <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-primary-200/30 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-28 left-1/3 h-56 w-56 rounded-full bg-secondary-300/25 blur-3xl" />
         <div className="relative mx-auto flex max-w-6xl flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className={DASHBOARD_EYEBROW}>
-              <i className="ri-dashboard-line mr-1.5" aria-hidden="true" />
-              Seller center
-            </p>
-            <h1 className={DASHBOARD_SECTION_HEADING}>Connect767 Seller Center</h1>
-            <p className={DASHBOARD_SECTION_SUBTITLE}>Welcome back.</p>
-            <p className="mt-1 font-label text-sm text-foreground-500">
-              {email || (isDesignPreview ? "seller@connect767.com" : "")}
-            </p>
+          <div className="flex items-start gap-4">
+            <span className="mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary-200 bg-primary-100 text-xl text-primary-800 shadow-sm">
+              <i className="ri-dashboard-line" aria-hidden="true" />
+            </span>
+            <div>
+              <h1 className={DASHBOARD_SECTION_HEADING}>Dashboard</h1>
+              <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-foreground-600 md:text-base">
+                Manage your directory listings, storefront, and bookings in one place.
+              </p>
+              {(email || isDesignPreview) && (
+                <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-secondary-200 bg-background-50/80 px-3 py-1.5 font-label text-xs font-medium text-foreground-600 shadow-sm">
+                  <i className="ri-user-line text-primary-700" aria-hidden="true" />
+                  {email || "seller@connect767.com"}
+                </p>
+              )}
+            </div>
           </div>
           <Button to="/listings/submit" variant="primary" icon="ri-add-line">
             Add another listing
