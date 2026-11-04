@@ -203,7 +203,7 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={item.id}
-                    className={`${DASHBOARD_PANEL} flex flex-col gap-4 border-l-4 border-l-primary-500 p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_48px_rgba(83,55,35,0.1)] sm:flex-row sm:items-center sm:gap-5 sm:p-5`}
+                    className={`${DASHBOARD_PANEL} flex flex-col gap-5 border-l-4 border-l-primary-500 p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_48px_rgba(83,55,35,0.1)] sm:p-5`}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1.5">
@@ -231,7 +231,7 @@ export default function DashboardPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="grid w-full gap-3 sm:w-auto sm:min-w-[390px] sm:grid-cols-2">
+                    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
                       <Link
                         to={`/listings/${item.slug}/edit`}
                         className="group flex min-h-24 flex-col justify-between rounded-2xl border border-primary-200 border-t-4 border-t-primary-500 bg-gradient-to-br from-primary-50 to-background-50 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(31,112,78,0.14)]"
@@ -259,6 +259,26 @@ export default function DashboardPage() {
                           <span className="mt-3 text-sm font-semibold">Pending review</span>
                         </span>
                       )}
+                      <Link
+                        to={`/listings/${item.slug}/edit?managePlan=1`}
+                        className="group flex min-h-24 flex-col justify-between rounded-2xl border border-primary-200 border-t-4 border-t-primary-600 bg-gradient-to-br from-primary-100/80 to-background-50 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(31,112,78,0.14)]"
+                      >
+                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-200/70 text-lg text-primary-900"><i className="ri-arrow-up-down-line" /></span>
+                        <span className="mt-3 flex items-center justify-between gap-3 text-sm font-semibold text-foreground-950">
+                          Upgrade or Downgrade Listing
+                          <i className="ri-arrow-right-line text-primary-700 transition group-hover:translate-x-0.5" />
+                        </span>
+                      </Link>
+                      <Link
+                        to={`/auth/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`}
+                        className="group flex min-h-24 flex-col justify-between rounded-2xl border border-secondary-200 border-t-4 border-t-secondary-500 bg-gradient-to-br from-secondary-100/80 to-background-50 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(153,119,72,0.14)]"
+                      >
+                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary-200/70 text-lg text-secondary-900"><i className="ri-lock-password-line" /></span>
+                        <span className="mt-3 flex items-center justify-between gap-3 text-sm font-semibold text-foreground-950">
+                          Reset Account Password
+                          <i className="ri-arrow-right-line text-secondary-700 transition group-hover:translate-x-0.5" />
+                        </span>
+                      </Link>
                     </div>
                   </div>
                 );
