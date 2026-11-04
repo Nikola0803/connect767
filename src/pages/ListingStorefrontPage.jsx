@@ -265,6 +265,7 @@ export default function ListingStorefrontPage() {
   const [searchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
   const designPreview = searchParams.get("designPreview") === "1";
+  const directoryCardPreview = import.meta.env.DEV && designPreview && searchParams.get("surface") === "directory";
   let previewPayload = null;
   if (designPreview && typeof window !== "undefined") {
     try {
@@ -407,8 +408,14 @@ export default function ListingStorefrontPage() {
 
             {activeTab === "products" && (
               <div id="store-products" className="scroll-mt-28 space-y-12 py-8">
-                <ProductSection eyebrow="Featured by the seller" products={products.featured} slug={slug} listingTitle={listing.title} accentColor={settings.accentColor} layoutSettings={settings} previewMode={designPreview} />
-                <ProductSection eyebrow={products.featured.length ? "More from the store" : "The collection"} title="Products" products={products.collection} slug={slug} listingTitle={listing.title} accentColor={settings.accentColor} layoutSettings={settings} previewMode={designPreview} />
+                {directoryCardPreview ? (
+                  <ListingProducts slug={slug} listingTitle={listing.title} initialProducts={products.all} layoutSettings={settings} previewMode />
+                ) : (
+                  <>
+                    <ProductSection eyebrow="Featured by the seller" products={products.featured} slug={slug} listingTitle={listing.title} accentColor={settings.accentColor} layoutSettings={settings} previewMode={designPreview} />
+                    <ProductSection eyebrow={products.featured.length ? "More from the store" : "The collection"} title="Products" products={products.collection} slug={slug} listingTitle={listing.title} accentColor={settings.accentColor} layoutSettings={settings} previewMode={designPreview} />
+                  </>
+                )}
                 {designPreview && products.all.length === 0 && (
                   <div className="rounded-2xl border border-dashed border-background-300 bg-background-100/45 px-5 py-12 text-center">
                     <i className="ri-shopping-bag-3-line text-3xl" style={{ color: settings.accentColor }} />

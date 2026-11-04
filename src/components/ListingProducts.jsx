@@ -11,6 +11,7 @@ import {
   recordVendorProductView,
   getVendorProductReviews,
   submitVendorProductReview,
+  getStorefrontSettings,
 } from "../data/repository";
 import { getStripe } from "../lib/stripeClient";
 import PaypalButton from "./PaypalButton";
@@ -50,13 +51,14 @@ export default function ListingProducts({
   onAvailabilityChange,
   fullStorefront = false,
   initialProducts = null,
-  layoutSettings = {},
+  layoutSettings = null,
   previewMode = false,
 }) {
   const suppliedProducts = Array.isArray(initialProducts) ? initialProducts : null;
   const [products, setProducts] = useState(suppliedProducts || []);
   const [loading, setLoading] = useState(!isPreview && !suppliedProducts);
   const [activeProduct, setActiveProduct] = useState(null);
+  const [profileLayoutSettings, setProfileLayoutSettings] = useState(null);
 
   useEffect(() => {
     if (isPreview) {
@@ -85,6 +87,21 @@ export default function ListingProducts({
       cancelled = true;
     };
   }, [slug, isPreview, initialProducts]);
+
+  useEffect(() => {
+    if (fullStorefront || layoutSettings || !slug || isPreview) return undefined;
+    let cancelled = false;
+    getStorefrontSettings(slug)
+      .then((settings) => {
+        if (!cancelled) setProfileLayoutSettings(settings || null);
+      })
+      .catch(() => {
+        if (!cancelled) setProfileLayoutSettings(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fullStorefront, isPreview, layoutSettings, slug]);
 
   useEffect(() => {
     onAvailabilityChange?.(!loading && products.length > 0);
@@ -116,13 +133,14 @@ export default function ListingProducts({
   if (products.length === 0) return null;
 
   const visibleProducts = fullStorefront ? products : products.slice(0, 3);
+  const effectiveLayoutSettings = layoutSettings || profileLayoutSettings || {};
   const gridClass = {
     3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
     4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
     auto: "grid-cols-[repeat(auto-fill,minmax(230px,1fr))]",
-  }[layoutSettings.productGrid] || "grid-cols-[repeat(auto-fill,minmax(230px,1fr))]";
-  const imageClass = { portrait: "aspect-[4/5]", landscape: "aspect-[4/3]", square: "aspect-square" }[layoutSettings.imageRatio] || "aspect-square";
-  const cornerClass = { square: "rounded-none", soft: "rounded-xl", rounded: "rounded-[22px]" }[layoutSettings.cardCorners] || "rounded-[22px]";
+  }[effectiveLayoutSettings.productGrid] || "grid-cols-[repeat(auto-fill,minmax(230px,1fr))]";
+  const imageClass = { portrait: "aspect-[4/5]", landscape: "aspect-[4/3]", square: "aspect-square" }[effectiveLayoutSettings.imageRatio] || "aspect-square";
+  const cornerClass = { square: "rounded-none", soft: "rounded-xl", rounded: "rounded-[22px]" }[effectiveLayoutSettings.cardCorners] || "rounded-[22px]";
 
   return (
     <section className={fullStorefront ? "" : "mt-10 border-t border-background-200/70 pt-10"}>
@@ -147,23 +165,13 @@ export default function ListingProducts({
           )}
         </div>
       )}
-      <div
-        className={`grid ${
-          fullStorefront
-            ? `${gridClass} gap-4`
-            : "grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
-        }`}
-      >
+      <div className={`grid ${gridClass} gap-4`}>
         {visibleProducts.map((p) => (
           <article
             key={p.id}
-            className={
-              fullStorefront
-                ? `group flex min-w-0 flex-col overflow-hidden ${cornerClass} border border-background-200 bg-background-50`
-                : "group flex flex-col overflow-hidden rounded-2xl border border-background-200/70 bg-background-50 transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_18px_50px_rgba(18,63,44,0.12)]"
-            }
+            className={`group flex min-w-0 flex-col overflow-hidden ${cornerClass} border border-background-200 bg-background-50 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-[0_16px_44px_rgba(18,63,44,0.1)]`}
           >
-            <div className={`relative w-full overflow-hidden bg-background-100 ${fullStorefront ? imageClass : "aspect-[4/3]"}`}>
+            <div className={`relative w-full overflow-hidden bg-background-100 ${imageClass}`}>
               {p.imageUrl ? (
                 <img
                   src={p.imageUrl}
@@ -189,12 +197,12 @@ export default function ListingProducts({
                 </button>
               )}
             </div>
-            <div className={`flex flex-1 flex-col ${fullStorefront ? "p-4 sm:p-5" : "p-5"}`}>
-              <h3 className={`font-heading font-medium leading-snug text-foreground-950 ${fullStorefront ? "text-base" : "mb-1 text-lg"}`}>
+            <div className="flex flex-1 flex-col p-4 sm:p-5">
+              <h3 className="font-heading text-base font-medium leading-snug text-foreground-950">
                 {p.name}
               </h3>
               {p.description && (
-                <p className={`line-clamp-2 flex-1 text-xs leading-relaxed text-foreground-600 font-label ${fullStorefront ? "mt-1.5" : "mb-4"}`}>
+                <p className="mt-1.5 line-clamp-2 flex-1 text-xs leading-relaxed text-foreground-600 font-label">
                   {p.description}
                 </p>
               )}
@@ -215,14 +223,14 @@ export default function ListingProducts({
                 {p.stockStatus === "low_stock" && <span className="font-semibold text-amber-700">Low stock</span>}
                 {p.stockStatus === "sold_out" && <span className="font-semibold text-accent-600">Sold out</span>}
               </div>
-              <div className={`mt-auto ${fullStorefront ? "pt-4" : "flex items-center justify-between gap-3 border-t border-background-200/70 pt-4"}`}>
-                <span className={`font-heading font-semibold text-foreground-950 ${fullStorefront ? "text-base" : "text-lg"}`}>
+              <div className="mt-auto pt-4">
+                <span className="font-heading text-base font-semibold text-foreground-950">
                   {formatPrice(p.priceCents)}
                 </span>
                 <Button
                   variant="primary"
                   size="sm"
-                  className={fullStorefront ? "mt-3 w-full justify-center rounded-full bg-foreground-950 px-4 text-white hover:bg-foreground-800" : ""}
+                  className="mt-3 w-full justify-center rounded-full bg-foreground-950 px-4 text-white hover:bg-foreground-800"
                   onClick={() => !previewMode && setActiveProduct(p)}
                   disabled={previewMode || p.stockStatus === "sold_out"}
                 >
