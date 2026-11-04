@@ -13,6 +13,49 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script>
+      (() => {
+        let retryCount = 0
+
+        const protectAppStylesheet = () => {
+          const stylesheet = Array.from(document.querySelectorAll('link[rel="stylesheet"]')).find(
+            (link) => /\/assets\/[^/]+\.css(?:\?|$)/.test(link.href),
+          )
+
+          if (!stylesheet || stylesheet.dataset.recoveryBound === 'true') return
+          stylesheet.dataset.recoveryBound = 'true'
+
+          const retryStylesheet = () => {
+            if (retryCount >= 2) return
+            retryCount += 1
+
+            const retry = stylesheet.cloneNode()
+            const retryUrl = new URL(stylesheet.href, window.location.href)
+            retryUrl.searchParams.set('style-retry', `${Date.now()}-${retryCount}`)
+            retry.href = retryUrl.toString()
+            retry.dataset.recoveryBound = 'true'
+            retry.addEventListener('load', () => stylesheet.remove(), { once: true })
+            retry.addEventListener('error', () => window.setTimeout(retryStylesheet, 750), {
+              once: true,
+            })
+            stylesheet.after(retry)
+          }
+
+          stylesheet.addEventListener('error', retryStylesheet, { once: true })
+          window.addEventListener(
+            'load',
+            () => window.setTimeout(() => !stylesheet.sheet && retryStylesheet(), 1200),
+            { once: true },
+          )
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', protectAppStylesheet, { once: true })
+        } else {
+          protectAppStylesheet()
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
