@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 import Button from "../components/ui/Button";
 import { FormField, Input } from "../components/ui/FormField";
 import { requestPasswordReset } from "../lib/authClient";
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
+  const [searchParams] = useSearchParams();
+  const [email, setEmail] = useState(() => searchParams.get("email") || "");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);

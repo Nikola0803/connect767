@@ -18,6 +18,7 @@ import {
   confirmListingPayment,
   createListingPaypalOrder,
   captureListingPaypalOrder,
+  setListingTier,
 } from "../data/repository";
 import { getStripe } from "../lib/stripeClient";
 import Button from "../components/ui/Button";
@@ -269,6 +270,7 @@ export default function AddListingPage() {
   const [searchParams] = useSearchParams();
   const isEditing = Boolean(editSlug);
   const requestedTier = searchParams.get("tier");
+  const isManagingPlan = isEditing && searchParams.get("managePlan") === "1";
 
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(() => ({
@@ -283,6 +285,7 @@ export default function AddListingPage() {
   const [submitError, setSubmitError] = useState(null);
   const [coverPhotoError, setCoverPhotoError] = useState("");
   const [listingId, setListingId] = useState(null);
+  const [savedTier, setSavedTier] = useState(null);
   const [loadingExisting, setLoadingExisting] = useState(isEditing);
   const [loadError, setLoadError] = useState(null);
   // Set once a Classified submission successfully creates the (unpaid)
@@ -312,9 +315,11 @@ export default function AddListingPage() {
         setListingId(data.id);
         const savedSellProducts = savedSellProductsSelection(data, ownedListings || []);
         const savedBookingEnabled = savedBookingSelection(data, ownedListings || []);
+        const existingTier = data.badge === "Classified" ? "classified" : "free";
+        setSavedTier(existingTier);
         setForm((f) => ({
           ...f,
-          tier: data.badge === "Classified" ? "classified" : "free",
+          tier: existingTier,
           businessName: data.title || "",
           category: resolveListingIndustrySlug(data),
           priceTier: data.price || "",
@@ -393,8 +398,10 @@ export default function AddListingPage() {
             // Public listing data still contains enabled/price/duration;
             // only the private meeting URL is unavailable if this fails.
           });
-        // Tier is fixed once a listing exists — start straight on Business Info.
-        setStep(2);
+        // Normal edits start on Business Info. The Seller Center plan action
+        // opens the existing review step directly, where both plan cards are
+        // visible and the owner can upgrade or downgrade without hunting.
+        setStep(isManagingPlan ? 4 : 2);
       })
       .catch(() => {
         if (!cancelled) setLoadError("Couldn't load this listing.");
@@ -405,7 +412,7 @@ export default function AddListingPage() {
     return () => {
       cancelled = true;
     };
-  }, [isEditing, editSlug]);
+  }, [isEditing, editSlug, isManagingPlan]);
 
   const handleSubmit = async () => {
     setSubmitError(null);
@@ -433,6 +440,14 @@ export default function AddListingPage() {
     try {
       if (isEditing) {
         await updateListing(listingId, form);
+        if (savedTier && form.tier !== savedTier) {
+          const tierResult = await setListingTier(listingId, form.tier);
+          setSavedTier(form.tier);
+          if (tierResult?.paymentRequired) {
+            setPendingPayment({ listingId });
+            return;
+          }
+        }
         setSubmitted(true);
         return;
       }
