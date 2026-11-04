@@ -7,16 +7,64 @@ import { useAsync } from "../hooks/useAsync";
 import { ErrorState, Spinner } from "../components/ui/States";
 import { arrangeStorefrontProducts } from "../lib/storefront";
 
+const directPreviewStorefront = {
+  listing: {
+    id: "storefront-design-preview",
+    slug: "james-local-fruits",
+    title: "James Local Fruits",
+    location: "Roseau, Dominica",
+    industry: "Eat & Drink",
+    category: "Eat & Drink",
+    contact: {},
+  },
+  products: [
+    {
+      id: 91001,
+      name: "Bananas",
+      description: "Organic bananas · $15 per bunch",
+      priceCents: 1500,
+      imageUrl: "",
+      fulfillmentMode: "pickup",
+      stockStatus: "in_stock",
+      active: true,
+    },
+    {
+      id: 91002,
+      name: "Mangoes",
+      description: "Fresh local mangoes · $10 for 6",
+      priceCents: 1000,
+      imageUrl: "",
+      fulfillmentMode: "pickup",
+      stockStatus: "in_stock",
+      active: true,
+    },
+  ],
+  settings: {
+    accentColor: "#0f6b4f",
+    welcomeText: "Fresh local produce from Roseau, available for convenient local pickup.",
+    shippingMessage: "Local pickup is available with each product.",
+    policies: "Orders are prepared after confirmation. Pickup instructions are shared directly with the customer.",
+    featuredProductIds: [],
+    productOrder: [91001, 91002],
+    productGrid: "auto",
+    imageRatio: "square",
+    cardCorners: "rounded",
+    contentWidth: "standard",
+    defaultTab: "products",
+  },
+  storefrontReviews: [],
+};
+
 function ProductSection({ eyebrow, title, products, slug, listingTitle, accentColor, id, layoutSettings, previewMode }) {
   if (!products.length) return null;
   return (
     <section id={id} className="scroll-mt-28">
-      <div className="mb-7 flex flex-col gap-3 border-b border-background-200/70 pb-5 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-6 flex flex-col gap-3 border-b border-background-200/70 pb-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: accentColor }}>{eyebrow}</p>
-          {title && <h2 className="mt-2 font-heading text-2xl font-medium tracking-[-0.02em] text-foreground-950 md:text-3xl">{title}</h2>}
+          {title && <h2 className="mt-1.5 font-heading text-xl font-semibold tracking-[-0.02em] text-foreground-950 sm:text-2xl">{title}</h2>}
         </div>
-        <p className="text-xs text-foreground-500">{products.length} item{products.length === 1 ? "" : "s"}</p>
+        <p className="w-fit rounded-full border border-background-200 bg-background-100/70 px-3 py-1 text-[11px] font-medium text-foreground-500">{products.length} item{products.length === 1 ? "" : "s"}</p>
       </div>
       <ListingProducts slug={slug} listingTitle={listingTitle} fullStorefront initialProducts={products} layoutSettings={layoutSettings} previewMode={previewMode} />
     </section>
@@ -235,6 +283,9 @@ export default function ListingStorefrontPage() {
         storefrontReviews: [],
       };
     }
+    if (import.meta.env.DEV && designPreview && slug === directPreviewStorefront.listing.slug) {
+      return directPreviewStorefront;
+    }
     const [listing, products, settings, storefrontReviews] = await Promise.all([
       getListingBySlug(slug),
       getListingProducts(slug),
@@ -314,25 +365,25 @@ export default function ListingStorefrontPage() {
       <main className="px-4 pb-16 md:px-8">
         <div className={`mx-auto ${widthClass} overflow-hidden rounded-[30px] border border-background-200 bg-background-50 shadow-[0_18px_60px_rgba(29,45,38,0.06)]`}>
           <section className="px-5 sm:px-8 md:px-10">
-            <div className="flex flex-col gap-5 border-b border-background-200 py-7 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-5 border-b border-background-200 py-6 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <div className="min-w-0">
-                  <h1 className="truncate font-heading text-2xl font-semibold tracking-[-0.025em] text-foreground-950 sm:text-3xl">{listing.title}</h1>
-                  <p className="mt-1.5 text-sm text-foreground-500">{[listing.location, listing.industry || listing.category].filter(Boolean).join(" · ")}</p>
-                  <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-foreground-800"><i className="ri-checkbox-circle-fill text-base" style={{ color: settings.accentColor }} /> Verified Business</p>
+                  <h1 className="truncate font-heading text-xl font-semibold tracking-[-0.02em] text-foreground-950 sm:text-2xl">{listing.title}</h1>
+                  <p className="mt-1 text-xs leading-5 text-foreground-500 sm:text-sm">{[listing.location, listing.industry || listing.category].filter(Boolean).join(" · ")}</p>
+                  <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-background-200 bg-background-100/70 px-2.5 py-1 text-[11px] font-semibold text-foreground-800"><i className="ri-checkbox-circle-fill text-sm" style={{ color: settings.accentColor }} /> Verified Business</p>
                 </div>
-            </div>
+              </div>
               <div className="flex flex-wrap gap-2">
                 <Link to={messagePath} className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-background-300 bg-background-50 px-4 text-xs font-semibold text-foreground-800 transition-colors hover:border-background-400"><i className="ri-chat-3-line" /> Message owner</Link>
                 <Link to={`/listings/${slug}`} className="inline-flex h-10 items-center justify-center gap-2 rounded-full px-4 text-xs font-semibold text-white" style={{ backgroundColor: settings.accentColor }}>View profile <i className="ri-arrow-right-up-line" /></Link>
               </div>
             </div>
 
-            <nav className="flex gap-1 overflow-x-auto border-b border-background-200 py-4 text-sm" aria-label="Business profile sections">
-              <button type="button" onClick={() => setActiveTab("overview")} className={`whitespace-nowrap rounded-full px-4 py-2 ${activeTab === "overview" ? "font-semibold text-white" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "overview" ? { backgroundColor: settings.accentColor } : undefined}>Overview</button>
-              <button type="button" onClick={() => setActiveTab("products")} className={`whitespace-nowrap rounded-full px-5 py-2 ${activeTab === "products" ? "font-semibold text-white" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "products" ? { backgroundColor: settings.accentColor } : undefined}>Products</button>
-              <button type="button" onClick={() => setActiveTab("reviews")} className={`whitespace-nowrap rounded-full px-4 py-2 ${activeTab === "reviews" ? "font-semibold text-white" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "reviews" ? { backgroundColor: settings.accentColor } : undefined}>Reviews</button>
-              <button type="button" onClick={() => setActiveTab("contact")} className={`whitespace-nowrap rounded-full px-4 py-2 ${activeTab === "contact" ? "font-semibold text-white" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "contact" ? { backgroundColor: settings.accentColor } : undefined}>Contact</button>
+            <nav className="flex gap-1.5 overflow-x-auto border-b border-background-200 py-3.5 text-[13px]" aria-label="Business profile sections">
+              <button type="button" onClick={() => setActiveTab("overview")} className={`whitespace-nowrap rounded-full px-4 py-2 transition-colors ${activeTab === "overview" ? "font-semibold text-white shadow-sm" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "overview" ? { backgroundColor: settings.accentColor } : undefined}>Overview</button>
+              <button type="button" onClick={() => setActiveTab("products")} className={`whitespace-nowrap rounded-full px-4 py-2 transition-colors ${activeTab === "products" ? "font-semibold text-white shadow-sm" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "products" ? { backgroundColor: settings.accentColor } : undefined}>Products</button>
+              <button type="button" onClick={() => setActiveTab("reviews")} className={`whitespace-nowrap rounded-full px-4 py-2 transition-colors ${activeTab === "reviews" ? "font-semibold text-white shadow-sm" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "reviews" ? { backgroundColor: settings.accentColor } : undefined}>Reviews</button>
+              <button type="button" onClick={() => setActiveTab("contact")} className={`whitespace-nowrap rounded-full px-4 py-2 transition-colors ${activeTab === "contact" ? "font-semibold text-white shadow-sm" : "text-foreground-600 hover:bg-background-100"}`} style={activeTab === "contact" ? { backgroundColor: settings.accentColor } : undefined}>Contact</button>
             </nav>
 
             {activeTab === "overview" && (
@@ -355,7 +406,7 @@ export default function ListingStorefrontPage() {
             )}
 
             {activeTab === "products" && (
-              <div id="store-products" className="scroll-mt-28 space-y-14 py-10">
+              <div id="store-products" className="scroll-mt-28 space-y-12 py-8">
                 <ProductSection eyebrow="Featured by the seller" products={products.featured} slug={slug} listingTitle={listing.title} accentColor={settings.accentColor} layoutSettings={settings} previewMode={designPreview} />
                 <ProductSection eyebrow={products.featured.length ? "More from the store" : "The collection"} title="Products" products={products.collection} slug={slug} listingTitle={listing.title} accentColor={settings.accentColor} layoutSettings={settings} previewMode={designPreview} />
                 {designPreview && products.all.length === 0 && (
