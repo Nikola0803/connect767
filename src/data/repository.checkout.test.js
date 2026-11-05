@@ -1,5 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createCartPaypalOrder, createPaymentIntent } from "./repository";
+
+vi.mock("../lib/config", async (importOriginal) => ({
+  ...(await importOriginal()),
+  isLiveApi: true,
+}));
+
+import {
+  captureCartPaypalOrder,
+  captureVendorProductPaypalOrder,
+  confirmOrder,
+  confirmVendorOrder,
+  createCartPaypalOrder,
+  createPaymentIntent,
+} from "./repository";
 
 const items = [
   {
@@ -55,5 +68,23 @@ describe("shop checkout payloads", () => {
       email: "buyer@example.com",
       shipping,
     });
+  });
+
+  it("returns the private checkout token to Shop confirmation endpoints", async () => {
+    await confirmOrder(99, "shop-token");
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ orderId: 99, accessToken: "shop-token" });
+
+    fetch.mockClear();
+    await captureCartPaypalOrder(99, "shop-token");
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ orderId: 99, accessToken: "shop-token" });
+  });
+
+  it("returns the private checkout token to storefront confirmation endpoints", async () => {
+    await confirmVendorOrder(44, "vendor-token");
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ accessToken: "vendor-token" });
+
+    fetch.mockClear();
+    await captureVendorProductPaypalOrder(44, "vendor-token");
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ accessToken: "vendor-token" });
   });
 });

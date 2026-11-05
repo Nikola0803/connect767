@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useAsync } from "../hooks/useAsync";
@@ -15,7 +15,6 @@ import TierBadge from "../components/ui/TierBadge";
 import { CardSkeleton, ErrorState } from "../components/ui/States";
 import VendorProductsPanel from "../components/dashboard/VendorProductsPanel";
 import {
-  DASHBOARD_ACTION,
   DASHBOARD_EYEBROW,
   DASHBOARD_PANEL,
   DASHBOARD_SECTION_HEADING,
@@ -56,13 +55,18 @@ export default function DashboardPage() {
   } = useAsync(() => getMyBookings(), []);
   const [searchParams] = useSearchParams();
   const isDesignPreview = import.meta.env.DEV && searchParams.get("designPreview") === "1";
-  const listings = isDesignPreview
-    ? [{
-        ...sellerCenterPreviewListing,
-        sellProducts: searchParams.get("storefrontPreview") !== "0",
-        bookingEnabled: searchParams.get("bookingPreview") === "1",
-      }]
-    : loadedListings;
+  const storefrontPreviewEnabled = searchParams.get("storefrontPreview") !== "0";
+  const bookingPreviewEnabled = searchParams.get("bookingPreview") === "1";
+  const listings = useMemo(
+    () => isDesignPreview
+      ? [{
+          ...sellerCenterPreviewListing,
+          sellProducts: storefrontPreviewEnabled,
+          bookingEnabled: bookingPreviewEnabled,
+        }]
+      : loadedListings,
+    [bookingPreviewEnabled, isDesignPreview, loadedListings, storefrontPreviewEnabled],
+  );
   const storefrontListings = listings?.filter((listing) => listing?.sellProducts === true) || [];
   const showSellerWorkspace = storefrontListings.length > 0;
   const showScheduling = Boolean(listings?.some((listing) => listing?.bookingEnabled === true));

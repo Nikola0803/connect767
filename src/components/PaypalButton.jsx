@@ -9,10 +9,10 @@ import { loadPaypalSdk } from "../lib/paypalClient";
  * instead of this component knowing anything about carts, listings, or
  * vendor products specifically.
  *
- * `createOrder()` must resolve to `{ orderId, paypalOrderId }` — `orderId`
+ * `createOrder()` must resolve to `{ orderId, paypalOrderId, accessToken? }` — `orderId`
  * is whatever local id (WooCommerce order / listing id / vendor_order id)
  * the caller needs to pass to `captureOrder()` once PayPal approves.
- * `captureOrder(orderId)` must resolve to `{ status }`, mirroring every
+ * `captureOrder(orderId, accessToken)` must resolve to `{ status }`, mirroring every
  * other payment path in this app: never trust the SDK's own `onApprove`
  * firing as proof of payment, always ask the server (which itself asks
  * PayPal directly) whether the capture actually completed.
@@ -41,8 +41,9 @@ export default function PaypalButton({ clientId, disabled, createOrder, captureO
             style: { layout: "vertical", label: "paypal", height: 48 },
             createOrder: async () => {
               try {
-                const { orderId, paypalOrderId } = await stateRef.current.createOrder();
+                const { orderId, paypalOrderId, accessToken = "" } = await stateRef.current.createOrder();
                 containerRef.current.dataset.localOrderId = orderId;
+                containerRef.current.dataset.accessToken = accessToken;
                 return paypalOrderId;
               } catch (err) {
                 reportedSpecificErrorRef.current = true;
@@ -54,9 +55,10 @@ export default function PaypalButton({ clientId, disabled, createOrder, captureO
             },
             onApprove: async () => {
               const localOrderId = containerRef.current?.dataset.localOrderId;
+              const accessToken = containerRef.current?.dataset.accessToken || "";
               const { onSuccess: currentOnSuccess, onError: currentOnError } = stateRef.current;
               try {
-                const result = await stateRef.current.captureOrder(localOrderId);
+                const result = await stateRef.current.captureOrder(localOrderId, accessToken);
                 if (result.status === "paid") {
                   // Preserve the historical first argument (local id) while
                   // exposing the verified server response to flows such as

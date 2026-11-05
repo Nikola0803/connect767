@@ -153,6 +153,10 @@ class C767_PayPal_Checkout
      */
     public static function create_order(WP_REST_Request $request)
     {
+        $limited = C767_Stripe_Checkout::check_public_rate_limit('shop-paypal');
+        if (is_wp_error($limited)) {
+            return $limited;
+        }
         $items = (array) $request->get_param('items');
         if (empty($items)) {
             return new WP_Error('c767_empty_cart', 'Cart is empty.', ['status' => 400]);
@@ -186,11 +190,13 @@ class C767_PayPal_Checkout
         }
 
         $order->update_meta_data('_c767_paypal_order_id', $paypal_order['id']);
+        $access_token = C767_Stripe_Checkout::ensure_order_access_token($order);
         $order->save();
 
         return rest_ensure_response([
             'orderId' => $order->get_id(),
             'paypalOrderId' => $paypal_order['id'],
+            'accessToken' => $access_token,
         ]);
     }
 
@@ -205,6 +211,10 @@ class C767_PayPal_Checkout
         $order = wc_get_order($order_id);
         if (!$order) {
             return new WP_Error('c767_order_not_found', 'Order not found.', ['status' => 404]);
+        }
+        $access = C767_Stripe_Checkout::verify_order_access($order, $request->get_param('accessToken'));
+        if (is_wp_error($access)) {
+            return $access;
         }
 
         $paypal_order_id = $order->get_meta('_c767_paypal_order_id');

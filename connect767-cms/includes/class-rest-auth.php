@@ -21,6 +21,22 @@ class C767_REST_Auth
 {
     const NAMESPACE_ = 'connect767/v1';
 
+    private static function rate_limit($scope, $limit, $window)
+    {
+        $address = sanitize_text_field((string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+        $key = 'c767_auth_rate_' . md5($scope . '|' . $address);
+        $count = (int) get_transient($key);
+        if ($count >= $limit) {
+            return new WP_Error(
+                'c767_auth_rate_limit',
+                'Too many attempts. Please wait a few minutes and try again.',
+                ['status' => 429]
+            );
+        }
+        set_transient($key, $count + 1, $window);
+        return true;
+    }
+
     public static function init()
     {
         add_action('rest_api_init', [__CLASS__, 'register_routes']);
@@ -61,6 +77,10 @@ class C767_REST_Auth
 
     public static function register(WP_REST_Request $request)
     {
+        $limited = self::rate_limit('register', 5, HOUR_IN_SECONDS);
+        if (is_wp_error($limited)) {
+            return $limited;
+        }
         $name = sanitize_text_field($request->get_param('name'));
         $email = sanitize_email($request->get_param('email'));
         $password = (string) $request->get_param('password');
@@ -108,6 +128,10 @@ class C767_REST_Auth
 
     public static function login(WP_REST_Request $request)
     {
+        $limited = self::rate_limit('login', 30, 5 * MINUTE_IN_SECONDS);
+        if (is_wp_error($limited)) {
+            return $limited;
+        }
         $email = sanitize_email($request->get_param('email'));
         $password = (string) $request->get_param('password');
 

@@ -852,6 +852,10 @@ class C767_Rest_Vendor_Products
      */
     public static function create_checkout(WP_REST_Request $request)
     {
+        $limited = C767_Stripe_Checkout::check_public_rate_limit('vendor-stripe');
+        if (is_wp_error($limited)) {
+            return $limited;
+        }
         $product_id = (int) $request->get_param('id');
         $product = get_post($product_id);
         if (!$product || $product->post_type !== 'vendor_product' || get_post_meta($product_id, 'active', true) !== '1') {
@@ -936,6 +940,7 @@ class C767_Rest_Vendor_Products
             'status' => 'pending',
             'fulfillment_status' => 'new',
             'review_token' => wp_generate_password(32, false, false),
+            'access_token' => wp_generate_password(40, false, false),
         ];
         foreach ($meta as $key => $value) {
             update_post_meta($order_id, $key, $value);
@@ -944,17 +949,33 @@ class C767_Rest_Vendor_Products
         return rest_ensure_response([
             'orderId' => $order_id,
             'clientSecret' => $intent['client_secret'],
+            'accessToken' => $meta['access_token'],
         ]);
     }
 
-    /** Never trusts the browser's word — asks Stripe directly, same as confirm_order()/confirm_payment() elsewhere. */
-    public static function confirm_checkout(WP_REST_Request $request)
+    private static function public_order(WP_REST_Request $request)
     {
         $order_id = (int) $request->get_param('id');
         $order = get_post($order_id);
         if (!$order || $order->post_type !== 'vendor_order') {
             return new WP_Error('c767_order_not_found', 'Order not found.', ['status' => 404]);
         }
+        $provided = (string) $request->get_param('accessToken');
+        $expected = (string) get_post_meta($order_id, 'access_token', true);
+        if ($provided === '' || $expected === '' || !hash_equals($expected, $provided)) {
+            return new WP_Error('c767_order_forbidden', 'Invalid checkout access token.', ['status' => 403]);
+        }
+        return $order;
+    }
+
+    /** Never trusts the browser's word — asks Stripe directly, same as confirm_order()/confirm_payment() elsewhere. */
+    public static function confirm_checkout(WP_REST_Request $request)
+    {
+        $order = self::public_order($request);
+        if (is_wp_error($order)) {
+            return $order;
+        }
+        $order_id = (int) $order->ID;
 
         $intent_id = get_post_meta($order_id, 'stripe_payment_intent', true);
         if (!$intent_id) {
@@ -993,6 +1014,10 @@ class C767_Rest_Vendor_Products
      */
     public static function create_paypal_checkout(WP_REST_Request $request)
     {
+        $limited = C767_Stripe_Checkout::check_public_rate_limit('vendor-paypal');
+        if (is_wp_error($limited)) {
+            return $limited;
+        }
         $product_id = (int) $request->get_param('id');
         $product = get_post($product_id);
         if (!$product || $product->post_type !== 'vendor_product' || get_post_meta($product_id, 'active', true) !== '1') {
@@ -1077,6 +1102,7 @@ class C767_Rest_Vendor_Products
             'status' => 'pending',
             'fulfillment_status' => 'new',
             'review_token' => wp_generate_password(32, false, false),
+            'access_token' => wp_generate_password(40, false, false),
         ];
         foreach ($meta as $key => $value) {
             update_post_meta($order_id, $key, $value);
@@ -1085,17 +1111,18 @@ class C767_Rest_Vendor_Products
         return rest_ensure_response([
             'orderId' => $order_id,
             'paypalOrderId' => $paypal_order['id'],
+            'accessToken' => $meta['access_token'],
         ]);
     }
 
     /** Never trusts the browser's word — asks PayPal directly, same rule as confirm_checkout() above. */
     public static function confirm_paypal_checkout(WP_REST_Request $request)
     {
-        $order_id = (int) $request->get_param('id');
-        $order = get_post($order_id);
-        if (!$order || $order->post_type !== 'vendor_order') {
-            return new WP_Error('c767_order_not_found', 'Order not found.', ['status' => 404]);
+        $order = self::public_order($request);
+        if (is_wp_error($order)) {
+            return $order;
         }
+        $order_id = (int) $order->ID;
 
         $paypal_order_id = get_post_meta($order_id, 'paypal_order_id', true);
         if (!$paypal_order_id) {

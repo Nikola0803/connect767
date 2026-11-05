@@ -119,4 +119,29 @@ describe("wpClient/customClient request building", () => {
 
     await expect(customClient.get("/shop/products")).rejects.toBeInstanceOf(ApiError);
   });
+
+  it("turns a non-JSON success response into a clear integration error", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      text: async () => "<html>proxy error</html>",
+    }));
+
+    await expect(customClient.get("/shop/products")).rejects.toMatchObject({
+      name: "ApiError",
+      status: 502,
+      message: "The server returned an invalid response.",
+    });
+  });
+
+  it("clears a stale local session when an authenticated request returns 401", async () => {
+    setStoredToken("expired-token");
+    setStoredUser({ id: 1, email: "owner@example.com" });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ message: "Token expired." }, false, 401)));
+
+    await expect(customClient.get("/listings/mine")).rejects.toBeInstanceOf(ApiError);
+    expect(getStoredToken()).toBeNull();
+    expect(getStoredUser()).toBeNull();
+  });
 });

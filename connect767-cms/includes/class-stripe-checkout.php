@@ -79,6 +79,46 @@ class C767_Stripe_Checkout
     }
 
     /**
+     * Anonymous Shop checkouts need a capability token in addition to their
+     * sequential WooCommerce order id. The token is only returned to the
+     * browser that created the order and is required before any public
+     * confirmation endpoint can inspect or mutate that order.
+     */
+    public static function ensure_order_access_token($order)
+    {
+        $token = (string) $order->get_meta('_c767_checkout_access_token');
+        if ($token === '') {
+            $token = wp_generate_password(40, false, false);
+            $order->update_meta_data('_c767_checkout_access_token', $token);
+            $order->save();
+        }
+        return $token;
+    }
+
+    public static function verify_order_access($order, $provided)
+    {
+        $expected = (string) $order->get_meta('_c767_checkout_access_token');
+        $provided = (string) $provided;
+        if ($expected === '' || $provided === '' || !hash_equals($expected, $provided)) {
+            return new WP_Error('c767_order_forbidden', 'Invalid checkout access token.', ['status' => 403]);
+        }
+        return true;
+    }
+
+    /** Shared abuse guard for anonymous payment/order creation endpoints. */
+    public static function check_public_rate_limit($scope, $limit = 20, $window = 600)
+    {
+        $address = sanitize_text_field((string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+        $key = 'c767_checkout_rate_' . md5((string) $scope . '|' . $address);
+        $count = (int) get_transient($key);
+        if ($count >= (int) $limit) {
+            return new WP_Error('c767_checkout_rate_limit', 'Too many checkout attempts. Please wait and try again.', ['status' => 429]);
+        }
+        set_transient($key, $count + 1, (int) $window);
+        return true;
+    }
+
+    /**
      * Publishable keys are meant to be public — Stripe's own docs put
      * them directly in client-side JS — so exposing this via an
      * unauthenticated GET is correct, not a leak. The secret key never
@@ -170,6 +210,10 @@ class C767_Stripe_Checkout
      */
     public static function create_intent(WP_REST_Request $request)
     {
+        $limited = self::check_public_rate_limit('shop-stripe');
+        if (is_wp_error($limited)) {
+            return $limited;
+        }
         $items = (array) $request->get_param('items');
         $email = sanitize_email((string) $request->get_param('email'));
         $shipping = (array) $request->get_param('shipping');
@@ -205,11 +249,13 @@ class C767_Stripe_Checkout
         }
 
         $order->update_meta_data('_c767_stripe_payment_intent', $intent['id']);
+        $access_token = self::ensure_order_access_token($order);
         $order->save();
 
         return rest_ensure_response([
             'orderId' => $order->get_id(),
             'clientSecret' => $intent['client_secret'],
+            'accessToken' => $access_token,
         ]);
     }
 
@@ -227,6 +273,10 @@ class C767_Stripe_Checkout
         $order = wc_get_order($order_id);
         if (!$order) {
             return new WP_Error('c767_order_not_found', 'Order not found.', ['status' => 404]);
+        }
+        $access = self::verify_order_access($order, $request->get_param('accessToken'));
+        if (is_wp_error($access)) {
+            return $access;
         }
 
         $intent_id = $order->get_meta('_c767_stripe_payment_intent');

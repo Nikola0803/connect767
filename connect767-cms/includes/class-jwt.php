@@ -21,9 +21,11 @@ class C767_JWT
         if (defined('C767_JWT_SECRET') && C767_JWT_SECRET) {
             return C767_JWT_SECRET;
         }
-        $key = (defined('AUTH_KEY') && AUTH_KEY) ? AUTH_KEY : 'connect767-fallback-secret-change-me';
-        $salt = (defined('AUTH_SALT') && AUTH_SALT) ? AUTH_SALT : '';
-        return $key . $salt;
+        // wp_salt() remains installation-specific even when wp-config.php
+        // does not explicitly define every key. Never fall back to a shared,
+        // hardcoded secret: that would make tokens forgeable on a
+        // misconfigured installation.
+        return wp_salt('auth') . wp_salt('secure_auth');
     }
 
     public static function issue($payload, $ttlSeconds = DAY_IN_SECONDS * 14)
