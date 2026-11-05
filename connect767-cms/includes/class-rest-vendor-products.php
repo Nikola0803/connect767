@@ -376,7 +376,12 @@ class C767_Rest_Vendor_Products
         if (!self::is_account_storefront($listing)) {
             return new WP_Error('c767_not_account_storefront', 'This profile does not host the account storefront.', ['status' => 404]);
         }
-        return self::cached_public_response(self::storefront_settings($listing));
+        // Store design changes need to appear as soon as the owner publishes
+        // them. Product/review endpoints may remain cached, but this small
+        // settings response must not serve a stale layout.
+        $response = rest_ensure_response(self::storefront_settings($listing));
+        $response->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        return $response;
     }
 
     public static function owner_storefront_settings(WP_REST_Request $request)

@@ -881,7 +881,9 @@ export async function getListingProducts(slug) {
 
 export async function getStorefrontSettings(slug) {
   if (!isLiveApi) return null;
-  return customClient.get(`/listings/${slug}/storefront-settings`);
+  // Store design edits must be visible immediately after publishing. A unique
+  // query value prevents an intermediary from serving the previous layout.
+  return customClient.get(`/listings/${slug}/storefront-settings`, { storefrontRevision: Date.now() });
 }
 
 export async function getMyStorefrontSettings(listingId) {

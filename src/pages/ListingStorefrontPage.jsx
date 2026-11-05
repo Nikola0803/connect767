@@ -265,11 +265,19 @@ export default function ListingStorefrontPage() {
   const [searchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
   const designPreview = searchParams.get("designPreview") === "1";
+  const previewKey = searchParams.get("previewKey") || "";
   const directoryCardPreview = import.meta.env.DEV && designPreview && searchParams.get("surface") === "directory";
   let previewPayload = null;
   if (designPreview && typeof window !== "undefined") {
     try {
-      previewPayload = JSON.parse(window.sessionStorage.getItem(`connect767-storefront-preview:${slug}`) || "null");
+      const keyedPayload = previewKey
+        ? window.localStorage.getItem(`connect767-storefront-preview:${previewKey}`)
+        : null;
+      const legacyPayload = window.sessionStorage.getItem(`connect767-storefront-preview:${slug}`);
+      previewPayload = JSON.parse(keyedPayload || legacyPayload || "null");
+      const isExpired = previewPayload?.createdAt && Date.now() - Number(previewPayload.createdAt) > 60 * 60 * 1000;
+      const wrongListing = previewPayload?.listing?.slug && previewPayload.listing.slug !== slug;
+      if (isExpired || wrongListing) previewPayload = null;
     } catch {
       previewPayload = null;
     }
@@ -294,7 +302,7 @@ export default function ListingStorefrontPage() {
       getStorefrontReviews(slug).catch(() => []),
     ]);
     return { listing, products: products || [], settings, storefrontReviews };
-  }, [slug, designPreview, searchParams.get("revision")]);
+  }, [slug, designPreview, previewKey, searchParams.get("revision")]);
 
   const previewSettings = previewPayload?.settings || null;
   const previewDefaultTab = previewSettings?.defaultTab || "";

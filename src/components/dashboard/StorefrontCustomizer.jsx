@@ -41,6 +41,7 @@ export default function StorefrontCustomizer({ listings, products, initialListin
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(false);
   const [previewRevision, setPreviewRevision] = useState(0);
+  const [previewKey, setPreviewKey] = useState("");
   const [message, setMessage] = useState("");
 
   const listing = listings.find((item) => String(item.id) === String(listingId));
@@ -94,7 +95,10 @@ export default function StorefrontCustomizer({ listings, products, initialListin
     setMessage("");
     try {
       const saved = await updateMyStorefrontSettings(listingId, form);
-      setForm({ ...empty, ...saved });
+      // Preserve submitted layout values when an older plugin response omits
+      // newly-added storefront fields. The next settings load will still use
+      // the server as the source of truth.
+      setForm((current) => ({ ...empty, ...current, ...(saved || {}) }));
       setMessage(mode === "payouts" ? "Payout settings saved." : "Storefront design published.");
       setPreview(false);
     } catch {
@@ -109,10 +113,19 @@ export default function StorefrontCustomizer({ listings, products, initialListin
       setMessage("Save the directory listing before previewing its storefront.");
       return;
     }
-    window.sessionStorage.setItem(
-      `connect767-storefront-preview:${listing.slug}`,
-      JSON.stringify({ listingId: listing.id, listing, products: listingProducts, settings: form }),
-    );
+    const nextPreviewKey = `${listing.slug}:${Date.now()}`;
+    const payload = JSON.stringify({
+      listingId: listing.id,
+      listing,
+      products: listingProducts,
+      settings: form,
+      createdAt: Date.now(),
+    });
+    // localStorage makes the draft available to both the embedded preview and
+    // "Open full screen". Keep the legacy session key for older preview URLs.
+    window.localStorage.setItem(`connect767-storefront-preview:${nextPreviewKey}`, payload);
+    window.sessionStorage.setItem(`connect767-storefront-preview:${listing.slug}`, payload);
+    setPreviewKey(nextPreviewKey);
     setPreview(true);
     setPreviewRevision((value) => value + 1);
     setMessage("");
@@ -175,14 +188,14 @@ export default function StorefrontCustomizer({ listings, products, initialListin
                   <p className="text-[11px] text-foreground-500">This is the same page customers will see. Checkout remains disabled in preview mode.</p>
                 </div>
                 <div className="flex gap-2">
-                  <a href={`/listings/${listing.slug}/shop?designPreview=1&revision=${previewRevision}`} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-full border border-background-300 px-3 text-xs font-semibold text-foreground-800">Open full screen <i className="ri-external-link-line" /></a>
+                  <a href={`/listings/${listing.slug}/shop?designPreview=1&previewKey=${encodeURIComponent(previewKey)}&revision=${previewRevision}`} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-full border border-background-300 px-3 text-xs font-semibold text-foreground-800">Open full screen <i className="ri-external-link-line" /></a>
                   <button type="button" onClick={() => setPreview(false)} className="inline-flex h-9 items-center rounded-full border border-background-300 px-3 text-xs font-semibold text-foreground-700">Close</button>
                 </div>
               </div>
               <iframe
                 key={previewRevision}
                 title="Full storefront preview"
-                src={`/listings/${listing.slug}/shop?designPreview=1&revision=${previewRevision}`}
+                src={`/listings/${listing.slug}/shop?designPreview=1&previewKey=${encodeURIComponent(previewKey)}&revision=${previewRevision}`}
                 className="h-[820px] w-full bg-background-50"
               />
             </div>
