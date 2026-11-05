@@ -1091,7 +1091,7 @@ export default function AddListingPage() {
                   </FormField>
                   <FormField
                     label="Cover photo"
-                    hint="Best fit: 1600 × 900 px (16:9), max 2 MB. Keep key content centered for the 4:3 directory crop."
+                    hint="Best fit: 1600 × 1200 px (4:3), max 2 MB. Keep important content centered for the best directory and profile display."
                   >
                     <div className="relative w-full group">
                       <label className="relative flex flex-col items-center justify-center gap-2 w-full aspect-[16/9] rounded-lg border-2 border-dashed border-background-300 hover:border-primary-400 cursor-pointer transition-colors text-center overflow-hidden">
