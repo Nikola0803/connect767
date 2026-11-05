@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import TierBadge from "./ui/TierBadge";
-import { imageCropStyle } from "../lib/imagePosition";
 import { directoryCategories } from "../data/directory";
 import { findIndustry } from "../data/industries";
 import { bookingRateUnit, isRentalBookingType } from "../lib/bookingTypes";
@@ -137,20 +136,29 @@ function ListingHighlights({ listing }) {
 }
 
 function Cover({ listing, listView = false, saved = false, onToggleSaved }) {
-  const coverPosition = listing.coverPosition || "top";
   return (
     <div className={`relative flex-shrink-0 ${listView ? "sm:w-64" : ""}`}>
       <div className={`w-full overflow-hidden bg-background-100 ${listView ? "h-52 sm:h-full" : "aspect-[4/3]"}`}>
         {listing.image ? (
-          <img
-            loading="lazy"
-            decoding="async"
-            alt={`${listing.title} — ${industryLabel(listing)}`}
-            title={`${listing.title} — ${industryLabel(listing)}`}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-            src={listing.image}
-            style={imageCropStyle(coverPosition, listing.coverZoom, "cover")}
-          />
+          <div className="relative h-full w-full overflow-hidden bg-background-100">
+            <img
+              aria-hidden="true"
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 h-full w-full scale-110 object-cover blur-xl opacity-45"
+              src={listing.image}
+            />
+            <div className="absolute inset-0 bg-background-50/15" aria-hidden="true" />
+            <img
+              loading="lazy"
+              decoding="async"
+              alt={`${listing.title} — ${industryLabel(listing)}`}
+              title={`${listing.title} — ${industryLabel(listing)}`}
+              className="relative z-[1] h-full w-full object-contain"
+              src={listing.image}
+            />
+          </div>
         ) : (
           <DefaultListingCover title={listing.title} compact />
         )}

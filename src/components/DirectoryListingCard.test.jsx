@@ -151,7 +151,7 @@ describe("DirectoryListingCard parent category", () => {
     expect(document.querySelector('img[src=""]')).not.toBeInTheDocument();
   });
 
-  it("fills the cover frame even when a legacy listing saved contain mode", () => {
+  it("fills the frame while keeping the complete uploaded cover visible", () => {
     render(
       <MemoryRouter>
         <DirectoryListingCard listing={{ ...listing, coverFit: "contain" }} />
@@ -159,7 +159,9 @@ describe("DirectoryListingCard parent category", () => {
     );
 
     const cover = screen.getByRole("img", { name: /Island Bookkeeper/ });
-    expect(cover).toHaveClass("object-cover");
-    expect(cover).not.toHaveClass("object-contain");
+    expect(cover).toHaveClass("object-contain");
+    expect(cover).not.toHaveClass("object-cover");
+    const backgroundCover = document.querySelector('img[aria-hidden="true"]');
+    expect(backgroundCover).toHaveClass("object-cover", "blur-xl");
   });
 });
