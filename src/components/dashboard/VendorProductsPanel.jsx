@@ -696,10 +696,10 @@ function SellerCenterSummary({ storefrontListing, products, orders, analytics, a
     ["ri-wallet-3-line", formatPrice(grossSales), "Gross Sales"],
   ];
   const metricStyles = [
-    { panel: "bg-gradient-to-br from-primary-50 to-background-50", icon: "bg-primary-100 text-primary-800" },
-    { panel: "bg-gradient-to-br from-secondary-50 to-background-50", icon: "bg-secondary-100 text-secondary-800" },
-    { panel: "bg-gradient-to-br from-primary-50 to-background-50", icon: "bg-primary-100 text-primary-800" },
-    { panel: "bg-gradient-to-br from-background-100 to-background-50", icon: "bg-background-200 text-foreground-700" },
+    { panel: "border-primary-200 border-t-primary-500 bg-gradient-to-br from-primary-50 to-background-50 hover:shadow-[0_14px_34px_rgba(31,112,78,0.14)]", icon: "bg-primary-100 text-primary-800" },
+    { panel: "border-secondary-200 border-t-secondary-400 bg-gradient-to-br from-secondary-50 to-background-50 hover:shadow-[0_14px_34px_rgba(153,119,72,0.14)]", icon: "bg-secondary-100 text-secondary-800" },
+    { panel: "border-primary-200 border-t-primary-500 bg-gradient-to-br from-primary-50 to-background-50 hover:shadow-[0_14px_34px_rgba(31,112,78,0.14)]", icon: "bg-primary-100 text-primary-800" },
+    { panel: "border-secondary-200 border-t-secondary-500 bg-gradient-to-br from-secondary-100/80 to-background-50 hover:shadow-[0_14px_34px_rgba(153,119,72,0.14)]", icon: "bg-secondary-200/70 text-secondary-900" },
   ];
 
   return (
@@ -713,12 +713,14 @@ function SellerCenterSummary({ storefrontListing, products, orders, analytics, a
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary-200 bg-primary-100 text-xl text-primary-800 shadow-sm"><i className="ri-store-2-line" /></span>
       </div>
 
-      <div className="grid grid-cols-2 border-b border-secondary-200 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 border-b border-secondary-200 bg-background-50/55 p-5 sm:grid-cols-4 sm:p-7">
         {metrics.map(([icon, value, label], index) => (
-          <div key={label} className={`px-5 py-6 sm:px-6 ${metricStyles[index].panel} ${index % 2 ? "border-l border-secondary-200" : ""} ${index > 1 ? "border-t border-secondary-200 sm:border-t-0 sm:border-l" : ""}`}>
-            <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${metricStyles[index].icon}`}><i className={`${icon} text-lg`} /></span>
-            <p className="mt-3 text-2xl font-semibold tabular-nums text-foreground-950">{value}</p>
-            <p className="mt-1 text-xs font-medium text-foreground-500">{label}</p>
+          <div key={label} className={`group flex min-h-28 flex-col justify-between rounded-2xl border border-t-4 p-4 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 ${metricStyles[index].panel}`}>
+            <span className={`flex h-9 w-9 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105 ${metricStyles[index].icon}`}><i className={`${icon} text-lg`} /></span>
+            <div className="mt-3">
+              <p className="text-2xl font-semibold tabular-nums text-foreground-950">{value}</p>
+              <p className="mt-1 text-xs font-medium text-foreground-500">{label}</p>
+            </div>
           </div>
         ))}
       </div>
