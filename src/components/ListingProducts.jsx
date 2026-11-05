@@ -150,8 +150,14 @@ export default function ListingProducts({
             <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-primary-700">
               Shop this listing
             </p>
-            <h2 className="font-heading text-2xl font-light text-foreground-950">
-              Products from {listingTitle}
+            <h2 className="font-heading text-2xl font-light leading-tight text-foreground-950 md:text-3xl">
+              Products from{" "}
+              <span
+                className="italic"
+                style={{ color: effectiveLayoutSettings.accentColor || undefined }}
+              >
+                {listingTitle}
+              </span>
             </h2>
           </div>
           {products.length > 3 && (
