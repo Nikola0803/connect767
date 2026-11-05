@@ -17,12 +17,15 @@ describe("ListingProducts", () => {
           slug="kalinago-tours"
           listingTitle="Kalinago Tours"
           initialProducts={products}
+          layoutSettings={{ accentColor: "#0f6b4f" }}
           onAvailabilityChange={onAvailabilityChange}
         />
       </MemoryRouter>,
     );
 
     expect(screen.getByRole("heading", { name: /products from kalinago tours/i })).toBeInTheDocument();
+    expect(screen.getByText("Kalinago Tours")).toHaveClass("italic");
+    expect(screen.getByText("Kalinago Tours")).toHaveStyle({ color: "#0f6b4f" });
     expect(screen.getAllByRole("article")).toHaveLength(2);
     expect(screen.getByRole("link", { name: /open the complete storefront/i })).toHaveAttribute(
       "href",
