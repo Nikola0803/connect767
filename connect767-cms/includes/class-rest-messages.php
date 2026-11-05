@@ -125,6 +125,12 @@ class C767_REST_Messages
             return new WP_Error('c767_too_many_attachments', 'Attach no more than 5 files to one message.', ['status' => 400]);
         }
         $allowed_extensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt'];
+        $allowed_mime_types = [
+            'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf',
+            'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'text/csv', 'text/plain',
+        ];
         foreach ($files as $file) {
             if ((int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || empty($file['tmp_name'])) {
                 return new WP_Error('c767_attachment_failed', 'One of the attachments could not be uploaded. Please try again.', ['status' => 400]);
@@ -135,6 +141,11 @@ class C767_REST_Messages
             $extension = strtolower((string) pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
             if (!in_array($extension, $allowed_extensions, true)) {
                 return new WP_Error('c767_attachment_type', 'Attach an image, PDF, Word, Excel, CSV, or text file.', ['status' => 400]);
+            }
+            $checked = wp_check_filetype_and_ext((string) $file['tmp_name'], (string) $file['name']);
+            $mime_type = (string) ($checked['type'] ?? '');
+            if ($mime_type === '' || !in_array($mime_type, $allowed_mime_types, true)) {
+                return new WP_Error('c767_attachment_type', 'The attachment content does not match an allowed file type.', ['status' => 400]);
             }
         }
         return true;
@@ -148,12 +159,19 @@ class C767_REST_Messages
         require_once ABSPATH . 'wp-admin/includes/image.php';
         $ids = [];
         foreach ($files as $file) {
+            $original_name = sanitize_file_name((string) $file['name']);
+            $extension = strtolower((string) pathinfo($original_name, PATHINFO_EXTENSION));
+            // WordPress media URLs are normally public. Use a high-entropy
+            // stored filename so a private message attachment cannot be
+            // enumerated from the sender's original filename; the friendly
+            // original name is retained separately for the recipient UI.
+            $file['name'] = wp_generate_password(40, false, false) . '.' . $extension;
             $attachment_id = media_handle_sideload($file, $message_id);
             if (is_wp_error($attachment_id)) {
                 foreach ($ids as $stored_id) wp_delete_attachment($stored_id, true);
                 return new WP_Error('c767_attachment_failed', 'An attachment could not be saved: ' . $attachment_id->get_error_message(), ['status' => 400]);
             }
-            update_post_meta($attachment_id, '_c767_original_name', sanitize_file_name((string) $file['name']));
+            update_post_meta($attachment_id, '_c767_original_name', $original_name);
             $ids[] = (int) $attachment_id;
         }
         update_post_meta($message_id, 'attachment_ids', $ids);

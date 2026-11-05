@@ -1,5 +1,4 @@
 import { useState } from "react";
-import StarRating from "./ui/StarRating";
 import { submitReview } from "../data/repository";
 
 function StarPicker({ value, onChange }) {

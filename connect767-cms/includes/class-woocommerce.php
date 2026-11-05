@@ -738,6 +738,10 @@ class C767_WooCommerce
 
     public static function checkout(WP_REST_Request $request)
     {
+        $limited = C767_Stripe_Checkout::check_public_rate_limit('shop-hosted');
+        if (is_wp_error($limited)) {
+            return $limited;
+        }
         $items = (array) $request->get_param('items');
         $shipping = (array) $request->get_param('shipping');
         $order = self::build_pending_order($items, $request->get_param('email'), $shipping);

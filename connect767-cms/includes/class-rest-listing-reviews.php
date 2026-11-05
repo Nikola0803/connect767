@@ -26,6 +26,31 @@ class C767_Rest_Listing_Reviews
 {
     const NAMESPACE_ = 'connect767/v1';
 
+    private static function rate_limit($post_id, $scope)
+    {
+        $address = sanitize_text_field((string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+        $key = 'c767_review_rate_' . md5($scope . '|' . (int) $post_id . '|' . $address);
+        $count = (int) get_transient($key);
+        if ($count >= 5) {
+            return new WP_Error('c767_review_rate_limit', 'Too many reviews were submitted. Please try again later.', ['status' => 429]);
+        }
+        set_transient($key, $count + 1, 10 * MINUTE_IN_SECONDS);
+        return true;
+    }
+
+    private static function validate_review_text($name, $text)
+    {
+        $name_length = function_exists('mb_strlen') ? mb_strlen($name) : strlen($name);
+        $text_length = function_exists('mb_strlen') ? mb_strlen($text) : strlen($text);
+        if ($name === '' || $text === '') {
+            return new WP_Error('c767_missing_review_fields', 'Name, rating, and review text are required.', ['status' => 400]);
+        }
+        if ($name_length > 100 || $text_length > 2000) {
+            return new WP_Error('c767_review_too_long', 'Names are limited to 100 characters and reviews to 2,000 characters.', ['status' => 400]);
+        }
+        return true;
+    }
+
     public static function init()
     {
         add_action('rest_api_init', [__CLASS__, 'register_routes']);
@@ -87,8 +112,13 @@ class C767_Rest_Listing_Reviews
         $name = sanitize_text_field((string) $request->get_param('name'));
         $text = sanitize_textarea_field((string) $request->get_param('text'));
         $rating = max(1, min(5, (int) $request->get_param('stars')));
-        if ($name === '' || $text === '') {
-            return new WP_Error('c767_missing_storefront_review_fields', 'Name, rating, and review text are required.', ['status' => 400]);
+        $valid = self::validate_review_text($name, $text);
+        if (is_wp_error($valid)) {
+            return $valid;
+        }
+        $limited = self::rate_limit($post->ID, 'storefront');
+        if (is_wp_error($limited)) {
+            return $limited;
         }
 
         $rows = self::storefront_review_rows($post->ID);
@@ -121,8 +151,13 @@ class C767_Rest_Listing_Reviews
         $stars = (int) $request->get_param('stars');
         $stars = $stars > 0 ? max(1, min(5, $stars)) : 5;
 
-        if ($name === '' || $text === '') {
-            return new WP_Error('c767_missing_fields', 'Name and review text are required.', ['status' => 400]);
+        $valid = self::validate_review_text($name, $text);
+        if (is_wp_error($valid)) {
+            return $valid;
+        }
+        $limited = self::rate_limit($post->ID, 'listing');
+        if (is_wp_error($limited)) {
+            return $limited;
         }
 
         $raw = get_post_meta($post->ID, 'reviews', true);

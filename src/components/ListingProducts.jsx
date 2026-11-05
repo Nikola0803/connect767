@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import {
@@ -54,7 +54,10 @@ export default function ListingProducts({
   layoutSettings = null,
   previewMode = false,
 }) {
-  const suppliedProducts = Array.isArray(initialProducts) ? initialProducts : null;
+  const suppliedProducts = useMemo(
+    () => Array.isArray(initialProducts) ? initialProducts : null,
+    [initialProducts],
+  );
   const [products, setProducts] = useState(suppliedProducts || []);
   const [loading, setLoading] = useState(!isPreview && !suppliedProducts);
   const [activeProduct, setActiveProduct] = useState(null);
@@ -86,7 +89,7 @@ export default function ListingProducts({
     return () => {
       cancelled = true;
     };
-  }, [slug, isPreview, initialProducts]);
+  }, [slug, isPreview, suppliedProducts]);
 
   useEffect(() => {
     if (fullStorefront || layoutSettings || !slug || isPreview) return undefined;
@@ -288,6 +291,7 @@ function BuyModal({ product, onClose }) {
   const [paymentConfig, setPaymentConfig] = useState(null);
   const [clientSecret, setClientSecret] = useState(null);
   const [orderId, setOrderId] = useState(null);
+  const [orderAccessToken, setOrderAccessToken] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
@@ -353,6 +357,7 @@ function BuyModal({ product, onClose }) {
       });
       setClientSecret(result.clientSecret);
       setOrderId(result.orderId);
+      setOrderAccessToken(result.accessToken);
       setStep("payment");
     } catch {
       setError("Couldn't start card payment — please try again.");
@@ -521,9 +526,13 @@ function BuyModal({ product, onClose }) {
                     ...checkoutDetails,
                   });
                   setOrderId(result.orderId);
-                  return { orderId: result.orderId, paypalOrderId: result.paypalOrderId };
+                  return {
+                    orderId: result.orderId,
+                    paypalOrderId: result.paypalOrderId,
+                    accessToken: result.accessToken,
+                  };
                 }}
-                captureOrder={(id) => captureVendorProductPaypalOrder(id)}
+                captureOrder={(id, accessToken) => captureVendorProductPaypalOrder(id, accessToken)}
                 onSuccess={() => setStep("done")}
                 onError={(message) => setError(message)}
               />
@@ -535,6 +544,7 @@ function BuyModal({ product, onClose }) {
           <Elements stripe={getStripe(paymentConfig.stripePublishableKey)} options={{ clientSecret }}>
             <BuyPaymentForm
               orderId={orderId}
+              accessToken={orderAccessToken}
               onSuccess={() => setStep("done")}
             />
           </Elements>
@@ -555,7 +565,7 @@ function BuyModal({ product, onClose }) {
   );
 }
 
-function BuyPaymentForm({ orderId, onSuccess }) {
+function BuyPaymentForm({ orderId, accessToken, onSuccess }) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
@@ -578,7 +588,7 @@ function BuyPaymentForm({ orderId, onSuccess }) {
     }
 
     try {
-      const result = await confirmVendorOrder(orderId);
+      const result = await confirmVendorOrder(orderId, accessToken);
       if (result.status === "paid") {
         onSuccess();
       } else {

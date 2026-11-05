@@ -44,6 +44,7 @@ export default function CheckoutPage() {
   const [shipping, setShipping] = useState(emptyShipping);
   const [clientSecret, setClientSecret] = useState(null);
   const [orderId, setOrderId] = useState(null);
+  const [orderAccessToken, setOrderAccessToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [fallingBack, setFallingBack] = useState(false);
@@ -83,6 +84,7 @@ export default function CheckoutPage() {
       const result = await createPaymentIntent(items, email, shipping);
       setClientSecret(result.clientSecret);
       setOrderId(result.orderId);
+      setOrderAccessToken(result.accessToken);
     } catch (err) {
       setError(err.message || "Couldn't start checkout. Please try again.");
     }
@@ -235,9 +237,13 @@ export default function CheckoutPage() {
                 createOrder={async () => {
                   if (!requireShipping()) throw new Error("Complete the shipping address first.");
                   const result = await createCartPaypalOrder(items, email, shipping);
-                  return { orderId: result.orderId, paypalOrderId: result.paypalOrderId };
+                  return {
+                    orderId: result.orderId,
+                    paypalOrderId: result.paypalOrderId,
+                    accessToken: result.accessToken,
+                  };
                 }}
-                captureOrder={(id) => captureCartPaypalOrder(id)}
+                captureOrder={(id, accessToken) => captureCartPaypalOrder(id, accessToken)}
                 onSuccess={(id) => {
                   clearCart();
                   navigate(`/checkout/thank-you?order=${id}`);
@@ -266,7 +272,11 @@ export default function CheckoutPage() {
           </>
         ) : (
           <Elements stripe={getStripe(config.stripePublishableKey)} options={{ clientSecret }}>
-            <StripePaymentForm orderId={orderId} onSuccess={() => navigate(`/checkout/thank-you?order=${orderId}`)} />
+            <StripePaymentForm
+              orderId={orderId}
+              accessToken={orderAccessToken}
+              onSuccess={() => navigate(`/checkout/thank-you?order=${orderId}`)}
+            />
           </Elements>
         )}
       </div>
@@ -274,7 +284,7 @@ export default function CheckoutPage() {
   );
 }
 
-function StripePaymentForm({ orderId, onSuccess }) {
+function StripePaymentForm({ orderId, accessToken, onSuccess }) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
@@ -301,7 +311,7 @@ function StripePaymentForm({ orderId, onSuccess }) {
     // confirmOrder() asks Stripe directly, server-side, before marking
     // the WooCommerce order paid.
     try {
-      const result = await confirmOrder(orderId);
+      const result = await confirmOrder(orderId, accessToken);
       if (result.status === "paid") {
         onSuccess();
       } else {

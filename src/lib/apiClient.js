@@ -23,10 +23,29 @@ async function request(url, options = {}) {
 
   const res = await fetch(url, { ...options, headers });
   const text = await res.text();
-  const payload = text ? JSON.parse(text) : null;
+  let payload = null;
+  let invalidJson = false;
+  if (text) {
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      invalidJson = true;
+      payload = { message: res.ok ? "The server returned an invalid response." : text.trim() };
+    }
+  }
 
   if (!res.ok) {
+    // An expired/revoked JWT must not leave the interface looking signed in.
+    // Only clear an existing session; expected 401s from a failed login have
+    // no stored token and therefore do not emit a misleading logout event.
+    if (res.status === 401 && token) {
+      setStoredUser(null);
+      setStoredToken(null);
+    }
     throw new ApiError(payload?.message || res.statusText, res.status, payload);
+  }
+  if (invalidJson) {
+    throw new ApiError(payload.message, 502, payload);
   }
   return payload;
 }

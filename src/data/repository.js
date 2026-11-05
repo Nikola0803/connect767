@@ -181,8 +181,8 @@ export async function createPaymentIntent(items, email, shipping) {
   });
 }
 
-export async function confirmOrder(orderId) {
-  return customClient.post("/checkout/confirm", { orderId });
+export async function confirmOrder(orderId, accessToken) {
+  return customClient.post("/checkout/confirm", { orderId, accessToken });
 }
 
 /**
@@ -201,8 +201,8 @@ export async function createCartPaypalOrder(items, email, shipping) {
   });
 }
 
-export async function captureCartPaypalOrder(orderId) {
-  return customClient.post("/checkout/paypal/capture", { orderId });
+export async function captureCartPaypalOrder(orderId, accessToken) {
+  return customClient.post("/checkout/paypal/capture", { orderId, accessToken });
 }
 
 // ---------- Directory (WordPress `listing` CPT) ----------
@@ -1037,9 +1037,9 @@ export async function createVendorProductCheckout(productId, { name, email, fulf
   });
 }
 
-export async function confirmVendorOrder(orderId) {
+export async function confirmVendorOrder(orderId, accessToken) {
   if (!isLiveApi) return { status: "paid", orderId };
-  return customClient.post(`/vendor-orders/${orderId}/confirm`, {});
+  return customClient.post(`/vendor-orders/${orderId}/confirm`, { accessToken });
 }
 
 /** PayPal's counterpart to createVendorProductCheckout() — see PaypalButton.jsx. */
@@ -1057,9 +1057,9 @@ export async function createVendorProductPaypalOrder(productId, { name, email, f
   });
 }
 
-export async function captureVendorProductPaypalOrder(orderId) {
+export async function captureVendorProductPaypalOrder(orderId, accessToken) {
   if (!isLiveApi) return { status: "paid", orderId };
-  return customClient.post(`/vendor-orders/${orderId}/paypal-capture`, {});
+  return customClient.post(`/vendor-orders/${orderId}/paypal-capture`, { accessToken });
 }
 
 // ---------- Classified listing fee ($40/yr — embedded Stripe + PayPal) ----------
