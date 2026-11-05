@@ -58,6 +58,16 @@ describe("StorefrontCustomizer", () => {
     fireEvent.change(screen.getByLabelText("First tab visitors see"), { target: { value: "products" } });
     fireEvent.click(screen.getByRole("button", { name: "Preview changes" }));
     expect(screen.getByTitle("Full storefront preview")).toHaveAttribute("src", expect.stringContaining("/listings/kalinago-tours/shop?designPreview=1"));
+    expect(screen.getByTitle("Full storefront preview")).toHaveAttribute("src", expect.stringContaining("previewKey="));
+    const previewStorageKey = Object.keys(window.localStorage).find((key) => key.startsWith("connect767-storefront-preview:kalinago-tours:"));
+    expect(previewStorageKey).toBeTruthy();
+    expect(JSON.parse(window.localStorage.getItem(previewStorageKey)).settings).toEqual(expect.objectContaining({
+      productGrid: "4",
+      imageRatio: "landscape",
+      cardCorners: "square",
+      contentWidth: "standard",
+      defaultTab: "products",
+    }));
     fireEvent.click(screen.getByRole("button", { name: "Save & publish" }));
 
     await waitFor(() => expect(repository.updateMyStorefrontSettings).toHaveBeenCalledWith(
