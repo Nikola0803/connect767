@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
 import Studio from "../components/Studio";
-import { shopHeroImage } from "../components/ShopTeaser";
 import { CardSkeleton, EmptyState, ErrorState } from "../components/ui/States";
 import { useAsync } from "../hooks/useAsync";
 import { useCart } from "../hooks/useCart";
@@ -10,6 +9,8 @@ import { getProducts, getShopCategories } from "../data/repository";
 import { sortOptions } from "../data/shop";
 import { productMatchesCategory, productMatchesSearch } from "../lib/productCategories";
 import { sortShopProducts } from "../lib/productSorting";
+
+const shopBannerImage = "https://admin.connect767.com/wp-content/uploads/2026/10/portrait_500KB.jpg";
 
 export default function ShopPage() {
   const [searchParams] = useSearchParams();
@@ -89,14 +90,14 @@ export default function ShopPage() {
             </div>
 
             <div className="relative hidden sm:block">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-[2rem] border border-background-50/15 bg-background-50/5 shadow-[0_24px_70px_rgba(0,0,0,0.28)]">
+              <div className="relative aspect-[5/4] overflow-hidden rounded-[2rem] border border-background-50/15 bg-background-50/5 shadow-[0_24px_70px_rgba(0,0,0,0.28)]">
                 <img
                   fetchPriority="high"
                   decoding="async"
-                  src={shopHeroImage}
+                  src={shopBannerImage}
                   alt="Dominican-made products in the Connect767 Shop"
                   className="h-full w-full object-cover"
-                  style={{ objectPosition: "center 22%" }}
+                  style={{ objectPosition: "center 6%" }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-primary-950/75 via-transparent to-transparent" />
                 <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-4">
