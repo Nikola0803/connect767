@@ -133,7 +133,8 @@ Page component
 | Shop categories | Native WooCommerce product categories (`product_cat`) | |
 | Directory listings | Custom Post Type `listing` | See field list below |
 | Listing categories | Custom taxonomy `listing_category` (hierarchical) | 7 top-level categories (Services, Products, Rentals, Eat & Drink, Events, Fitness, Other) with 191 specific industries nested under them — see `src/data/industries.js` for the canonical list. Listings are tagged with both the parent category term and the specific industry term |
-| Listing tier (Free/Featured/Classified) | ACF field on `listing`, **not** a taxonomy | It's a paid plan state, changes independently of content |
+| Listing tier (Free/Classified) | ACF field on `listing`, **not** a taxonomy | The paid plan state; Featured is a separate promotion that can be applied to either plan |
+| Featured listing promotion | `featured` plus optional `featured_until` fields on `listing` | Controls the Featured badge, priority placement, and homepage eligibility independently of the listing tier |
 | Blog posts | Native WordPress `post` CPT | Use core `category` taxonomy for the post tag shown on cards |
 | Uniform templates | Custom Post Type `uniform_template` | See field list below — new in this pass, not yet backed by real product photography |
 | Users (shoppers vs. business owners) | Core `wp_users` + a custom role or user meta `account_type` | See Auth section |
@@ -147,7 +148,7 @@ group (or plain post meta, exposed via `register_post_meta`) with:
 |---|---|---|
 | `location` | text | `listing.location` |
 | `price_tier` | select `$` / `$$` / `$$$` | `listing.price` |
-| `tier` | select `Free` / `Featured` / `Classified` | `listing.badge` |
+| `tier` | select `Free` / `Classified` | `listing.badge` |
 | `verified` | true/false | `listing.verified` |
 | `rating` | number (0–5) | `listing.rating` |
 | `review_count` | number | `listing.reviews` |
@@ -159,7 +160,12 @@ group (or plain post meta, exposed via `register_post_meta`) with:
 | `reviews` | repeater `{name, time, stars, text}` | detail page review list |
 | `phone`, `email`, `website`, `address`, `instagram`, `facebook` | text/url | contact sidebar |
 | `map_embed_url` | url | Google Maps `iframe` `src` on the detail page |
-| `featured` | true/false | used by the homepage "Featured listings" query (`featured=true`) |
+| `featured` | true/false | independent promotion used for the Featured badge, priority placement, and homepage query (`featured=true`) |
+| `featured_until` | date (optional) | promotion remains active through this date; blank means no expiry |
+
+Legacy records whose `tier` is `Featured` remain compatible: the app treats them as
+Free listings with an active Featured promotion. New and edited records should keep
+the plan in `tier` and the promotion in `featured`/`featured_until`.
 
 > **Implemented:** `location_country`, `location_region`, `location_city`, and
 > `location_display` are real, separately-editable fields on the `listing` CPT

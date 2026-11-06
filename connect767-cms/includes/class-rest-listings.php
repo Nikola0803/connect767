@@ -512,6 +512,12 @@ class C767_REST_Listings
             $category_names = $terms && !is_wp_error($terms)
                 ? implode(', ', wp_list_pluck($terms, 'name'))
                 : '';
+            $legacy_featured_tier = get_post_meta($post->ID, 'tier', true) === 'Featured';
+            $featured_until = (string) get_post_meta($post->ID, 'featured_until', true);
+            $featured_active = $legacy_featured_tier || (
+                get_post_meta($post->ID, 'featured', true) === '1'
+                && ($featured_until === '' || $featured_until >= current_time('Y-m-d'))
+            );
 
             return [
                 'id' => $post->ID,
@@ -519,7 +525,9 @@ class C767_REST_Listings
                 'title' => $post->post_title,
                 'status' => $post->post_status,
                 'category' => $category_names,
-                'tier' => get_post_meta($post->ID, 'tier', true) ?: 'Free',
+                'tier' => $legacy_featured_tier ? 'Free' : (get_post_meta($post->ID, 'tier', true) ?: 'Free'),
+                'featured' => $featured_active,
+                'featuredUntil' => $featured_until,
                 'paymentStatus' => get_post_meta($post->ID, 'payment_status', true) ?: 'n/a',
                 'location' => get_post_meta($post->ID, 'location_display', true) ?: '',
                 'rating' => get_post_meta($post->ID, 'rating', true) ?: '0',

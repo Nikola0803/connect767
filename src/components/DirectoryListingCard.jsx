@@ -156,7 +156,7 @@ function Cover({ listing, listView = false, saved = false, onToggleSaved }) {
         )}
       </div>
       <div className="absolute inset-0 z-10 bg-gradient-to-t from-foreground-950/35 via-transparent to-transparent pointer-events-none" />
-      <TierBadge tier={listing.badge} className="absolute top-3 left-3 z-20 shadow-sm" />
+      <TierBadge tier={listing.badge} featured={listing.isFeatured} className="absolute top-3 left-3 z-20 shadow-sm" />
       {onToggleSaved && (
         <div className="absolute top-3 right-3 z-20 flex flex-col items-end gap-2">
           <button

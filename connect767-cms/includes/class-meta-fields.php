@@ -86,7 +86,7 @@ class C767_Meta_Fields
             'tier' => [
                 'label' => 'Listing tier',
                 'type' => 'string',
-                'options' => ['Free', 'Featured', 'Classified'],
+                'options' => ['Free', 'Classified'],
             ],
             // Needed alongside `tier` when an admin grants Classified by hand
             // (a comp, or a payment taken offline). Without it the listing
@@ -100,7 +100,12 @@ class C767_Meta_Fields
                 'options' => ['n/a', 'unpaid', 'paid'],
             ],
             'verified' => ['label' => 'Verified badge', 'type' => 'boolean'],
-            'featured' => ['label' => 'Show in homepage Featured section', 'type' => 'boolean'],
+            'featured' => ['label' => 'Featured promotion', 'type' => 'boolean'],
+            'featured_until' => [
+                'label' => 'Featured promotion end date (leave blank for no expiry)',
+                'type' => 'string',
+                'input_type' => 'date',
+            ],
             'booking_enabled' => ['label' => 'Accept booking requests (owner-toggled from their dashboard)', 'type' => 'boolean'],
             'sell_products' => ['label' => 'Sell products from this listing', 'type' => 'boolean'],
             'hide_contact_info' => ['label' => 'Hide contact information while paid bookings are enabled', 'type' => 'boolean'],
@@ -458,9 +463,10 @@ class C767_Meta_Fields
                 echo '</select>';
             } else {
                 printf(
-                    '<input type="text" id="c767_%1$s" name="c767_%1$s" value="%2$s" style="width:100%%;" />',
+                    '<input type="%3$s" id="c767_%1$s" name="c767_%1$s" value="%2$s" style="width:100%%;" />',
                     esc_attr($key),
-                    esc_attr($value)
+                    esc_attr($value),
+                    esc_attr($def['input_type'] ?? 'text')
                 );
             }
             echo '</td></tr>';

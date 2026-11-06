@@ -177,7 +177,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                         "this business is verified" instead of occupying a slot
                         of its own. */}
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <TierBadge tier={data.badge} />
+                      <TierBadge tier={data.badge} featured={data.isFeatured} />
                     </div>
                     <h1 className="font-heading text-3xl md:text-4xl font-light text-foreground-950 leading-tight flex items-center gap-3">
                       {data.logo && (
