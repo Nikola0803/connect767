@@ -98,6 +98,13 @@ function isTruthyMeta(value) {
   return v !== "" && v !== "0" && v !== "false" && v !== "no";
 }
 
+function isFeaturedPromotionActive(acf) {
+  if (acf.tier === "Featured") return true;
+  if (!isTruthyMeta(acf.featured)) return false;
+  const endDate = String(acf.featured_until || "").trim();
+  return !endDate || endDate >= new Date().toISOString().slice(0, 10);
+}
+
 function featuredImage(wpPost) {
   const media = wpPost?._embedded?.["wp:featuredmedia"]?.[0];
   return media?.source_url || media?.media_details?.sizes?.large?.source_url || "";
@@ -294,6 +301,9 @@ export function mapWcCategory(wc) {
 /** WordPress `listing` CPT -> directory card view model */
 export function mapListingCpt(wp) {
   const acf = wp.acf || wp.meta || {};
+  const legacyFeaturedTier = acf.tier === "Featured";
+  const listingTier = legacyFeaturedTier ? "Free" : acf.tier || "Free";
+  const isFeatured = isFeaturedPromotionActive(acf);
   // A listing carries up to two listing_category terms: the top-level
   // category (parent === 0, e.g. "services") and the industry under it
   // (parent !== 0, e.g. "accounting-and-bookkeeping"). firstTerm() grabbed
@@ -353,7 +363,7 @@ export function mapListingCpt(wp) {
     parentCategoryLabel: category,
     industry: industrySlug ? { name: industryLabel, slug: industrySlug } : null,
     priceTier: acf.price_tier || "$",
-    tier: acf.tier || "Free",
+    tier: listingTier,
     verified: isTruthyMeta(acf.verified) ? "verified" : "",
     rating: acf.rating || "0",
     reviewCount: acf.review_count ?? 0,
@@ -385,7 +395,7 @@ export function mapListingCpt(wp) {
     },
     attributes: [
       isTruthyMeta(acf.verified) ? "verified" : "",
-      isTruthyMeta(acf.featured) ? "featured" : "",
+      isFeatured ? "featured" : "",
       isTruthyMeta(acf.booking_enabled) ? "booking available accepts bookings" : "",
     ],
     map: acf.map_embed_url || "",
@@ -415,13 +425,13 @@ export function mapListingCpt(wp) {
     amenities: (acf.amenities || []).map((amenity) => decodeEntities(amenity)),
     price: acf.price_tier || "$",
     location: acf.location || "",
-    badge: acf.tier || "Free",
+    badge: listingTier,
     badgeIcon:
-      acf.tier === "Classified"
+      listingTier === "Classified"
         ? "ri-vip-crown-line"
-        : acf.tier === "Featured"
-        ? "ri-star-line"
         : "ri-price-tag-3-line",
+    isFeatured,
+    featuredUntil: acf.featured_until || "",
     verified: isTruthyMeta(acf.verified),
     // Backed by the CMS's `booking_enabled` meta (class-meta-fields.php) and
     // class-rest-bookings.php, both of which already existed — the frontend

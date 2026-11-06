@@ -5,7 +5,7 @@ import { CardSkeleton, ErrorState } from "./ui/States";
 import { useAsync } from "../hooks/useAsync";
 import { getFeaturedListings } from "../data/repository";
 
-const tabs = ["All", "Classified", "Featured", "Free"];
+const tabs = ["All", "Classified", "Free"];
 
 export default function Featured() {
   const { data: listings, loading, error, reload } = useAsync(() => getFeaturedListings(), []);

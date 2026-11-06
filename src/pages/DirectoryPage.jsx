@@ -117,7 +117,8 @@ export default function DirectoryPage() {
       const matchesSearch = listingMatchesSearch(l, search);
       const matchesCategory = category === "all" || l.categorySlug === category;
       const matchesIndustry = industry === "all" || l.industrySlug === industry;
-      const matchesTier = tier === "all" || l.badge === tier;
+      const matchesTier =
+        tier === "all" || (tier === "Featured" ? l.isFeatured : l.badge === tier);
       const matchesPrice = priceTier === "all" || l.price === priceTier;
       const matchesEducation =
         educationFilter === "all" || (l.education || "").toLowerCase() === educationFilter.toLowerCase();
@@ -134,19 +135,24 @@ export default function DirectoryPage() {
     switch (sort) {
       case "reviews":
         list = [...list].sort(
-          (a, b) => parseInt(b.reviews.replace(/\D/g, "")) - parseInt(a.reviews.replace(/\D/g, ""))
+          (a, b) => Number(b.isFeatured) - Number(a.isFeatured)
+            || parseInt(b.reviews.replace(/\D/g, "")) - parseInt(a.reviews.replace(/\D/g, ""))
         );
         break;
       case "price-low":
-        list = [...list].sort((a, b) => a.price.length - b.price.length);
+        list = [...list].sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured)
+          || a.price.length - b.price.length);
         break;
       case "price-high":
-        list = [...list].sort((a, b) => b.price.length - a.price.length);
+        list = [...list].sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured)
+          || b.price.length - a.price.length);
         break;
       case "rating":
-        list = [...list].sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating));
+        list = [...list].sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured)
+          || parseFloat(b.rating) - parseFloat(a.rating));
         break;
       default:
+        list = [...list].sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured));
         break;
     }
     return list;

@@ -349,7 +349,7 @@ export async function getFeaturedListings() {
   // homepage fixture omitted descriptions, exact experience, industry labels,
   // booking state, and image positioning, so the shared redesigned card could
   // only render a stripped-down version of itself on the homepage.
-  return (await getListings()).slice(0, 6);
+  return (await getListings()).filter((listing) => listing.isFeatured).slice(0, 6);
 }
 
 export async function getHomeCategories() {

@@ -289,16 +289,37 @@ describe("mapWcCategory", () => {
 });
 
 describe("mapListingCpt", () => {
-  it("picks a badge icon based on tier", () => {
+  it("keeps the listing plan separate from the Featured promotion", () => {
     const classified = mapListingCpt({ id: 1, slug: "a", title: "A", acf: { tier: "Classified" } });
     expect(classified.badgeIcon).toBe("ri-vip-crown-line");
 
     const featured = mapListingCpt({ id: 2, slug: "b", title: "B", acf: { tier: "Featured" } });
-    expect(featured.badgeIcon).toBe("ri-star-line");
+    expect(featured).toMatchObject({ badge: "Free", isFeatured: true });
+    expect(featured.badgeIcon).toBe("ri-price-tag-3-line");
 
     const free = mapListingCpt({ id: 3, slug: "c", title: "C", acf: {} });
     expect(free.badgeIcon).toBe("ri-price-tag-3-line");
     expect(free.badge).toBe("Free");
+  });
+
+  it("allows a Classified listing to carry an active Featured promotion", () => {
+    const listing = mapListingCpt({
+      id: 4,
+      slug: "both",
+      title: "Both",
+      acf: { tier: "Classified", featured: true, featured_until: "2999-12-31" },
+    });
+    expect(listing).toMatchObject({ badge: "Classified", isFeatured: true });
+  });
+
+  it("expires a Featured promotion after its end date", () => {
+    const listing = mapListingCpt({
+      id: 5,
+      slug: "expired",
+      title: "Expired",
+      acf: { tier: "Classified", featured: true, featured_until: "2000-01-01" },
+    });
+    expect(listing.isFeatured).toBe(false);
   });
 
   it("maps public booking price and duration without exposing a meeting link", () => {

@@ -22,7 +22,7 @@ const styles = {
  * Mirrors what will come back as a WooCommerce/CPT "featured" or "tier" meta
  * field or taxonomy term once the WordPress plugin is wired up.
  */
-export default function TierBadge({ tier, size = "md", className = "" }) {
+export default function TierBadge({ tier, featured = false, size = "md", className = "" }) {
   /*
    * Only paid//promoted tiers get a badge.
    *
@@ -39,18 +39,27 @@ export default function TierBadge({ tier, size = "md", className = "" }) {
    */
   const key = String(tier || "").trim().toLowerCase();
   const match = Object.keys(styles).find((k) => k.toLowerCase() === key);
-  if (!match || match === "Free") return null;
+  const tierLabel = match && !["Free", "Featured"].includes(match) ? match : null;
+  const badges = [tierLabel, featured ? "Featured" : null].filter(Boolean);
+  if (!badges.length) return null;
 
-  const style = styles[match];
   const sizeClass =
     size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-[11px]";
 
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full font-semibold ${sizeClass} ${style.className} ${className}`}
-    >
-      {style.icon && <i className={style.icon} />}
-      {match}
+    <span className={`inline-flex flex-wrap items-center gap-1.5 ${className}`}>
+      {badges.map((label) => {
+        const style = styles[label];
+        return (
+          <span
+            key={label}
+            className={`inline-flex items-center gap-1 rounded-full font-semibold ${sizeClass} ${style.className}`}
+          >
+            {style.icon && <i className={style.icon} />}
+            {label}
+          </span>
+        );
+      })}
     </span>
   );
 }

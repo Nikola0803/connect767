@@ -42,10 +42,10 @@ function scoreListing(listing, criteria) {
   const ratingValue = Math.min(parseFloat(listing.rating) || 0, 5);
   score += (ratingValue / 5) * weights.rating;
 
-  // Tier badge — Classified/Featured listings get a relevance bump.
+  // Plan and promotion are independent, stackable quality signals.
   maxPossible += weights.tier;
-  if (listing.badge === "Classified") score += weights.tier;
-  else if (listing.badge === "Featured") score += weights.tier * 0.6;
+  if (listing.badge === "Classified") score += weights.tier * 0.7;
+  if (listing.isFeatured) score += weights.tier * 0.3;
 
   // Location — loose substring match against the free-text location field.
   // (Gets meaningfully more precise once listings have structured

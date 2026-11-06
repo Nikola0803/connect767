@@ -39,7 +39,7 @@ export function canonicalDirectoryCategories(wordPressCategories = []) {
 }
 
 export const tierOptions = [
-  { label: "All Tiers", value: "all" },
+  { label: "All listing types", value: "all" },
   { label: "Classified", value: "Classified" },
   { label: "Featured", value: "Featured" },
   { label: "Free", value: "Free" },
@@ -98,6 +98,7 @@ export const directoryListings = [
     price: "$$",
     location: "Kalinago Territory, Dominica",
     badge: "Classified",
+    isFeatured: true,
     badgeIcon: "ri-vip-crown-line",
     verified: true,
     rating: "5",
@@ -115,6 +116,7 @@ export const directoryListings = [
     price: "$$",
     location: "Roseau, Dominica",
     badge: "Classified",
+    isFeatured: true,
     badgeIcon: "ri-vip-crown-line",
     verified: true,
     rating: "5",

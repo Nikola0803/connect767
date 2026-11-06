@@ -220,7 +220,7 @@ export default function DashboardPage() {
                         <h3 className="font-heading text-base font-medium text-foreground-950 truncate">
                           {item.title}
                         </h3>
-                        <TierBadge tier={item.tier} />
+                        <TierBadge tier={item.tier} featured={item.featured} />
                         <span
                           className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${status.className}`}
                         >

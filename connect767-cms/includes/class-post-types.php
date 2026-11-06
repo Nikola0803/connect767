@@ -438,11 +438,49 @@ class C767_Post_Types
         add_filter('rest_listing_query', function ($args, $request) {
             $featured = $request->get_param('featured');
             if ($featured !== null) {
-                $args['meta_query'][] = [
-                    'key' => 'featured',
-                    'value' => filter_var($featured, FILTER_VALIDATE_BOOLEAN) ? '1' : '0',
-                    'compare' => '=',
-                ];
+                $is_featured = filter_var($featured, FILTER_VALIDATE_BOOLEAN);
+                if ($is_featured) {
+                    $args['meta_query'][] = [
+                        'relation' => 'OR',
+                        [
+                            'relation' => 'AND',
+                            [
+                                'key' => 'featured',
+                                'value' => '1',
+                                'compare' => '=',
+                            ],
+                            [
+                                'relation' => 'OR',
+                                [
+                                    'key' => 'featured_until',
+                                    'compare' => 'NOT EXISTS',
+                                ],
+                                [
+                                    'key' => 'featured_until',
+                                    'value' => '',
+                                    'compare' => '=',
+                                ],
+                                [
+                                    'key' => 'featured_until',
+                                    'value' => current_time('Y-m-d'),
+                                    'compare' => '>=',
+                                    'type' => 'DATE',
+                                ],
+                            ],
+                        ],
+                        [
+                            'key' => 'tier',
+                            'value' => 'Featured',
+                            'compare' => '=',
+                        ],
+                    ];
+                } else {
+                    $args['meta_query'][] = [
+                        'key' => 'featured',
+                        'value' => '0',
+                        'compare' => '=',
+                    ];
+                }
             }
 
             // Core WordPress search only checks title/content/excerpt. Mark

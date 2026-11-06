@@ -107,7 +107,8 @@ class C767_REST_Match
                 'title' => $item['title']['rendered'] ?? '',
                 'categorySlug' => $category_term['slug'] ?? ($acf['category_slug'] ?? ''),
                 'price' => $acf['price_tier'] ?? '$',
-                'badge' => $acf['tier'] ?? 'Free',
+                'badge' => ($acf['tier'] ?? '') === 'Featured' ? 'Free' : ($acf['tier'] ?? 'Free'),
+                'isFeatured' => self::is_featured_promotion_active($acf),
                 'rating' => $acf['rating'] ?? 0,
                 'location' => $acf['location'] ?? '',
             ];
@@ -140,9 +141,10 @@ class C767_REST_Match
 
         $max += $weights['tier'];
         if (($listing['badge'] ?? '') === 'Classified') {
-            $score += $weights['tier'];
-        } elseif (($listing['badge'] ?? '') === 'Featured') {
-            $score += $weights['tier'] * 0.6;
+            $score += $weights['tier'] * 0.7;
+        }
+        if (!empty($listing['isFeatured'])) {
+            $score += $weights['tier'] * 0.3;
         }
 
         $trimmed_location = trim($criteria['location']);
@@ -161,5 +163,20 @@ class C767_REST_Match
 
         $pct = ($score / $max) * 100;
         return (int) round(max(5, min(99, $pct)));
+    }
+
+    private static function is_featured_promotion_active($acf)
+    {
+        if (($acf['tier'] ?? '') === 'Featured') {
+            return true;
+        }
+
+        $featured = filter_var($acf['featured'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        if (!$featured) {
+            return false;
+        }
+
+        $end_date = sanitize_text_field((string) ($acf['featured_until'] ?? ''));
+        return $end_date === '' || $end_date >= current_time('Y-m-d');
     }
 }

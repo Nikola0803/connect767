@@ -2,9 +2,9 @@ import { describe, it, expect } from "vitest";
 import { hydrateMatchedListings, matchListingsLocally } from "./matching";
 
 const listings = [
-  { id: 1, categorySlug: "tours", price: "$$", rating: "4.8", badge: "Classified", location: "Roseau, Dominica" },
+  { id: 1, categorySlug: "tours", price: "$$", rating: "4.8", badge: "Classified", isFeatured: true, location: "Roseau, Dominica" },
   { id: 2, categorySlug: "finance", price: "$", rating: "3.5", badge: "Free", location: "Portsmouth" },
-  { id: 3, categorySlug: "tours", price: "$", rating: "4.2", badge: "Featured", location: "Roseau" },
+  { id: 3, categorySlug: "tours", price: "$", rating: "4.2", badge: "Free", isFeatured: true, location: "Roseau" },
 ];
 
 describe("matchListingsLocally", () => {
@@ -58,6 +58,22 @@ describe("matchListingsLocally", () => {
       expect(r.matchScore).toBeGreaterThanOrEqual(5);
       expect(r.matchScore).toBeLessThanOrEqual(99);
     });
+  });
+
+  it("scores Classified and Featured as independent, stackable signals", () => {
+    const sameRating = [
+      { id: "free", badge: "Free", rating: "4.0" },
+      { id: "featured", badge: "Free", isFeatured: true, rating: "4.0" },
+      { id: "classified", badge: "Classified", rating: "4.0" },
+      { id: "both", badge: "Classified", isFeatured: true, rating: "4.0" },
+    ];
+    const scores = Object.fromEntries(
+      matchListingsLocally(sameRating, {}).map((item) => [item.id, item.matchScore])
+    );
+
+    expect(scores.both).toBeGreaterThan(scores.classified);
+    expect(scores.classified).toBeGreaterThan(scores.featured);
+    expect(scores.featured).toBeGreaterThan(scores.free);
   });
 
   it("does not mutate the original listing objects", () => {

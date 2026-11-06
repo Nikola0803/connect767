@@ -17,6 +17,19 @@ const listing = {
 };
 
 describe("DirectoryListingCard parent category", () => {
+  it("shows Classified and Featured together", () => {
+    render(
+      <MemoryRouter>
+        <DirectoryListingCard
+          listing={{ ...listing, badge: "Classified", isFeatured: true }}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Classified")).toBeInTheDocument();
+    expect(screen.getByText("Featured")).toBeInTheDocument();
+  });
+
   it("shows only the numeric experience value beneath Yrs Exp.", () => {
     render(
       <MemoryRouter>
@@ -171,6 +184,6 @@ describe("DirectoryListingCard parent category", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Classified")).toHaveClass("z-20");
+    expect(screen.getByText("Classified").parentElement).toHaveClass("z-20");
   });
 });
