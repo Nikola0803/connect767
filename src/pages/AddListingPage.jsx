@@ -640,7 +640,7 @@ export default function AddListingPage() {
           {step === 2 && (
             <div>
               <h1 className="font-heading text-3xl md:text-4xl font-light text-foreground-950 mb-3">
-                Tell us about your <span className="text-accent-500 italic">listing</span>
+                Describe Your <span className="text-accent-500 italic">Listing</span>
               </h1>
               <p className="text-sm text-foreground-600 font-label mb-10">
                 This is what shows up on your profile card and in search results.
