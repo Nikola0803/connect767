@@ -19,7 +19,7 @@ export default function Blog() {
             </div>
             <h4 className="font-heading text-3xl md:text-5xl font-light text-foreground-950 leading-tight max-w-2xl">
               <Link className="hover:text-primary-700 cursor-pointer" to="/blog">
-                Field notes for owners, buyers &amp; <span className="italic">makers.</span>
+                Insights, Ideas &amp; <span className="italic">Opportunities</span>
               </Link>
             </h4>
           </div>
