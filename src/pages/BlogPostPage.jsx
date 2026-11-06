@@ -168,12 +168,9 @@ export default function BlogPostPage() {
     );
   }
 
-  // Real WP author data (live mode, when the post's author isn't one of the
-  // three built-in personas) takes priority; the local authors.js map covers
-  // local-fixture mode and the designed team/amara/marcus personas.
-  const author = post.wpAuthor?.name
-    ? post.wpAuthor
-    : authors[post.author] || authors.team;
+  // Keep the public editorial identity consistent even when WordPress posts
+  // were created by different administrator accounts.
+  const author = authors.team;
 
   return (
     <div className="pt-16 md:pt-20">
