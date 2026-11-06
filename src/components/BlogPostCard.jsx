@@ -1,10 +1,16 @@
 import { Link } from "react-router-dom";
 
 export default function BlogPostCard({ post }) {
+  const isWarmAccent = post.categorySlug === "shop";
+
   return (
     <Link
       to={`/blog/${post.slug}`}
-      className="group flex h-full flex-col bg-background-50 rounded-2xl border border-background-200/70 overflow-hidden hover:-translate-y-1 hover:border-primary-300 hover:shadow-[0_18px_45px_rgba(8,68,45,0.10)] transition-all duration-300 cursor-pointer"
+      className={`group flex h-full flex-col overflow-hidden rounded-2xl border border-t-4 bg-gradient-to-br from-background-50 to-background-100/55 shadow-sm transition-all duration-300 hover:-translate-y-1 cursor-pointer ${
+        isWarmAccent
+          ? "border-secondary-200 border-t-secondary-500 hover:shadow-[0_18px_45px_rgba(153,119,72,0.14)]"
+          : "border-primary-200 border-t-primary-500 hover:shadow-[0_18px_45px_rgba(31,112,78,0.14)]"
+      }`}
     >
       <div className="w-full h-52 overflow-hidden">
         <img
