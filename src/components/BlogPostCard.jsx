@@ -4,7 +4,7 @@ export default function BlogPostCard({ post }) {
   return (
     <Link
       to={`/blog/${post.slug}`}
-      className="group block bg-background-100/60 rounded-2xl border border-background-200/70 overflow-hidden hover:border-primary-300 transition-colors cursor-pointer"
+      className="group flex h-full flex-col bg-background-50 rounded-2xl border border-background-200/70 overflow-hidden hover:-translate-y-1 hover:border-primary-300 hover:shadow-[0_18px_45px_rgba(8,68,45,0.10)] transition-all duration-300 cursor-pointer"
     >
       <div className="w-full h-52 overflow-hidden">
         <img
@@ -16,7 +16,7 @@ export default function BlogPostCard({ post }) {
           src={post.image}
         />
       </div>
-      <div className="p-6 flex flex-col flex-1">
+      <div className="p-5 md:p-6 flex flex-col flex-1">
         <div className="flex items-center gap-3 text-xs text-foreground-600 font-label mb-3 flex-wrap">
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-100 text-accent-900 font-semibold">
             {post.tag}

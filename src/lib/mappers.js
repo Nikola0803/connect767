@@ -606,7 +606,11 @@ export function mapWpPost(wp, { detail = false } = {}) {
     // filled in (the normal case for anything written through wp-admin's
     // regular editor). See class-meta-fields.php's build_acf_object() for
     // the matching backend-side fix — this is the defense-in-depth half.
-    body: acf.body?.length ? acf.body : [{ type: "p", text: stripHtml(wp.content?.rendered || "") }],
+    body: acf.body?.length
+      ? acf.body
+      : wp.content?.rendered
+      ? [{ type: "html", html: wp.content.rendered }]
+      : [],
   };
 }
 

@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import BlogPostCard from "../components/BlogPostCard";
 import { CardSkeleton, EmptyState, ErrorState } from "../components/ui/States";
 import { useAsync } from "../hooks/useAsync";
 import { getBlogPosts, getBlogCategories } from "../data/repository";
 
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 7;
 
 export default function BlogPage() {
   const [search, setSearch] = useState("");
@@ -29,6 +30,8 @@ export default function BlogPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const featuredPost = pageItems[0];
+  const remainingPosts = pageItems.slice(1);
 
   const updateFilter = (setter) => (value) => {
     setter(value);
@@ -37,7 +40,7 @@ export default function BlogPage() {
 
   return (
     <div className="pt-16 md:pt-20">
-      <div className="w-full px-4 md:px-8 lg:px-12 py-14 md:py-20 bg-background-100/50 border-b border-background-200/70">
+      <div className="w-full px-4 md:px-8 lg:px-12 py-14 md:py-20 bg-[radial-gradient(circle_at_top_right,rgba(125,197,157,0.22),transparent_42%)] border-b border-background-200/70">
         <div className="max-w-3xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-100 text-primary-800 text-xs font-medium mb-4">
             <i className="ri-book-open-line" />
@@ -54,7 +57,7 @@ export default function BlogPage() {
 
       <div className="w-full px-4 md:px-8 lg:px-12 py-10">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-10">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-10 rounded-2xl border border-background-200/70 bg-background-50 p-3 md:p-4 shadow-sm">
             <div className="flex items-center flex-wrap gap-1.5 flex-1">
               {(categories || []).map((cat) => (
                 <button
@@ -102,12 +105,52 @@ export default function BlogPage() {
             />
           )}
 
-          {!loading && !error && pageItems.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-              {pageItems.map((post) => (
-                <BlogPostCard key={post.slug} post={post} />
-              ))}
-            </div>
+          {!loading && !error && featuredPost && (
+            <>
+              <Link
+                to={`/blog/${featuredPost.slug}`}
+                className="group grid overflow-hidden rounded-3xl border border-background-200/70 bg-background-50 shadow-[0_24px_70px_rgba(8,68,45,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-primary-300 md:grid-cols-[1.15fr_0.85fr]"
+              >
+                <div className="h-64 overflow-hidden md:h-[430px]">
+                  <img
+                    src={featuredPost.image}
+                    alt={featuredPost.title}
+                    className="h-full w-full object-cover object-top transition-transform duration-700 group-hover:scale-[1.03]"
+                  />
+                </div>
+                <div className="flex flex-col justify-center p-7 md:p-10 lg:p-12">
+                  <div className="mb-5 flex flex-wrap items-center gap-2.5 text-xs text-foreground-600 font-label">
+                    <span className="rounded-full bg-accent-100 px-2.5 py-1 font-semibold text-accent-900">
+                      {featuredPost.tag}
+                    </span>
+                    <span>{featuredPost.date}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{featuredPost.readTime}</span>
+                  </div>
+                  <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-700">
+                    Featured story
+                  </p>
+                  <h2 className="mb-5 font-heading text-3xl font-medium leading-tight text-foreground-950 transition-colors group-hover:text-primary-700 md:text-4xl">
+                    {featuredPost.title}
+                  </h2>
+                  <p className="mb-7 text-base leading-7 text-foreground-600">
+                    {featuredPost.excerpt}
+                  </p>
+                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary-700">
+                    Read the story
+                    <i className="ri-arrow-right-line transition-transform group-hover:translate-x-1" />
+                  </span>
+                </div>
+              </Link>
+
+              {remainingPosts.length > 0 && (
+                <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
+                  {remainingPosts.map((post) => (
+                    <BlogPostCard key={post.slug} post={post} />
+                  ))}
+                </div>
+              )}
+            </>
           )}
 
           {totalPages > 1 && (
