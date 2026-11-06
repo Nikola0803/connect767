@@ -17,7 +17,7 @@ const listing = {
 };
 
 describe("DirectoryListingCard parent category", () => {
-  it("shows Classified and Featured together", () => {
+  it("shows only Classified when the tier also includes featured placement", () => {
     render(
       <MemoryRouter>
         <DirectoryListingCard
@@ -27,7 +27,20 @@ describe("DirectoryListingCard parent category", () => {
     );
 
     expect(screen.getByText("Classified")).toBeInTheDocument();
+    expect(screen.queryByText("Featured")).not.toBeInTheDocument();
+  });
+
+  it("shows Featured when it is the listing's standalone promotion", () => {
+    render(
+      <MemoryRouter>
+        <DirectoryListingCard
+          listing={{ ...listing, badge: "Free", isFeatured: true }}
+        />
+      </MemoryRouter>,
+    );
+
     expect(screen.getByText("Featured")).toBeInTheDocument();
+    expect(screen.queryByText("Classified")).not.toBeInTheDocument();
   });
 
   it("shows only the numeric experience value beneath Yrs Exp.", () => {
