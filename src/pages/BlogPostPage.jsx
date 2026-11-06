@@ -4,6 +4,7 @@ import { useAsync } from "../hooks/useAsync";
 import { getBlogPostBySlug, getRelatedBlogPosts } from "../data/repository";
 import { authors } from "../data/blog";
 import BlogPostCard from "../components/BlogPostCard";
+import ShareMenu from "../components/ShareMenu";
 import { Spinner, ErrorState } from "../components/ui/States";
 
 function headingId(text, index) {
@@ -23,7 +24,7 @@ function ArticleBody({ blocks }) {
             <h2
               key={i}
               id={headingId(block.text, i)}
-              className="scroll-mt-28 pt-8 font-heading text-2xl font-medium leading-tight text-foreground-950 md:text-3xl"
+              className="scroll-mt-28 mt-10 border-l-4 border-primary-500 pl-4 font-heading text-2xl font-medium leading-tight text-foreground-950 md:text-3xl"
             >
               {block.text}
             </h2>
@@ -71,7 +72,7 @@ function ArticleBody({ blocks }) {
           return (
             <div
               key={i}
-              className="my-5 text-[17px] leading-8 text-foreground-700 [&_a]:font-medium [&_a]:text-primary-700 [&_a]:underline [&_blockquote]:my-8 [&_blockquote]:border-l-4 [&_blockquote]:border-accent-500 [&_blockquote]:pl-6 [&_h2]:scroll-mt-28 [&_h2]:pt-8 [&_h2]:font-heading [&_h2]:text-3xl [&_h2]:font-medium [&_h2]:text-foreground-950 [&_h3]:pt-5 [&_h3]:font-heading [&_h3]:text-2xl [&_h3]:text-foreground-950 [&_img]:my-8 [&_img]:w-full [&_img]:rounded-2xl [&_li]:mb-2 [&_ol]:my-5 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-5 [&_ul]:my-5 [&_ul]:list-disc [&_ul]:pl-6"
+              className="my-5 text-[17px] leading-8 text-foreground-700 [&_a]:font-medium [&_a]:text-primary-700 [&_a]:underline [&_blockquote]:my-8 [&_blockquote]:border-l-4 [&_blockquote]:border-accent-500 [&_blockquote]:pl-6 [&_h2]:scroll-mt-28 [&_h2]:mt-10 [&_h2]:border-l-4 [&_h2]:border-primary-500 [&_h2]:pl-4 [&_h2]:font-heading [&_h2]:text-3xl [&_h2]:font-medium [&_h2]:text-foreground-950 [&_h3]:pt-5 [&_h3]:font-heading [&_h3]:text-2xl [&_h3]:text-foreground-950 [&_img]:my-8 [&_img]:w-full [&_img]:rounded-2xl [&_li]:mb-2 [&_ol]:my-5 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-5 [&_ul]:my-5 [&_ul]:list-disc [&_ul]:pl-6"
               dangerouslySetInnerHTML={{ __html: block.html }}
             />
           );
@@ -94,7 +95,15 @@ export default function BlogPostPage() {
     [post?.slug]
   );
   const [progress, setProgress] = useState(0);
-  const [copied, setCopied] = useState(false);
+  const [savedArticles, setSavedArticles] = useState(() => {
+    try {
+      const stored = localStorage.getItem("c767_saved_blog_articles");
+      const parsed = stored ? JSON.parse(stored) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
 
   useEffect(() => {
     const updateProgress = () => {
@@ -118,10 +127,19 @@ export default function BlogPostPage() {
     [post?.body]
   );
 
-  const copyLink = async () => {
-    await navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+  const saved = savedArticles.includes(slug);
+  const toggleSaved = () => {
+    setSavedArticles((current) => {
+      const next = current.includes(slug)
+        ? current.filter((item) => item !== slug)
+        : [...current, slug];
+      try {
+        localStorage.setItem("c767_saved_blog_articles", JSON.stringify(next));
+      } catch {
+        // Saving remains available for this session when storage is blocked.
+      }
+      return next;
+    });
   };
 
   if (loading) return <Spinner className="pt-16 md:pt-20 min-h-[60vh]" />;
@@ -179,7 +197,8 @@ export default function BlogPostPage() {
       <article data-blog-article className="w-full px-4 md:px-8 lg:px-12 py-10 md:py-14">
         <div className="mx-auto max-w-[720px]">
           <div className="flex items-center gap-3 text-xs text-foreground-600 font-label mb-5">
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent-100 text-accent-900 font-semibold">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-3 py-1.5 font-semibold text-white shadow-[0_8px_20px_rgba(31,112,78,0.20)]">
+              <i className="ri-article-line" />
               {post.tag}
             </span>
             <span>{post.date}</span>
@@ -218,14 +237,17 @@ export default function BlogPostPage() {
           </div>
 
           {contents.length > 1 && (
-            <nav aria-label="Article contents" className="mb-10 rounded-2xl border border-background-200/70 bg-background-100/70 p-6">
-              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary-700">In this article</p>
-              <ol className="space-y-2">
+            <nav aria-label="Article contents" className="mb-10 overflow-hidden rounded-2xl border border-secondary-200 bg-background-50 shadow-[0_18px_48px_rgba(83,55,35,0.08)]">
+              <div className="border-b border-secondary-200 bg-gradient-to-r from-secondary-100/80 via-background-50 to-primary-50/80 px-6 py-5">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary-700">Article navigation</p>
+                <h2 className="mt-1 font-heading text-xl font-medium text-foreground-950">In this article</h2>
+              </div>
+              <ol className="grid gap-3 p-5 sm:grid-cols-2">
                 {contents.map((item, index) => (
                   <li key={`${item.text}-${item.index}`}>
-                    <a href={`#${headingId(item.text, item.index)}`} className="group flex items-start gap-3 text-sm leading-6 text-foreground-700 hover:text-primary-700">
-                      <span className="font-heading text-primary-500">{String(index + 1).padStart(2, "0")}</span>
-                      <span className="border-b border-transparent group-hover:border-primary-300">{item.text}</span>
+                    <a href={`#${headingId(item.text, item.index)}`} className={`group flex h-full items-start gap-3 rounded-2xl border border-t-4 p-4 text-sm leading-6 transition hover:-translate-y-0.5 ${index % 2 === 0 ? "border-primary-200 border-t-primary-500 bg-gradient-to-br from-primary-50 to-background-50 hover:shadow-[0_12px_28px_rgba(31,112,78,0.14)]" : "border-secondary-200 border-t-secondary-500 bg-gradient-to-br from-secondary-50 to-background-50 hover:shadow-[0_12px_28px_rgba(153,119,72,0.14)]"}`}>
+                      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl font-heading ${index % 2 === 0 ? "bg-primary-100 text-primary-800" : "bg-secondary-100 text-secondary-800"}`}>{String(index + 1).padStart(2, "0")}</span>
+                      <span className="pt-1 font-semibold text-foreground-800 group-hover:text-primary-800">{item.text}</span>
                     </a>
                   </li>
                 ))}
@@ -248,15 +270,23 @@ export default function BlogPostPage() {
             </div>
           )}
 
-          <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-background-200/70 bg-background-100/60 p-5">
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-t-4 border-primary-200 border-t-primary-500 bg-gradient-to-br from-primary-50 to-background-50 p-5 shadow-sm">
             <div>
               <p className="font-heading text-lg text-foreground-950">Worth sharing?</p>
               <p className="text-xs text-foreground-500 font-label">Send this article to someone who may find it useful.</p>
             </div>
-            <button type="button" onClick={copyLink} className="inline-flex items-center gap-2 rounded-full border border-primary-300 bg-background-50 px-4 py-2 text-sm font-semibold text-primary-700 transition-colors hover:bg-primary-50">
-              <i className={copied ? "ri-check-line" : "ri-link"} />
-              {copied ? "Link copied" : "Copy link"}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleSaved}
+                aria-pressed={saved}
+                className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors ${saved ? "border-accent-300 bg-accent-50 text-accent-700" : "border-background-300 bg-background-50 text-foreground-700 hover:bg-background-100"}`}
+              >
+                <i className={saved ? "ri-heart-fill" : "ri-heart-line"} />
+                <span>{saved ? "Saved" : "Save"}</span>
+              </button>
+              <ShareMenu title={post.title} />
+            </div>
           </div>
 
           <div className="mt-8 pt-8 border-t border-background-200/70 flex items-center gap-4">

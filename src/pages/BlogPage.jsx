@@ -109,7 +109,7 @@ export default function BlogPage() {
             <>
               <Link
                 to={`/blog/${featuredPost.slug}`}
-                className="group grid overflow-hidden rounded-3xl border border-background-200/70 bg-background-50 shadow-[0_24px_70px_rgba(8,68,45,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-primary-300 md:grid-cols-[1.15fr_0.85fr]"
+                className="group grid overflow-hidden rounded-3xl border border-t-4 border-primary-200 border-t-primary-500 bg-gradient-to-br from-background-50 to-primary-50/40 shadow-[0_24px_70px_rgba(8,68,45,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_75px_rgba(31,112,78,0.14)] md:grid-cols-[1.15fr_0.85fr]"
               >
                 <div className="h-64 overflow-hidden md:h-[430px]">
                   <img
