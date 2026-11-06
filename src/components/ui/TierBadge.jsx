@@ -40,7 +40,10 @@ export default function TierBadge({ tier, featured = false, size = "md", classNa
   const key = String(tier || "").trim().toLowerCase();
   const match = Object.keys(styles).find((k) => k.toLowerCase() === key);
   const tierLabel = match && !["Free", "Featured"].includes(match) ? match : null;
-  const badges = [tierLabel, featured ? "Featured" : null].filter(Boolean);
+  // Classified already includes featured placement. Prefer the paid tier label
+  // instead of stacking a redundant Featured badge beside it. Featured is only
+  // shown when it is the listing's standalone promotion status.
+  const badges = [tierLabel, featured && tierLabel !== "Classified" ? "Featured" : null].filter(Boolean);
   if (!badges.length) return null;
 
   const sizeClass =
