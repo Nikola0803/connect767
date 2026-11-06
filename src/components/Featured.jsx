@@ -77,7 +77,7 @@ export default function Featured() {
               This week's picks
             </div>
             <h2 className="font-heading text-3xl md:text-5xl font-light text-foreground-950 leading-tight max-w-2xl">
-              Trending <span className="text-accent-500 italic">listings</span> — worth the click.
+              Discover <span className="text-accent-500 italic">Trending Listings</span>
             </h2>
           </div>
           <div className="flex items-center gap-4">
