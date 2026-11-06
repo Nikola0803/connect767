@@ -640,7 +640,7 @@ export default function AddListingPage() {
           {step === 2 && (
             <div>
               <h1 className="font-heading text-3xl md:text-4xl font-light text-foreground-950 mb-3">
-                Tell us about your <span className="text-accent-500 italic">business</span>
+                Tell us about your <span className="text-accent-500 italic">listing</span>
               </h1>
               <p className="text-sm text-foreground-600 font-label mb-10">
                 This is what shows up on your profile card and in search results.
@@ -690,9 +690,9 @@ export default function AddListingPage() {
                   </FormField>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <FormField label="Degree Level" htmlFor="education">
+                  <FormField label="Highest degree level" htmlFor="education">
                     <Select id="education" value={form.education} onChange={update("education")}>
-                      <option value="">Select degree level</option>
+                      <option value="">Select highest degree level</option>
                       {EDUCATION_CHOICES.map((choice) => (
                         <option key={choice} value={choice}>
                           {choice}
@@ -703,7 +703,7 @@ export default function AddListingPage() {
                   <FormField
                     label="Degree Type"
                     htmlFor="degreeType"
-                    hint="Field of study — shown next to your degree level"
+                    hint="Field of study — shown next to your highest degree level"
                   >
                     <Input
                       id="degreeType"
@@ -1285,7 +1285,7 @@ export default function AddListingPage() {
                       : "—",
                   ],
                   ["Price tier", form.priceTier || "—"],
-                  ["Degree Level", form.education || "—"],
+                  ["Highest degree level", form.education || "—"],
                   ["Degree Type", form.degreeType || "—"],
                   ["Years of Experience", form.yearsExperience ? `${form.yearsExperience}` : "—"],
                   ["Location", form.location || "—"],
