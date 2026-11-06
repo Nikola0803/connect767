@@ -47,7 +47,7 @@ export default function BlogPage() {
             From the blog
           </div>
           <h1 className="font-heading text-4xl md:text-5xl font-light text-foreground-950 leading-tight mb-4">
-            Field notes for owners, buyers &amp; <span className="italic text-primary-700">makers.</span>
+            Insights, Ideas &amp; <span className="italic text-primary-700">Opportunities</span>
           </h1>
           <p className="text-foreground-600 font-label">
             Playbooks, shop operations, uniform design, and stories from the Connect767 community.
