@@ -34,12 +34,25 @@ describe("DirectoryListingCard parent category", () => {
     render(
       <MemoryRouter>
         <DirectoryListingCard
-          listing={{ ...listing, badge: "Free", isFeatured: true }}
+          listing={{ ...listing, badge: "Featured", isFeatured: true }}
         />
       </MemoryRouter>,
     );
 
     expect(screen.getByText("Featured")).toBeInTheDocument();
+    expect(screen.queryByText("Classified")).not.toBeInTheDocument();
+  });
+
+  it("never shows Featured on a Free listing", () => {
+    render(
+      <MemoryRouter>
+        <DirectoryListingCard
+          listing={{ ...listing, badge: "Free", isFeatured: true }}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByText("Featured")).not.toBeInTheDocument();
     expect(screen.queryByText("Classified")).not.toBeInTheDocument();
   });
 
