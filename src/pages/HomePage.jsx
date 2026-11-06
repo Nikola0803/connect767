@@ -5,7 +5,6 @@ import HowItWorks from "../components/HowItWorks";
 import ShopTeaser from "../components/ShopTeaser";
 import Pricing from "../components/Pricing";
 import Blog from "../components/Blog";
-import CtaPartners from "../components/CtaPartners";
 
 export default function HomePage() {
   return (
@@ -26,9 +25,6 @@ export default function HomePage() {
       </div>
       <div className="[content-visibility:auto] [contain-intrinsic-size:750px]">
         <Blog />
-      </div>
-      <div className="[content-visibility:auto] [contain-intrinsic-size:520px]">
-        <CtaPartners />
       </div>
     </>
   );
