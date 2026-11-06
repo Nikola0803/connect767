@@ -609,7 +609,7 @@ describe("mapListingDetail", () => {
 });
 
 describe("mapWpPost", () => {
-  it("falls back to a synthesized body paragraph when acf.body is empty", () => {
+  it("preserves WordPress editor markup when acf.body is empty", () => {
     // Regression coverage for the `acf.body?.length` fix documented in
     // mappers.js — a naive `acf.body || fallback` never falls back for an
     // empty array since [] is truthy.
@@ -617,7 +617,7 @@ describe("mapWpPost", () => {
       { id: 1, slug: "post", title: { rendered: "Title" }, content: { rendered: "<p>Hello</p>" }, acf: { body: [] }, date: "2024-01-01" },
       { detail: true }
     );
-    expect(mapped.body).toEqual([{ type: "p", text: "Hello" }]);
+    expect(mapped.body).toEqual([{ type: "html", html: "<p>Hello</p>" }]);
   });
 
   it("uses the real structured body when present", () => {
