@@ -194,8 +194,16 @@ export default function BlogPostPage() {
         </div>
       </div>
 
-      <article data-blog-article className="w-full px-4 md:px-8 lg:px-12 py-10 md:py-14">
-        <div className="mx-auto max-w-[720px]">
+      <article data-blog-article className="w-full px-4 py-10 md:px-8 md:py-14 lg:px-12">
+        <div className="mx-auto max-w-[860px] overflow-hidden rounded-[28px] border border-t-[6px] border-primary-200 border-t-primary-500 bg-background-50 shadow-[0_24px_70px_rgba(65,48,31,0.10)]">
+          <div className="flex items-center justify-between gap-4 border-b border-primary-100 bg-gradient-to-r from-primary-50 via-background-50 to-secondary-50 px-5 py-4 sm:px-8">
+            <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary-800">
+              <i className="ri-quill-pen-line text-base" />
+              Connect767 stories
+            </span>
+            <span className="hidden h-2 w-2 rounded-full bg-accent-500 sm:block" aria-hidden="true" />
+          </div>
+          <div className="mx-auto max-w-[720px] px-5 py-8 sm:px-8 md:px-0 md:py-12">
           <div className="flex items-center gap-3 text-xs text-foreground-600 font-label mb-5">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-3 py-1.5 font-semibold text-white shadow-[0_8px_20px_rgba(31,112,78,0.20)]">
               <i className="ri-article-line" />
@@ -301,6 +309,7 @@ export default function BlogPostPage() {
               </div>
               <div className="text-xs text-foreground-500 font-label">{author.role}</div>
             </div>
+          </div>
           </div>
         </div>
       </article>
