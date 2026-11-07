@@ -123,7 +123,7 @@ const PRIMITIVE_BY_SLUG = {
 // The uniform studio passes slug="jersey" — routes it to the Rodin GLB
 // instead of the procedural TshirtMesh fallback.
 const MODEL_BY_SLUG = {
-  jersey: "/models/jersey.glb",
+  jersey: "/models/opt/jersey.glb",
 };
 
 function GltfGarment({ url, color, colorB, splitAt = 0.5, softness = 0.5 }) {
