@@ -1,17 +1,18 @@
 export default function BrandLogo({
   className = "",
-  compactOnNarrow = false,
   markFilter = "none",
   size = "default",
 }) {
   const large = size === "large";
   const markSize = large ? "h-9 w-9 sm:h-10 sm:w-10" : "h-8 w-8 sm:h-9 sm:w-9";
-  const textSize = large ? "text-xl sm:text-2xl" : "text-lg sm:text-xl md:text-[1.4rem]";
 
   return (
-    <span className={`group inline-flex min-w-0 items-center gap-0 ${className}`}>
+    <span
+      aria-label="Connect767"
+      className={`group inline-flex items-center ${className}`}
+    >
       <span
-        className={`grid ${markSize} -mr-[0.34375rem] flex-shrink-0 place-items-center transition-transform duration-300 group-hover:-rotate-2 group-hover:scale-[1.04]`}
+        className={`grid ${markSize} flex-shrink-0 place-items-center transition-transform duration-300 group-hover:-rotate-2 group-hover:scale-[1.04]`}
       >
         <span
           aria-hidden="true"
@@ -27,27 +28,10 @@ export default function BrandLogo({
             WebkitMaskSize: "contain",
             maskSize: "contain",
             filter: markFilter,
-            transform: "translateY(-8%) scale(1.14)",
+            transform: "scale(1.14)",
             transformOrigin: "center",
           }}
         />
-      </span>
-      <span
-        aria-hidden="true"
-        className={`${
-          compactOnNarrow ? "hidden min-[350px]:inline-flex" : "inline-flex"
-        } items-center self-center font-heading ${textSize} font-semibold leading-none tracking-[-0.025em]`}
-      >
-        <span>ONNECT</span>
-        <span
-          className="-ml-[0.02em] inline-block text-accent-500"
-          style={{
-            fontVariantNumeric: "lining-nums proportional-nums",
-            fontFeatureSettings: '"lnum" 1, "pnum" 1',
-          }}
-        >
-          767
-        </span>
       </span>
     </span>
   );
