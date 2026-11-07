@@ -42,7 +42,12 @@ const highlights = [
 
 export default function ShopTeaser() {
   const { data: shopCategories } = useAsync(() => getShopCategories(), []);
-  const featuredCategories = (shopCategories || []).filter((c) => c.slug !== "all").slice(0, 4);
+  const featuredCategories = (shopCategories || [])
+    .filter((c) => c.slug !== "all")
+    .slice(0, 4)
+    .map((category) =>
+      category.label === "Sweaters & Sweatpants" ? { ...category, label: "Shorts" } : category,
+    );
 
   return (
     <section className="w-full bg-background-100 px-4 py-16 text-foreground-950 md:px-8 md:py-24 lg:px-12">
