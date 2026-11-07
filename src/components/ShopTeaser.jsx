@@ -40,12 +40,6 @@ const highlights = [
   },
 ];
 
-const imageFacts = [
-  { label: "Marketplace", value: "Verified sellers" },
-  { label: "Delivery", value: "Shipping & pickup" },
-  { label: "Uniform Studio", value: "Complete team kits" },
-];
-
 export default function ShopTeaser() {
   const { data: shopCategories } = useAsync(() => getShopCategories(), []);
   const featuredCategories = (shopCategories || []).filter((c) => c.slug !== "all").slice(0, 4);
@@ -137,35 +131,24 @@ export default function ShopTeaser() {
               </p>
             </div>
 
-            <div className="relative h-[360px] overflow-hidden rounded-[1.15rem] bg-primary-950 sm:h-[420px] lg:min-h-[300px] lg:flex-1">
+            <div className="relative aspect-square overflow-hidden rounded-[1.15rem] bg-primary-950">
               <div className="h-full w-full">
                 <img
                   alt="Connect767 marketplace apparel and custom uniform inspiration"
                   title="Shop products and design custom team uniforms with Connect767"
                   loading="lazy"
                   decoding="async"
-                  className="h-full w-full object-cover object-top transition-transform duration-700 group-hover:scale-[1.025]"
+                  className="h-full w-full object-cover object-[center_12%] transition-transform duration-700 group-hover:scale-[1.025]"
                   src={shopHeroImage}
                 />
               </div>
               <div className="absolute inset-0 bg-gradient-to-t from-primary-950/80 via-primary-950/5 to-transparent" />
             </div>
 
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {imageFacts.map((fact) => (
-                <div
-                  key={fact.label}
-                  className="group/fact rounded-xl border border-background-200 bg-background-100 p-3 text-foreground-950 transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:bg-primary-50 hover:shadow-sm"
-                >
-                  <div className="mb-1 font-label text-[10px] uppercase tracking-[0.14em] text-foreground-500">
-                    {fact.label}
-                  </div>
-                  <div className="font-heading text-sm font-medium transition-colors group-hover/fact:text-primary-700">
-                    {fact.value}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <span className="mt-4 inline-flex cursor-pointer items-center gap-2 self-start rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-background-50 shadow-sm transition-all group-hover:-translate-y-0.5 group-hover:bg-primary-700 group-hover:shadow-md">
+              Shop
+              <i className="ri-arrow-right-line" />
+            </span>
 
             {featuredCategories.length > 0 && (
               <div className="mt-5 flex flex-wrap gap-2 border-t border-background-200/80 pt-5">
