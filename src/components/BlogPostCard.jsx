@@ -1,18 +1,18 @@
 import { Link } from "react-router-dom";
 
 export default function BlogPostCard({ post }) {
-  const isWarmAccent = post.categorySlug === "shop";
+  const normalizedCategory = String(post.categorySlug || post.tag || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, "-");
+  const showCategory = normalizedCategory !== "uncategorized";
 
   return (
     <Link
       to={`/blog/${post.slug}`}
-      className={`group flex h-full flex-col overflow-hidden rounded-2xl border border-t-4 bg-gradient-to-br from-background-50 to-background-100/55 shadow-sm transition-all duration-300 hover:-translate-y-1 cursor-pointer ${
-        isWarmAccent
-          ? "border-secondary-200 border-t-secondary-500 hover:shadow-[0_18px_45px_rgba(153,119,72,0.14)]"
-          : "border-primary-200 border-t-primary-500 hover:shadow-[0_18px_45px_rgba(31,112,78,0.14)]"
-      }`}
+      className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-t-4 border-primary-200 border-t-primary-500 bg-gradient-to-br from-background-50 to-background-100/55 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(31,112,78,0.14)]"
     >
-      <div className="w-full h-52 overflow-hidden">
+      <div className="h-52 w-full overflow-hidden">
         <img
           loading="lazy"
           decoding="async"
@@ -22,24 +22,26 @@ export default function BlogPostCard({ post }) {
           src={post.image}
         />
       </div>
-      <div className="p-5 md:p-6 flex flex-col flex-1">
-        <div className="flex items-center gap-3 text-xs text-foreground-600 font-label mb-3 flex-wrap">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-100 text-accent-900 font-semibold">
+      <div className="flex flex-1 flex-col p-5 md:p-6">
+        <div className="mb-3 flex flex-wrap items-center gap-3 text-xs text-foreground-600 font-label">
+          {showCategory && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 font-semibold text-primary-800">
             {post.tag}
           </span>
+          )}
           <span>{post.date}</span>
           <span>·</span>
           <span>{post.readTime}</span>
         </div>
-        <h3 className="font-heading text-xl font-medium text-foreground-950 leading-snug mb-3 group-hover:text-primary-700 transition-colors">
+        <h3 className="mb-3 font-heading text-xl font-medium leading-snug text-foreground-950 transition-colors group-hover:text-primary-700">
           {post.title}
         </h3>
         {post.excerpt && (
-          <p className="text-sm text-foreground-600 leading-relaxed mb-4 line-clamp-2">
+          <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-foreground-600">
             {post.excerpt}
           </p>
         )}
-        <span className="mt-auto inline-flex items-center gap-1 text-xs font-semibold text-primary-700 group-hover:text-primary-800 whitespace-nowrap">
+        <span className="mt-auto inline-flex items-center gap-1 whitespace-nowrap text-xs font-semibold text-primary-700 group-hover:text-primary-800">
           Read article
           <i className="ri-arrow-right-line" />
         </span>
