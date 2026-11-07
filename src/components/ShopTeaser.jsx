@@ -78,7 +78,7 @@ export default function ShopTeaser() {
                   One destination. Two ways to create.
                 </p>
               </div>
-              <h3 className="mb-4 font-heading text-3xl font-medium leading-tight text-foreground-950 md:text-4xl">
+              <h3 className="mb-4 font-heading text-2xl font-medium leading-tight text-foreground-950">
                 Find something distinctive—or build something entirely your own.
               </h3>
               <p className="max-w-xl font-label text-base leading-7 text-foreground-600">
@@ -133,7 +133,7 @@ export default function ShopTeaser() {
                   New in the marketplace
                 </p>
               </div>
-              <h3 className="mb-4 font-heading text-3xl font-medium leading-tight text-foreground-950 md:text-4xl">
+              <h3 className="mb-4 font-heading text-2xl font-medium leading-tight text-foreground-950">
                 Discover standout products from the Connect767 Shop.
               </h3>
               <p className="max-w-xl font-label text-base leading-7 text-foreground-600">
