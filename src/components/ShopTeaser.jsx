@@ -119,7 +119,11 @@ export default function ShopTeaser() {
             )}
           </div>
 
-          <div className="group flex h-full flex-col rounded-[1.5rem] border border-background-200 bg-background-50 p-6 shadow-[0_8px_24px_rgba(44,37,25,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_20px_46px_rgba(31,112,78,0.12)] md:p-8 lg:col-span-6">
+          <Link
+            to="/shop"
+            aria-label="Explore the Connect767 Shop"
+            className="group flex h-full cursor-pointer flex-col rounded-[1.5rem] border border-background-200 bg-background-50 p-6 text-inherit no-underline shadow-[0_8px_24px_rgba(44,37,25,0.08)] outline-none transition-all duration-300 hover:-translate-y-1 hover:border-primary-300 hover:shadow-[0_20px_46px_rgba(31,112,78,0.12)] focus-visible:border-primary-500 focus-visible:ring-4 focus-visible:ring-primary-100 md:p-8 lg:col-span-6"
+          >
             <div className="mb-7 flex items-center gap-4">
               <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-background-50 shadow-sm transition-transform duration-300 group-hover:scale-105">
                 <i className="ri-shopping-bag-3-line text-2xl" />
@@ -158,7 +162,7 @@ export default function ShopTeaser() {
                 </div>
               ))}
             </div>
-          </div>
+          </Link>
         </div>
 
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
