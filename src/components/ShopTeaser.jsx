@@ -13,7 +13,7 @@ const WP_ORIGIN = config.wpBaseUrl || "https://admin.connect767.com";
 // Confirmed via /wp-json/wp/v2/media?search=DSC_8707 that this is the
 // current real attachment.
 export const shopHeroImage = `${WP_ORIGIN}/wp-content/uploads/2026/07/DSC_8707-Edit_17fdb17b-ddd5-4c9b-857b-83c9d142516a-scaled.jpg`;
-const soccerUniformRender = "/uploads/3d-soccer-uniform-render.png";
+const soccerUniformRender = "/uploads/3d-soccer-uniform-render-watermark.png";
 
 const uniformSports = ["Soccer", "Basketball", "Cricket", "Netball"];
 
@@ -94,21 +94,6 @@ export default function ShopTeaser() {
                 decoding="async"
                 loading="lazy"
                 src={soccerUniformRender}
-              />
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute bottom-6 right-6 h-24 w-24 text-background-50 opacity-25 drop-shadow-sm transition-all duration-500 group-hover:-rotate-3 group-hover:scale-105 group-hover:opacity-35"
-                style={{
-                  backgroundColor: "currentColor",
-                  WebkitMaskImage: "url('/connect767-favicon.png')",
-                  maskImage: "url('/connect767-favicon.png')",
-                  WebkitMaskPosition: "center",
-                  maskPosition: "center",
-                  WebkitMaskRepeat: "no-repeat",
-                  maskRepeat: "no-repeat",
-                  WebkitMaskSize: "contain",
-                  maskSize: "contain",
-                }}
               />
             </div>
 
