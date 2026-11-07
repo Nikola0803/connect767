@@ -11,7 +11,7 @@ export default function BrandLogo({
   return (
     <span className={`group inline-flex min-w-0 items-center gap-0 ${className}`}>
       <span
-        className={`grid ${markSize} -mr-1.5 flex-shrink-0 place-items-center transition-transform duration-300 group-hover:-rotate-2 group-hover:scale-[1.04]`}
+        className={`grid ${markSize} -mr-1 flex-shrink-0 place-items-center transition-transform duration-300 group-hover:-rotate-2 group-hover:scale-[1.04]`}
       >
         <span
           aria-hidden="true"
@@ -36,15 +36,11 @@ export default function BrandLogo({
         aria-hidden="true"
         className={`${
           compactOnNarrow ? "hidden min-[350px]:inline-flex" : "inline-flex"
-        } -ml-1.5 items-center self-center font-heading ${textSize} font-semibold leading-none tracking-[-0.035em]`}
-        style={{
-          fontOpticalSizing: "none",
-          fontVariationSettings: '"opsz" 64, "wght" 600',
-        }}
+        } -ml-1 items-center self-center font-heading ${textSize} font-semibold leading-none tracking-[-0.025em]`}
       >
-        <span>ONNECT</span>
+        <span>onnect</span>
         <span
-          className="-ml-[0.2em] inline-block text-accent-500"
+          className="-ml-[0.02em] inline-block text-accent-500"
           style={{
             fontVariantNumeric: "lining-nums proportional-nums",
             fontFeatureSettings: '"lnum" 1, "pnum" 1',
