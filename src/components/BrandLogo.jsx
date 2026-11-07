@@ -11,7 +11,7 @@ export default function BrandLogo({
   return (
     <span className={`group inline-flex min-w-0 items-center gap-0 ${className}`}>
       <span
-        className={`grid ${markSize} mr-0.5 flex-shrink-0 place-items-center transition-transform duration-300 group-hover:-rotate-2 group-hover:scale-[1.04]`}
+        className={`grid ${markSize} -mr-[0.34375rem] flex-shrink-0 place-items-center transition-transform duration-300 group-hover:-rotate-2 group-hover:scale-[1.04]`}
       >
         <span
           aria-hidden="true"
