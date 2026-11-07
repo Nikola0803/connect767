@@ -172,6 +172,10 @@ export default function ShopTeaser() {
                     {cat.label}
                   </span>
                 ))}
+                <span className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-background-200 bg-background-50 px-3 py-1.5 text-xs font-medium text-foreground-700 transition-all group-hover:border-primary-200 group-hover:bg-primary-50">
+                  <i className="ri-price-tag-3-line" />
+                  Shoes
+                </span>
               </div>
             )}
           </Link>
