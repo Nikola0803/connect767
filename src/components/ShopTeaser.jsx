@@ -67,9 +67,25 @@ export default function ShopTeaser() {
           <Link
             to="/uniforms"
             aria-label="Open the Connect767 3D Uniform Studio"
-            className="group flex cursor-pointer flex-col rounded-[1.5rem] border border-background-200 bg-background-50 p-6 text-inherit no-underline shadow-[0_8px_24px_rgba(44,37,25,0.08)] outline-none transition-all duration-300 hover:-translate-y-1 hover:border-primary-300 hover:shadow-[0_20px_46px_rgba(31,112,78,0.12)] focus-visible:border-primary-500 focus-visible:ring-4 focus-visible:ring-primary-100 md:p-8 lg:col-span-6"
+            className="group relative flex cursor-pointer flex-col overflow-hidden rounded-[1.5rem] border border-background-200 bg-background-50 p-6 text-inherit no-underline shadow-[0_8px_24px_rgba(44,37,25,0.08)] outline-none transition-all duration-300 hover:-translate-y-1 hover:border-primary-300 hover:shadow-[0_20px_46px_rgba(31,112,78,0.12)] focus-visible:border-primary-500 focus-visible:ring-4 focus-visible:ring-primary-100 md:p-8 lg:col-span-6"
           >
-            <div className="mb-7 lg:min-h-[17rem]">
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute right-6 top-28 h-72 w-72 text-primary-600 opacity-[0.075] transition-all duration-500 group-hover:-rotate-3 group-hover:scale-105 group-hover:opacity-10"
+              style={{
+                backgroundColor: "currentColor",
+                WebkitMaskImage: "url('/connect767-favicon.png')",
+                maskImage: "url('/connect767-favicon.png')",
+                WebkitMaskPosition: "center",
+                maskPosition: "center",
+                WebkitMaskRepeat: "no-repeat",
+                maskRepeat: "no-repeat",
+                WebkitMaskSize: "contain",
+                maskSize: "contain",
+              }}
+            />
+
+            <div className="relative z-10 mb-7 lg:min-h-[17rem]">
               <div className="mb-7 flex items-center gap-4">
                 <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-background-50 shadow-sm transition-transform duration-300 group-hover:scale-105">
                   <i className="ri-store-3-line text-2xl" />
@@ -87,7 +103,7 @@ export default function ShopTeaser() {
               </p>
             </div>
 
-            <div className="mb-5 aspect-square overflow-hidden rounded-[1.15rem] border border-primary-100 bg-primary-50">
+            <div className="relative z-10 mb-5 aspect-square overflow-hidden rounded-[1.15rem] border border-primary-100 bg-primary-50">
               <img
                 alt="Emerald green and cream number 10 soccer uniform with matching shorts and socks"
                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
@@ -97,7 +113,7 @@ export default function ShopTeaser() {
               />
             </div>
 
-            <div className="mt-auto flex flex-wrap items-center gap-3 pt-1">
+            <div className="relative z-10 mt-auto flex flex-wrap items-center gap-3 pt-1">
               <span
                 className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-lg border border-primary-200 bg-background-50 px-6 py-3 text-sm font-semibold text-primary-800 transition-all hover:-translate-y-0.5 hover:border-primary-400 hover:bg-primary-50 hover:shadow-sm"
               >
@@ -106,7 +122,7 @@ export default function ShopTeaser() {
               </span>
             </div>
 
-            <div className="mt-7 flex flex-wrap gap-2 border-t border-background-200/80 pt-6">
+            <div className="relative z-10 mt-7 flex flex-wrap gap-2 border-t border-background-200/80 pt-6">
               {uniformSports.map((sport) => (
                 <span
                   key={sport}
