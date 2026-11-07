@@ -38,7 +38,7 @@ export default function BrandLogo({
           compactOnNarrow ? "hidden min-[350px]:inline-flex" : "inline-flex"
         } -ml-1 items-center self-center font-heading ${textSize} font-semibold leading-none tracking-[-0.025em]`}
       >
-        <span>onnect</span>
+        <span>ONNECT</span>
         <span
           className="-ml-[0.02em] inline-block text-accent-500"
           style={{
