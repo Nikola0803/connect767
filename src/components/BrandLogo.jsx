@@ -27,7 +27,7 @@ export default function BrandLogo({
             WebkitMaskSize: "contain",
             maskSize: "contain",
             filter: markFilter,
-            transform: "scale(1.14)",
+            transform: "translateY(-8%) scale(1.14)",
             transformOrigin: "center",
           }}
         />
