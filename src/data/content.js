@@ -76,13 +76,6 @@ export const steps = [
   },
 ];
 
-export const stats = [
-  { value: "Free", label: "Start with a professional listing" },
-  { value: "Direct", label: "Bookings and customer enquiries" },
-  { value: "Simple", label: "Owner-controlled profile and dashboard" },
-  { value: "Global", label: "Reach Dominica and the diaspora" },
-];
-
 // Blog post fixtures moved to src/data/blog.js (full articles, not just cards).
 
 export const partners = ["Printful", "USPS", "UPS", "FedEx", "Amazon", "Meta", "Pinterest", "Stripe"];
