@@ -87,7 +87,7 @@ export default function ShopTeaser() {
               </p>
             </div>
 
-            <div className="relative mb-5 aspect-square overflow-hidden rounded-[1.15rem] border border-primary-100 bg-primary-50">
+            <div className="relative aspect-square overflow-hidden rounded-[1.15rem] border border-primary-100 bg-primary-50">
               <img
                 alt="Emerald green and cream number 10 soccer uniform with matching shorts and socks"
                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
@@ -97,7 +97,7 @@ export default function ShopTeaser() {
               />
             </div>
 
-            <div className="mt-auto flex flex-wrap items-center gap-3 pt-1">
+            <div className="mt-4 flex flex-wrap items-center gap-3">
               <span
                 className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-lg border border-primary-200 bg-background-50 px-6 py-3 text-sm font-semibold text-primary-800 transition-all hover:-translate-y-0.5 hover:border-primary-400 hover:bg-primary-50 hover:shadow-sm"
               >
@@ -106,7 +106,7 @@ export default function ShopTeaser() {
               </span>
             </div>
 
-            <div className="mt-7 flex flex-wrap gap-2 border-t border-background-200/80 pt-6">
+            <div className="mt-5 flex flex-wrap gap-2 border-t border-background-200/80 pt-5">
               {uniformSports.map((sport) => (
                 <span
                   key={sport}
