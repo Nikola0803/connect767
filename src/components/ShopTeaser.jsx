@@ -15,7 +15,7 @@ const WP_ORIGIN = config.wpBaseUrl || "https://admin.connect767.com";
 export const shopHeroImage = `${WP_ORIGIN}/wp-content/uploads/2026/07/DSC_8707-Edit_17fdb17b-ddd5-4c9b-857b-83c9d142516a-scaled.jpg`;
 const soccerUniformRender = "/uploads/3d-soccer-uniform-render-watermark.png";
 
-const uniformSports = ["Soccer", "Basketball", "Cricket", "Netball"];
+const uniformSports = ["Soccer", "Basketball", "Cricket", "Netball", "Management Kit"];
 
 const highlights = [
   {
