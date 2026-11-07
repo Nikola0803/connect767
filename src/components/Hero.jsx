@@ -105,7 +105,7 @@ export default function Hero() {
               <i className="ri-calendar-check-line text-accent-300" aria-hidden="true" /> Book Rentals &amp; Services
             </Link>
             <Link to="/listings/submit?tier=free" className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-colors hover:bg-background-50/15 hover:text-background-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300">
-              <i className="ri-add-circle-line text-accent-300" aria-hidden="true" /> List Your Business or Profile — Free
+              <i className="ri-add-circle-line text-accent-300" aria-hidden="true" /> Create Your Free Listing
             </Link>
           </div>
         </div>
