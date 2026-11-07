@@ -19,29 +19,21 @@ const highlights = [
     icon: "ri-shield-check-line",
     title: "Verified local sellers",
     copy: "Discover products from trusted Dominican businesses and independent makers.",
-    style: "border-primary-200 border-t-primary-500 bg-gradient-to-br from-primary-50 to-background-50",
-    iconStyle: "bg-primary-100 text-primary-700",
   },
   {
     icon: "ri-secure-payment-line",
     title: "Secure checkout",
     copy: "Shop confidently with clear product details and protected payment options.",
-    style: "border-primary-200 border-t-primary-500 bg-gradient-to-br from-primary-50 to-background-50",
-    iconStyle: "bg-primary-100 text-primary-700",
   },
   {
     icon: "ri-truck-line",
     title: "Flexible delivery",
     copy: "Available shipping and pickup choices are shown clearly before you order.",
-    style: "border-primary-200 border-t-primary-500 bg-gradient-to-br from-primary-50 to-background-50",
-    iconStyle: "bg-primary-100 text-primary-700",
   },
   {
     icon: "ri-t-shirt-air-line",
     title: "3D Custom Uniforms",
     copy: "Design team kits with colors, logos, names, numbers, sizes, and a full roster.",
-    style: "border-primary-200 border-t-primary-500 bg-gradient-to-br from-primary-50 to-background-50",
-    iconStyle: "bg-primary-100 text-primary-700",
   },
 ];
 
@@ -65,7 +57,7 @@ export default function ShopTeaser() {
               Connect767 Marketplace
             </div>
             <h2 className="max-w-3xl font-heading text-4xl font-light leading-[1.08] md:text-5xl">
-              Shop Dominican. <span className="italic text-accent-500">Design without limits.</span>
+              Shop Connect767. <span className="italic text-accent-500">Design without limits.</span>
             </h2>
           </div>
           <p className="max-w-md font-label text-sm leading-6 text-foreground-600 md:text-right">
@@ -89,31 +81,12 @@ export default function ShopTeaser() {
               </p>
             </div>
 
-            <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {highlights.map((item) => (
-                <div
-                  key={item.title}
-                  className={`group/card rounded-2xl border border-t-4 p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_38px_rgba(31,112,78,0.12)] ${item.style}`}
-                >
-                  <span
-                    className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl transition-transform duration-300 group-hover/card:scale-105 ${item.iconStyle}`}
-                  >
-                    <i className={`${item.icon} text-lg`} />
-                  </span>
-                  <h4 className="mb-1 font-heading text-base font-medium text-foreground-950">
-                    {item.title}
-                  </h4>
-                  <p className="font-label text-xs leading-5 text-foreground-600">{item.copy}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-auto flex flex-wrap items-center gap-3">
+            <div className="mt-auto flex flex-wrap items-center gap-3 pt-4">
               <Link
                 className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-background-50 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-primary-700 hover:shadow-md"
                 to="/shop"
               >
-                Explore the Shop
+                Explore The Shop
                 <i className="ri-arrow-right-line" />
               </Link>
               <Link
@@ -142,7 +115,7 @@ export default function ShopTeaser() {
           </div>
 
           <div className="group relative overflow-hidden rounded-[2rem] border border-t-4 border-primary-200 border-t-accent-500 bg-primary-950 shadow-[0_20px_60px_rgba(8,68,45,0.12)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_30px_80px_rgba(8,68,45,0.2)] lg:col-span-6">
-            <div className="h-[520px] w-full sm:h-[590px] lg:h-full lg:min-h-[640px]">
+            <div className="h-[480px] w-full sm:h-[540px] lg:h-full lg:min-h-[520px]">
               <img
                 alt="Connect767 marketplace apparel and custom uniform inspiration"
                 title="Shop products and design custom team uniforms with Connect767"
@@ -173,6 +146,25 @@ export default function ShopTeaser() {
               ))}
             </div>
           </div>
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {highlights.map((item) => (
+            <div
+              key={item.title}
+              className="group/card relative min-h-[250px] rounded-[1.5rem] border border-background-200 bg-background-50 p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary-300 hover:shadow-[0_20px_46px_rgba(31,112,78,0.12)]"
+            >
+              <div className="mb-8 flex items-start gap-4">
+                <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary-600 text-background-50 shadow-sm transition-transform duration-300 group-hover/card:scale-105">
+                  <i className={`${item.icon} text-2xl`} />
+                </span>
+              </div>
+              <h4 className="mb-3 font-heading text-2xl font-medium text-foreground-950">
+                {item.title}
+              </h4>
+              <p className="font-label text-sm leading-6 text-foreground-600">{item.copy}</p>
+            </div>
+          ))}
         </div>
       </div>
     </section>
