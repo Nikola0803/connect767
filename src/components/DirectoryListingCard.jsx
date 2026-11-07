@@ -187,7 +187,7 @@ export default function DirectoryListingCard({
     return (
       <Link
         to={`/listings/${listing.slug}`}
-        className={`group bg-background-50 rounded-2xl border border-background-200/70 overflow-hidden hover:border-primary-300 hover:shadow-sm transition-all flex flex-col sm:flex-row cursor-pointer ${className}`}
+        className={`group overflow-hidden rounded-2xl border border-t-4 border-primary-200 border-t-primary-500 bg-gradient-to-br from-background-50 to-background-100/55 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(31,112,78,0.14)] flex flex-col sm:flex-row cursor-pointer ${className}`}
       >
         <Cover listing={listing} listView saved={saved} onToggleSaved={onToggleSaved} />
         <div className="p-5 flex flex-col flex-1 min-w-0">
@@ -216,7 +216,7 @@ export default function DirectoryListingCard({
   return (
     <Link
       to={`/listings/${listing.slug}`}
-      className={`group bg-background-50 rounded-xl border border-background-200/70 overflow-hidden hover:border-background-300/80 transition-all duration-200 flex flex-col cursor-pointer ${className}`}
+      className={`group overflow-hidden rounded-2xl border border-t-4 border-primary-200 border-t-primary-500 bg-gradient-to-br from-background-50 to-background-100/55 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(31,112,78,0.14)] flex flex-col cursor-pointer ${className}`}
     >
       <Cover listing={listing} saved={saved} onToggleSaved={onToggleSaved} />
       <div className="p-4 flex flex-col flex-1 min-w-0">
