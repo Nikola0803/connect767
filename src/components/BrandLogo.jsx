@@ -11,7 +11,7 @@ export default function BrandLogo({
   return (
     <span className={`group inline-flex min-w-0 items-center gap-0 ${className}`}>
       <span
-        className={`grid ${markSize} -mr-1 flex-shrink-0 place-items-center transition-transform duration-300 group-hover:-rotate-2 group-hover:scale-[1.04]`}
+        className={`grid ${markSize} mr-0.5 flex-shrink-0 place-items-center transition-transform duration-300 group-hover:-rotate-2 group-hover:scale-[1.04]`}
       >
         <span
           aria-hidden="true"
@@ -36,7 +36,7 @@ export default function BrandLogo({
         aria-hidden="true"
         className={`${
           compactOnNarrow ? "hidden min-[350px]:inline-flex" : "inline-flex"
-        } -ml-1 items-center self-center font-heading ${textSize} font-semibold leading-none tracking-[-0.025em]`}
+        } items-center self-center font-heading ${textSize} font-semibold leading-none tracking-[-0.025em]`}
       >
         <span>ONNECT</span>
         <span
