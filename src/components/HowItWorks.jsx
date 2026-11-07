@@ -20,21 +20,21 @@ export default function HowItWorks() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 mb-16">
+        <div className="mb-16 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {steps.map((step) => (
             <div
               key={step.title}
-              className="relative rounded-2xl bg-background-100/60 border border-background-200/70 p-6 md:p-7 hover:border-primary-300 transition-colors"
+              className="group/card relative min-h-[250px] rounded-[1.5rem] border border-background-200 bg-background-50 p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary-300 hover:shadow-[0_20px_46px_rgba(31,112,78,0.12)]"
             >
-              <div className="mb-6 flex items-start">
-                <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-primary-500 text-background-50">
-                  <i className={`${step.icon} text-xl`} />
-                </div>
+              <div className="mb-8 flex items-start gap-4">
+                <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary-600 text-background-50 shadow-sm transition-transform duration-300 group-hover/card:scale-105">
+                  <i className={`${step.icon} text-2xl`} />
+                </span>
               </div>
-              <h3 className="font-heading text-xl font-medium text-foreground-950 mb-2">
+              <h3 className="mb-3 font-heading text-2xl font-medium text-foreground-950">
                 {step.title}
               </h3>
-              <p className="text-sm text-foreground-700 font-label leading-relaxed">{step.text}</p>
+              <p className="font-label text-sm leading-6 text-foreground-600">{step.text}</p>
             </div>
           ))}
         </div>
