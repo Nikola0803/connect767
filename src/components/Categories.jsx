@@ -40,42 +40,26 @@ export default function Categories() {
               <Link
                 key={cat.name}
                 to={`/listings${cat.href}`}
-                className={`group relative rounded-xl border p-5 md:p-6 flex flex-col justify-between h-40 md:h-48 cursor-pointer transition-all ${
+                className={`group/card relative flex h-40 cursor-pointer flex-col justify-between rounded-[1.5rem] border p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary-300 hover:shadow-[0_20px_46px_rgba(31,112,78,0.12)] md:h-48 md:p-6 ${
                   cat.active
-                    ? "bg-accent-500 text-background-50 border-accent-500 hover:bg-accent-600 hover:border-accent-600"
-                    : "border-background-200/70 bg-background-100/60 hover:border-primary-300 hover:bg-primary-50/50"
+                    ? "border-primary-300 bg-primary-50/40"
+                    : "border-background-200 bg-background-50"
                 }`}
               >
                 <div
-                  className={`w-11 h-11 flex items-center justify-center rounded-lg ${
-                    cat.active
-                      ? "bg-background-50/20 text-background-50"
-                      : "bg-background-50 text-primary-700 border border-background-200/70"
-                  }`}
+                  className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-600 text-background-50 shadow-sm transition-transform duration-300 group-hover/card:scale-105"
                 >
                   <i className={`${cat.icon || "ri-price-tag-3-line"} text-xl`} />
                 </div>
                 <div>
-                  <h3
-                    className={`font-heading text-lg md:text-xl font-medium ${
-                      cat.active ? "text-background-50" : "text-foreground-950"
-                    }`}
-                  >
+                  <h3 className="font-heading text-lg font-medium text-foreground-950 md:text-xl">
                     {cat.name}
                   </h3>
                   <div className="mt-1 flex items-center justify-between">
-                    <span
-                      className={`text-xs font-label ${
-                        cat.active ? "text-background-50/80" : "text-foreground-600"
-                      }`}
-                    >
+                    <span className="font-label text-xs text-foreground-600">
                       {cat.count}
                     </span>
-                    <i
-                      className={`ri-arrow-right-up-line text-lg transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 ${
-                        cat.active ? "text-background-50" : "text-foreground-500"
-                      }`}
-                    />
+                    <i className="ri-arrow-right-up-line text-lg text-primary-700 transition-transform group-hover/card:-translate-y-0.5 group-hover/card:translate-x-0.5" />
                   </div>
                 </div>
               </Link>
