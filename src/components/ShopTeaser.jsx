@@ -53,11 +53,11 @@ export default function ShopTeaser() {
               <i className="ri-store-3-line" />
               Connect767 Marketplace
             </div>
-            <h2 className="max-w-3xl font-heading text-4xl font-light leading-[1.08] md:text-5xl">
+            <h2 className="max-w-3xl font-heading text-3xl font-light leading-tight md:text-5xl">
               Shop Connect767. <span className="italic text-accent-500">Design without limits.</span>
             </h2>
           </div>
-          <p className="max-w-md font-label text-sm leading-6 text-foreground-600 md:text-right">
+          <p className="max-w-md font-label text-base font-light leading-relaxed text-foreground-700 md:text-right md:text-lg">
             Products, independent businesses, and custom teamwear—connected in one modern
             marketplace.
           </p>
