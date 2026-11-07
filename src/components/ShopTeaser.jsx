@@ -38,9 +38,9 @@ const highlights = [
 ];
 
 const imageFacts = [
-  { label: "Marketplace", value: "Verified sellers", edge: "border-t-primary-500" },
-  { label: "Delivery", value: "Shipping & pickup", edge: "border-t-secondary-500" },
-  { label: "Uniform Studio", value: "Complete team kits", edge: "border-t-accent-500" },
+  { label: "Marketplace", value: "Verified sellers" },
+  { label: "Delivery", value: "Shipping & pickup" },
+  { label: "Uniform Studio", value: "Complete team kits" },
 ];
 
 export default function ShopTeaser() {
@@ -119,9 +119,18 @@ export default function ShopTeaser() {
             )}
           </div>
 
-          <div className="group rounded-[1.5rem] border border-background-200 bg-background-50 p-3 shadow-[0_8px_24px_rgba(44,37,25,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_20px_46px_rgba(31,112,78,0.12)] lg:col-span-6">
-            <div className="relative h-full overflow-hidden rounded-[1.15rem] bg-primary-950">
-              <div className="h-[480px] w-full sm:h-[540px] lg:h-full lg:min-h-[496px]">
+          <div className="group flex h-full flex-col rounded-[1.5rem] border border-background-200 bg-background-50 p-6 shadow-[0_8px_24px_rgba(44,37,25,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_20px_46px_rgba(31,112,78,0.12)] md:p-8 lg:col-span-6">
+            <div className="mb-7 flex items-center gap-4">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-background-50 shadow-sm transition-transform duration-300 group-hover:scale-105">
+                <i className="ri-shopping-bag-3-line text-2xl" />
+              </span>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-700">
+                New in the marketplace
+              </p>
+            </div>
+
+            <div className="relative h-[360px] overflow-hidden rounded-[1.15rem] bg-primary-950 sm:h-[420px] lg:min-h-[300px] lg:flex-1">
+              <div className="h-full w-full">
                 <img
                   alt="Connect767 marketplace apparel and custom uniform inspiration"
                   title="Shop products and design custom team uniforms with Connect767"
@@ -132,25 +141,22 @@ export default function ShopTeaser() {
                 />
               </div>
               <div className="absolute inset-0 bg-gradient-to-t from-primary-950/80 via-primary-950/5 to-transparent" />
-              <div className="absolute left-5 top-5 flex items-center gap-2 rounded-full border border-background-50/80 bg-background-50/95 px-3 py-1.5 text-xs font-semibold text-foreground-950 shadow-sm">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-accent-500" />
-                New in the marketplace
-              </div>
-              <div className="absolute bottom-5 left-5 right-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                {imageFacts.map((fact) => (
-                  <div
-                    key={fact.label}
-                    className={`group/fact rounded-2xl border border-t-4 border-background-200 bg-background-50/95 p-4 text-foreground-950 shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${fact.edge}`}
-                  >
-                    <div className="mb-1 font-label text-[10px] uppercase tracking-[0.14em] text-foreground-500">
-                      {fact.label}
-                    </div>
-                    <div className="font-heading text-sm font-medium transition-colors group-hover/fact:text-primary-700">
-                      {fact.value}
-                    </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {imageFacts.map((fact) => (
+                <div
+                  key={fact.label}
+                  className="group/fact rounded-xl border border-background-200 bg-background-100 p-3 text-foreground-950 transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:bg-primary-50 hover:shadow-sm"
+                >
+                  <div className="mb-1 font-label text-[10px] uppercase tracking-[0.14em] text-foreground-500">
+                    {fact.label}
                   </div>
-                ))}
-              </div>
+                  <div className="font-heading text-sm font-medium transition-colors group-hover/fact:text-primary-700">
+                    {fact.value}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
