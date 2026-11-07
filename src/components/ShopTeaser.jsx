@@ -132,7 +132,7 @@ export default function ShopTeaser() {
                 </p>
               </div>
               <h3 className="mb-4 font-heading text-3xl font-medium leading-tight text-foreground-950 md:text-4xl">
-                Discover standout products from makers and independent businesses.
+                Discover standout products from the Connect767 Shop.
               </h3>
               <p className="max-w-xl font-label text-base leading-7 text-foreground-600">
                 Shop apparel, essentials, and distinctive finds from Connect767 brands and
