@@ -23,16 +23,13 @@ export default function HowItWorks() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 mb-16">
           {steps.map((step) => (
             <div
-              key={step.num}
+              key={step.title}
               className="relative rounded-2xl bg-background-100/60 border border-background-200/70 p-6 md:p-7 hover:border-primary-300 transition-colors"
             >
-              <div className="flex items-start justify-between mb-6">
+              <div className="mb-6 flex items-start">
                 <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-primary-500 text-background-50">
                   <i className={`${step.icon} text-xl`} />
                 </div>
-                <span className="font-heading text-3xl font-light text-foreground-300">
-                  {step.num}
-                </span>
               </div>
               <h3 className="font-heading text-xl font-medium text-foreground-950 mb-2">
                 {step.title}
