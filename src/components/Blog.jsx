@@ -17,11 +17,11 @@ export default function Blog() {
               <i className="ri-book-open-line" />
               From the blog
             </div>
-            <h4 className="font-heading text-3xl md:text-5xl font-light text-foreground-950 leading-tight max-w-2xl">
+            <h2 className="font-heading text-3xl md:text-5xl font-light text-foreground-950 leading-tight max-w-2xl">
               <Link className="hover:text-primary-700 cursor-pointer" to="/blog">
                 Insights, Ideas &amp; <span className="italic">Opportunities</span>
               </Link>
-            </h4>
+            </h2>
           </div>
           <Link
             className="inline-flex items-center gap-2 text-sm font-semibold text-primary-700 hover:text-primary-800 cursor-pointer whitespace-nowrap"
