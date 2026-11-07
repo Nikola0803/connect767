@@ -1,4 +1,4 @@
-import { steps, stats } from "../data/content";
+import { steps } from "../data/content";
 
 export default function HowItWorks() {
   return (
@@ -37,19 +37,6 @@ export default function HowItWorks() {
               <p className="text-sm text-foreground-700 font-label leading-relaxed">{step.text}</p>
             </div>
           ))}
-        </div>
-
-        <div className="rounded-3xl bg-secondary-100 border border-secondary-200 px-6 md:px-10 py-10 md:py-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat) => (
-              <div key={stat.label}>
-                <div className="font-heading text-4xl md:text-5xl font-light text-foreground-950 mb-1">
-                  {stat.value}
-                </div>
-                <div className="text-sm text-secondary-900 font-label">{stat.label}</div>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </section>
