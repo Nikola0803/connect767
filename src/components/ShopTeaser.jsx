@@ -13,6 +13,9 @@ const WP_ORIGIN = config.wpBaseUrl || "https://admin.connect767.com";
 // Confirmed via /wp-json/wp/v2/media?search=DSC_8707 that this is the
 // current real attachment.
 export const shopHeroImage = `${WP_ORIGIN}/wp-content/uploads/2026/07/DSC_8707-Edit_17fdb17b-ddd5-4c9b-857b-83c9d142516a-scaled.jpg`;
+const soccerUniformRender = "/uploads/3d-soccer-uniform-render.png";
+
+const uniformSports = ["Soccer", "Basketball", "Cricket", "Netball"];
 
 const highlights = [
   {
@@ -86,14 +89,17 @@ export default function ShopTeaser() {
               </p>
             </div>
 
-            <div className="mt-auto flex flex-wrap items-center gap-3 pt-4">
-              <Link
-                className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-background-50 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-primary-700 hover:shadow-md"
-                to="/shop"
-              >
-                Explore The Shop
-                <i className="ri-arrow-right-line" />
-              </Link>
+            <div className="mb-5 aspect-[4/5] overflow-hidden rounded-[1.15rem] border border-primary-100 bg-primary-50">
+              <img
+                alt="Emerald green and cream number 10 soccer uniform with matching shorts and socks"
+                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+                decoding="async"
+                loading="lazy"
+                src={soccerUniformRender}
+              />
+            </div>
+
+            <div className="mt-auto flex flex-wrap items-center gap-3 pt-1">
               <Link
                 className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-lg border border-primary-200 bg-background-50 px-6 py-3 text-sm font-semibold text-primary-800 transition-all hover:-translate-y-0.5 hover:border-primary-400 hover:bg-primary-50 hover:shadow-sm"
                 to="/uniforms"
@@ -103,20 +109,18 @@ export default function ShopTeaser() {
               </Link>
             </div>
 
-            {featuredCategories.length > 0 && (
-              <div className="mt-7 flex flex-wrap gap-2 border-t border-background-200/80 pt-6">
-                {featuredCategories.map((cat) => (
-                  <Link
-                    key={cat.slug}
-                    className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border border-background-200 bg-background-50 px-3 py-1.5 text-xs font-medium text-foreground-700 transition-all hover:-translate-y-0.5 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-800"
-                    to={`/shop?category=${cat.slug}`}
-                  >
-                    <i className={cat.icon} />
-                    {cat.label}
-                  </Link>
-                ))}
-              </div>
-            )}
+            <div className="mt-7 flex flex-wrap gap-2 border-t border-background-200/80 pt-6">
+              {uniformSports.map((sport) => (
+                <Link
+                  key={sport}
+                  className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border border-background-200 bg-background-50 px-3 py-1.5 text-xs font-medium text-foreground-700 transition-all hover:-translate-y-0.5 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-800"
+                  to={`/uniforms?sport=${sport.toLowerCase()}`}
+                >
+                  <i className="ri-t-shirt-air-line" />
+                  {sport}
+                </Link>
+              ))}
+            </div>
           </div>
 
           <Link
@@ -162,6 +166,20 @@ export default function ShopTeaser() {
                 </div>
               ))}
             </div>
+
+            {featuredCategories.length > 0 && (
+              <div className="mt-5 flex flex-wrap gap-2 border-t border-background-200/80 pt-5">
+                {featuredCategories.map((cat) => (
+                  <span
+                    key={cat.slug}
+                    className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-background-200 bg-background-50 px-3 py-1.5 text-xs font-medium text-foreground-700 transition-all group-hover:border-primary-200 group-hover:bg-primary-50"
+                  >
+                    <i className={cat.icon} />
+                    {cat.label}
+                  </span>
+                ))}
+              </div>
+            )}
           </Link>
         </div>
 
