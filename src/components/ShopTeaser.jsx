@@ -122,12 +122,21 @@ export default function ShopTeaser() {
             aria-label="Explore the Connect767 Shop"
             className="group flex h-full cursor-pointer flex-col rounded-[1.5rem] border border-background-200 bg-background-50 p-6 text-inherit no-underline shadow-[0_8px_24px_rgba(44,37,25,0.08)] outline-none transition-all duration-300 hover:-translate-y-1 hover:border-primary-300 hover:shadow-[0_20px_46px_rgba(31,112,78,0.12)] focus-visible:border-primary-500 focus-visible:ring-4 focus-visible:ring-primary-100 md:p-8 lg:col-span-6"
           >
-            <div className="mb-7 flex items-center gap-4">
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-background-50 shadow-sm transition-transform duration-300 group-hover:scale-105">
-                <i className="ri-shopping-bag-3-line text-2xl" />
-              </span>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-700">
-                New in the marketplace
+            <div className="mb-7">
+              <div className="mb-7 flex items-center gap-4">
+                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-background-50 shadow-sm transition-transform duration-300 group-hover:scale-105">
+                  <i className="ri-shopping-bag-3-line text-2xl" />
+                </span>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-700">
+                  New in the marketplace
+                </p>
+              </div>
+              <h3 className="mb-4 font-heading text-3xl font-medium leading-tight text-foreground-950 md:text-4xl">
+                Discover standout products from makers and independent businesses.
+              </h3>
+              <p className="max-w-xl font-label text-base leading-7 text-foreground-600">
+                Shop apparel, essentials, and distinctive finds from Connect767 brands and
+                sellers—all in one connected marketplace.
               </p>
             </div>
 
