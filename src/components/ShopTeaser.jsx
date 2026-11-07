@@ -89,7 +89,7 @@ export default function ShopTeaser() {
               </p>
             </div>
 
-            <div className="mb-5 aspect-[4/5] overflow-hidden rounded-[1.15rem] border border-primary-100 bg-primary-50">
+            <div className="mb-5 aspect-square overflow-hidden rounded-[1.15rem] border border-primary-100 bg-primary-50">
               <img
                 alt="Emerald green and cream number 10 soccer uniform with matching shorts and socks"
                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
