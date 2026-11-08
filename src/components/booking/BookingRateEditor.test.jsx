@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import BookingRateEditor from "./BookingRateEditor";
 
@@ -112,5 +112,45 @@ describe("BookingRateEditor", () => {
     fireEvent.click(screen.getByRole("button", { name: /save rates/i }));
 
     expect(onSave).toHaveBeenCalledWith(addedRules);
+  });
+
+  it("retains multiple special rates added before the parent rerenders", () => {
+    const onChange = vi.fn();
+    render(<BookingRateEditor basePriceCents={20000} rules={[]} onChange={onChange} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /special rates/i }));
+    fireEvent.change(screen.getByLabelText(/^date$/i), { target: { value: "2030-02-01" } });
+    fireEvent.change(screen.getByLabelText(/rate \(usd\)/i), { target: { value: "250" } });
+    fireEvent.click(screen.getByRole("button", { name: /^\+ special rates$/i }));
+
+    fireEvent.change(screen.getByLabelText(/^date$/i), { target: { value: "2030-02-02" } });
+    fireEvent.change(screen.getByLabelText(/rate \(usd\)/i), { target: { value: "300" } });
+    fireEvent.click(screen.getByRole("button", { name: /^\+ special rates$/i }));
+
+    expect(onChange).toHaveBeenCalledTimes(2);
+    expect(onChange.mock.calls[1][0]).toHaveLength(2);
+    expect(onChange.mock.calls[1][0].map((rule) => rule.priceCents)).toEqual([25000, 30000]);
+  });
+
+  it("includes a completed unsaved rate when Save rates is selected", async () => {
+    const onChange = vi.fn();
+    const onSave = vi.fn().mockResolvedValue({ deferred: false });
+    render(<BookingRateEditor basePriceCents={20000} rules={[]} onChange={onChange} onSave={onSave} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /special rates/i }));
+    fireEvent.change(screen.getByLabelText(/apply special rate to/i), { target: { value: "week" } });
+    fireEvent.change(screen.getByLabelText(/week starts/i), { target: { value: "2030-02-03" } });
+    fireEvent.change(screen.getByLabelText(/rate \(usd\)/i), { target: { value: "800" } });
+    fireEvent.click(screen.getByRole("button", { name: /save rates/i }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    const savedRules = onSave.mock.calls[0][0];
+    expect(savedRules).toHaveLength(1);
+    expect(savedRules[0]).toMatchObject({
+      period: "week",
+      startDate: "2030-02-03",
+      endDate: "2030-02-09",
+      priceCents: 80000,
+    });
   });
 });
