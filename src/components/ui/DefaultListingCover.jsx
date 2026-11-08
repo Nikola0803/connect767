@@ -26,7 +26,7 @@ export default function DefaultListingCover({ title = "Listing", compact = false
         alt=""
         loading="lazy"
         decoding="async"
-        className="relative z-10 h-full w-full max-h-full max-w-full object-cover object-center"
+        className="listing-cover-media relative z-10 h-full w-full max-h-full max-w-full object-cover object-center"
       />
     </div>
   );

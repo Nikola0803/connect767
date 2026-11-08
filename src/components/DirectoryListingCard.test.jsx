@@ -181,7 +181,7 @@ describe("DirectoryListingCard parent category", () => {
 
     expect(fallbackCover).toBeInTheDocument();
     expect(fallbackCover.parentElement).toHaveClass("aspect-[4/3]");
-    expect(fallbackCover.querySelector("img")).toHaveClass("object-cover");
+    expect(fallbackCover.querySelector("img")).toHaveClass("object-cover", "listing-cover-media");
     expect(fallbackCover.querySelector("img")).toHaveAttribute(
       "src",
       expect.stringContaining("Dominican-Talent-C-Logo.png"),
@@ -198,7 +198,7 @@ describe("DirectoryListingCard parent category", () => {
     );
 
     const cover = screen.getByRole("img", { name: /Island Bookkeeper/ });
-    expect(cover).toHaveClass("object-cover");
+    expect(cover).toHaveClass("object-cover", "listing-cover-media");
     expect(cover).not.toHaveClass("object-contain");
     expect(document.querySelectorAll('img[src="/bookkeeper.jpg"]')).toHaveLength(1);
   });

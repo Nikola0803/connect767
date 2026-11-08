@@ -28,6 +28,44 @@ class C767_REST_Listings
             : 'appointment';
     }
 
+    private static function sanitize_booking_price_unit($value)
+    {
+        $unit = sanitize_key((string) $value);
+        return in_array($unit, ['appointment', 'minute', 'hour'], true) ? $unit : 'appointment';
+    }
+
+    private static function sanitize_booking_rate_rules($value)
+    {
+        $rules = is_array($value) ? $value : json_decode((string) $value, true);
+        if (!is_array($rules)) {
+            return [];
+        }
+        $clean = [];
+        foreach (array_slice($rules, 0, 100) as $index => $rule) {
+            if (!is_array($rule)) {
+                continue;
+            }
+            $period = sanitize_key((string) ($rule['period'] ?? 'day'));
+            $start = sanitize_text_field((string) ($rule['startDate'] ?? ''));
+            $end = sanitize_text_field((string) ($rule['endDate'] ?? $start));
+            if (!in_array($period, ['day', 'week', 'month', 'season'], true)
+                || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $start)
+                || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $end)
+                || $end < $start) {
+                continue;
+            }
+            $clean[] = [
+                'id' => sanitize_key((string) ($rule['id'] ?? ('rate-' . $index))),
+                'label' => sanitize_text_field((string) ($rule['label'] ?? 'Special rate')),
+                'period' => $period,
+                'startDate' => $start,
+                'endDate' => $end,
+                'priceCents' => max(0, min(10000000, (int) ($rule['priceCents'] ?? 0))),
+            ];
+        }
+        return $clean;
+    }
+
     private static function payout_encryption_key()
     {
         return hash('sha256', wp_salt('auth') . '|connect767-booking-payout-v1', true);
@@ -412,7 +450,10 @@ class C767_REST_Listings
             'whatsapp' => (string) get_post_meta($post->ID, 'whatsapp', true),
             'bookingType' => self::sanitize_booking_type(get_post_meta($post->ID, 'booking_type', true)),
             'bookingPriceCents' => (int) get_post_meta($post->ID, 'booking_price_cents', true),
+            'bookingRateRules' => self::sanitize_booking_rate_rules(get_post_meta($post->ID, 'booking_rate_rules', true)),
             'bookingDurationMinutes' => (int) (get_post_meta($post->ID, 'booking_duration_minutes', true) ?: 30),
+            'bookingMaxDurationMinutes' => (int) (get_post_meta($post->ID, 'booking_max_duration_minutes', true) ?: 120),
+            'bookingPriceUnit' => self::sanitize_booking_price_unit(get_post_meta($post->ID, 'booking_price_unit', true)),
             // Owner-authenticated endpoint only. This value is deliberately
             // absent from public listing REST metadata.
             'bookingMeetingUrl' => (string) get_post_meta($post->ID, 'booking_meeting_url', true),
@@ -440,19 +481,29 @@ class C767_REST_Listings
         $enabled = filter_var($request->get_param('enabled'), FILTER_VALIDATE_BOOLEAN);
         $booking_type = self::sanitize_booking_type($request->get_param('bookingType'));
         $price_cents = max(0, min(10000000, (int) $request->get_param('bookingPriceCents')));
+        $rate_rules = self::sanitize_booking_rate_rules($request->get_param('bookingRateRules'));
+        $has_paid_rate = $price_cents > 0;
+        foreach ($rate_rules as $rule) {
+            if ((int) $rule['priceCents'] > 0) {
+                $has_paid_rate = true;
+                break;
+            }
+        }
         // Paid booking profiles keep customers inside Connect767's secure
         // messaging and booking flows. Contact details remain stored for the
         // owner but are always hidden from the public profile while paid
         // bookings are active. Free/disabled bookings keep contact details
         // visible.
-        $hide_contact_info = $enabled && $price_cents > 0;
+        $hide_contact_info = $enabled && $has_paid_rate;
         $duration = max(15, min(480, (int) ($request->get_param('bookingDurationMinutes') ?: 30)));
+        $max_duration = max($duration, min(480, (int) ($request->get_param('bookingMaxDurationMinutes') ?: 120)));
+        $price_unit = self::sanitize_booking_price_unit($request->get_param('bookingPriceUnit'));
         $meeting_url_raw = trim((string) $request->get_param('bookingMeetingUrl'));
         $meeting_url = $meeting_url_raw === '' ? '' : esc_url_raw($meeting_url_raw, ['https']);
         if ($meeting_url_raw !== '' && $meeting_url === '') {
             return new WP_Error('c767_bad_meeting_url', 'Meeting link must be a valid HTTPS URL.', ['status' => 400]);
         }
-        $payout = self::sanitize_payout_details($request, $enabled && $price_cents > 0);
+        $payout = self::sanitize_payout_details($request, $enabled && $has_paid_rate);
         if (is_wp_error($payout)) {
             return $payout;
         }
@@ -465,7 +516,10 @@ class C767_REST_Listings
         update_post_meta($post_id, 'hide_contact_info', $hide_contact_info ? '1' : '0');
         update_post_meta($post_id, 'booking_type', $booking_type);
         update_post_meta($post_id, 'booking_price_cents', $price_cents);
+        update_post_meta($post_id, 'booking_rate_rules', wp_json_encode($rate_rules));
         update_post_meta($post_id, 'booking_duration_minutes', $duration);
+        update_post_meta($post_id, 'booking_max_duration_minutes', $max_duration);
+        update_post_meta($post_id, 'booking_price_unit', $price_unit);
         update_post_meta($post_id, 'booking_meeting_url', $meeting_url);
         update_post_meta($post_id, '_booking_payout_method', $payout['method']);
         update_post_meta($post_id, '_booking_payout_details', $encrypted_payout);
@@ -476,7 +530,10 @@ class C767_REST_Listings
             'hideContactInfo' => $hide_contact_info,
             'bookingType' => $booking_type,
             'bookingPriceCents' => $price_cents,
+            'bookingRateRules' => $rate_rules,
             'bookingDurationMinutes' => $duration,
+            'bookingMaxDurationMinutes' => $max_duration,
+            'bookingPriceUnit' => $price_unit,
             'bookingMeetingUrl' => $meeting_url,
             'bookingPayoutMethod' => $payout['method'],
             'bookingPayoutConfigured' => $payout['method'] !== '',
@@ -541,6 +598,8 @@ class C767_REST_Listings
                 'bookingType' => self::sanitize_booking_type(get_post_meta($post->ID, 'booking_type', true)),
                 'bookingPriceCents' => (int) get_post_meta($post->ID, 'booking_price_cents', true),
                 'bookingDurationMinutes' => (int) (get_post_meta($post->ID, 'booking_duration_minutes', true) ?: 30),
+                'bookingMaxDurationMinutes' => (int) (get_post_meta($post->ID, 'booking_max_duration_minutes', true) ?: 120),
+                'bookingPriceUnit' => self::sanitize_booking_price_unit(get_post_meta($post->ID, 'booking_price_unit', true)),
                 'payoutConfigured' => in_array((string) get_post_meta($post->ID, '_booking_payout_method', true), ['bank', 'digital'], true),
                 'storefrontConfigured' => (string) get_post_meta($post->ID, 'storefront_headline', true) !== '' || (string) get_post_meta($post->ID, 'storefront_cover_url', true) !== '',
                 'stripeConnectEnabled' => (bool) get_option('connect767_stripe_connect_enabled', false) && preg_match('/^acct_[A-Za-z0-9]+$/', (string) get_post_meta($post->ID, '_stripe_connect_account_id', true)),

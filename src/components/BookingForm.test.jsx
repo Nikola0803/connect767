@@ -14,7 +14,7 @@ describe("BookingForm", () => {
     );
 
     expect(screen.getByText("$75.00")).toBeInTheDocument();
-    expect(screen.getByText(/60-minute appointment/i)).toBeInTheDocument();
+    expect(screen.getByText(/choose a meeting length from 1 hour to 2 hours/i)).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: /paid booking terms/i })).toBeRequired();
     expect(screen.getByRole("button", { name: /continue to payment · \$75.00/i })).toBeDisabled();
   });
@@ -43,12 +43,13 @@ describe("BookingForm", () => {
       />,
     );
 
-    expect(screen.getAllByLabelText("required")).toHaveLength(6);
+    expect(screen.getAllByLabelText("required")).toHaveLength(7);
     expect(screen.getByLabelText(/your name/i)).toBeRequired();
     expect(screen.getByLabelText(/email/i)).toBeRequired();
     expect(screen.getByLabelText(/phone/i)).toBeRequired();
     expect(screen.getByLabelText(/preferred date/i)).toBeRequired();
     expect(screen.getByLabelText(/preferred time/i)).toBeRequired();
+    expect(screen.getByLabelText(/meeting length/i)).toBeRequired();
     expect(screen.getByLabelText(/notes & preferences/i)).toBeRequired();
   });
 
@@ -66,7 +67,7 @@ describe("BookingForm", () => {
     fireEvent.change(screen.getByLabelText(/check-in/i), { target: { value: "2030-06-10" } });
     fireEvent.change(screen.getByLabelText(/check-out/i), { target: { value: "2030-06-13" } });
 
-    expect(screen.getByText(/3 nights × \$125.00/i)).toBeInTheDocument();
+    expect(screen.getByText(/3 nights · rates shown on calendar/i)).toBeInTheDocument();
     expect(screen.getByText(/total \$375.00/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("checkbox", { name: /paid booking terms/i }));
     expect(screen.getByRole("button", { name: /continue to payment · \$375.00/i })).toBeInTheDocument();
@@ -86,7 +87,7 @@ describe("BookingForm", () => {
     expect(screen.getByText("$40.00 / day")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/start date/i), { target: { value: "2030-06-10" } });
     fireEvent.change(screen.getByLabelText(/end date/i), { target: { value: "2030-06-13" } });
-    expect(screen.getByText(/3 days × \$40.00/i)).toBeInTheDocument();
+    expect(screen.getByText(/3 days · rates shown on calendar/i)).toBeInTheDocument();
     expect(screen.getByText(/total \$120.00/i)).toBeInTheDocument();
   });
 
@@ -103,7 +104,7 @@ describe("BookingForm", () => {
     expect(screen.getByText("$1200.00 / month")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/start date/i), { target: { value: "2030-01-01" } });
     fireEvent.change(screen.getByLabelText(/end date/i), { target: { value: "2030-03-02" } });
-    expect(screen.getByText(/2 months × \$1200.00/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 months · rates shown on calendar/i)).toBeInTheDocument();
     expect(screen.getByText(/total \$2400.00/i)).toBeInTheDocument();
   });
 
@@ -125,5 +126,46 @@ describe("BookingForm", () => {
     fireEvent.click(checkbox);
     expect(checkbox).toBeChecked();
     expect(continueButton).toBeEnabled();
+  });
+
+  it("reflects a seasonal rate in the customer total", () => {
+    render(
+      <BookingForm
+        slug="island-villa"
+        businessName="Island Villa"
+        bookingType="rental"
+        priceCents={10000}
+        rateRules={[{
+          id: "winter",
+          label: "Winter season",
+          period: "season",
+          startDate: "2030-12-01",
+          endDate: "2030-12-31",
+          priceCents: 17500,
+        }]}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/check-in/i), { target: { value: "2030-12-10" } });
+    fireEvent.change(screen.getByLabelText(/check-out/i), { target: { value: "2030-12-13" } });
+    expect(screen.getByText(/total \$525.00/i)).toBeInTheDocument();
+  });
+
+  it("updates an hourly meeting price when the visitor changes duration", () => {
+    render(
+      <BookingForm
+        slug="strategy-session"
+        businessName="Island Consulting"
+        priceCents={12000}
+        priceUnit="hour"
+        durationMinutes={30}
+        maxDurationMinutes={120}
+      />,
+    );
+    expect(screen.getByText("$120.00 / hour")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/preferred date/i), { target: { value: "2030-07-03" } });
+    fireEvent.change(screen.getByLabelText(/meeting length/i), { target: { value: "90" } });
+    expect(screen.getAllByText(/1 hr 30 min/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: /continue to payment · \$180.00/i })).toBeInTheDocument();
   });
 });

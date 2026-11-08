@@ -112,6 +112,12 @@ class C767_Rest_Bookings
         return in_array($type, self::RENTAL_BOOKING_TYPES, true);
     }
 
+    private static function price_unit($value)
+    {
+        $unit = sanitize_key((string) $value);
+        return in_array($unit, ['appointment', 'minute', 'hour'], true) ? $unit : 'appointment';
+    }
+
     private static function rate_unit($type)
     {
         if ($type === 'long-term-rental-housing') {
@@ -121,6 +127,45 @@ class C767_Rest_Bookings
             return 'night';
         }
         return self::is_rental($type) ? 'day' : 'booking';
+    }
+
+    private static function rate_rules($listing_id)
+    {
+        $rules = json_decode((string) get_post_meta($listing_id, 'booking_rate_rules', true), true);
+        return is_array($rules) ? array_slice($rules, 0, 100) : [];
+    }
+
+    private static function rate_for_date($date, $base_rate, $rules)
+    {
+        $priorities = ['season' => 1, 'month' => 2, 'week' => 3, 'day' => 4];
+        $best = null;
+        $best_priority = -1;
+        foreach ($rules as $rule) {
+            $start = (string) ($rule['startDate'] ?? '');
+            $end = (string) ($rule['endDate'] ?? '');
+            $period = (string) ($rule['period'] ?? 'day');
+            $priority = $priorities[$period] ?? 0;
+            if ($date >= $start && $date <= $end && $priority > $best_priority) {
+                $best = max(0, min(10000000, (int) ($rule['priceCents'] ?? 0)));
+                $best_priority = $priority;
+            }
+        }
+        return $best === null ? $base_rate : $best;
+    }
+
+    private static function price_rental($check_in, $days, $rate_unit, $base_rate, $rules)
+    {
+        $amount = 0;
+        $breakdown = [];
+        $unit_count = $rate_unit === 'month' ? (int) ceil($days / 30) : $days;
+        for ($index = 0; $index < $unit_count; $index++) {
+            $offset = $rate_unit === 'month' ? $index * 30 : $index;
+            $date = gmdate('Y-m-d', strtotime($check_in . ' UTC +' . $offset . ' days'));
+            $price = self::rate_for_date($date, $base_rate, $rules);
+            $amount += $price;
+            $breakdown[] = ['date' => $date, 'priceCents' => $price];
+        }
+        return [min(100000000, $amount), $breakdown];
     }
 
     private static function rental_conflict($listing_id, $check_in, $check_out, $exclude_booking_id = 0)
@@ -199,8 +244,15 @@ class C767_Rest_Bookings
         $check_out = sanitize_text_field((string) $request->get_param('checkOut'));
         $notes = sanitize_textarea_field((string) $request->get_param('notes'));
         $rate_cents = max(0, (int) get_post_meta($listing->ID, 'booking_price_cents', true));
+        $rate_rules = self::rate_rules($listing->ID);
         $amount_cents = $rate_cents;
-        $duration_minutes = max(15, (int) (get_post_meta($listing->ID, 'booking_duration_minutes', true) ?: 30));
+        $rate_breakdown = [];
+        $minimum_duration = max(15, min(480, (int) (get_post_meta($listing->ID, 'booking_duration_minutes', true) ?: 30)));
+        $maximum_duration = max($minimum_duration, min(480, (int) (get_post_meta($listing->ID, 'booking_max_duration_minutes', true) ?: 120)));
+        $price_unit = self::price_unit(get_post_meta($listing->ID, 'booking_price_unit', true));
+        $duration_minutes = self::is_rental($booking_type)
+            ? $minimum_duration
+            : (int) ($request->get_param('durationMinutes') ?: $minimum_duration);
 
         if ($name === '' || $email === '' || $phone === '' || $notes === '') {
             return new WP_Error(
@@ -223,11 +275,33 @@ class C767_Rest_Bookings
             if (self::rental_conflict($listing->ID, $check_in, $check_out)) {
                 return new WP_Error('c767_rental_unavailable', 'Those dates are already booked. Please choose another stay.', ['status' => 409]);
             }
-            $amount_cents = min(100000000, $rate_cents * $units);
+            [$amount_cents, $rate_breakdown] = self::price_rental($check_in, $days, $rate_unit, $rate_cents, $rate_rules);
             $preferred_date = $check_in;
             $preferred_time = '';
         } elseif ($preferred_date === '' || $preferred_time === '') {
             return new WP_Error('c767_missing_fields', 'Preferred date and time are required for an appointment.', ['status' => 400]);
+        } else {
+            if (!self::valid_date($preferred_date) || $preferred_date < wp_date('Y-m-d')) {
+                return new WP_Error('c767_bad_appointment_date', 'Choose a valid appointment date that is not in the past.', ['status' => 400]);
+            }
+            if ($duration_minutes < $minimum_duration || $duration_minutes > $maximum_duration || $duration_minutes % 15 !== 0) {
+                return new WP_Error('c767_bad_meeting_duration', 'Choose an available meeting length in 15-minute increments.', ['status' => 400]);
+            }
+            $date_rate_cents = self::rate_for_date($preferred_date, $rate_cents, $rate_rules);
+            if ($price_unit === 'minute') {
+                $amount_cents = (int) round($date_rate_cents * $duration_minutes);
+            } elseif ($price_unit === 'hour') {
+                $amount_cents = (int) round($date_rate_cents * ($duration_minutes / 60));
+            } else {
+                $amount_cents = $date_rate_cents;
+            }
+            $rate_breakdown = [[
+                'date' => $preferred_date,
+                'priceCents' => $amount_cents,
+                'baseRateCents' => $date_rate_cents,
+                'priceUnit' => $price_unit,
+                'durationMinutes' => $duration_minutes,
+            ]];
         }
 
         $terms_accepted = rest_sanitize_boolean($request->get_param('termsAccepted'));
@@ -275,9 +349,11 @@ class C767_Rest_Bookings
             'units' => $units,
             'rate_unit' => $rate_unit,
             'rate_cents' => $rate_cents,
+            'rate_breakdown' => wp_json_encode($rate_breakdown),
             'status' => 'pending',
             'amount_cents' => $amount_cents,
             'duration_minutes' => $duration_minutes,
+            'price_unit' => $price_unit,
             'payment_status' => $amount_cents > 0 ? 'unpaid' : 'not_required',
             'paid_terms_accepted' => $amount_cents > 0 ? '1' : '0',
             'paid_terms_version' => $amount_cents > 0 ? self::PAID_TERMS_VERSION : '',
@@ -307,6 +383,7 @@ class C767_Rest_Bookings
             'platformFeePercent' => $amount_cents > 0 ? self::PLATFORM_FEE_PERCENT : 0,
             'termsVersion' => $amount_cents > 0 ? self::PAID_TERMS_VERSION : '',
             'durationMinutes' => $duration_minutes,
+            'priceUnit' => $price_unit,
             'bookingType' => $booking_type,
             'rateUnit' => $rate_unit,
             'units' => $units,
