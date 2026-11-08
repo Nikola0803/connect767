@@ -184,44 +184,52 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background-100/70 via-background-50 to-background-50 pt-16 md:pt-20">
-      <div className="relative w-full overflow-hidden border-b border-secondary-200 bg-gradient-to-br from-secondary-100 via-background-50 to-primary-50 px-4 py-8 md:px-8 md:py-10 lg:px-12">
+    <div className="min-h-screen bg-gradient-to-b from-background-100/60 via-background-50 to-background-50 pt-16 md:pt-20">
+      <div className="relative w-full overflow-hidden border-b border-secondary-200 bg-gradient-to-br from-secondary-100 via-background-50 to-primary-50 px-4 py-7 md:px-8 md:py-8 lg:px-12">
         <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-primary-200/30 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-28 left-1/3 h-56 w-56 rounded-full bg-secondary-300/25 blur-3xl" />
-        <div className="relative mx-auto flex max-w-6xl flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="relative mx-auto flex max-w-6xl flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-4">
-            <span className="mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary-200 bg-primary-100 text-xl text-primary-800 shadow-sm">
+            <span className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-primary-200 bg-primary-100 text-lg text-primary-800 shadow-sm">
               <i className="ri-dashboard-line" aria-hidden="true" />
             </span>
             <div>
-              <h1 className={DASHBOARD_SECTION_HEADING}>Dashboard</h1>
-              <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-foreground-600 md:text-base">
+              <p className={DASHBOARD_EYEBROW}>Account workspace</p>
+              <h1 className="mt-1 font-heading text-2xl font-semibold tracking-[-0.025em] text-foreground-950 md:text-3xl">Dashboard</h1>
+              <p className="mt-1 max-w-xl text-sm leading-relaxed text-foreground-600">
                 Manage your directory listings, storefront, and bookings in one place.
               </p>
-              {(email || isDesignPreview) && (
-                <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-secondary-200 bg-background-50/80 px-3 py-1.5 font-label text-xs font-medium text-foreground-600 shadow-sm">
-                  <i className="ri-user-line text-primary-700" aria-hidden="true" />
-                  {email || "seller@connect767.com"}
-                </p>
-              )}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {(email || isDesignPreview) && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-secondary-200 bg-background-50/80 px-2.5 py-1 font-label text-[11px] font-medium text-foreground-600 shadow-sm">
+                    <i className="ri-user-line text-primary-700" aria-hidden="true" />
+                    {email || "seller@connect767.com"}
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50/90 px-2.5 py-1 text-[11px] font-semibold text-primary-800">
+                  <i className="ri-profile-line" /> {listings?.length || 0} listing{listings?.length === 1 ? "" : "s"}
+                </span>
+                {showSellerWorkspace && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50/90 px-2.5 py-1 text-[11px] font-semibold text-primary-800">
+                    <i className="ri-store-2-line" /> Storefront active
+                  </span>
+                )}
+                {showScheduling && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-secondary-200 bg-secondary-50/90 px-2.5 py-1 text-[11px] font-semibold text-secondary-900">
+                    <i className="ri-calendar-event-line" /> Bookings active
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-          <Button to="/listings/submit" variant="primary" icon="ri-add-line">
+          <Button to="/listings/submit" variant="primary" icon="ri-add-line" className="shadow-[0_10px_26px_rgba(31,112,78,0.18)]">
             Add another listing
           </Button>
         </div>
       </div>
 
-      <div className="w-full px-4 py-10 md:px-8 md:py-14 lg:px-12">
+      <div className="w-full px-4 py-8 md:px-8 md:py-10 lg:px-12">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-5">
-            <p className={DASHBOARD_EYEBROW}>Directory management</p>
-            <h2 className={DASHBOARD_SECTION_HEADING}>
-              Your business workspace
-            </h2>
-            <p className={DASHBOARD_SECTION_SUBTITLE}>Manage your storefront, directory listings, and scheduling from three focused areas.</p>
-          </div>
-
           {!isLiveApi && !isDesignPreview && (
             <div className="mb-6 px-3.5 py-2.5 rounded-lg bg-secondary-100 border border-secondary-200 text-xs text-secondary-900 flex items-start gap-2">
               <i className="ri-flask-line mt-0.5 flex-shrink-0" />
@@ -245,7 +253,7 @@ export default function DashboardPage() {
             />
           )}
 
-          <section id="my-listings" className={`${DASHBOARD_PANEL} mt-8 scroll-mt-24 overflow-hidden`}>
+          <section id="my-listings" className={`${DASHBOARD_PANEL} mt-6 scroll-mt-24 overflow-hidden`}>
             <div className="flex items-start justify-between gap-4 border-b border-secondary-200 bg-gradient-to-r from-secondary-100/80 via-background-50 to-primary-50/70 px-5 py-6 sm:px-7">
               <div>
                 <p className={DASHBOARD_EYEBROW}>Directory listings</p>
@@ -281,7 +289,7 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={item.id}
-                    className={`${DASHBOARD_PANEL} flex flex-col gap-5 border-l-4 border-l-primary-500 p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_48px_rgba(83,55,35,0.1)] sm:p-5`}
+                    className="flex flex-col gap-5 rounded-2xl border border-background-200 border-l-4 border-l-primary-500 bg-background-50 p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_48px_rgba(83,55,35,0.1)] sm:p-5"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1.5">
@@ -312,7 +320,7 @@ export default function DashboardPage() {
                     <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
                       <Link
                         to={`/listings/${item.slug}/edit`}
-                        className="group flex min-h-24 flex-col justify-between rounded-2xl border border-primary-200 border-t-4 border-t-primary-500 bg-gradient-to-br from-primary-50 to-background-50 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(31,112,78,0.14)]"
+                        className="group flex min-h-20 flex-col justify-between rounded-2xl border border-primary-200 border-t-4 border-t-primary-500 bg-gradient-to-br from-primary-50 to-background-50 p-3.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(31,112,78,0.14)]"
                       >
                         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-100 text-lg text-primary-800"><i className="ri-file-edit-line" /></span>
                         <span className="mt-3 flex items-center justify-between gap-3 text-sm font-semibold text-foreground-950">
@@ -323,7 +331,7 @@ export default function DashboardPage() {
                       {item.viewUrl ? (
                         <Link
                           to={`/listings/${item.slug}`}
-                          className="group flex min-h-24 flex-col justify-between rounded-2xl border border-secondary-200 border-t-4 border-t-secondary-400 bg-gradient-to-br from-secondary-50 to-background-50 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(153,119,72,0.14)]"
+                          className="group flex min-h-20 flex-col justify-between rounded-2xl border border-secondary-200 border-t-4 border-t-secondary-400 bg-gradient-to-br from-secondary-50 to-background-50 p-3.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(153,119,72,0.14)]"
                         >
                           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary-100 text-lg text-secondary-800"><i className="ri-eye-line" /></span>
                           <span className="mt-3 flex items-center justify-between gap-3 text-sm font-semibold text-foreground-950">
@@ -339,7 +347,7 @@ export default function DashboardPage() {
                       )}
                       <Link
                         to={`/listings/${item.slug}/edit?managePlan=1`}
-                        className="group flex min-h-24 flex-col justify-between rounded-2xl border border-primary-200 border-t-4 border-t-primary-600 bg-gradient-to-br from-primary-100/80 to-background-50 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(31,112,78,0.14)]"
+                        className="group flex min-h-20 flex-col justify-between rounded-2xl border border-primary-200 border-t-4 border-t-primary-600 bg-gradient-to-br from-primary-100/80 to-background-50 p-3.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(31,112,78,0.14)]"
                       >
                         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-200/70 text-lg text-primary-900"><i className="ri-arrow-up-down-line" /></span>
                         <span className="mt-3 flex items-center justify-between gap-3 text-sm font-semibold text-foreground-950">
@@ -349,7 +357,7 @@ export default function DashboardPage() {
                       </Link>
                       <Link
                         to={`/auth/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`}
-                        className="group flex min-h-24 flex-col justify-between rounded-2xl border border-secondary-200 border-t-4 border-t-secondary-500 bg-gradient-to-br from-secondary-100/80 to-background-50 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(153,119,72,0.14)]"
+                        className="group flex min-h-20 flex-col justify-between rounded-2xl border border-secondary-200 border-t-4 border-t-secondary-500 bg-gradient-to-br from-secondary-100/80 to-background-50 p-3.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(153,119,72,0.14)]"
                       >
                         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary-200/70 text-lg text-secondary-900"><i className="ri-lock-password-line" /></span>
                         <span className="mt-3 flex items-center justify-between gap-3 text-sm font-semibold text-foreground-950">
@@ -368,7 +376,7 @@ export default function DashboardPage() {
           </section>
 
           {showScheduling && (
-          <section id="bookings-rentals" className={`${DASHBOARD_PANEL} mt-8 scroll-mt-24 overflow-hidden`}>
+          <section id="bookings-rentals" className={`${DASHBOARD_PANEL} mt-6 scroll-mt-24 overflow-hidden`}>
             <div className="flex items-start justify-between gap-4 border-b border-secondary-200 bg-gradient-to-r from-secondary-100/80 via-background-50 to-primary-50/70 px-5 py-6 sm:px-7">
               <div>
                 <p className={DASHBOARD_EYEBROW}>Scheduling</p>
