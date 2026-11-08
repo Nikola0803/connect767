@@ -2,7 +2,7 @@ import { steps } from "../data/content";
 
 export default function HowItWorks() {
   return (
-    <section className="w-full px-4 md:px-8 lg:px-12 py-16 md:py-24 bg-background-50">
+    <section className="hidden w-full bg-background-50 px-4 py-16 md:block md:px-8 md:py-24 lg:px-12">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mb-14">
           <div className="lg:col-span-5">

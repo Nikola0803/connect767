@@ -186,7 +186,7 @@ export default function ShopTeaser() {
           </Link>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-6 hidden grid-cols-1 gap-4 md:grid md:grid-cols-2 xl:grid-cols-4">
           {highlights.map((item) => (
             <div
               key={item.title}
