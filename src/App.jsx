@@ -63,7 +63,7 @@ function Chrome({ children }) {
   }
 
   return (
-    <div className="w-full min-h-screen bg-background-50 overflow-x-hidden">
+    <div className="min-h-screen w-full overflow-x-hidden bg-background-50 pb-14 md:pb-0">
       <Header />
       <main>{children}</main>
       <Footer />

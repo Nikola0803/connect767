@@ -104,6 +104,18 @@ export default function Header() {
     navigate("/");
   };
 
+  const mobileNavItems = [
+    { label: "Home", href: "/", icon: "ri-home-5-line" },
+    { label: "Directory", href: "/listings", icon: "ri-map-pin-2-line" },
+    { label: "Shop", href: "/shop", icon: "ri-shopping-bag-3-line" },
+    { label: "Saved", href: "/saved", icon: "ri-heart-line" },
+    {
+      label: isAuthenticated ? "Dashboard" : "Account",
+      href: isAuthenticated ? "/dashboard" : "/auth/login",
+      icon: isAuthenticated ? "ri-dashboard-line" : "ri-user-3-line",
+    },
+  ];
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${wrapClass}`}
@@ -350,6 +362,34 @@ export default function Header() {
             )}
           </nav>
         </div>
+      )}
+
+      {!mobileOpen && (
+        <nav
+          aria-label="Mobile quick navigation"
+          className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-background-200/80 bg-background-50/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(44,37,25,0.08)] backdrop-blur-md md:hidden"
+        >
+          {mobileNavItems.map((item) => {
+            const active = item.href === "/"
+              ? pathname === "/"
+              : pathname === item.href || pathname.startsWith(`${item.href}/`);
+            return (
+              <Link
+                key={item.href}
+                to={item.href}
+                aria-current={active ? "page" : undefined}
+                className={`flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-semibold transition-colors ${
+                  active
+                    ? "text-primary-700"
+                    : "text-foreground-600 hover:bg-primary-50 hover:text-primary-700"
+                }`}
+              >
+                <i className={`${item.icon} text-lg`} aria-hidden="true" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
       )}
     </header>
   );
