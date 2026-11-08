@@ -80,6 +80,23 @@ describe("BookingRateEditor", () => {
     expect(screen.getByLabelText(/season ends/i)).toBeEnabled();
   });
 
+  it("fills seasonal start and end dates by clicking calendar days", () => {
+    render(<BookingRateEditor basePriceCents={20000} rules={[]} onChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /special rates/i }));
+    fireEvent.change(screen.getByLabelText(/apply special rate to/i), { target: { value: "season" } });
+
+    const availableDays = screen.getAllByRole("button", { name: /\w+ \d+, \d{4}, \$200/i })
+      .filter((button) => !button.disabled);
+    const startDate = availableDays[0].getAttribute("data-date");
+    const endDate = availableDays[3].getAttribute("data-date");
+    fireEvent.click(availableDays[0]);
+    fireEvent.click(availableDays[3]);
+
+    expect(screen.getByLabelText(/season starts/i)).toHaveValue(startDate);
+    expect(screen.getByLabelText(/season ends/i)).toHaveValue(endDate);
+    expect(screen.getAllByText(/selected dates/i).length).toBeGreaterThan(0);
+  });
+
   it("keeps the special-rate action on one concise label and saves added rates", async () => {
     const onChange = vi.fn();
     const onSave = vi.fn().mockResolvedValue({ deferred: false });

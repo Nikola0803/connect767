@@ -118,6 +118,16 @@ export default function BookingRateEditor({ basePriceCents, rules, onChange, onS
     }));
   };
 
+  const selectCalendarDates = (startDate, endDate = "") => {
+    setWarning("");
+    setSaveMessage("");
+    setDraft((current) => ({
+      ...current,
+      anchor: startDate,
+      seasonEnd: current.period === "season" ? endDate : "",
+    }));
+  };
+
   return (
     <section className="sm:col-span-2 rounded-2xl border border-primary-200 bg-white p-4 sm:p-5">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-4">
@@ -139,7 +149,16 @@ export default function BookingRateEditor({ basePriceCents, rules, onChange, onS
         </button>
       ) : (
         <>
-          <BookingPriceCalendar basePriceCents={basePriceCents} rules={normalized} minimumDate={today} unitLabel={rateLabel.replace(/ rate$/, "")} />
+          <BookingPriceCalendar
+            basePriceCents={basePriceCents}
+            rules={normalized}
+            mode={draft.period === "season" ? "range" : "single"}
+            selectedStart={draft.anchor}
+            selectedEnd={draft.period === "season" ? draft.seasonEnd : ""}
+            onSelect={selectCalendarDates}
+            minimumDate={today}
+            unitLabel={rateLabel.replace(/ rate$/, "")}
+          />
           {warning && (
             <div role="alert" className="mt-4 flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-sm">
               <i className="ri-error-warning-line mt-0.5 text-amber-700" />
