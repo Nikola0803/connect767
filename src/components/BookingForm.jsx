@@ -52,7 +52,7 @@ const formatStayRange = (start, end) => {
   return `${startLabel}–${endLabel}`;
 };
 
-function BookingCardPayment({ booking, onSuccess }) {
+function BookingCardPayment({ booking, amountCents, onSuccess }) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
@@ -85,7 +85,7 @@ function BookingCardPayment({ booking, onSuccess }) {
       <PaymentElement />
       {error && <p className="text-xs text-accent-600 font-label mt-3">{error}</p>}
       <Button type="submit" variant="primary" className="w-full mt-4" disabled={!stripe || submitting}>
-        {submitting ? "Processing…" : "Pay & confirm booking"}
+        {submitting ? "Processing…" : `Pay ${formatPrice(amountCents)} & confirm booking`}
       </Button>
     </form>
   );
@@ -145,6 +145,8 @@ export default function BookingForm({
   const variablePricing = normalizedRules.length > 0;
   const hasDateSelection = isRental ? units > 0 : Boolean(form.preferredDate);
   const isPaid = hasDateSelection ? totalCents > 0 : hasPaidRates;
+  const paymentAmountCents = Math.max(0, Number(booking?.amountCents ?? totalCents) || 0);
+  const showingPayment = step === "choosePayment" || step === "card";
   const commonValid = [form.name, form.email, form.phone, form.notes].every((value) => value.trim());
   const valid = commonValid && (!isPaid || termsAccepted) && (isRental
     ? Boolean(form.checkIn && form.checkOut && units > 0)
@@ -250,7 +252,11 @@ export default function BookingForm({
       <div className="flex items-start justify-between gap-4 mb-1">
         <h3 className="font-heading text-lg font-medium text-foreground-950">{isRental ? `Book ${bookingTypeLabel(bookingType).toLowerCase()}` : "Book an appointment"}</h3>
         <span className="text-sm font-semibold text-primary-800 whitespace-nowrap">
-          {isPaid ? `${variablePricing ? "From " : ""}${formatPrice(priceCents)}${isRental ? ` / ${rateUnit}` : priceUnit === "minute" ? " / minute" : priceUnit === "hour" ? " / hour" : ""}` : "Free"}
+          {showingPayment
+            ? `Total due ${formatPrice(paymentAmountCents)}`
+            : isPaid
+              ? `${variablePricing ? "From " : ""}${formatPrice(priceCents)}${isRental ? ` / ${rateUnit}` : priceUnit === "minute" ? " / minute" : priceUnit === "hour" ? " / hour" : ""}`
+              : "Free"}
         </span>
       </div>
       <p className="text-xs text-foreground-600 font-label mb-5">
@@ -359,10 +365,19 @@ export default function BookingForm({
           <p className="text-sm text-foreground-700 font-label mb-4">
             {isRental ? "Your selected rental dates are held pending payment." : "Your requested time is held pending payment."} Choose how to pay.
           </p>
+          <div className="flex items-center justify-between gap-4 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 mb-4 font-label">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary-700">Amount to pay</p>
+              <p className="text-sm text-foreground-600 mt-0.5">
+                {isRental ? `${formatStayRange(form.checkIn, form.checkOut)} · ${units} ${unitLabel}` : `${new Date(`${form.preferredDate}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} · ${formatDuration(form.durationMinutes)}`}
+              </p>
+            </div>
+            <strong className="font-heading text-xl text-primary-900 whitespace-nowrap">{formatPrice(paymentAmountCents)}</strong>
+          </div>
           {error && <p className="text-xs text-accent-600 font-label mb-3">{error}</p>}
           {paymentConfig.stripeEnabled && (
             <Button variant="primary" onClick={startCard} disabled={sending} className="w-full" icon="ri-bank-card-line" iconPosition="left">
-              {sending ? "Starting…" : "Pay with card"}
+              {sending ? "Starting…" : `Pay ${formatPrice(paymentAmountCents)} with card`}
             </Button>
           )}
           {paymentConfig.stripeEnabled && paymentConfig.paypalEnabled && (
@@ -387,7 +402,7 @@ export default function BookingForm({
 
       {step === "card" && clientSecret && paymentConfig && (
         <Elements stripe={getStripe(paymentConfig.stripePublishableKey)} options={{ clientSecret }}>
-          <BookingCardPayment booking={booking} onSuccess={finish} />
+          <BookingCardPayment booking={booking} amountCents={paymentAmountCents} onSuccess={finish} />
         </Elements>
       )}
     </div>
