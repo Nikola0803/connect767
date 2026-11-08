@@ -156,14 +156,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media (max-width: 767px) {
-  /* Mobile listing covers show the entire uploaded image. Desktop retains the
-     established edge-to-edge crop and the owner's saved crop/zoom settings. */
-  .listing-cover-media,
-  .listing-profile-cover-media {
-    object-fit: contain !important;
-    object-position: center !important;
-    transform: none !important;
-  }
+  /* Listing covers keep the same edge-to-edge treatment on mobile as they do
+     on desktop. The former `contain` override created empty bands whenever an
+     uploaded photo did not share the card/frame aspect ratio. The component's
+     saved crop position and zoom now remain active at every viewport size. */
 
   input, select, textarea {
     /* Prevent Safari from zooming the page when a form control receives focus. */
