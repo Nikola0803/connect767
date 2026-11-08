@@ -142,6 +142,10 @@ class C767_Rest_Vendor_Products
         $track_stock = get_post_meta($post->ID, 'track_stock', true) === '1';
         $stock_quantity = max(0, (int) get_post_meta($post->ID, 'stock_quantity', true));
         $low_stock_threshold = max(0, (int) (get_post_meta($post->ID, 'low_stock_threshold', true) ?: 3));
+        $saved_product_type = sanitize_key((string) get_post_meta($post->ID, 'product_type', true));
+        $product_type = in_array($saved_product_type, ['simple', 'variable'], true)
+            ? $saved_product_type
+            : (!empty($variants) ? 'variable' : 'simple');
         return [
             'id' => $post->ID,
             'listingId' => (int) get_post_meta($post->ID, 'listing_id', true),
@@ -155,6 +159,7 @@ class C767_Rest_Vendor_Products
             'pickupInstructions' => get_post_meta($post->ID, 'pickup_instructions', true),
             'sku' => (string) get_post_meta($post->ID, 'sku', true),
             'category' => (string) get_post_meta($post->ID, 'product_category', true),
+            'productType' => $product_type,
             'trackStock' => $track_stock,
             'stockQuantity' => $track_stock ? $stock_quantity : null,
             'lowStockThreshold' => $low_stock_threshold,
@@ -183,9 +188,12 @@ class C767_Rest_Vendor_Products
             $variants[] = [
                 'id' => sanitize_key((string) ($variant['id'] ?? sanitize_title($label) . '-' . ($index + 1))),
                 'label' => $label,
+                'size' => sanitize_text_field((string) ($variant['size'] ?? '')),
+                'color' => sanitize_text_field((string) ($variant['color'] ?? '')),
                 'sku' => sanitize_text_field((string) ($variant['sku'] ?? '')),
                 'priceCents' => max(0, (int) ($variant['priceCents'] ?? 0)),
                 'stockQuantity' => max(0, (int) ($variant['stockQuantity'] ?? 0)),
+                'lowStockThreshold' => max(0, (int) ($variant['lowStockThreshold'] ?? 3)),
             ];
         }
         return $variants;
@@ -668,6 +676,8 @@ class C767_Rest_Vendor_Products
         update_post_meta($product_id, 'pickup_instructions', sanitize_textarea_field((string) $request->get_param('pickupInstructions')));
         update_post_meta($product_id, 'sku', sanitize_text_field((string) $request->get_param('sku')));
         update_post_meta($product_id, 'product_category', sanitize_text_field((string) $request->get_param('category')));
+        $product_type = sanitize_key((string) $request->get_param('productType'));
+        update_post_meta($product_id, 'product_type', in_array($product_type, ['simple', 'variable'], true) ? $product_type : 'simple');
         update_post_meta($product_id, 'track_stock', filter_var($request->get_param('trackStock'), FILTER_VALIDATE_BOOLEAN) ? '1' : '0');
         update_post_meta($product_id, 'stock_quantity', max(0, (int) $request->get_param('stockQuantity')));
         update_post_meta($product_id, 'low_stock_threshold', max(0, (int) ($request->get_param('lowStockThreshold') ?: 3)));
@@ -776,6 +786,12 @@ class C767_Rest_Vendor_Products
         }
         if ($request->get_param('category') !== null) {
             update_post_meta($product_id, 'product_category', sanitize_text_field((string) $request->get_param('category')));
+        }
+        if ($request->get_param('productType') !== null) {
+            $product_type = sanitize_key((string) $request->get_param('productType'));
+            if (in_array($product_type, ['simple', 'variable'], true)) {
+                update_post_meta($product_id, 'product_type', $product_type);
+            }
         }
         if ($request->get_param('trackStock') !== null) {
             update_post_meta($product_id, 'track_stock', filter_var($request->get_param('trackStock'), FILTER_VALIDATE_BOOLEAN) ? '1' : '0');
