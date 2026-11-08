@@ -237,10 +237,11 @@ describe("BookingForm", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: /paid booking terms/i }));
     fireEvent.click(screen.getByRole("button", { name: /continue to payment · \$800\.00/i }));
 
-    expect(await screen.findByText("Total due $800.00")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "James Local Fruits" })).toBeInTheDocument();
     expect(screen.getByText(/jan 1–8, 2030 · 7 nights/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /pay \$800\.00 with card/i })).toBeInTheDocument();
     expect(screen.queryByText(/from \$200\.00 \/ night/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/total due/i)).not.toBeInTheDocument();
   });
 
   it("updates an hourly meeting price when the visitor changes duration", () => {
