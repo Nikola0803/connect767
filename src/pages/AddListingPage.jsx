@@ -699,7 +699,7 @@ export default function AddListingPage() {
           {step === 1 && (
             <div>
               <h1 className="font-heading text-3xl md:text-4xl font-light text-foreground-950 mb-3">
-                Choose Listing Tier to <span className="text-accent-500 italic">Create Listing</span>
+                Choose a Listing Plan to <span className="text-accent-500 italic">Complete Your Profile</span>
               </h1>
               <p className="text-sm text-foreground-600 font-label mb-10">
                 Free listings are a great way to get started. Upgrade to Classified anytime for
