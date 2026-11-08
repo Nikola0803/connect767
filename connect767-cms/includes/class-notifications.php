@@ -358,6 +358,14 @@ class C767_Notifications
 
     public static function on_booking_submitted($booking_id, $listing_id)
     {
+        // A paid booking is only confirmed after Stripe or PayPal succeeds.
+        // Keep this guard here as well as at the submission call site so a
+        // third-party action cannot accidentally send a pre-payment email.
+        if ((int) get_post_meta($booking_id, 'amount_cents', true) > 0
+            && get_post_meta($booking_id, 'payment_status', true) !== 'paid') {
+            return;
+        }
+
         $listing = get_post($listing_id);
         if (!$listing) {
             return;

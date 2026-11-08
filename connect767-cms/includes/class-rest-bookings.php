@@ -449,7 +449,13 @@ class C767_Rest_Bookings
             update_post_meta($booking_id, $key, $value);
         }
 
-        do_action('c767_booking_submitted', $booking_id, $listing->ID);
+        // Paid bookings are not announced until the payment processor has
+        // confirmed the charge. This prevents both the customer and listing
+        // owner from receiving a misleading confirmation for an abandoned or
+        // failed checkout. Free requests still notify immediately.
+        if ($amount_cents <= 0) {
+            do_action('c767_booking_submitted', $booking_id, $listing->ID);
+        }
 
         return rest_ensure_response([
             'id' => $booking_id,
