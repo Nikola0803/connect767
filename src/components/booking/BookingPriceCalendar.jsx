@@ -35,8 +35,8 @@ export default function BookingPriceCalendar({
       onSelect?.(date, "");
       return;
     }
-    if (!selectedStart || selectedEnd || date < selectedStart) onSelect?.(date, "");
-    else if (date > selectedStart) onSelect?.(selectedStart, date);
+    if (!selectedStart || selectedEnd || date <= selectedStart) onSelect?.(date, "");
+    else onSelect?.(selectedStart, date);
   };
 
   return (
@@ -68,6 +68,9 @@ export default function BookingPriceCalendar({
               key={date}
               type="button"
               disabled={disabled}
+              data-date={date}
+              aria-label={`${new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}, ${money(bookingRateForDate(date, basePriceCents, rules))}`}
+              aria-pressed={Boolean(selected || inRange)}
               onClick={() => choose(date)}
               className={`min-h-[52px] rounded-lg border px-1 py-1.5 text-center transition-all ${disabled ? "opacity-35 cursor-not-allowed border-transparent" : "hover:-translate-y-0.5 hover:shadow-md"} ${selected ? "bg-primary-700 border-primary-700 text-white" : inRange ? "bg-primary-100 border-primary-200" : special ? "bg-amber-50 border-amber-300" : "bg-white border-background-200"}`}
             >
@@ -82,6 +85,7 @@ export default function BookingPriceCalendar({
       <div className="flex flex-wrap items-center gap-3 mt-3 text-[10px] text-foreground-600 font-label">
         <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-50 border border-amber-300" /> Special rate</span>
         <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-primary-100 border border-primary-200" /> Selected dates</span>
+        {mode === "range" && !selectedStart && <span className="text-primary-700 font-semibold">Choose a start date</span>}
         {mode === "range" && !selectedEnd && selectedStart && <span className="text-primary-700 font-semibold">Now choose an end date</span>}
       </div>
     </div>
