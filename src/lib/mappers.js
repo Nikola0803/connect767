@@ -301,7 +301,18 @@ export function mapWcCategory(wc) {
 
 /** WordPress `listing` CPT -> directory card view model */
 export function mapListingCpt(wp) {
-  const acf = wp.acf || wp.meta || {};
+  // WordPress can expose Connect767 fields through either registered `meta`
+  // or the synthetic/real ACF object. Merge both instead of choosing one:
+  // a real ACF installation may omit newly-added fields while registered
+  // post meta already contains them. ACF remains authoritative when both
+  // provide the same key.
+  const acf = { ...(wp.meta || {}), ...(wp.acf || {}) };
+  if (Object.prototype.hasOwnProperty.call(wp, "booking_rate_unit")) {
+    acf.booking_rate_unit = wp.booking_rate_unit;
+  }
+  if (Object.prototype.hasOwnProperty.call(wp, "booking_rate_rules")) {
+    acf.booking_rate_rules = wp.booking_rate_rules;
+  }
   const legacyFeaturedTier = acf.tier === "Featured";
   const listingTier = legacyFeaturedTier ? "Free" : acf.tier || "Free";
   const isFeatured = isFeaturedPromotionActive(acf);
