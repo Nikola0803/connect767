@@ -604,6 +604,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                     businessName={data.title}
                     bookingType={data.bookingType}
                     priceCents={data.bookingPriceCents}
+                    rentalRateUnit={data.bookingRentalRateUnit}
                     rateRules={data.bookingRateRules}
                     durationMinutes={data.bookingDurationMinutes}
                     priceUnit={data.bookingPriceUnit}

@@ -34,6 +34,21 @@ class C767_REST_Listings
         return in_array($unit, ['appointment', 'minute', 'hour'], true) ? $unit : 'appointment';
     }
 
+    private static function sanitize_booking_rate_unit($value, $booking_type = 'rental')
+    {
+        $unit = sanitize_key((string) $value);
+        if (in_array($unit, ['night', 'day', 'week', 'month', 'year'], true)) {
+            return $unit;
+        }
+        if ($booking_type === 'long-term-rental-housing') {
+            return 'month';
+        }
+        if (in_array($booking_type, ['rental', 'apartments', 'hotels', 'short-term-rental-housing'], true)) {
+            return 'night';
+        }
+        return in_array($booking_type, self::RENTAL_BOOKING_TYPES, true) ? 'day' : '';
+    }
+
     private static function sanitize_booking_rate_rules($value)
     {
         $rules = is_array($value) ? $value : json_decode((string) $value, true);
@@ -450,6 +465,10 @@ class C767_REST_Listings
             'whatsapp' => (string) get_post_meta($post->ID, 'whatsapp', true),
             'bookingType' => self::sanitize_booking_type(get_post_meta($post->ID, 'booking_type', true)),
             'bookingPriceCents' => (int) get_post_meta($post->ID, 'booking_price_cents', true),
+            'bookingRentalRateUnit' => self::sanitize_booking_rate_unit(
+                get_post_meta($post->ID, 'booking_rate_unit', true),
+                self::sanitize_booking_type(get_post_meta($post->ID, 'booking_type', true))
+            ),
             'bookingRateRules' => self::sanitize_booking_rate_rules(get_post_meta($post->ID, 'booking_rate_rules', true)),
             'bookingDurationMinutes' => (int) (get_post_meta($post->ID, 'booking_duration_minutes', true) ?: 30),
             'bookingMaxDurationMinutes' => (int) (get_post_meta($post->ID, 'booking_max_duration_minutes', true) ?: 120),
@@ -480,6 +499,7 @@ class C767_REST_Listings
 
         $enabled = filter_var($request->get_param('enabled'), FILTER_VALIDATE_BOOLEAN);
         $booking_type = self::sanitize_booking_type($request->get_param('bookingType'));
+        $rate_unit = self::sanitize_booking_rate_unit($request->get_param('bookingRentalRateUnit'), $booking_type);
         $price_cents = max(0, min(10000000, (int) $request->get_param('bookingPriceCents')));
         $rate_rules = self::sanitize_booking_rate_rules($request->get_param('bookingRateRules'));
         $has_paid_rate = $price_cents > 0;
@@ -516,6 +536,7 @@ class C767_REST_Listings
         update_post_meta($post_id, 'hide_contact_info', $hide_contact_info ? '1' : '0');
         update_post_meta($post_id, 'booking_type', $booking_type);
         update_post_meta($post_id, 'booking_price_cents', $price_cents);
+        update_post_meta($post_id, 'booking_rate_unit', $rate_unit);
         update_post_meta($post_id, 'booking_rate_rules', wp_json_encode($rate_rules));
         update_post_meta($post_id, 'booking_duration_minutes', $duration);
         update_post_meta($post_id, 'booking_max_duration_minutes', $max_duration);
@@ -530,6 +551,7 @@ class C767_REST_Listings
             'hideContactInfo' => $hide_contact_info,
             'bookingType' => $booking_type,
             'bookingPriceCents' => $price_cents,
+            'bookingRentalRateUnit' => $rate_unit,
             'bookingRateRules' => $rate_rules,
             'bookingDurationMinutes' => $duration,
             'bookingMaxDurationMinutes' => $max_duration,
@@ -597,6 +619,10 @@ class C767_REST_Listings
                 'sellProducts' => get_post_meta($post->ID, 'sell_products', true) === '1',
                 'bookingType' => self::sanitize_booking_type(get_post_meta($post->ID, 'booking_type', true)),
                 'bookingPriceCents' => (int) get_post_meta($post->ID, 'booking_price_cents', true),
+                'bookingRentalRateUnit' => self::sanitize_booking_rate_unit(
+                    get_post_meta($post->ID, 'booking_rate_unit', true),
+                    self::sanitize_booking_type(get_post_meta($post->ID, 'booking_type', true))
+                ),
                 'bookingDurationMinutes' => (int) (get_post_meta($post->ID, 'booking_duration_minutes', true) ?: 30),
                 'bookingMaxDurationMinutes' => (int) (get_post_meta($post->ID, 'booking_max_duration_minutes', true) ?: 120),
                 'bookingPriceUnit' => self::sanitize_booking_price_unit(get_post_meta($post->ID, 'booking_price_unit', true)),

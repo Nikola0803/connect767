@@ -77,9 +77,10 @@ export function bookingPriceForSelection({
   }
   const dates = datesBetween(checkIn, checkOut);
   if (!dates.length) return 0;
-  if (rateUnit === "month") {
-    return Array.from({ length: Math.ceil(dates.length / 30) }, (_, index) =>
-      bookingRateForDate(addDays(checkIn, index * 30), basePriceCents, rules),
+  const periodDays = rateUnit === "week" ? 7 : rateUnit === "month" ? 30 : rateUnit === "year" ? 365 : 1;
+  if (periodDays > 1) {
+    return Array.from({ length: Math.ceil(dates.length / periodDays) }, (_, index) =>
+      bookingRateForDate(addDays(checkIn, index * periodDays), basePriceCents, rules),
     ).reduce((total, price) => total + price, 0);
   }
   return dates.reduce(

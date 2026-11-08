@@ -108,6 +108,25 @@ describe("BookingForm", () => {
     expect(screen.getByText(/total \$2400.00/i)).toBeInTheDocument();
   });
 
+  it("uses the saved weekly rate period in the calendar and total", () => {
+    render(
+      <BookingForm
+        slug="weekly-villa"
+        businessName="Weekly Villa"
+        bookingType="apartments"
+        rentalRateUnit="week"
+        priceCents={95000}
+      />,
+    );
+
+    expect(screen.getByText("$950.00 / week")).toBeInTheDocument();
+    expect(screen.getByText(/prices shown per week/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/start date/i), { target: { value: "2030-06-01" } });
+    fireEvent.change(screen.getByLabelText(/end date/i), { target: { value: "2030-06-15" } });
+    expect(screen.getByText(/2 weeks · rates shown on calendar/i)).toBeInTheDocument();
+    expect(screen.getByText(/total \$1900.00/i)).toBeInTheDocument();
+  });
+
   it("requires acceptance of the 10% transaction-fee terms for paid bookings", () => {
     render(
       <BookingForm

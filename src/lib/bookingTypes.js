@@ -4,6 +4,13 @@ const rentalCategory = categoryTaxonomy.find((category) => category.slug === "re
 
 const NIGHTLY_TYPES = new Set(["apartments", "hotels", "short-term-rental-housing", "rental"]);
 const MONTHLY_TYPES = new Set(["long-term-rental-housing"]);
+export const rentalRateUnitOptions = [
+  { value: "night", label: "Nightly" },
+  { value: "day", label: "Daily" },
+  { value: "week", label: "Weekly" },
+  { value: "month", label: "Monthly" },
+  { value: "year", label: "Yearly" },
+];
 
 export const rentalBookingTypes = rentalCategory?.industries || [];
 export const bookingTypeOptions = [
@@ -22,9 +29,17 @@ export function bookingRateUnit(type) {
   return "day";
 }
 
-export function bookingRateLabel(type) {
-  const unit = bookingRateUnit(type);
-  return unit === "night" ? "Nightly" : unit === "month" ? "Monthly" : unit === "day" ? "Daily" : "Booking";
+export function normalizeRentalRateUnit(unit, type = "rental") {
+  return rentalRateUnitOptions.some((option) => option.value === unit)
+    ? unit
+    : bookingRateUnit(type);
+}
+
+export function bookingRateLabel(type, selectedUnit = "") {
+  const unit = isRentalBookingType(type)
+    ? normalizeRentalRateUnit(selectedUnit, type)
+    : bookingRateUnit(type);
+  return rentalRateUnitOptions.find((option) => option.value === unit)?.label || "Booking";
 }
 
 export function bookingTypeLabel(type) {
@@ -43,5 +58,6 @@ export function rentalUnitsBetween(startDate, endDate, unit) {
   const end = Date.parse(`${endDate}T00:00:00Z`);
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 0;
   const days = Math.round((end - start) / 86400000);
-  return unit === "month" ? Math.ceil(days / 30) : days;
+  const periodDays = unit === "week" ? 7 : unit === "month" ? 30 : unit === "year" ? 365 : 1;
+  return Math.ceil(days / periodDays);
 }

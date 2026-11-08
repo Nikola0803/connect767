@@ -10,7 +10,8 @@ import {
   decodeEntities,
 } from "../lib/mappers";
 import { hydrateMatchedListings, matchListingsLocally } from "../lib/matching";
-import { normalizeBookingType } from "../lib/bookingTypes";
+import { normalizeBookingType, normalizeRentalRateUnit } from "../lib/bookingTypes";
+import { hasPaidBookingRate } from "../lib/payoutSettings";
 import { allIndustries } from "./industries";
 import { createListingSearchText } from "../lib/listingSearch";
 
@@ -576,12 +577,13 @@ export async function setListingTier(listingId, tier) {
 async function saveBookingSettings(listingId, form) {
   if (!listingId) return;
   const dollars = Number(form.bookingPrice || 0);
-  const hasPaidRate = dollars > 0 || (form.bookingRateRules || []).some((rule) => Number(rule.priceCents) > 0);
+  const hasPaidRate = hasPaidBookingRate(form);
   return customClient.post(`/listings/${listingId}/booking`, {
     enabled: form.bookingEnabled ? 1 : 0,
     hideContactInfo: form.bookingEnabled && hasPaidRate ? 1 : 0,
     bookingType: normalizeBookingType(form.bookingType),
     bookingPriceCents: Number.isFinite(dollars) ? Math.max(0, Math.round(dollars * 100)) : 0,
+    bookingRentalRateUnit: normalizeRentalRateUnit(form.bookingRentalRateUnit, form.bookingType),
     bookingRateRules: Array.isArray(form.bookingRateRules) ? form.bookingRateRules : [],
     bookingDurationMinutes: Number(form.bookingDurationMinutes) || 30,
     bookingPriceUnit: form.bookingPriceUnit || "appointment",
@@ -614,6 +616,7 @@ export async function getBookingSettings(listingId) {
       whatsapp: "",
       bookingType: "appointment",
       bookingPriceCents: 0,
+      bookingRentalRateUnit: "night",
       bookingRateRules: [],
       bookingDurationMinutes: 30,
       bookingPriceUnit: "appointment",
