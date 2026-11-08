@@ -54,6 +54,12 @@ class C767_Rest_Bookings
             'permission_callback' => [__CLASS__, 'check_auth'],
         ]);
 
+        register_rest_route(self::NAMESPACE_, '/bookings/(?P<id>\d+)', [
+            'methods' => 'DELETE',
+            'callback' => [__CLASS__, 'delete_rejected'],
+            'permission_callback' => [__CLASS__, 'check_auth'],
+        ]);
+
         register_rest_route(self::NAMESPACE_, '/bookings/(?P<id>\d+)/cashout', [
             'methods' => 'POST',
             'callback' => [__CLASS__, 'request_cashout'],
@@ -840,6 +846,49 @@ class C767_Rest_Bookings
             'id' => $booking_id,
             'status' => $status,
             'meetingUrl' => $status === 'confirmed' ? self::meeting_url($booking_id) : '',
+        ]);
+    }
+
+    /**
+     * Remove a declined, unpaid request from its listing owner's dashboard.
+     * The post is moved to WordPress Trash so an administrator can recover it;
+     * paid bookings remain immutable for payment and payout records.
+     */
+    public static function delete_rejected(WP_REST_Request $request)
+    {
+        $user = C767_REST_Auth::user_from_request($request);
+        if (is_wp_error($user)) {
+            return $user;
+        }
+
+        $booking_id = (int) $request->get_param('id');
+        $booking = get_post($booking_id);
+        if (!$booking || $booking->post_type !== 'booking') {
+            return new WP_Error('c767_booking_not_found', 'Booking not found.', ['status' => 404]);
+        }
+
+        $listing_id = (int) get_post_meta($booking_id, 'listing_id', true);
+        $listing = get_post($listing_id);
+        if (!$listing || (int) $listing->post_author !== (int) $user->ID) {
+            return new WP_Error('c767_not_owner', 'This booking isn’t on one of your listings.', ['status' => 403]);
+        }
+
+        $status = (string) (get_post_meta($booking_id, 'status', true) ?: 'pending');
+        if ($status !== 'declined') {
+            return new WP_Error('c767_booking_not_declined', 'Only rejected bookings can be deleted.', ['status' => 409]);
+        }
+
+        if (get_post_meta($booking_id, 'payment_status', true) === 'paid') {
+            return new WP_Error('c767_booking_paid', 'Paid bookings must remain available for payment and payout records.', ['status' => 409]);
+        }
+
+        if (!wp_trash_post($booking_id)) {
+            return new WP_Error('c767_booking_delete_failed', 'The rejected booking could not be deleted.', ['status' => 500]);
+        }
+
+        return rest_ensure_response([
+            'id' => $booking_id,
+            'deleted' => true,
         ]);
     }
 }
