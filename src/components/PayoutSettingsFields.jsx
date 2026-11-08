@@ -2,10 +2,11 @@ import { FormField, Input, Select } from "./ui/FormField";
 import {
   DIGITAL_PAYOUT_PROVIDERS,
   DIGITAL_PAYOUT_PROVIDER_HELP,
+  hasPaidBookingRate,
 } from "../lib/payoutSettings";
 
 export default function PayoutSettingsFields({ form, onChange, forceVisible = false, context = "booking" }) {
-  const paidBookings = forceVisible || Number(form.bookingPrice || 0) > 0;
+  const paidBookings = forceVisible || hasPaidBookingRate(form);
   const providerHelp = DIGITAL_PAYOUT_PROVIDER_HELP[form.bookingPayoutDigitalProvider];
   const isStorefront = context === "storefront";
 
@@ -19,7 +20,7 @@ export default function PayoutSettingsFields({ form, onChange, forceVisible = fa
           <div>
             <p className="text-sm font-semibold text-foreground-900">Owner payouts</p>
             <p className="mt-1 text-xs leading-5 text-foreground-600 font-label">
-              Enter a booking rate above $0 to choose where Connect767 should send your earnings.
+              Enter a base or flexible calendar rate above $0 to choose where Connect767 should send your earnings.
             </p>
           </div>
         </div>
@@ -42,6 +43,11 @@ export default function PayoutSettingsFields({ form, onChange, forceVisible = fa
               Customers pay securely through Connect767. We retain the 10% platform fee and send the
               {isStorefront ? " remaining product balance plus shipping" : " remaining balance"} to this private payout destination.
             </p>
+            {!isStorefront && form.bookingRateRules?.some((rule) => Number(rule.priceCents) > 0) && (
+              <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-primary-800 ring-1 ring-primary-200">
+                <i className="ri-calendar-check-line" /> Flexible calendar rates require payout information
+              </p>
+            )}
           </div>
         </div>
       </div>

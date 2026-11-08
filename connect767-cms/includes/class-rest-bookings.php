@@ -118,8 +118,12 @@ class C767_Rest_Bookings
         return in_array($unit, ['appointment', 'minute', 'hour'], true) ? $unit : 'appointment';
     }
 
-    private static function rate_unit($type)
+    private static function rate_unit($type, $selected = '')
     {
+        $selected = sanitize_key((string) $selected);
+        if (in_array($selected, ['night', 'day', 'week', 'month', 'year'], true)) {
+            return $selected;
+        }
         if ($type === 'long-term-rental-housing') {
             return 'month';
         }
@@ -157,9 +161,10 @@ class C767_Rest_Bookings
     {
         $amount = 0;
         $breakdown = [];
-        $unit_count = $rate_unit === 'month' ? (int) ceil($days / 30) : $days;
+        $period_days = $rate_unit === 'week' ? 7 : ($rate_unit === 'month' ? 30 : ($rate_unit === 'year' ? 365 : 1));
+        $unit_count = (int) ceil($days / $period_days);
         for ($index = 0; $index < $unit_count; $index++) {
-            $offset = $rate_unit === 'month' ? $index * 30 : $index;
+            $offset = $index * $period_days;
             $date = gmdate('Y-m-d', strtotime($check_in . ' UTC +' . $offset . ' days'));
             $price = self::rate_for_date($date, $base_rate, $rules);
             $amount += $price;
@@ -237,7 +242,7 @@ class C767_Rest_Bookings
         $email = sanitize_email((string) $request->get_param('email'));
         $phone = sanitize_text_field((string) $request->get_param('phone'));
         $booking_type = self::normalize_booking_type(get_post_meta($listing->ID, 'booking_type', true));
-        $rate_unit = self::rate_unit($booking_type);
+        $rate_unit = self::rate_unit($booking_type, get_post_meta($listing->ID, 'booking_rate_unit', true));
         $preferred_date = sanitize_text_field((string) $request->get_param('preferredDate'));
         $preferred_time = sanitize_text_field((string) $request->get_param('preferredTime'));
         $check_in = sanitize_text_field((string) $request->get_param('checkIn'));
@@ -268,7 +273,8 @@ class C767_Rest_Bookings
                 return new WP_Error('c767_bad_stay_dates', 'Choose valid check-in and check-out dates that are not in the past.', ['status' => 400]);
             }
             $days = (int) ((strtotime($check_out . ' UTC') - strtotime($check_in . ' UTC')) / DAY_IN_SECONDS);
-            $units = $rate_unit === 'month' ? (int) ceil($days / 30) : $days;
+            $period_days = $rate_unit === 'week' ? 7 : ($rate_unit === 'month' ? 30 : ($rate_unit === 'year' ? 365 : 1));
+            $units = (int) ceil($days / $period_days);
             if ($days < 1 || $days > 3650) {
                 return new WP_Error('c767_bad_rental_length', 'The end date must be after the start date, with a maximum rental period of 10 years.', ['status' => 400]);
             }

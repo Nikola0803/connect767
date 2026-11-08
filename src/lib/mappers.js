@@ -1,7 +1,7 @@
 import { createListingSearchText } from "./listingSearch";
 import { currentYearsExperience } from "./experience";
 import { findCategory, findIndustry } from "../data/industries";
-import { normalizeBookingType } from "./bookingTypes";
+import { normalizeBookingType, normalizeRentalRateUnit } from "./bookingTypes";
 import { normalizeBookingRateRules } from "./bookingRates";
 import { sortVariationOptions } from "./productVariations";
 
@@ -449,6 +449,7 @@ export function mapListingCpt(wp) {
     contactHidden,
     bookingType: normalizeBookingType(acf.booking_type),
     bookingPriceCents: Math.max(0, Number(acf.booking_price_cents) || 0),
+    bookingRentalRateUnit: normalizeRentalRateUnit(acf.booking_rate_unit, acf.booking_type),
     bookingRateRules: normalizeBookingRateRules(acf.booking_rate_rules),
     bookingDurationMinutes: Math.max(15, Number(acf.booking_duration_minutes) || 30),
     bookingPriceUnit: ["appointment", "minute", "hour"].includes(acf.booking_price_unit) ? acf.booking_price_unit : "appointment",

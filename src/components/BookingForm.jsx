@@ -13,6 +13,7 @@ import {
   bookingRateUnit,
   bookingTypeLabel,
   isRentalBookingType,
+  normalizeRentalRateUnit,
   rentalUnitsBetween,
 } from "../lib/bookingTypes";
 import { bookingPriceForSelection, normalizeBookingRateRules } from "../lib/bookingRates";
@@ -75,6 +76,7 @@ export default function BookingForm({
   businessName,
   bookingType = "appointment",
   priceCents = 0,
+  rentalRateUnit = "",
   rateRules = [],
   durationMinutes = 30,
   priceUnit = "appointment",
@@ -102,7 +104,9 @@ export default function BookingForm({
 
   const update = (field) => (event) => setForm((current) => ({ ...current, [field]: event.target.value }));
   const isRental = isRentalBookingType(bookingType);
-  const rateUnit = bookingRateUnit(bookingType);
+  const rateUnit = isRentalBookingType(bookingType)
+    ? normalizeRentalRateUnit(rentalRateUnit, bookingType)
+    : bookingRateUnit(bookingType);
   const units = rentalUnitsBetween(form.checkIn, form.checkOut, rateUnit);
   const unitLabel = pluralize(rateUnit, units);
   const normalizedRules = normalizeBookingRateRules(rateRules);

@@ -121,6 +121,11 @@ class C767_Meta_Fields
                 ],
             ],
             'booking_price_cents' => ['label' => 'Booking price (USD cents; 0 for free)', 'type' => 'integer'],
+            'booking_rate_unit' => [
+                'label' => 'Rental billing period',
+                'type' => 'string',
+                'options' => ['night', 'day', 'week', 'month', 'year'],
+            ],
             'booking_rate_rules' => ['label' => 'Booking rate calendar rules (JSON)', 'type' => 'string'],
             'booking_duration_minutes' => ['label' => 'Booking duration (minutes)', 'type' => 'integer'],
             'booking_max_duration_minutes' => ['label' => 'Maximum booking duration (minutes)', 'type' => 'integer'],

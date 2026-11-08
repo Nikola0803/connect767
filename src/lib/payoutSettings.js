@@ -20,9 +20,13 @@ export const DIGITAL_PAYOUT_PROVIDER_HELP = {
   },
 };
 
-export function hasCompletePayoutDetails(form) {
-  const hasPaidRate = Number(form.bookingPrice || 0) > 0 ||
+export function hasPaidBookingRate(form) {
+  return Number(form.bookingPrice || 0) > 0 ||
     (form.bookingRateRules || []).some((rule) => Number(rule.priceCents) > 0);
+}
+
+export function hasCompletePayoutDetails(form) {
+  const hasPaidRate = hasPaidBookingRate(form);
   if (!form.bookingEnabled || !hasPaidRate) return true;
   if (form.bookingPayoutMethod === "bank") {
     return Boolean(

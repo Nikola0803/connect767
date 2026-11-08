@@ -44,7 +44,9 @@ import {
   bookingRateLabel,
   bookingTypeOptions,
   isRentalBookingType,
+  normalizeRentalRateUnit,
   normalizeBookingType,
+  rentalRateUnitOptions,
 } from "../lib/bookingTypes";
 
 const steps = [
@@ -115,6 +117,7 @@ const initialForm = {
   hideContactInfo: false,
   bookingType: "appointment",
   bookingPrice: "0",
+  bookingRentalRateUnit: "night",
   bookingRateRules: [],
   bookingDurationMinutes: "30",
   bookingPriceUnit: "appointment",
@@ -231,6 +234,9 @@ function buildPreviewData(form) {
     bookingEnabled: form.bookingEnabled,
     bookingType: form.bookingType,
     bookingPriceCents: Math.max(0, Math.round((Number(form.bookingPrice) || 0) * 100)),
+    bookingRentalRateUnit: isRentalBookingType(form.bookingType)
+      ? normalizeRentalRateUnit(form.bookingRentalRateUnit, form.bookingType)
+      : "",
     bookingRateRules: form.bookingRateRules,
     bookingDurationMinutes: Number(form.bookingDurationMinutes) || 30,
     bookingPriceUnit: form.bookingPriceUnit || "appointment",
@@ -357,6 +363,7 @@ export default function AddListingPage() {
           hideContactInfo: Boolean(data.contactHidden),
           bookingType: normalizeBookingType(data.bookingType),
           bookingPrice: ((data.bookingPriceCents || 0) / 100).toFixed(2),
+          bookingRentalRateUnit: normalizeRentalRateUnit(data.bookingRentalRateUnit, data.bookingType),
           bookingRateRules: data.bookingRateRules || [],
           bookingDurationMinutes: String(data.bookingDurationMinutes || 30),
           bookingPriceUnit: data.bookingPriceUnit || "appointment",
@@ -391,6 +398,7 @@ export default function AddListingPage() {
               whatsapp: settings.whatsapp ?? f.whatsapp,
               bookingType: normalizeBookingType(settings.bookingType),
               bookingPrice: ((settings.bookingPriceCents || 0) / 100).toFixed(2),
+              bookingRentalRateUnit: normalizeRentalRateUnit(settings.bookingRentalRateUnit, settings.bookingType),
               bookingRateRules: settings.bookingRateRules || [],
               bookingDurationMinutes: String(settings.bookingDurationMinutes || 30),
               bookingPriceUnit: settings.bookingPriceUnit || "appointment",
@@ -948,7 +956,11 @@ export default function AddListingPage() {
                         htmlFor="bookingType"
                         hint="Choose the service or exact rental industry. The correct rate period is applied automatically."
                       >
-                        <Select id="bookingType" value={form.bookingType} onChange={update("bookingType")}>
+                        <Select id="bookingType" value={form.bookingType} onChange={(event) => setForm((current) => ({
+                          ...current,
+                          bookingType: event.target.value,
+                          bookingRentalRateUnit: bookingRateUnit(event.target.value),
+                        }))}>
                           {form.bookingType === "rental" && <option value="rental">Rental stay (existing listing)</option>}
                           {bookingTypeOptions.map((option) => (
                             <option key={option.value} value={option.value}>{option.label}</option>
@@ -956,9 +968,22 @@ export default function AddListingPage() {
                         </Select>
                       </FormField>
                     </div>
+                    {isRentalBookingType(form.bookingType) && (
+                      <FormField
+                        label="Rate period"
+                        htmlFor="bookingRentalRateUnit"
+                        hint="This period is used by the calendar and final booking total."
+                      >
+                        <Select id="bookingRentalRateUnit" value={normalizeRentalRateUnit(form.bookingRentalRateUnit, form.bookingType)} onChange={update("bookingRentalRateUnit")}>
+                          {rentalRateUnitOptions.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </Select>
+                      </FormField>
+                    )}
                     <FormField
                       label={isRentalBookingType(form.bookingType)
-                        ? `${bookingRateLabel(form.bookingType)} rate (USD)`
+                        ? `${bookingRateLabel(form.bookingType, form.bookingRentalRateUnit)} rate (USD)`
                         : form.bookingPriceUnit === "minute"
                           ? "Price per minute (USD)"
                           : form.bookingPriceUnit === "hour"
@@ -966,7 +991,7 @@ export default function AddListingPage() {
                             : "Fixed meeting price (USD)"}
                       htmlFor="bookingPrice"
                       hint={isRentalBookingType(form.bookingType)
-                        ? `The total is calculated from the number of ${bookingRateUnit(form.bookingType)}s`
+                        ? `The total is calculated from the number of ${normalizeRentalRateUnit(form.bookingRentalRateUnit, form.bookingType)}s`
                         : "Enter 0 for a free booking request"}
                     >
                       <Input
@@ -1021,7 +1046,7 @@ export default function AddListingPage() {
                       basePriceCents={Math.max(0, Math.round((Number(form.bookingPrice) || 0) * 100))}
                       rules={form.bookingRateRules}
                       rateLabel={isRentalBookingType(form.bookingType)
-                        ? `${bookingRateUnit(form.bookingType)}ly rate`
+                        ? `${bookingRateLabel(form.bookingType, form.bookingRentalRateUnit).toLowerCase()} rate`
                         : form.bookingPriceUnit === "minute"
                           ? "per-minute rate"
                           : form.bookingPriceUnit === "hour"

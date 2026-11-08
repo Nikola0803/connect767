@@ -24,6 +24,23 @@ describe("booking rate calendar", () => {
     })).toBe(52500);
   });
 
+  it("bills weekly and yearly rentals by their selected calendar period", () => {
+    expect(bookingPriceForSelection({
+      bookingType: "rental",
+      basePriceCents: 70000,
+      checkIn: "2030-01-01",
+      checkOut: "2030-01-15",
+      rateUnit: "week",
+    })).toBe(140000);
+    expect(bookingPriceForSelection({
+      bookingType: "rental",
+      basePriceCents: 500000,
+      checkIn: "2030-01-01",
+      checkOut: "2031-01-02",
+      rateUnit: "year",
+    })).toBe(1000000);
+  });
+
   it("expands week and month shortcuts", () => {
     expect(ruleDates("week", "2030-06-10")).toEqual({ startDate: "2030-06-10", endDate: "2030-06-16" });
     expect(ruleDates("month", "2030-02-01")).toEqual({ startDate: "2030-02-01", endDate: "2030-02-28" });

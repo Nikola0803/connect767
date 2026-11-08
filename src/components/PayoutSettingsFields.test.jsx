@@ -41,6 +41,24 @@ describe("PayoutSettingsFields", () => {
     expect(screen.getByText(/10% platform fee/i)).toBeInTheDocument();
   });
 
+  it("requires and prompts for payout details when only a flexible calendar rate is paid", () => {
+    const flexiblePaidForm = {
+      ...paidForm,
+      bookingPrice: "0",
+      bookingRateRules: [{
+        period: "week",
+        startDate: "2030-06-01",
+        endDate: "2030-06-30",
+        priceCents: 95000,
+      }],
+    };
+
+    expect(hasCompletePayoutDetails(flexiblePaidForm)).toBe(false);
+    render(<PayoutSettingsFields form={flexiblePaidForm} onChange={() => {}} />);
+    expect(screen.getByText(/flexible calendar rates require payout information/i)).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /bank account/i })).toBeInTheDocument();
+  });
+
   it("includes NBD MoBanking and Remitly as digital cash-out destinations", () => {
     render(
       <PayoutSettingsFields
