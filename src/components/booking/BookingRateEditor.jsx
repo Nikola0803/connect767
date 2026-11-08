@@ -25,7 +25,9 @@ const periodOptions = {
 };
 
 export default function BookingRateEditor({ basePriceCents, rules, onChange, onSave, rateLabel = "rate", billingPeriod = "day" }) {
-  const normalized = useMemo(() => normalizeBookingRateRules(rules), [rules]);
+  const incomingRules = useMemo(() => normalizeBookingRateRules(rules), [rules]);
+  const [editableRules, setEditableRules] = useState(() => incomingRules);
+  const normalized = useMemo(() => normalizeBookingRateRules(editableRules), [editableRules]);
   const today = toDateKey(new Date());
   const availablePeriods = periodOptions[billingPeriod] || periodOptions.default;
   const [isOpen, setIsOpen] = useState(() => normalized.length > 0);
@@ -33,6 +35,10 @@ export default function BookingRateEditor({ basePriceCents, rules, onChange, onS
   const [warning, setWarning] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setEditableRules(incomingRules);
+  }, [incomingRules]);
 
   useEffect(() => {
     if (normalized.length > 0) setIsOpen(true);
@@ -44,43 +50,67 @@ export default function BookingRateEditor({ basePriceCents, rules, onChange, onS
     }
   }, [availablePeriods, draft.period]);
 
-  const addRule = () => {
+  const ruleFromDraft = () => {
     const price = Number(draft.price);
     const { startDate, endDate } = ruleDates(draft.period, draft.anchor, draft.seasonEnd);
     if (!startDate) {
-      setWarning("Choose the start date before adding this rate.");
-      return;
+      return { error: "Choose the start date before adding this rate." };
     }
     if (draft.period === "season" && !draft.seasonEnd) {
-      setWarning("Choose the season start date first, then choose its end date.");
-      return;
+      return { error: "Choose the season start date first, then choose its end date." };
     }
     if (!endDate || endDate < startDate) {
-      setWarning("The end date must be on or after the start date.");
-      return;
+      return { error: "The end date must be on or after the start date." };
     }
     if (!draft.price.trim() || !Number.isFinite(price) || price <= 0) {
-      setWarning("Enter a rate above $0 before adding it to the calendar.");
-      return;
+      return { error: "Enter a rate above $0 before adding it to the calendar." };
     }
-    setWarning("");
-    setSaveMessage("Rate added. Select Save rates to store it.");
-    onChange(normalizeBookingRateRules([
-      ...normalized,
-      {
-        id: `rate-${Date.now()}`,
+
+    return {
+      rule: {
+        id: `rate-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         label: `${draft.period[0].toUpperCase()}${draft.period.slice(1)} rate`,
         period: draft.period,
         startDate,
         endDate,
         priceCents: Math.round(price * 100),
       },
-    ]));
+    };
+  };
+
+  const updateRules = (nextRules) => {
+    const next = normalizeBookingRateRules(nextRules);
+    setEditableRules(next);
+    onChange(next);
+    return next;
+  };
+
+  const addRule = () => {
+    const { rule, error } = ruleFromDraft();
+    if (error) {
+      setWarning(error);
+      return;
+    }
+    setWarning("");
+    setSaveMessage("Rate added. Select Save rates to store it.");
+    updateRules([...normalized, rule]);
     setDraft((current) => ({ ...current, price: "" }));
   };
 
   const saveRates = async () => {
-    if (!normalized.length) {
+    let rulesToSave = normalized;
+    const hasCompletedDraft = draft.price.trim().length > 0;
+
+    if (hasCompletedDraft) {
+      const { rule, error } = ruleFromDraft();
+      if (error) {
+        setWarning(error);
+        return;
+      }
+      rulesToSave = updateRules([...normalized, rule]);
+    }
+
+    if (!rulesToSave.length) {
       setWarning("Add at least one special rate before saving.");
       return;
     }
@@ -88,7 +118,8 @@ export default function BookingRateEditor({ basePriceCents, rules, onChange, onS
     setSaveMessage("");
     setSaving(true);
     try {
-      const result = await onSave?.(normalized);
+      const result = await onSave?.(rulesToSave);
+      if (hasCompletedDraft) setDraft((current) => ({ ...current, price: "" }));
       setSaveMessage(result?.deferred
         ? "Rates are saved in this listing form and will publish when the listing is submitted."
         : "Special rates saved successfully.");
@@ -198,7 +229,7 @@ export default function BookingRateEditor({ basePriceCents, rules, onChange, onS
               <button type="button" aria-label="+ Special Rates" onClick={addRule} className="inline-flex min-h-[46px] items-center justify-center whitespace-nowrap rounded-lg bg-primary-700 px-5 text-sm font-semibold text-white hover:bg-primary-800">
                 <span aria-hidden="true" className="mr-1">+</span> Special Rates
               </button>
-              <button type="button" onClick={saveRates} disabled={saving || normalized.length === 0} className="inline-flex min-h-[46px] items-center justify-center whitespace-nowrap rounded-lg border border-primary-300 bg-white px-5 text-sm font-semibold text-primary-800 hover:bg-primary-50 disabled:cursor-not-allowed disabled:opacity-50">
+              <button type="button" onClick={saveRates} disabled={saving || (normalized.length === 0 && !draft.price.trim())} className="inline-flex min-h-[46px] items-center justify-center whitespace-nowrap rounded-lg border border-primary-300 bg-white px-5 text-sm font-semibold text-primary-800 hover:bg-primary-50 disabled:cursor-not-allowed disabled:opacity-50">
                 <i className="ri-save-line mr-1.5" /> {saving ? "Saving…" : "Save rates"}
               </button>
             </div>
@@ -214,7 +245,7 @@ export default function BookingRateEditor({ basePriceCents, rules, onChange, onS
                 <p className="text-xs text-foreground-500 font-label">{rule.startDate}{rule.endDate !== rule.startDate ? ` to ${rule.endDate}` : ""}</p>
               </div>
               <button type="button" className="rounded-full px-3 py-1.5 text-xs font-semibold text-accent-700 hover:bg-accent-50" onClick={() => {
-                onChange(normalized.filter((item) => item.id !== rule.id));
+                updateRules(normalized.filter((item) => item.id !== rule.id));
                 setSaveMessage("Rate removed. Select Save rates to store this change.");
               }}>
                 <i className="ri-delete-bin-line mr-1" /> Remove
