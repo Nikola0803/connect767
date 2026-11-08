@@ -24,13 +24,15 @@ const periodOptions = {
   ],
 };
 
-export default function BookingRateEditor({ basePriceCents, rules, onChange, rateLabel = "rate", billingPeriod = "day" }) {
+export default function BookingRateEditor({ basePriceCents, rules, onChange, onSave, rateLabel = "rate", billingPeriod = "day" }) {
   const normalized = useMemo(() => normalizeBookingRateRules(rules), [rules]);
   const today = toDateKey(new Date());
   const availablePeriods = periodOptions[billingPeriod] || periodOptions.default;
   const [isOpen, setIsOpen] = useState(() => normalized.length > 0);
   const [draft, setDraft] = useState({ period: availablePeriods[0].value, anchor: today, seasonEnd: "", price: "" });
   const [warning, setWarning] = useState("");
+  const [saveMessage, setSaveMessage] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (normalized.length > 0) setIsOpen(true);
@@ -62,6 +64,7 @@ export default function BookingRateEditor({ basePriceCents, rules, onChange, rat
       return;
     }
     setWarning("");
+    setSaveMessage("Rate added. Select Save rates to store it.");
     onChange(normalizeBookingRateRules([
       ...normalized,
       {
@@ -74,6 +77,26 @@ export default function BookingRateEditor({ basePriceCents, rules, onChange, rat
       },
     ]));
     setDraft((current) => ({ ...current, price: "" }));
+  };
+
+  const saveRates = async () => {
+    if (!normalized.length) {
+      setWarning("Add at least one special rate before saving.");
+      return;
+    }
+    setWarning("");
+    setSaveMessage("");
+    setSaving(true);
+    try {
+      const result = await onSave?.(normalized);
+      setSaveMessage(result?.deferred
+        ? "Rates are saved in this listing form and will publish when the listing is submitted."
+        : "Special rates saved successfully.");
+    } catch (error) {
+      setWarning(error?.message || "Special rates could not be saved. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const changePeriod = (period) => {
@@ -108,10 +131,11 @@ export default function BookingRateEditor({ basePriceCents, rules, onChange, rat
       {!isOpen ? (
         <button
           type="button"
+          aria-label="+ Special Rates"
           onClick={() => setIsOpen(true)}
           className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-primary-300 bg-primary-50 px-4 text-sm font-semibold text-primary-800 transition-colors hover:bg-primary-100"
         >
-          <i className="ri-add-line mr-1" /> Add special pricing
+          <span aria-hidden="true" className="mr-1">+</span><span className="whitespace-nowrap">Special Rates</span>
         </button>
       ) : (
         <>
@@ -120,6 +144,12 @@ export default function BookingRateEditor({ basePriceCents, rules, onChange, rat
             <div role="alert" className="mt-4 flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-sm">
               <i className="ri-error-warning-line mt-0.5 text-amber-700" />
               <span>{warning}</span>
+            </div>
+          )}
+          {saveMessage && (
+            <div role="status" className="mt-4 flex items-start gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-900">
+              <i className="ri-checkbox-circle-line mt-0.5 text-primary-700" />
+              <span>{saveMessage}</span>
             </div>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-5 rounded-xl bg-background-100/70 p-4">
@@ -145,9 +175,12 @@ export default function BookingRateEditor({ basePriceCents, rules, onChange, rat
                 setDraft((current) => ({ ...current, price: event.target.value }));
               }} placeholder="125.00" />
             </FormField>
-            <div className="flex items-end">
-              <button type="button" onClick={addRule} className="w-full min-h-[46px] rounded-lg bg-primary-700 px-4 text-sm font-semibold text-white hover:bg-primary-800">
-                <i className="ri-add-line mr-1" /> Add special rate
+            <div className="sm:col-span-2 lg:col-span-4 flex flex-wrap items-center justify-end gap-3 pt-1">
+              <button type="button" aria-label="+ Special Rates" onClick={addRule} className="inline-flex min-h-[46px] items-center justify-center whitespace-nowrap rounded-lg bg-primary-700 px-5 text-sm font-semibold text-white hover:bg-primary-800">
+                <span aria-hidden="true" className="mr-1">+</span> Special Rates
+              </button>
+              <button type="button" onClick={saveRates} disabled={saving || normalized.length === 0} className="inline-flex min-h-[46px] items-center justify-center whitespace-nowrap rounded-lg border border-primary-300 bg-white px-5 text-sm font-semibold text-primary-800 hover:bg-primary-50 disabled:cursor-not-allowed disabled:opacity-50">
+                <i className="ri-save-line mr-1.5" /> {saving ? "Saving…" : "Save rates"}
               </button>
             </div>
           </div>
@@ -161,7 +194,10 @@ export default function BookingRateEditor({ basePriceCents, rules, onChange, rat
                 <p className="text-sm font-semibold text-foreground-900">{rule.label} · {money(rule.priceCents)}</p>
                 <p className="text-xs text-foreground-500 font-label">{rule.startDate}{rule.endDate !== rule.startDate ? ` to ${rule.endDate}` : ""}</p>
               </div>
-              <button type="button" className="rounded-full px-3 py-1.5 text-xs font-semibold text-accent-700 hover:bg-accent-50" onClick={() => onChange(normalized.filter((item) => item.id !== rule.id))}>
+              <button type="button" className="rounded-full px-3 py-1.5 text-xs font-semibold text-accent-700 hover:bg-accent-50" onClick={() => {
+                onChange(normalized.filter((item) => item.id !== rule.id));
+                setSaveMessage("Rate removed. Select Save rates to store this change.");
+              }}>
                 <i className="ri-delete-bin-line mr-1" /> Remove
               </button>
             </div>
