@@ -1,6 +1,20 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import BookingForm from "./BookingForm";
+
+vi.mock("../data/repository", () => ({
+  getCheckoutConfig: vi.fn().mockResolvedValue({ stripeEnabled: true, paypalEnabled: false }),
+  submitBooking: vi.fn().mockResolvedValue({
+    bookingId: 812,
+    accessToken: "preview-token",
+    paymentRequired: true,
+    amountCents: 80000,
+  }),
+  createBookingCheckout: vi.fn(),
+  confirmBookingPayment: vi.fn(),
+  createBookingPaypalOrder: vi.fn(),
+  captureBookingPaypalOrder: vi.fn(),
+}));
 
 describe("BookingForm", () => {
   it("shows the server-provided price and appointment duration", () => {
@@ -193,6 +207,39 @@ describe("BookingForm", () => {
 
     expect(screen.getByText(/7 nights · rates shown on calendar/i)).toHaveTextContent("Jan 1–8, 2030");
     expect(screen.getByText(/total \$800\.00/i)).toBeInTheDocument();
+  });
+
+  it("replaces the base nightly rate with the exact server total at payment", async () => {
+    render(
+      <BookingForm
+        slug="james-local-fruits"
+        businessName="James Local Fruits"
+        bookingType="rental"
+        priceCents={20000}
+        rateRules={[{
+          id: "new-year-week",
+          label: "New Year week",
+          period: "week",
+          startDate: "2030-01-01",
+          endDate: "2030-01-07",
+          priceCents: 80000,
+        }]}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/your name/i), { target: { value: "Dale Prosper" } });
+    fireEvent.change(screen.getByLabelText(/^email/i), { target: { value: "dale@example.com" } });
+    fireEvent.change(screen.getByLabelText(/^phone/i), { target: { value: "+17675550100" } });
+    fireEvent.change(screen.getByLabelText(/check-in/i), { target: { value: "2030-01-01" } });
+    fireEvent.change(screen.getByLabelText(/check-out/i), { target: { value: "2030-01-08" } });
+    fireEvent.change(screen.getByLabelText(/notes & preferences/i), { target: { value: "Weekly stay" } });
+    fireEvent.click(screen.getByRole("checkbox", { name: /paid booking terms/i }));
+    fireEvent.click(screen.getByRole("button", { name: /continue to payment · \$800\.00/i }));
+
+    expect(await screen.findByText("Total due $800.00")).toBeInTheDocument();
+    expect(screen.getByText(/jan 1–8, 2030 · 7 nights/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /pay \$800\.00 with card/i })).toBeInTheDocument();
+    expect(screen.queryByText(/from \$200\.00 \/ night/i)).not.toBeInTheDocument();
   });
 
   it("updates an hourly meeting price when the visitor changes duration", () => {
