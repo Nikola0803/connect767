@@ -670,14 +670,10 @@ function SellerCenterSummary({ storefrontListing, products, orders, analytics, a
     ["ri-checkbox-circle-line", analytics?.orders ?? 0, "Paid Orders"],
     ["ri-wallet-3-line", formatPrice(analytics?.payoutsCents ?? 0), "Your Payouts"],
   ];
-  const metricStyles = [
-    { panel: "border-primary-200 border-t-primary-500 bg-gradient-to-br from-primary-50 to-background-50 hover:shadow-[0_14px_34px_rgba(31,112,78,0.14)]", icon: "bg-primary-100 text-primary-800" },
-    { panel: "border-secondary-200 border-t-secondary-400 bg-gradient-to-br from-secondary-50 to-background-50 hover:shadow-[0_14px_34px_rgba(153,119,72,0.14)]", icon: "bg-secondary-100 text-secondary-800" },
-    { panel: "border-primary-200 border-t-primary-500 bg-gradient-to-br from-primary-50 to-background-50 hover:shadow-[0_14px_34px_rgba(31,112,78,0.14)]", icon: "bg-primary-100 text-primary-800" },
-    { panel: "border-secondary-200 border-t-secondary-500 bg-gradient-to-br from-secondary-100/80 to-background-50 hover:shadow-[0_14px_34px_rgba(153,119,72,0.14)]", icon: "bg-secondary-200/70 text-secondary-900" },
-    { panel: "border-primary-200 border-t-primary-400 bg-gradient-to-br from-primary-50 to-background-50 hover:shadow-[0_14px_34px_rgba(31,112,78,0.14)]", icon: "bg-primary-100 text-primary-800" },
-    { panel: "border-secondary-200 border-t-secondary-400 bg-gradient-to-br from-secondary-50 to-background-50 hover:shadow-[0_14px_34px_rgba(153,119,72,0.14)]", icon: "bg-secondary-100 text-secondary-800" },
-  ];
+  const metricStyle = {
+    panel: "border-background-200 bg-background-50 hover:border-background-300 hover:shadow-[0_14px_34px_rgba(83,55,35,0.08)]",
+    icon: "bg-background-100 text-primary-800",
+  };
 
   return (
     <section className={`${DASHBOARD_PANEL} mt-6 overflow-hidden border-secondary-200`}>
@@ -697,9 +693,9 @@ function SellerCenterSummary({ storefrontListing, products, orders, analytics, a
       </div>
 
       <div className="grid grid-cols-2 gap-3 border-b border-secondary-200 bg-background-50/55 p-5 sm:grid-cols-3 sm:p-7 xl:grid-cols-6">
-        {metrics.map(([icon, value, label], index) => (
-          <div key={label} className={`group flex min-h-24 flex-col justify-between rounded-2xl border border-t-4 p-3.5 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 ${metricStyles[index].panel}`}>
-            <span className={`flex h-9 w-9 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105 ${metricStyles[index].icon}`}><i className={`${icon} text-lg`} /></span>
+        {metrics.map(([icon, value, label]) => (
+          <div key={label} className={`group flex min-h-24 flex-col justify-between rounded-2xl border p-3.5 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 ${metricStyle.panel}`}>
+            <span className={`flex h-9 w-9 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105 ${metricStyle.icon}`}><i className={`${icon} text-lg`} /></span>
             <div className="mt-3">
               <p className="text-xl font-semibold tabular-nums text-foreground-950">{value}</p>
               <p className="mt-1 text-xs font-medium text-foreground-500">{label}</p>
