@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bookingPriceForSelection, bookingRateForDate, normalizeBookingRateRules, ruleDates } from "./bookingRates";
+import { bookingPriceForSelection, bookingRateForDate, checkoutAfterFlatRateSelection, normalizeBookingRateRules, ruleDates } from "./bookingRates";
 
 describe("booking rate calendar", () => {
   const rules = [
@@ -56,6 +56,18 @@ describe("booking rate calendar", () => {
       checkOut: "2030-01-08",
       rateUnit: "night",
     })).toBe(80000);
+  });
+
+  it("moves checkout to the day after the final included weekly-special date", () => {
+    const weeklyRule = [{
+      id: "holiday-week",
+      period: "week",
+      startDate: "2030-01-01",
+      endDate: "2030-01-07",
+      priceCents: 80000,
+    }];
+    expect(checkoutAfterFlatRateSelection("2030-01-01", "2030-01-07", weeklyRule)).toBe("2030-01-08");
+    expect(checkoutAfterFlatRateSelection("2030-01-02", "2030-01-07", weeklyRule)).toBe("2030-01-07");
   });
 
   it("uses nightly pricing when a stay does not cover the complete special week", () => {

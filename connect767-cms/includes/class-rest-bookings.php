@@ -216,6 +216,20 @@ class C767_Rest_Bookings
         return [min(100000000, $amount), $breakdown];
     }
 
+    private static function checkout_after_flat_rate_selection($check_in, $check_out, $rules)
+    {
+        foreach ($rules as $rule) {
+            $period = (string) ($rule['period'] ?? 'day');
+            if (!in_array($period, ['week', 'month'], true)) {
+                continue;
+            }
+            if ((string) ($rule['startDate'] ?? '') === $check_in && (string) ($rule['endDate'] ?? '') === $check_out) {
+                return gmdate('Y-m-d', strtotime($check_out . ' UTC +1 day'));
+            }
+        }
+        return $check_out;
+    }
+
     private static function rental_conflict($listing_id, $check_in, $check_out, $exclude_booking_id = 0)
     {
         $ids = get_posts([
@@ -315,6 +329,7 @@ class C767_Rest_Bookings
             if (!self::valid_date($check_in) || !self::valid_date($check_out) || $check_in < wp_date('Y-m-d')) {
                 return new WP_Error('c767_bad_stay_dates', 'Choose valid check-in and check-out dates that are not in the past.', ['status' => 400]);
             }
+            $check_out = self::checkout_after_flat_rate_selection($check_in, $check_out, $rate_rules);
             $days = (int) ((strtotime($check_out . ' UTC') - strtotime($check_in . ' UTC')) / DAY_IN_SECONDS);
             $period_days = $rate_unit === 'week' ? 7 : ($rate_unit === 'month' ? 30 : ($rate_unit === 'year' ? 365 : 1));
             $units = (int) ceil($days / $period_days);

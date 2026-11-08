@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { bookingRateForDate, bookingRateRuleForDate, toDateKey } from "../../lib/bookingRates";
+import { bookingRateForDate, bookingRateRuleForDate, checkoutAfterFlatRateSelection, toDateKey } from "../../lib/bookingRates";
 
 const money = (cents) => `$${(Number(cents || 0) / 100).toFixed(Number(cents) % 100 ? 2 : 0)}`;
 const monthTitle = (date) => date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -37,7 +37,7 @@ export default function BookingPriceCalendar({
       return;
     }
     if (!selectedStart || selectedEnd || date <= selectedStart) onSelect?.(date, "");
-    else onSelect?.(selectedStart, date);
+    else onSelect?.(selectedStart, checkoutAfterFlatRateSelection(selectedStart, date, rules));
   };
 
   return (
@@ -72,20 +72,23 @@ export default function BookingPriceCalendar({
             : matchingRule?.period === "month"
               ? "/mo"
               : "";
+          const flatRateIncluded = ["week", "month"].includes(matchingRule?.period)
+            && date !== matchingRule.startDate;
+          const rateText = flatRateIncluded ? "Included" : `${money(displayedRate)}${rateSuffix}`;
           return (
             <button
               key={date}
               type="button"
               disabled={disabled}
               data-date={date}
-              aria-label={`${new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}, ${isCheckout ? "check-out" : `${money(displayedRate)}${rateSuffix}`}`}
+              aria-label={`${new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}, ${isCheckout ? "check-out" : rateText}`}
               aria-pressed={Boolean(selected || inRange)}
               onClick={() => choose(date)}
               className={`min-h-[52px] rounded-lg border px-1 py-1.5 text-center transition-all ${disabled ? "opacity-35 cursor-not-allowed border-transparent" : "hover:-translate-y-0.5 hover:shadow-md"} ${selected ? "bg-primary-700 border-primary-700 text-white" : inRange ? "bg-primary-100 border-primary-200" : special ? "bg-amber-50 border-amber-300" : "bg-white border-background-200"}`}
             >
               <span className="block text-xs font-semibold">{Number(date.slice(-2))}</span>
               <span className={`block mt-0.5 text-[10px] font-bold ${selected ? "text-white" : special ? "text-amber-800" : "text-primary-700"}`}>
-                {isCheckout ? "Check-out" : `${money(displayedRate)}${rateSuffix}`}
+                {isCheckout ? "Check-out" : rateText}
               </span>
             </button>
           );
