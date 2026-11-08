@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { bookingRateForDate, toDateKey } from "../../lib/bookingRates";
+import { bookingRateForDate, bookingRateRuleForDate, toDateKey } from "../../lib/bookingRates";
 
 const money = (cents) => `$${(Number(cents || 0) / 100).toFixed(Number(cents) % 100 ? 2 : 0)}`;
 const monthTitle = (date) => date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -24,6 +24,7 @@ export default function BookingPriceCalendar({
   onSelect,
   minimumDate = toDateKey(new Date()),
   unitLabel = "booking unit",
+  endDateIsCheckout = false,
 }) {
   const initial = selectedStart ? new Date(`${selectedStart}T12:00:00`) : new Date();
   const [month, setMonth] = useState(new Date(initial.getFullYear(), initial.getMonth(), 1));
@@ -62,21 +63,29 @@ export default function BookingPriceCalendar({
           const disabled = date < minimumDate;
           const inRange = selectedStart && selectedEnd && date >= selectedStart && date < selectedEnd;
           const selected = date === selectedStart || date === selectedEnd;
-          const special = bookingRateForDate(date, basePriceCents, rules) !== Number(basePriceCents || 0);
+          const matchingRule = bookingRateRuleForDate(date, rules);
+          const displayedRate = bookingRateForDate(date, basePriceCents, rules);
+          const special = displayedRate !== Number(basePriceCents || 0);
+          const isCheckout = endDateIsCheckout && date === selectedEnd;
+          const rateSuffix = matchingRule?.period === "week"
+            ? "/wk"
+            : matchingRule?.period === "month"
+              ? "/mo"
+              : "";
           return (
             <button
               key={date}
               type="button"
               disabled={disabled}
               data-date={date}
-              aria-label={`${new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}, ${money(bookingRateForDate(date, basePriceCents, rules))}`}
+              aria-label={`${new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}, ${isCheckout ? "check-out" : `${money(displayedRate)}${rateSuffix}`}`}
               aria-pressed={Boolean(selected || inRange)}
               onClick={() => choose(date)}
               className={`min-h-[52px] rounded-lg border px-1 py-1.5 text-center transition-all ${disabled ? "opacity-35 cursor-not-allowed border-transparent" : "hover:-translate-y-0.5 hover:shadow-md"} ${selected ? "bg-primary-700 border-primary-700 text-white" : inRange ? "bg-primary-100 border-primary-200" : special ? "bg-amber-50 border-amber-300" : "bg-white border-background-200"}`}
             >
               <span className="block text-xs font-semibold">{Number(date.slice(-2))}</span>
               <span className={`block mt-0.5 text-[10px] font-bold ${selected ? "text-white" : special ? "text-amber-800" : "text-primary-700"}`}>
-                {money(bookingRateForDate(date, basePriceCents, rules))}
+                {isCheckout ? "Check-out" : `${money(displayedRate)}${rateSuffix}`}
               </span>
             </button>
           );

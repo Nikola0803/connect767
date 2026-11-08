@@ -44,12 +44,16 @@ export function normalizeBookingRateRules(rules) {
 
 const periodPriority = { season: 1, month: 2, week: 3, day: 4 };
 
-export function bookingRateForDate(date, basePriceCents, rules) {
+export function bookingRateRuleForDate(date, rules) {
   const dateKey = toDateKey(date);
-  const matches = normalizeBookingRateRules(rules)
+  return normalizeBookingRateRules(rules)
     .filter((rule) => dateKey >= rule.startDate && dateKey <= rule.endDate)
-    .sort((a, b) => (periodPriority[b.period] || 0) - (periodPriority[a.period] || 0));
-  return matches[0]?.priceCents ?? Math.max(0, Number(basePriceCents) || 0);
+    .sort((a, b) => (periodPriority[b.period] || 0) - (periodPriority[a.period] || 0))[0] || null;
+}
+
+export function bookingRateForDate(date, basePriceCents, rules) {
+  return bookingRateRuleForDate(date, rules)?.priceCents
+    ?? Math.max(0, Number(basePriceCents) || 0);
 }
 
 export function datesBetween(startDate, endDate) {
@@ -86,10 +90,31 @@ export function bookingPriceForSelection({
       bookingRateForDate(addDays(checkIn, index * periodDays), basePriceCents, rules),
     ).reduce((total, price) => total + price, 0);
   }
-  return dates.reduce(
-    (total, date) => total + bookingRateForDate(date, basePriceCents, rules),
-    0,
-  );
+  const normalizedRules = normalizeBookingRateRules(rules);
+  const selectedDates = new Set(dates);
+  const dailyRules = normalizedRules.filter((rule) => !["week", "month"].includes(rule.period));
+  let total = 0;
+  let index = 0;
+
+  while (index < dates.length) {
+    const date = dates[index];
+    const flatRule = normalizedRules
+      .filter((rule) => ["week", "month"].includes(rule.period)
+        && rule.startDate === date
+        && datesBetween(rule.startDate, addDays(rule.endDate, 1)).every((item) => selectedDates.has(item)))
+      .sort((a, b) => (periodPriority[b.period] || 0) - (periodPriority[a.period] || 0))[0];
+
+    if (flatRule) {
+      total += flatRule.priceCents;
+      index += datesBetween(flatRule.startDate, addDays(flatRule.endDate, 1)).length;
+      continue;
+    }
+
+    total += bookingRateForDate(date, basePriceCents, dailyRules);
+    index += 1;
+  }
+
+  return total;
 }
 
 export function ruleDates(period, anchor, seasonEnd = "") {

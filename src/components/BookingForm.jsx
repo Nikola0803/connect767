@@ -31,6 +31,26 @@ const formatDuration = (minutes) => {
   const remainder = value % 60;
   return remainder ? `${hours} hr ${remainder} min` : `${hours} ${hours === 1 ? "hour" : "hours"}`;
 };
+const formatStayRange = (start, end) => {
+  if (!start || !end) return "";
+  const startDate = new Date(`${start}T12:00:00`);
+  const endDate = new Date(`${end}T12:00:00`);
+  const sameYear = startDate.getFullYear() === endDate.getFullYear();
+  const sameMonth = sameYear && startDate.getMonth() === endDate.getMonth();
+  const startLabel = startDate.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  });
+  const endLabel = sameMonth
+    ? `${endDate.getDate()}, ${endDate.getFullYear()}`
+    : endDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+  return `${startLabel}–${endLabel}`;
+};
 
 function BookingCardPayment({ booking, onSuccess }) {
   const stripe = useStripe();
@@ -263,6 +283,7 @@ export default function BookingForm({
                 ? { ...current, checkIn: start, checkOut: end }
                 : { ...current, preferredDate: start })}
               unitLabel={isRental ? rateUnit : priceUnit === "minute" ? "minute" : priceUnit === "hour" ? "hour" : "meeting"}
+              endDateIsCheckout={isRental}
             />
             {isRental ? <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FormField label={rateUnit === "night" ? "Check-in" : "Start date"} htmlFor="booking-check-in" required>
@@ -289,7 +310,7 @@ export default function BookingForm({
             </div>}
             {isRental && units > 0 && (
               <div className="flex items-center justify-between rounded-lg bg-primary-50 px-4 py-3 text-sm font-label">
-                <span>{units} {unitLabel} · rates shown on calendar</span>
+                <span>{formatStayRange(form.checkIn, form.checkOut)} · {units} {unitLabel} · rates shown on calendar</span>
                 <strong className="text-primary-900">Total {formatPrice(totalCents)}</strong>
               </div>
             )}

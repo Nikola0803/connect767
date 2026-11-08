@@ -41,6 +41,40 @@ describe("booking rate calendar", () => {
     })).toBe(1000000);
   });
 
+  it("charges a complete weekly special rate once for a nightly stay", () => {
+    expect(bookingPriceForSelection({
+      bookingType: "rental",
+      basePriceCents: 20000,
+      rules: [{
+        id: "holiday-week",
+        period: "week",
+        startDate: "2030-01-01",
+        endDate: "2030-01-07",
+        priceCents: 80000,
+      }],
+      checkIn: "2030-01-01",
+      checkOut: "2030-01-08",
+      rateUnit: "night",
+    })).toBe(80000);
+  });
+
+  it("uses nightly pricing when a stay does not cover the complete special week", () => {
+    expect(bookingPriceForSelection({
+      bookingType: "rental",
+      basePriceCents: 20000,
+      rules: [{
+        id: "holiday-week",
+        period: "week",
+        startDate: "2030-01-01",
+        endDate: "2030-01-07",
+        priceCents: 80000,
+      }],
+      checkIn: "2030-01-01",
+      checkOut: "2030-01-04",
+      rateUnit: "night",
+    })).toBe(60000);
+  });
+
   it("expands week and month shortcuts", () => {
     expect(ruleDates("week", "2030-06-10")).toEqual({ startDate: "2030-06-10", endDate: "2030-06-16" });
     expect(ruleDates("month", "2030-02-01")).toEqual({ startDate: "2030-02-01", endDate: "2030-02-28" });
