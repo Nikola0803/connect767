@@ -11,6 +11,7 @@ import CartDrawer from "./components/CartDrawer";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ScrollToTop from "./components/ScrollToTop";
 import RouteSeo from "./components/RouteSeo";
+import ListingOnboardingGate from "./components/ListingOnboardingGate";
 
 // Keep each route in its own chunk. This prevents the 3D design studios and
 // dashboard code from slowing down the homepage on mobile connections.
@@ -108,8 +109,8 @@ function App() {
                   <Route path="/auth/register" element={<AuthPage />} />
                   <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
                   <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
-                  <Route path="/dashboard" element={<DashboardPage />} />
-                  <Route path="/messages" element={<MessagesPage />} />
+                  <Route path="/dashboard" element={<ListingOnboardingGate><DashboardPage /></ListingOnboardingGate>} />
+                  <Route path="/messages" element={<ListingOnboardingGate><MessagesPage /></ListingOnboardingGate>} />
                   <Route path="/blog" element={<BlogPage />} />
                   <Route path="/blog/:slug" element={<BlogPostPage />} />
                   <Route path="/uniforms" element={<UniformStudioPage />} />

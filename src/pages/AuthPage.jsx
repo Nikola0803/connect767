@@ -6,6 +6,11 @@ import Button from "../components/ui/Button";
 import { FormField, Input } from "../components/ui/FormField";
 import { login, register } from "../lib/authClient";
 import { isLiveApi } from "../lib/config";
+import { getMyListings } from "../data/repository";
+import {
+  listingOnboardingRequired,
+  requireListingOnboarding,
+} from "../lib/listingOnboarding";
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -81,7 +86,22 @@ function LoginForm() {
     setSubmitting(true);
     try {
       await login(form);
-      navigate(location.state?.from || "/");
+      let needsFirstListing = listingOnboardingRequired();
+      if (!needsFirstListing && isLiveApi) {
+        try {
+          const listings = await getMyListings();
+          needsFirstListing = listings.length === 0;
+        } catch {
+          // A temporary listings request failure should not block an existing
+          // owner from signing in. The dashboard can retry its own data load.
+        }
+      }
+      if (needsFirstListing) {
+        requireListingOnboarding();
+        navigate("/listings/submit?onboarding=1&tier=free", { replace: true });
+      } else {
+        navigate(location.state?.from || "/");
+      }
     } catch (err) {
       setError(err.message || "Something went wrong. Please try again.");
     } finally {
@@ -176,7 +196,8 @@ function RegisterForm() {
       // Every registration is a business account — Connect767 doesn't have a
       // separate shopper/customer account type. Shop checkout stays guest.
       await register({ ...form, accountType: "business" });
-      navigate("/listings/submit");
+      requireListingOnboarding();
+      navigate("/listings/submit?onboarding=1&tier=free", { replace: true });
     } catch (err) {
       setError(err.message || "Something went wrong. Please try again.");
     } finally {
@@ -266,7 +287,7 @@ function RegisterForm() {
       </label>
 
       <Button type="submit" variant="primary" className="w-full" disabled={submitting}>
-        {submitting ? "Creating account…" : "Create account"}
+        {submitting ? "Creating account…" : "Create account & continue"}
         {!submitting && <i className="ri-arrow-right-line" />}
       </Button>
     </form>
