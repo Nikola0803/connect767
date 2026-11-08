@@ -970,9 +970,9 @@ export default function AddListingPage() {
                     </div>
                     {isRentalBookingType(form.bookingType) && (
                       <FormField
-                        label="Rate period"
+                        label="Base billing period"
                         htmlFor="bookingRentalRateUnit"
-                        hint="This period is used by the calendar and final booking total."
+                        hint="This is how your standard rate is charged and how the final booking total is calculated."
                       >
                         <Select id="bookingRentalRateUnit" value={normalizeRentalRateUnit(form.bookingRentalRateUnit, form.bookingType)} onChange={update("bookingRentalRateUnit")}>
                           {rentalRateUnitOptions.map((option) => (
@@ -1045,6 +1045,9 @@ export default function AddListingPage() {
                     <BookingRateEditor
                       basePriceCents={Math.max(0, Math.round((Number(form.bookingPrice) || 0) * 100))}
                       rules={form.bookingRateRules}
+                      billingPeriod={isRentalBookingType(form.bookingType)
+                        ? normalizeRentalRateUnit(form.bookingRentalRateUnit, form.bookingType)
+                        : form.bookingPriceUnit}
                       rateLabel={isRentalBookingType(form.bookingType)
                         ? `${bookingRateLabel(form.bookingType, form.bookingRentalRateUnit).toLowerCase()} rate`
                         : form.bookingPriceUnit === "minute"

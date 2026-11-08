@@ -1,14 +1,45 @@
-import { useMemo, useState } from "react";
-import { bookingRateForDate, normalizeBookingRateRules, ruleDates, toDateKey } from "../../lib/bookingRates";
+import { useEffect, useMemo, useState } from "react";
+import { normalizeBookingRateRules, ruleDates, toDateKey } from "../../lib/bookingRates";
 import BookingPriceCalendar from "./BookingPriceCalendar";
 import { FormField, Input, Select } from "../ui/FormField";
 
 const money = (cents) => `$${(Number(cents || 0) / 100).toFixed(2)}`;
 
-export default function BookingRateEditor({ basePriceCents, rules, onChange, rateLabel = "rate" }) {
+const periodOptions = {
+  week: [
+    { value: "week", label: "Full week" },
+    { value: "month", label: "Full month" },
+    { value: "season", label: "Season / date range" },
+  ],
+  month: [
+    { value: "month", label: "Full month" },
+    { value: "season", label: "Season / date range" },
+  ],
+  year: [{ value: "season", label: "Season / date range" }],
+  default: [
+    { value: "day", label: "Specific day" },
+    { value: "week", label: "Full week" },
+    { value: "month", label: "Full month" },
+    { value: "season", label: "Season / date range" },
+  ],
+};
+
+export default function BookingRateEditor({ basePriceCents, rules, onChange, rateLabel = "rate", billingPeriod = "day" }) {
   const normalized = useMemo(() => normalizeBookingRateRules(rules), [rules]);
   const today = toDateKey(new Date());
-  const [draft, setDraft] = useState({ period: "day", anchor: today, seasonEnd: today, price: "" });
+  const availablePeriods = periodOptions[billingPeriod] || periodOptions.default;
+  const [isOpen, setIsOpen] = useState(() => normalized.length > 0);
+  const [draft, setDraft] = useState({ period: availablePeriods[0].value, anchor: today, seasonEnd: today, price: "" });
+
+  useEffect(() => {
+    if (normalized.length > 0) setIsOpen(true);
+  }, [normalized.length]);
+
+  useEffect(() => {
+    if (!availablePeriods.some((option) => option.value === draft.period)) {
+      setDraft((current) => ({ ...current, period: availablePeriods[0].value }));
+    }
+  }, [availablePeriods, draft.period]);
 
   const addRule = () => {
     const price = Number(draft.price);
@@ -33,36 +64,47 @@ export default function BookingRateEditor({ basePriceCents, rules, onChange, rat
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-4">
         <div>
           <p className="text-[10px] uppercase tracking-[0.18em] text-primary-700 font-bold">Smart rate calendar</p>
-          <h3 className="font-heading text-lg font-semibold text-foreground-950">Set prices by day, week, month or season</h3>
-          <p className="text-xs text-foreground-600 font-label mt-1">Special rates override your base {rateLabel}. Visitors see the exact price on each date.</p>
+          <h3 className="font-heading text-lg font-semibold text-foreground-950">Add special pricing when you need it</h3>
+          <p className="text-xs text-foreground-600 font-label mt-1">Your base {rateLabel} applies automatically. Add overrides only for selected dates or seasons.</p>
         </div>
         <span className="rounded-full bg-primary-50 border border-primary-100 px-3 py-1 text-xs font-semibold text-primary-800 whitespace-nowrap">Base {money(basePriceCents)}</span>
       </div>
-      <BookingPriceCalendar basePriceCents={basePriceCents} rules={normalized} minimumDate={today} unitLabel={rateLabel.replace(/ rate$/, "")} />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-5 rounded-xl bg-background-100/70 p-4">
-        <FormField label="Rate period" htmlFor="rate-period">
-          <Select id="rate-period" value={draft.period} onChange={(event) => setDraft((current) => ({ ...current, period: event.target.value }))}>
-            <option value="day">Specific day</option>
-            <option value="week">Full week</option>
-            <option value="month">Full month</option>
-            <option value="season">Season / date range</option>
-          </Select>
-        </FormField>
-        <FormField label={draft.period === "month" ? "Month" : draft.period === "season" ? "Season starts" : draft.period === "week" ? "Week starts" : "Date"} htmlFor="rate-anchor">
-          <Input id="rate-anchor" type={draft.period === "month" ? "month" : "date"} min={draft.period === "month" ? today.slice(0, 7) : today} value={draft.period === "month" ? draft.anchor.slice(0, 7) : draft.anchor} onChange={(event) => setDraft((current) => ({ ...current, anchor: draft.period === "month" ? `${event.target.value}-01` : event.target.value }))} />
-        </FormField>
-        {draft.period === "season" && <FormField label="Season ends" htmlFor="rate-season-end">
-          <Input id="rate-season-end" type="date" min={draft.anchor} value={draft.seasonEnd} onChange={(event) => setDraft((current) => ({ ...current, seasonEnd: event.target.value }))} />
-        </FormField>}
-        <FormField label="Price (USD)" htmlFor="special-rate-price">
-          <Input id="special-rate-price" type="number" min="0" step="0.01" value={draft.price} onChange={(event) => setDraft((current) => ({ ...current, price: event.target.value }))} placeholder="125.00" />
-        </FormField>
-        <div className="flex items-end">
-          <button type="button" onClick={addRule} className="w-full min-h-[46px] rounded-lg bg-primary-700 px-4 text-sm font-semibold text-white hover:bg-primary-800">
-            <i className="ri-add-line mr-1" /> Add rate
-          </button>
-        </div>
-      </div>
+      {!isOpen ? (
+        <button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-primary-300 bg-primary-50 px-4 text-sm font-semibold text-primary-800 transition-colors hover:bg-primary-100"
+        >
+          <i className="ri-add-line mr-1" /> Add special pricing
+        </button>
+      ) : (
+        <>
+          <BookingPriceCalendar basePriceCents={basePriceCents} rules={normalized} minimumDate={today} unitLabel={rateLabel.replace(/ rate$/, "")} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-5 rounded-xl bg-background-100/70 p-4">
+            <FormField label="Apply special rate to" htmlFor="special-rate-period">
+              <Select id="special-rate-period" value={draft.period} onChange={(event) => setDraft((current) => ({ ...current, period: event.target.value }))}>
+                {availablePeriods.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </Select>
+            </FormField>
+            <FormField label={draft.period === "month" ? "Month" : draft.period === "season" ? "Season starts" : draft.period === "week" ? "Week starts" : "Date"} htmlFor="rate-anchor">
+              <Input id="rate-anchor" type={draft.period === "month" ? "month" : "date"} min={draft.period === "month" ? today.slice(0, 7) : today} value={draft.period === "month" ? draft.anchor.slice(0, 7) : draft.anchor} onChange={(event) => setDraft((current) => ({ ...current, anchor: draft.period === "month" ? `${event.target.value}-01` : event.target.value }))} />
+            </FormField>
+            {draft.period === "season" && <FormField label="Season ends" htmlFor="rate-season-end">
+              <Input id="rate-season-end" type="date" min={draft.anchor} value={draft.seasonEnd} onChange={(event) => setDraft((current) => ({ ...current, seasonEnd: event.target.value }))} />
+            </FormField>}
+            <FormField label="Price (USD)" htmlFor="special-rate-price">
+              <Input id="special-rate-price" type="number" min="0" step="0.01" value={draft.price} onChange={(event) => setDraft((current) => ({ ...current, price: event.target.value }))} placeholder="125.00" />
+            </FormField>
+            <div className="flex items-end">
+              <button type="button" onClick={addRule} className="w-full min-h-[46px] rounded-lg bg-primary-700 px-4 text-sm font-semibold text-white hover:bg-primary-800">
+                <i className="ri-add-line mr-1" /> Add special rate
+              </button>
+            </div>
+          </div>
+        </>
+      )}
       {normalized.length > 0 && (
         <div className="mt-4 space-y-2">
           {normalized.map((rule) => (
