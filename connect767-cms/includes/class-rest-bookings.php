@@ -368,11 +368,24 @@ class C767_Rest_Bookings
             ]];
         }
 
+        // The browser shows a live quote before submission. The server remains
+        // authoritative, but refusing a mismatched quote prevents a stale
+        // plugin or rate rule from silently creating a payment for the wrong
+        // amount. The visitor can refresh and review the current price.
+        $quoted_amount = $request->get_param('quotedAmountCents');
+        if ($quoted_amount !== null && max(0, (int) $quoted_amount) !== $amount_cents) {
+            return new WP_Error(
+                'c767_booking_price_changed',
+                'The booking price changed before checkout. Refresh the page and review the updated total before paying.',
+                ['status' => 409]
+            );
+        }
+
         $terms_accepted = rest_sanitize_boolean($request->get_param('termsAccepted'));
         if ($amount_cents > 0 && !$terms_accepted) {
             return new WP_Error(
                 'c767_paid_terms_required',
-                'You must accept the Paid Booking Terms, including Connect767\'s 10% transaction fee, before continuing.',
+                'You must accept the Paid Booking Terms before continuing.',
                 ['status' => 400]
             );
         }
@@ -445,6 +458,8 @@ class C767_Rest_Bookings
             'paymentRequired' => $amount_cents > 0,
             'amountCents' => $amount_cents,
             'platformFeePercent' => $amount_cents > 0 ? self::PLATFORM_FEE_PERCENT : 0,
+            'platformFeeAmountCents' => $platform_fee_amount_cents,
+            'ownerPayoutAmountCents' => $owner_payout_amount_cents,
             'termsVersion' => $amount_cents > 0 ? self::PAID_TERMS_VERSION : '',
             'durationMinutes' => $duration_minutes,
             'priceUnit' => $price_unit,

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import BookingForm from "./BookingForm";
+import { submitBooking } from "../data/repository";
 
 vi.mock("../data/repository", () => ({
   getCheckoutConfig: vi.fn().mockResolvedValue({ stripeEnabled: true, paypalEnabled: false }),
@@ -9,6 +10,9 @@ vi.mock("../data/repository", () => ({
     accessToken: "preview-token",
     paymentRequired: true,
     amountCents: 80000,
+    platformFeePercent: 10,
+    platformFeeAmountCents: 8000,
+    ownerPayoutAmountCents: 72000,
   }),
   createBookingCheckout: vi.fn(),
   confirmBookingPayment: vi.fn(),
@@ -141,7 +145,7 @@ describe("BookingForm", () => {
     expect(screen.getByText(/total \$1900.00/i)).toBeInTheDocument();
   });
 
-  it("requires acceptance of the 10% transaction-fee terms for paid bookings", () => {
+  it("requires acceptance of the paid booking terms", () => {
     render(
       <BookingForm
         slug="consultation"
@@ -151,7 +155,7 @@ describe("BookingForm", () => {
       />,
     );
 
-    const checkbox = screen.getByRole("checkbox", { name: /10% transaction fee/i });
+    const checkbox = screen.getByRole("checkbox", { name: /paid booking terms/i });
     const continueButton = screen.getByRole("button", { name: /continue to payment/i });
 
     expect(checkbox).not.toBeChecked();
@@ -237,8 +241,14 @@ describe("BookingForm", () => {
     fireEvent.click(screen.getByRole("button", { name: /continue to payment · \$800\.00/i }));
 
     expect(await screen.findByRole("heading", { name: "James Local Fruits" })).toBeInTheDocument();
+    expect(submitBooking).toHaveBeenLastCalledWith(
+      "james-local-fruits",
+      expect.objectContaining({ quotedAmountCents: 80000 }),
+    );
     expect(screen.getByText(/jan 1–8, 2030 · 7 nights/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /pay \$800\.00 with card/i })).toBeInTheDocument();
+    expect(screen.queryByText(/Connect767 fee/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Owner payout/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/from \$200\.00 \/ night/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/total due/i)).not.toBeInTheDocument();
   });

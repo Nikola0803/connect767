@@ -174,7 +174,13 @@ export default function BookingForm({
           throw new Error("Online payment is temporarily unavailable. Please contact the business.");
         }
       }
-      const result = await submitBooking(slug, { ...form, durationMinutes: Number(form.durationMinutes), bookingType, termsAccepted });
+      const result = await submitBooking(slug, {
+        ...form,
+        durationMinutes: Number(form.durationMinutes),
+        bookingType,
+        termsAccepted,
+        quotedAmountCents: totalCents,
+      });
       setBooking(result);
       if (result.paymentRequired) {
         setPaymentConfig(config);
@@ -372,7 +378,7 @@ export default function BookingForm({
                   >
                     Paid Booking Terms
                   </a>
-                  , including Connect767&apos;s 10% transaction fee.
+                  .
                 </span>
               </label>
             )}

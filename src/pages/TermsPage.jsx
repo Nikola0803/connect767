@@ -46,7 +46,7 @@ export default function TermsPage() {
                 <h2 className="font-heading text-2xl font-medium text-foreground-950 mb-3">Paid Booking Terms and 10% Transaction Fee</h2>
                 <div className="space-y-3 text-sm text-foreground-700 leading-relaxed">
                   <p>
-                    Connect767 charges and retains a platform service fee equal to <strong>10% of every paid booking transaction</strong> processed through Connect767.
+                    Connect767 deducts a platform service fee equal to <strong>10% of every paid booking transaction</strong> from the listing owner&apos;s proceeds. This fee is not added to the customer&apos;s displayed booking total.
                   </p>
                   <p>
                     The fee supports marketplace operations, secure payment technology, booking administration, and customer support. The booking interface displays the booking total before payment. Any taxes, deposits, refunds, or additional charges required by a listing owner must be disclosed separately where applicable.
