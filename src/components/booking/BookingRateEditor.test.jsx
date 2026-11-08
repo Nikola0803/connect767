@@ -14,10 +14,10 @@ describe("BookingRateEditor", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: /add special pricing/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /special rates/i })).toBeInTheDocument();
     expect(screen.queryByLabelText(/apply special rate to/i)).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /add special pricing/i }));
+    fireEvent.click(screen.getByRole("button", { name: /special rates/i }));
     expect(screen.getByLabelText(/apply special rate to/i)).toBeInTheDocument();
   });
 
@@ -32,7 +32,7 @@ describe("BookingRateEditor", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /add special pricing/i }));
+    fireEvent.click(screen.getByRole("button", { name: /special rates/i }));
     const period = screen.getByLabelText(/apply special rate to/i);
 
     expect(period).toHaveValue("month");
@@ -66,17 +66,34 @@ describe("BookingRateEditor", () => {
 
   it("warns when a required rate is missing", () => {
     render(<BookingRateEditor basePriceCents={20000} rules={[]} onChange={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: /add special pricing/i }));
-    fireEvent.click(screen.getByRole("button", { name: /add special rate/i }));
+    fireEvent.click(screen.getByRole("button", { name: /special rates/i }));
+    fireEvent.click(screen.getByRole("button", { name: /special rates/i }));
     expect(screen.getByRole("alert")).toHaveTextContent(/enter a rate above \$0/i);
   });
 
   it("requires the seasonal start before enabling its end date", () => {
     render(<BookingRateEditor basePriceCents={20000} rules={[]} onChange={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: /add special pricing/i }));
+    fireEvent.click(screen.getByRole("button", { name: /special rates/i }));
     fireEvent.change(screen.getByLabelText(/apply special rate to/i), { target: { value: "season" } });
     expect(screen.getByLabelText(/season ends/i)).toBeDisabled();
     fireEvent.change(screen.getByLabelText(/season starts/i), { target: { value: "2030-06-01" } });
     expect(screen.getByLabelText(/season ends/i)).toBeEnabled();
+  });
+
+  it("keeps the special-rate action on one concise label and saves added rates", async () => {
+    const onChange = vi.fn();
+    const onSave = vi.fn().mockResolvedValue({ deferred: false });
+    const { rerender } = render(<BookingRateEditor basePriceCents={20000} rules={[]} onChange={onChange} onSave={onSave} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /special rates/i }));
+    expect(screen.getByRole("button", { name: /^\+ special rates$/i })).toHaveClass("whitespace-nowrap");
+    fireEvent.change(screen.getByLabelText(/rate \(usd\)/i), { target: { value: "250" } });
+    fireEvent.click(screen.getByRole("button", { name: /^\+ special rates$/i }));
+
+    const addedRules = onChange.mock.calls[0][0];
+    rerender(<BookingRateEditor basePriceCents={20000} rules={addedRules} onChange={onChange} onSave={onSave} />);
+    fireEvent.click(screen.getByRole("button", { name: /save rates/i }));
+
+    expect(onSave).toHaveBeenCalledWith(addedRules);
   });
 });

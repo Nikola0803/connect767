@@ -575,7 +575,7 @@ export async function setListingTier(listingId, tier) {
   return customClient.post(`/listings/${listingId}/tier`, { tier });
 }
 
-async function saveBookingSettings(listingId, form) {
+export async function saveBookingSettings(listingId, form) {
   if (!listingId) return;
   const dollars = Number(form.bookingPrice || 0);
   const hasPaidRate = hasPaidBookingRate(form);

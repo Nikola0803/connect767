@@ -13,6 +13,7 @@ import {
   getListingBySlug,
   getMyListings,
   getBookingSettings,
+  saveBookingSettings,
   getCheckoutConfig,
   createListingPaymentIntent,
   confirmListingPayment,
@@ -486,6 +487,15 @@ export default function AddListingPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const saveSpecialRates = async (bookingRateRules) => {
+    setForm((current) => ({ ...current, bookingRateRules }));
+    if (!isEditing || !listingId || !isLiveApi) {
+      return { deferred: true };
+    }
+    await saveBookingSettings(listingId, { ...form, bookingRateRules });
+    return { deferred: false };
   };
 
   const update = (field) => (e) =>
@@ -1056,6 +1066,7 @@ export default function AddListingPage() {
                             ? "hourly rate"
                             : "appointment rate"}
                       onChange={(bookingRateRules) => setForm((current) => ({ ...current, bookingRateRules }))}
+                      onSave={saveSpecialRates}
                     />
                     {(Number(form.bookingPrice) > 0 || form.bookingRateRules.some((rule) => Number(rule.priceCents) > 0)) && (
                       <div
