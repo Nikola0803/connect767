@@ -49,6 +49,11 @@ import {
   normalizeBookingType,
   rentalRateUnitOptions,
 } from "../lib/bookingTypes";
+import {
+  completeListingOnboarding,
+  getListingOnboardingDraft,
+  saveListingOnboardingDraft,
+} from "../lib/listingOnboarding";
 
 const steps = [
   { n: 1, label: "Choose Tier" },
@@ -284,17 +289,22 @@ export default function AddListingPage() {
   const [searchParams] = useSearchParams();
   const isEditing = Boolean(editSlug);
   const requestedTier = searchParams.get("tier");
+  const isOnboarding = !isEditing && searchParams.get("onboarding") === "1";
   const isManagingPlan = isEditing && searchParams.get("managePlan") === "1";
   const isManagingBookings = isEditing && searchParams.get("manageBookings") === "1";
 
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState(() => ({
-    ...initialForm,
-    tier:
-      requestedTier === "free" || requestedTier === "classified"
-        ? requestedTier
-        : initialForm.tier,
-  }));
+  const [form, setForm] = useState(() => {
+    const savedDraft = isOnboarding ? getListingOnboardingDraft() : null;
+    return {
+      ...initialForm,
+      ...(savedDraft || {}),
+      tier:
+        requestedTier === "free" || requestedTier === "classified"
+          ? requestedTier
+          : savedDraft?.tier || initialForm.tier,
+    };
+  });
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
@@ -309,6 +319,11 @@ export default function AddListingPage() {
   // never sets this and goes straight to `submitted`.
   const [pendingPayment, setPendingPayment] = useState(null); // { listingId } | null
   const [justPaid, setJustPaid] = useState(false);
+
+  useEffect(() => {
+    if (!isOnboarding || isEditing || submitted) return;
+    saveListingOnboardingDraft(form);
+  }, [form, isEditing, isOnboarding, submitted]);
 
   // Edit mode reuses this same wizard, just pre-filled from the existing
   // listing (getListingBySlug returns the same display shape ListingProfile
@@ -488,6 +503,7 @@ export default function AddListingPage() {
       const result = await submitListing(form);
       if (result?.id) {
         setListingId(result.id);
+        if (isOnboarding) completeListingOnboarding();
       }
       if (form.tier === "classified" && result?.id) {
         setPendingPayment({ listingId: result.id });
@@ -635,17 +651,35 @@ export default function AddListingPage() {
       )}
       <div className="w-full px-4 md:px-8 lg:px-12 py-6 border-b border-background-200/70 bg-background-50">
         <div className="max-w-3xl mx-auto">
+          {isOnboarding && (
+            <div className="mb-5 rounded-2xl border border-primary-200 bg-primary-50/80 px-4 py-4 sm:px-5">
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-background-50">
+                  <i className="ri-store-2-line" aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary-800">Account created · Listing in progress</p>
+                  <h1 className="mt-1 font-heading text-xl font-medium text-foreground-950">Now create your first listing</h1>
+                  <p className="mt-1 text-xs leading-relaxed text-foreground-600">Your progress saves automatically. Complete and submit this listing to open your dashboard.</p>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="flex items-center gap-3 mb-2">
-            <Link
-              className="text-xs font-label text-foreground-500 hover:text-foreground-800 cursor-pointer flex items-center gap-1"
-              to="/listings"
-            >
-              <i className="ri-arrow-left-line" />
-              Directory
-            </Link>
-            <span className="text-foreground-300">/</span>
+            {!isOnboarding && (
+              <>
+                <Link
+                  className="text-xs font-label text-foreground-500 hover:text-foreground-800 cursor-pointer flex items-center gap-1"
+                  to="/listings"
+                >
+                  <i className="ri-arrow-left-line" />
+                  Directory
+                </Link>
+                <span className="text-foreground-300">/</span>
+              </>
+            )}
             <span className="text-xs font-label text-foreground-800 font-medium">
-              {isEditing ? "Edit Listing" : "Submit a Listing"}
+              {isEditing ? "Edit Listing" : isOnboarding ? "Create Your Free Listing" : "Submit a Listing"}
             </span>
           </div>
           <StepIndicator current={step} />

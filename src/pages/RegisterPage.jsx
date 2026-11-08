@@ -4,16 +4,12 @@ import AuthLayout from "../components/AuthLayout";
 import Button from "../components/ui/Button";
 import { FormField, Input } from "../components/ui/FormField";
 import { register } from "../lib/authClient";
-
-const accountTypes = [
-  { value: "customer", label: "Shopper", icon: "ri-user-line", desc: "Browse, buy, and book" },
-  { value: "business", label: "Business owner", icon: "ri-store-2-line", desc: "List your business" },
-];
+import { requireListingOnboarding } from "../lib/listingOnboarding";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    accountType: "customer",
+    accountType: "business",
     name: "",
     email: "",
     password: "",
@@ -42,8 +38,9 @@ export default function RegisterPage() {
     }
     setSubmitting(true);
     try {
-      await register(form);
-      navigate(form.accountType === "business" ? "/listings/submit" : "/");
+      await register({ ...form, accountType: "business" });
+      requireListingOnboarding();
+      navigate("/listings/submit?onboarding=1&tier=free", { replace: true });
     } catch (err) {
       setError(err.message || "Something went wrong. Please try again.");
     } finally {
@@ -77,31 +74,6 @@ export default function RegisterPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <FormField label="I'm signing up as">
-          <div className="grid grid-cols-2 gap-2">
-            {accountTypes.map((t) => (
-              <button
-                key={t.value}
-                type="button"
-                onClick={() => setForm((f) => ({ ...f, accountType: t.value }))}
-                className={`text-left p-3 rounded-lg border-2 transition-colors cursor-pointer ${
-                  form.accountType === t.value
-                    ? "border-primary-500 bg-primary-50/50"
-                    : "border-background-200/70 hover:border-background-400"
-                }`}
-              >
-                <i
-                  className={`${t.icon} text-lg mb-1 block ${
-                    form.accountType === t.value ? "text-primary-600" : "text-foreground-500"
-                  }`}
-                />
-                <div className="text-sm font-semibold text-foreground-900">{t.label}</div>
-                <div className="text-xs text-foreground-500 font-label">{t.desc}</div>
-              </button>
-            ))}
-          </div>
-        </FormField>
-
         <FormField label="Full name" htmlFor="name">
           <Input
             id="name"
@@ -175,7 +147,7 @@ export default function RegisterPage() {
         </label>
 
         <Button type="submit" variant="primary" className="w-full" disabled={submitting}>
-          {submitting ? "Creating account…" : "Create account"}
+          {submitting ? "Creating account…" : "Create account & continue"}
           {!submitting && <i className="ri-arrow-right-line" />}
         </Button>
       </form>
