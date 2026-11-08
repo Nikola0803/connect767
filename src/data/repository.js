@@ -959,6 +959,7 @@ export async function createVendorProduct(form) {
   if (form.pickupInstructions !== undefined) payload.append("pickupInstructions", form.pickupInstructions);
   if (form.sku !== undefined) payload.append("sku", form.sku);
   if (form.category !== undefined) payload.append("category", form.category);
+  if (form.productType !== undefined) payload.append("productType", form.productType);
   if (form.trackStock !== undefined) payload.append("trackStock", form.trackStock ? "1" : "0");
   if (form.stockQuantity !== undefined) payload.append("stockQuantity", form.stockQuantity);
   if (form.lowStockThreshold !== undefined) payload.append("lowStockThreshold", form.lowStockThreshold);
@@ -982,6 +983,7 @@ export async function updateVendorProduct(id, form) {
   if (form.pickupInstructions !== undefined) payload.append("pickupInstructions", form.pickupInstructions);
   if (form.sku !== undefined) payload.append("sku", form.sku);
   if (form.category !== undefined) payload.append("category", form.category);
+  if (form.productType !== undefined) payload.append("productType", form.productType);
   if (form.trackStock !== undefined) payload.append("trackStock", form.trackStock ? "1" : "0");
   if (form.stockQuantity !== undefined) payload.append("stockQuantity", form.stockQuantity);
   if (form.lowStockThreshold !== undefined) payload.append("lowStockThreshold", form.lowStockThreshold);

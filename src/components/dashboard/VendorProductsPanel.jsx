@@ -12,6 +12,12 @@ import {
 import Button from "../ui/Button";
 import { FormField, Input, Textarea, Select } from "../ui/FormField";
 import StorefrontCustomizer from "./StorefrontCustomizer";
+import ProductInventoryEditor from "./ProductInventoryEditor";
+import {
+  inferProductType,
+  inventoryRowsToVariants,
+  variantsToInventoryRows,
+} from "../../lib/productInventory";
 import {
   DASHBOARD_EYEBROW,
   DASHBOARD_PANEL,
@@ -35,22 +41,12 @@ const emptyForm = {
   pickupInstructions: "",
   sku: "",
   category: "",
+  productType: "simple",
   trackStock: false,
   stockQuantity: "",
   lowStockThreshold: "3",
-  variantsText: "",
+  variants: [],
 };
-
-function variantsToText(variants = []) {
-  return variants.map((item) => [item.label, item.sku, (Number(item.priceCents || 0) / 100).toFixed(2), item.stockQuantity].join(" | ")).join("\n");
-}
-
-function parseVariants(text) {
-  return String(text || "").split("\n").map((line, index) => {
-    const [label = "", sku = "", price = "0", stock = "0"] = line.split("|").map((part) => part.trim());
-    return { id: `${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${index + 1}`, label, sku, priceCents: Math.max(0, Math.round(Number(price) * 100)), stockQuantity: Math.max(0, Number(stock) || 0) };
-  }).filter((item) => item.label);
-}
 
 /**
  * Dashboard "Products & Services" + "Sales" — the seller side of the
@@ -182,10 +178,11 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
       pickupInstructions: product.pickupInstructions || "",
       sku: product.sku || "",
       category: product.category || "",
+      productType: inferProductType(product),
       trackStock: product.trackStock === true,
       stockQuantity: product.stockQuantity ?? "",
       lowStockThreshold: product.lowStockThreshold ?? "3",
-      variantsText: variantsToText(product.variants),
+      variants: variantsToInventoryRows(product.variants),
     });
     setError(null);
     setShowForm(true);
@@ -203,17 +200,24 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
     setError(null);
     const priceCents = Math.round(parseFloat(form.priceDollars || "0") * 100);
     const shippingFeeCents = Math.max(0, Math.round(parseFloat(form.shippingFeeDollars || "0") * 100));
+    const variants = form.productType === "variable" ? inventoryRowsToVariants(form.variants) : [];
+    const variableStock = variants.reduce((total, variant) => total + variant.stockQuantity, 0);
     const inventory = {
       sku: form.sku.trim(),
       category: form.category.trim(),
-      trackStock: form.trackStock,
-      stockQuantity: Math.max(0, Number(form.stockQuantity) || 0),
+      productType: form.productType,
+      trackStock: form.productType === "variable" ? true : form.trackStock,
+      stockQuantity: form.productType === "variable" ? variableStock : Math.max(0, Number(form.stockQuantity) || 0),
       lowStockThreshold: Math.max(0, Number(form.lowStockThreshold) || 3),
-      variants: parseVariants(form.variantsText),
+      variants,
     };
     const selectedListing = storefrontCandidates.find((listing) => String(listing.id) === String(form.listingId));
     if (!form.listingId || !form.name.trim() || !priceCents) {
       setError("Pick a listing, add a name, and a price above $0.");
+      return;
+    }
+    if (form.productType === "variable" && variants.length === 0) {
+      setError("Add at least one size or color variation before saving this variable product.");
       return;
     }
     if (selectedListing && !selectedListing.payoutConfigured) {
@@ -414,21 +418,7 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
               <Input id="vp-category" value={form.category} onChange={update("category")} placeholder="e.g. Clothing, Food, Art" />
             </FormField>
           </div>
-          <div className="rounded-xl border border-background-200 bg-background-50 p-4">
-            <label className="flex items-center gap-3 text-sm font-semibold text-foreground-800">
-              <input type="checkbox" checked={form.trackStock} onChange={(event) => setForm((value) => ({ ...value, trackStock: event.target.checked }))} />
-              Track inventory and prevent overselling
-            </label>
-            {form.trackStock && (
-              <div className="mt-4 grid grid-cols-2 gap-4">
-                <FormField label="Stock quantity" htmlFor="vp-stock"><Input id="vp-stock" type="number" min="0" value={form.stockQuantity} onChange={update("stockQuantity")} /></FormField>
-                <FormField label="Low-stock warning" htmlFor="vp-low-stock"><Input id="vp-low-stock" type="number" min="0" value={form.lowStockThreshold} onChange={update("lowStockThreshold")} /></FormField>
-              </div>
-            )}
-          </div>
-          <FormField label="Product options / variations" htmlFor="vp-variants" hint="One option per line: Label | SKU | Price | Stock. Example: Large / Blue | TEE-L-BLU | 25.00 | 8">
-            <Textarea id="vp-variants" rows={4} value={form.variantsText} onChange={update("variantsText")} placeholder="Small / Green | SHIRT-S-GRN | 20.00 | 5" />
-          </FormField>
+          <ProductInventoryEditor form={form} setForm={setForm} />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Fulfillment" htmlFor="vp-fulfillment" required>
               <Select id="vp-fulfillment" value={form.fulfillmentMode} onChange={update("fulfillmentMode")}>
