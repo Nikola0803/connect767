@@ -181,6 +181,11 @@ export default function BookingForm({
         termsAccepted,
         quotedAmountCents: totalCents,
       });
+      if (isPaid && Number(result?.amountCents) !== totalCents) {
+        throw new Error(
+          `Payment was stopped because the verified checkout total (${formatPrice(result?.amountCents)}) did not match the calendar total (${formatPrice(totalCents)}). Refresh the page and try again.`,
+        );
+      }
       setBooking(result);
       if (result.paymentRequired) {
         setPaymentConfig(config);
@@ -360,12 +365,13 @@ export default function BookingForm({
               <Textarea id="booking-notes" rows={3} value={form.notes} onChange={update("notes")} placeholder="What do you need, how many people, or anything that helps them prepare…" required />
             </FormField>
             {isPaid && (
-              <label className="flex items-start gap-2.5 rounded-lg border border-background-200 bg-background-100/50 px-3.5 py-3 text-xs font-label text-foreground-700 cursor-pointer">
+              <label className={`flex items-start gap-2.5 rounded-lg border px-3.5 py-3 text-xs font-label cursor-pointer transition-colors ${termsAccepted ? "border-primary-200 bg-primary-50 text-foreground-700" : "border-accent-200 bg-accent-50/40 text-foreground-800"}`}>
                 <input
                   type="checkbox"
                   className="mt-0.5 rounded border-background-300"
                   checked={termsAccepted}
                   onChange={(event) => setTermsAccepted(event.target.checked)}
+                  aria-required="true"
                   required
                 />
                 <span>
@@ -378,7 +384,8 @@ export default function BookingForm({
                   >
                     Paid Booking Terms
                   </a>
-                  .
+                  <span className="text-accent-600" aria-label="required"> *</span>
+                  {!termsAccepted && <span className="mt-1 block text-[11px] font-semibold text-accent-700">Required before continuing to payment.</span>}
                 </span>
               </label>
             )}

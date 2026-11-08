@@ -253,6 +253,49 @@ describe("BookingForm", () => {
     expect(screen.queryByText(/total due/i)).not.toBeInTheDocument();
   });
 
+  it("blocks checkout when the server total does not match the calendar quote", async () => {
+    vi.mocked(submitBooking).mockResolvedValueOnce({
+      bookingId: 813,
+      accessToken: "stale-plugin-token",
+      paymentRequired: true,
+      amountCents: 560000,
+    });
+
+    render(
+      <BookingForm
+        slug="james-local-fruits"
+        businessName="James Local Fruits"
+        bookingType="rental"
+        priceCents={20000}
+        rateRules={[{
+          id: "new-year-week",
+          label: "New Year week",
+          period: "week",
+          startDate: "2030-01-01",
+          endDate: "2030-01-07",
+          priceCents: 80000,
+        }]}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/your name/i), { target: { value: "Dale Prosper" } });
+    fireEvent.change(screen.getByLabelText(/^email/i), { target: { value: "dale@example.com" } });
+    fireEvent.change(screen.getByLabelText(/^phone/i), { target: { value: "+17675550100" } });
+    fireEvent.change(screen.getByLabelText(/check-in/i), { target: { value: "2030-01-01" } });
+    fireEvent.change(screen.getByLabelText(/notes & preferences/i), { target: { value: "Weekly stay" } });
+
+    const terms = screen.getByRole("checkbox", { name: /paid booking terms/i });
+    expect(terms).toBeRequired();
+    expect(terms).toHaveAttribute("aria-required", "true");
+    expect(screen.getByText(/required before continuing/i)).toBeInTheDocument();
+    fireEvent.click(terms);
+    fireEvent.click(screen.getByRole("button", { name: /continue to payment · \$800\.00/i }));
+
+    expect(await screen.findByText(/payment was stopped/i)).toHaveTextContent("$5600.00");
+    expect(screen.getByText(/payment was stopped/i)).toHaveTextContent("$800.00");
+    expect(screen.queryByRole("button", { name: /pay \$5600\.00/i })).not.toBeInTheDocument();
+  });
+
   it("updates an hourly meeting price when the visitor changes duration", () => {
     render(
       <BookingForm
