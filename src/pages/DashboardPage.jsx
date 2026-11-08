@@ -3,6 +3,7 @@ import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useAsync } from "../hooks/useAsync";
 import {
+  deleteRejectedBooking,
   getMyBookings,
   getMyListings,
   requestBookingCashout,
@@ -94,6 +95,24 @@ export default function DashboardPage() {
       reloadBookings();
     } catch (err) {
       setBookingError(err.message || "Couldn't update this booking.");
+    } finally {
+      setBookingBusy(null);
+    }
+  };
+
+  const deleteBooking = async (booking) => {
+    const confirmed = window.confirm(
+      `Delete the rejected booking from ${booking.name || "this customer"}? This will remove it from your dashboard.`,
+    );
+    if (!confirmed) return;
+
+    setBookingBusy(booking.id);
+    setBookingError(null);
+    try {
+      await deleteRejectedBooking(booking.id);
+      await reloadBookings();
+    } catch (err) {
+      setBookingError(err.message || "Couldn't delete this rejected booking.");
     } finally {
       setBookingBusy(null);
     }
@@ -451,6 +470,18 @@ export default function DashboardPage() {
                               className="px-3 py-2 rounded-md border border-background-300 text-xs font-semibold text-foreground-700 cursor-pointer disabled:opacity-50"
                             >
                               Decline
+                            </button>
+                          )}
+                          {booking.status === "declined" && (
+                            <button
+                              type="button"
+                              onClick={() => deleteBooking(booking)}
+                              disabled={bookingBusy === booking.id}
+                              className="inline-flex items-center gap-1.5 rounded-md border border-accent-200 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-800 transition hover:border-accent-300 hover:bg-accent-100 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                              aria-label={`Delete rejected booking from ${booking.name || "customer"}`}
+                            >
+                              <i className="ri-delete-bin-line" aria-hidden="true" />
+                              {bookingBusy === booking.id ? "Deleting…" : "Delete rejected booking"}
                             </button>
                           )}
                           {paid && booking.ownerPayoutStatus === "pending" && (

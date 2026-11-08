@@ -718,6 +718,11 @@ export async function setBookingStatus(bookingId, status) {
   return customClient.post(`/bookings/${bookingId}/status`, { status });
 }
 
+export async function deleteRejectedBooking(bookingId) {
+  if (!isLiveApi) return { id: bookingId, deleted: true };
+  return customClient.del(`/bookings/${bookingId}`);
+}
+
 export async function requestBookingCashout(bookingId) {
   if (!isLiveApi) {
     return { bookingId, ownerPayoutStatus: "requested" };
