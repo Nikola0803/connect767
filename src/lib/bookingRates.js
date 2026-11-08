@@ -65,6 +65,13 @@ export function checkoutAfterFlatRateSelection(startDate, selectedEndDate, rules
   return matchingRule ? addDays(selectedEndDate, 1) : selectedEndDate;
 }
 
+export function checkoutForFlatRateStart(startDate, rules) {
+  if (!startDate) return "";
+  const matchingRule = normalizeBookingRateRules(rules).find((rule) =>
+    ["week", "month"].includes(rule.period) && rule.startDate === startDate);
+  return matchingRule ? addDays(matchingRule.endDate, 1) : "";
+}
+
 export function datesBetween(startDate, endDate) {
   if (!startDate || !endDate || endDate <= startDate) return [];
   const total = Math.round(

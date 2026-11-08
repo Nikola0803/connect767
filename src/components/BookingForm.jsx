@@ -16,7 +16,7 @@ import {
   normalizeRentalRateUnit,
   rentalUnitsBetween,
 } from "../lib/bookingTypes";
-import { bookingPriceForSelection, checkoutAfterFlatRateSelection, normalizeBookingRateRules } from "../lib/bookingRates";
+import { bookingPriceForSelection, checkoutAfterFlatRateSelection, checkoutForFlatRateStart, normalizeBookingRateRules } from "../lib/bookingRates";
 import PaypalButton from "./PaypalButton";
 import BookingPriceCalendar from "./booking/BookingPriceCalendar";
 import Button from "./ui/Button";
@@ -293,7 +293,21 @@ export default function BookingForm({
             />
             {isRental ? <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FormField label={rateUnit === "night" ? "Check-in" : "Start date"} htmlFor="booking-check-in" required>
-                <Input id="booking-check-in" type="date" min={new Date().toISOString().slice(0, 10)} value={form.checkIn} onChange={update("checkIn")} required />
+                <Input
+                  id="booking-check-in"
+                  type="date"
+                  min={new Date().toISOString().slice(0, 10)}
+                  value={form.checkIn}
+                  onChange={(event) => {
+                    const checkIn = event.target.value;
+                    setForm((current) => ({
+                      ...current,
+                      checkIn,
+                      checkOut: checkoutForFlatRateStart(checkIn, normalizedRules),
+                    }));
+                  }}
+                  required
+                />
               </FormField>
               <FormField label={rateUnit === "night" ? "Check-out" : "End date"} htmlFor="booking-check-out" required>
                 <Input
