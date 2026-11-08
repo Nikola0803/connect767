@@ -162,6 +162,49 @@ class C767_Rest_Bookings
         $amount = 0;
         $breakdown = [];
         $period_days = $rate_unit === 'week' ? 7 : ($rate_unit === 'month' ? 30 : ($rate_unit === 'year' ? 365 : 1));
+
+        if ($period_days === 1) {
+            $daily_rules = array_values(array_filter($rules, static function ($rule) {
+                return !in_array((string) ($rule['period'] ?? 'day'), ['week', 'month'], true);
+            }));
+            $offset = 0;
+            while ($offset < $days) {
+                $date = gmdate('Y-m-d', strtotime($check_in . ' UTC +' . $offset . ' days'));
+                $flat_rule = null;
+                foreach ($rules as $rule) {
+                    $period = (string) ($rule['period'] ?? 'day');
+                    $start = (string) ($rule['startDate'] ?? '');
+                    $end = (string) ($rule['endDate'] ?? '');
+                    if (!in_array($period, ['week', 'month'], true) || $start !== $date) {
+                        continue;
+                    }
+                    $rule_days = (int) ((strtotime($end . ' UTC') - strtotime($start . ' UTC')) / DAY_IN_SECONDS) + 1;
+                    if ($rule_days > 0 && $offset + $rule_days <= $days) {
+                        $flat_rule = $rule;
+                        break;
+                    }
+                }
+                if ($flat_rule !== null) {
+                    $price = max(0, min(10000000, (int) ($flat_rule['priceCents'] ?? 0)));
+                    $rule_days = (int) ((strtotime($flat_rule['endDate'] . ' UTC') - strtotime($flat_rule['startDate'] . ' UTC')) / DAY_IN_SECONDS) + 1;
+                    $amount += $price;
+                    $breakdown[] = [
+                        'date' => $date,
+                        'endDate' => (string) $flat_rule['endDate'],
+                        'period' => (string) $flat_rule['period'],
+                        'priceCents' => $price,
+                    ];
+                    $offset += $rule_days;
+                    continue;
+                }
+                $price = self::rate_for_date($date, $base_rate, $daily_rules);
+                $amount += $price;
+                $breakdown[] = ['date' => $date, 'priceCents' => $price];
+                $offset++;
+            }
+            return [min(100000000, $amount), $breakdown];
+        }
+
         $unit_count = (int) ceil($days / $period_days);
         for ($index = 0; $index < $unit_count; $index++) {
             $offset = $index * $period_days;

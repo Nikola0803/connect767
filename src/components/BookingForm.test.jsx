@@ -170,6 +170,31 @@ describe("BookingForm", () => {
     expect(screen.getByText(/total \$525.00/i)).toBeInTheDocument();
   });
 
+  it("shows a complete nightly date range and charges a weekly special once", () => {
+    render(
+      <BookingForm
+        slug="james-local-fruits"
+        businessName="James Local Fruits"
+        bookingType="rental"
+        priceCents={20000}
+        rateRules={[{
+          id: "new-year-week",
+          label: "New Year week",
+          period: "week",
+          startDate: "2030-01-01",
+          endDate: "2030-01-07",
+          priceCents: 80000,
+        }]}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/check-in/i), { target: { value: "2030-01-01" } });
+    fireEvent.change(screen.getByLabelText(/check-out/i), { target: { value: "2030-01-08" } });
+
+    expect(screen.getByText(/7 nights · rates shown on calendar/i)).toHaveTextContent("Jan 1–8, 2030");
+    expect(screen.getByText(/total \$800\.00/i)).toBeInTheDocument();
+  });
+
   it("updates an hourly meeting price when the visitor changes duration", () => {
     render(
       <BookingForm
