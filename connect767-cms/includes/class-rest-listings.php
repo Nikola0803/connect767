@@ -69,15 +69,23 @@ class C767_REST_Listings
                 || $end < $start) {
                 continue;
             }
+            $price_cents = max(0, min(10000000, (int) ($rule['priceCents'] ?? 0)));
+            if ($price_cents <= 0) {
+                continue;
+            }
             $clean[] = [
                 'id' => sanitize_key((string) ($rule['id'] ?? ('rate-' . $index))),
                 'label' => sanitize_text_field((string) ($rule['label'] ?? 'Special rate')),
                 'period' => $period,
                 'startDate' => $start,
                 'endDate' => $end,
-                'priceCents' => max(0, min(10000000, (int) ($rule['priceCents'] ?? 0))),
+                'priceCents' => $price_cents,
             ];
         }
+        usort($clean, static function ($a, $b) {
+            $start = strcmp($a['startDate'], $b['startDate']);
+            return $start !== 0 ? $start : strcmp($a['endDate'], $b['endDate']);
+        });
         return $clean;
     }
 

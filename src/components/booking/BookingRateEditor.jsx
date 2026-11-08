@@ -29,7 +29,8 @@ export default function BookingRateEditor({ basePriceCents, rules, onChange, rat
   const today = toDateKey(new Date());
   const availablePeriods = periodOptions[billingPeriod] || periodOptions.default;
   const [isOpen, setIsOpen] = useState(() => normalized.length > 0);
-  const [draft, setDraft] = useState({ period: availablePeriods[0].value, anchor: today, seasonEnd: today, price: "" });
+  const [draft, setDraft] = useState({ period: availablePeriods[0].value, anchor: today, seasonEnd: "", price: "" });
+  const [warning, setWarning] = useState("");
 
   useEffect(() => {
     if (normalized.length > 0) setIsOpen(true);
@@ -44,8 +45,24 @@ export default function BookingRateEditor({ basePriceCents, rules, onChange, rat
   const addRule = () => {
     const price = Number(draft.price);
     const { startDate, endDate } = ruleDates(draft.period, draft.anchor, draft.seasonEnd);
-    if (!startDate || !endDate || endDate < startDate || !Number.isFinite(price) || price < 0) return;
-    onChange([
+    if (!startDate) {
+      setWarning("Choose the start date before adding this rate.");
+      return;
+    }
+    if (draft.period === "season" && !draft.seasonEnd) {
+      setWarning("Choose the season start date first, then choose its end date.");
+      return;
+    }
+    if (!endDate || endDate < startDate) {
+      setWarning("The end date must be on or after the start date.");
+      return;
+    }
+    if (!draft.price.trim() || !Number.isFinite(price) || price <= 0) {
+      setWarning("Enter a rate above $0 before adding it to the calendar.");
+      return;
+    }
+    setWarning("");
+    onChange(normalizeBookingRateRules([
       ...normalized,
       {
         id: `rate-${Date.now()}`,
@@ -55,8 +72,27 @@ export default function BookingRateEditor({ basePriceCents, rules, onChange, rat
         endDate,
         priceCents: Math.round(price * 100),
       },
-    ]);
+    ]));
     setDraft((current) => ({ ...current, price: "" }));
+  };
+
+  const changePeriod = (period) => {
+    setWarning("");
+    setDraft((current) => ({
+      ...current,
+      period,
+      anchor: period === "season" ? "" : (current.anchor || today),
+      seasonEnd: "",
+    }));
+  };
+
+  const changeAnchor = (anchor) => {
+    setWarning("");
+    setDraft((current) => ({
+      ...current,
+      anchor,
+      seasonEnd: current.seasonEnd && current.seasonEnd >= anchor ? current.seasonEnd : "",
+    }));
   };
 
   return (
@@ -80,22 +116,34 @@ export default function BookingRateEditor({ basePriceCents, rules, onChange, rat
       ) : (
         <>
           <BookingPriceCalendar basePriceCents={basePriceCents} rules={normalized} minimumDate={today} unitLabel={rateLabel.replace(/ rate$/, "")} />
+          {warning && (
+            <div role="alert" className="mt-4 flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-sm">
+              <i className="ri-error-warning-line mt-0.5 text-amber-700" />
+              <span>{warning}</span>
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-5 rounded-xl bg-background-100/70 p-4">
             <FormField label="Apply special rate to" htmlFor="special-rate-period">
-              <Select id="special-rate-period" value={draft.period} onChange={(event) => setDraft((current) => ({ ...current, period: event.target.value }))}>
+              <Select id="special-rate-period" value={draft.period} onChange={(event) => changePeriod(event.target.value)}>
                 {availablePeriods.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </Select>
             </FormField>
             <FormField label={draft.period === "month" ? "Month" : draft.period === "season" ? "Season starts" : draft.period === "week" ? "Week starts" : "Date"} htmlFor="rate-anchor">
-              <Input id="rate-anchor" type={draft.period === "month" ? "month" : "date"} min={draft.period === "month" ? today.slice(0, 7) : today} value={draft.period === "month" ? draft.anchor.slice(0, 7) : draft.anchor} onChange={(event) => setDraft((current) => ({ ...current, anchor: draft.period === "month" ? `${event.target.value}-01` : event.target.value }))} />
+              <Input id="rate-anchor" type={draft.period === "month" ? "month" : "date"} min={draft.period === "month" ? today.slice(0, 7) : today} value={draft.period === "month" ? draft.anchor.slice(0, 7) : draft.anchor} onChange={(event) => changeAnchor(draft.period === "month" ? `${event.target.value}-01` : event.target.value)} required />
             </FormField>
             {draft.period === "season" && <FormField label="Season ends" htmlFor="rate-season-end">
-              <Input id="rate-season-end" type="date" min={draft.anchor} value={draft.seasonEnd} onChange={(event) => setDraft((current) => ({ ...current, seasonEnd: event.target.value }))} />
+              <Input id="rate-season-end" type="date" min={draft.anchor || today} value={draft.seasonEnd} disabled={!draft.anchor} required onChange={(event) => {
+                setWarning("");
+                setDraft((current) => ({ ...current, seasonEnd: event.target.value }));
+              }} />
             </FormField>}
-            <FormField label="Price (USD)" htmlFor="special-rate-price">
-              <Input id="special-rate-price" type="number" min="0" step="0.01" value={draft.price} onChange={(event) => setDraft((current) => ({ ...current, price: event.target.value }))} placeholder="125.00" />
+            <FormField label="Rate (USD)" htmlFor="special-rate-price" required>
+              <Input id="special-rate-price" type="number" min="0.01" step="0.01" value={draft.price} required onChange={(event) => {
+                setWarning("");
+                setDraft((current) => ({ ...current, price: event.target.value }));
+              }} placeholder="125.00" />
             </FormField>
             <div className="flex items-end">
               <button type="button" onClick={addRule} className="w-full min-h-[46px] rounded-lg bg-primary-700 px-4 text-sm font-semibold text-white hover:bg-primary-800">

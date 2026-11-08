@@ -122,6 +122,7 @@ export default function BookingForm({
     priceUnit,
   });
   const hasPaidRates = Number(priceCents) > 0 || normalizedRules.some((rule) => rule.priceCents > 0);
+  const variablePricing = normalizedRules.length > 0;
   const hasDateSelection = isRental ? units > 0 : Boolean(form.preferredDate);
   const isPaid = hasDateSelection ? totalCents > 0 : hasPaidRates;
   const commonValid = [form.name, form.email, form.phone, form.notes].every((value) => value.trim());
@@ -229,12 +230,12 @@ export default function BookingForm({
       <div className="flex items-start justify-between gap-4 mb-1">
         <h3 className="font-heading text-lg font-medium text-foreground-950">{isRental ? `Book ${bookingTypeLabel(bookingType).toLowerCase()}` : "Book an appointment"}</h3>
         <span className="text-sm font-semibold text-primary-800 whitespace-nowrap">
-          {isPaid ? `${formatPrice(priceCents)}${isRental ? ` / ${rateUnit}` : priceUnit === "minute" ? " / minute" : priceUnit === "hour" ? " / hour" : ""}` : "Free"}
+          {isPaid ? `${variablePricing ? "From " : ""}${formatPrice(priceCents)}${isRental ? ` / ${rateUnit}` : priceUnit === "minute" ? " / minute" : priceUnit === "hour" ? " / hour" : ""}` : "Free"}
         </span>
       </div>
       <p className="text-xs text-foreground-600 font-label mb-5">
         {isRental ? (rateUnit === "night" ? "Select your check-in and check-out dates. " : "Select your start and end dates. ") : `Choose a meeting length from ${formatDuration(durationMinutes)} to ${formatDuration(Math.max(durationMinutes, maxDurationMinutes))}. `}{isPaid
-          ? isRental ? `Your total is calculated by the number of ${rateUnit}s and paid securely online.` : "Choose a preferred time, then pay securely to confirm and receive the private meeting link."
+          ? isRental ? `Your total is calculated by the number of ${rateUnit}s. Date-specific prices are shown on the calendar before payment.` : "Choose a preferred time. Any date-specific rate is shown before secure payment and confirmation."
           : isRental ? "Send a request and the owner will confirm availability." : "Choose a preferred time; the business will confirm it with you."}
       </p>
 

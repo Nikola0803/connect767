@@ -12,6 +12,7 @@ import {
 import { hydrateMatchedListings, matchListingsLocally } from "../lib/matching";
 import { normalizeBookingType, normalizeRentalRateUnit } from "../lib/bookingTypes";
 import { hasPaidBookingRate } from "../lib/payoutSettings";
+import { normalizeBookingRateRules } from "../lib/bookingRates";
 import { allIndustries } from "./industries";
 import { createListingSearchText } from "../lib/listingSearch";
 
@@ -584,7 +585,7 @@ async function saveBookingSettings(listingId, form) {
     bookingType: normalizeBookingType(form.bookingType),
     bookingPriceCents: Number.isFinite(dollars) ? Math.max(0, Math.round(dollars * 100)) : 0,
     bookingRentalRateUnit: normalizeRentalRateUnit(form.bookingRentalRateUnit, form.bookingType),
-    bookingRateRules: Array.isArray(form.bookingRateRules) ? form.bookingRateRules : [],
+    bookingRateRules: normalizeBookingRateRules(form.bookingRateRules),
     bookingDurationMinutes: Number(form.bookingDurationMinutes) || 30,
     bookingPriceUnit: form.bookingPriceUnit || "appointment",
     bookingMaxDurationMinutes: Number(form.bookingMaxDurationMinutes) || 120,

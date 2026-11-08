@@ -47,3 +47,30 @@ export function inventoryRowsToVariants(rows = []) {
     };
   });
 }
+
+export function validateInventoryForm(form = {}) {
+  if (form.productType === "simple") {
+    if (form.trackStock && String(form.stockQuantity ?? "").trim() === "") {
+      return "Enter the stock quantity before saving this product.";
+    }
+    if (form.trackStock && Number(form.stockQuantity) < 0) {
+      return "Stock quantity cannot be below zero.";
+    }
+    return "";
+  }
+
+  if (!Array.isArray(form.variants) || form.variants.length === 0) {
+    return "Add at least one size or color variation before saving this variable product.";
+  }
+  const invalidIndex = form.variants.findIndex((row) => {
+    const hasOption = String(row.size || "").trim() || String(row.color || "").trim();
+    const hasSku = String(row.sku || "").trim();
+    const price = Number(row.priceDollars);
+    const stockValue = String(row.stockQuantity ?? "").trim();
+    return !hasOption || !hasSku || !Number.isFinite(price) || price <= 0
+      || stockValue === "" || !Number.isFinite(Number(stockValue)) || Number(stockValue) < 0;
+  });
+  return invalidIndex >= 0
+    ? `Complete the size or color, SKU, price, and stock for variation ${invalidIndex + 1}.`
+    : "";
+}

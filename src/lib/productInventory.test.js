@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { inferProductType, inventoryRowsToVariants, variantsToInventoryRows } from "./productInventory";
+import { inferProductType, inventoryRowsToVariants, validateInventoryForm, variantsToInventoryRows } from "./productInventory";
 
 describe("product inventory", () => {
   it("infers older variable products from their saved options", () => {
@@ -27,5 +27,21 @@ describe("product inventory", () => {
       stockQuantity: 8,
       lowStockThreshold: 2,
     });
+  });
+
+  it("requires stock for tracked simple items", () => {
+    expect(validateInventoryForm({ productType: "simple", trackStock: true, stockQuantity: "" }))
+      .toMatch(/stock quantity/i);
+  });
+
+  it("requires complete variable inventory rows", () => {
+    expect(validateInventoryForm({
+      productType: "variable",
+      variants: [{ size: "Small", color: "Green", sku: "", priceDollars: "25", stockQuantity: "5" }],
+    })).toMatch(/variation 1/i);
+    expect(validateInventoryForm({
+      productType: "variable",
+      variants: [{ size: "Small", color: "Green", sku: "TEE-S-GRN", priceDollars: "25", stockQuantity: "5" }],
+    })).toBe("");
   });
 });

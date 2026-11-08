@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import BookingRateEditor from "./BookingRateEditor";
 
 describe("BookingRateEditor", () => {
@@ -62,5 +62,21 @@ describe("BookingRateEditor", () => {
 
     expect(screen.getByLabelText(/apply special rate to/i)).toBeInTheDocument();
     expect(screen.getByText(/holiday rate/i)).toBeInTheDocument();
+  });
+
+  it("warns when a required rate is missing", () => {
+    render(<BookingRateEditor basePriceCents={20000} rules={[]} onChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /add special pricing/i }));
+    fireEvent.click(screen.getByRole("button", { name: /add special rate/i }));
+    expect(screen.getByRole("alert")).toHaveTextContent(/enter a rate above \$0/i);
+  });
+
+  it("requires the seasonal start before enabling its end date", () => {
+    render(<BookingRateEditor basePriceCents={20000} rules={[]} onChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /add special pricing/i }));
+    fireEvent.change(screen.getByLabelText(/apply special rate to/i), { target: { value: "season" } });
+    expect(screen.getByLabelText(/season ends/i)).toBeDisabled();
+    fireEvent.change(screen.getByLabelText(/season starts/i), { target: { value: "2030-06-01" } });
+    expect(screen.getByLabelText(/season ends/i)).toBeEnabled();
   });
 });
