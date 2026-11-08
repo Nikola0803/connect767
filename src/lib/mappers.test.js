@@ -340,6 +340,40 @@ describe("mapListingCpt", () => {
     expect(mapped).not.toHaveProperty("bookingMeetingUrl");
   });
 
+  it("recovers public seasonal booking fields when ACF omits newer fields", () => {
+    const mapped = mapListingCpt({
+      id: 1593,
+      slug: "jmwa",
+      title: "James Local Fruits",
+      booking_rate_unit: "night",
+      booking_rate_rules: [
+        {
+          id: "holiday-season",
+          label: "Holiday season",
+          period: "season",
+          startDate: "2026-12-01",
+          endDate: "2027-01-31",
+          priceCents: 30000,
+        },
+      ],
+      acf: {
+        booking_enabled: true,
+        booking_type: "long-term-rental-housing",
+        booking_price_cents: 20000,
+      },
+    });
+
+    expect(mapped.bookingRentalRateUnit).toBe("night");
+    expect(mapped.bookingRateRules).toEqual([
+      expect.objectContaining({
+        period: "season",
+        startDate: "2026-12-01",
+        endDate: "2027-01-31",
+        priceCents: 30000,
+      }),
+    ]);
+  });
+
   it("maps the saved storefront choice back into the listing editor model", () => {
     const enabled = mapListingCpt({
       id: 40,

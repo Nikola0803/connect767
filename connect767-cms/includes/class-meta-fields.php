@@ -28,6 +28,11 @@ class C767_Meta_Fields
         if (!function_exists('get_fields')) {
             add_action('rest_api_init', [__CLASS__, 'register_synthetic_acf_fields']);
         }
+        // Always expose the calendar fields at the response root as well.
+        // This keeps public booking prices working when ACF is installed but
+        // its field group has not yet been updated with newer Connect767
+        // fields. The React mapper merges these registered values with ACF.
+        add_action('rest_api_init', [__CLASS__, 'register_public_booking_fields']);
 
         add_action('add_meta_boxes', [__CLASS__, 'add_meta_boxes']);
         add_action('save_post_listing', [__CLASS__, 'save_listing_meta']);
@@ -380,6 +385,23 @@ class C767_Meta_Fields
         register_rest_field('listing_category', 'acf', [
             'get_callback' => function ($term) {
                 return ['icon' => get_term_meta($term['id'], 'c767_icon', true) ?: ''];
+            },
+        ]);
+    }
+
+    public static function register_public_booking_fields()
+    {
+        register_rest_field('listing', 'booking_rate_unit', [
+            'get_callback' => function ($post) {
+                return (string) get_post_meta($post['id'], 'booking_rate_unit', true);
+            },
+        ]);
+
+        register_rest_field('listing', 'booking_rate_rules', [
+            'get_callback' => function ($post) {
+                $stored = get_post_meta($post['id'], 'booking_rate_rules', true);
+                $decoded = is_array($stored) ? $stored : json_decode((string) $stored, true);
+                return is_array($decoded) ? $decoded : [];
             },
         ]);
     }
