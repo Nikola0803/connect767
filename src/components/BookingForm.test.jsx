@@ -203,8 +203,9 @@ describe("BookingForm", () => {
     );
 
     fireEvent.change(screen.getByLabelText(/check-in/i), { target: { value: "2030-01-01" } });
-    fireEvent.change(screen.getByLabelText(/check-out/i), { target: { value: "2030-01-08" } });
+    fireEvent.change(screen.getByLabelText(/check-out/i), { target: { value: "2030-01-07" } });
 
+    expect(screen.getByLabelText(/check-out/i)).toHaveValue("2030-01-08");
     expect(screen.getByText(/7 nights · rates shown on calendar/i)).toHaveTextContent("Jan 1–8, 2030");
     expect(screen.getByText(/total \$800\.00/i)).toBeInTheDocument();
   });
@@ -231,7 +232,7 @@ describe("BookingForm", () => {
     fireEvent.change(screen.getByLabelText(/^email/i), { target: { value: "dale@example.com" } });
     fireEvent.change(screen.getByLabelText(/^phone/i), { target: { value: "+17675550100" } });
     fireEvent.change(screen.getByLabelText(/check-in/i), { target: { value: "2030-01-01" } });
-    fireEvent.change(screen.getByLabelText(/check-out/i), { target: { value: "2030-01-08" } });
+    fireEvent.change(screen.getByLabelText(/check-out/i), { target: { value: "2030-01-07" } });
     fireEvent.change(screen.getByLabelText(/notes & preferences/i), { target: { value: "Weekly stay" } });
     fireEvent.click(screen.getByRole("checkbox", { name: /paid booking terms/i }));
     fireEvent.click(screen.getByRole("button", { name: /continue to payment · \$800\.00/i }));

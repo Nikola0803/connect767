@@ -56,6 +56,15 @@ export function bookingRateForDate(date, basePriceCents, rules) {
     ?? Math.max(0, Number(basePriceCents) || 0);
 }
 
+export function checkoutAfterFlatRateSelection(startDate, selectedEndDate, rules) {
+  if (!startDate || !selectedEndDate) return selectedEndDate || "";
+  const matchingRule = normalizeBookingRateRules(rules).find((rule) =>
+    ["week", "month"].includes(rule.period)
+      && rule.startDate === startDate
+      && rule.endDate === selectedEndDate);
+  return matchingRule ? addDays(selectedEndDate, 1) : selectedEndDate;
+}
+
 export function datesBetween(startDate, endDate) {
   if (!startDate || !endDate || endDate <= startDate) return [];
   const total = Math.round(
