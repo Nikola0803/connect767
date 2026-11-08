@@ -82,6 +82,27 @@ class C767_Notifications
         return $email && is_email($email) ? ['Reply-To: ' . $email] : [];
     }
 
+    /** Render transactional booking messages as HTML so every URL is an explicit clickable link. */
+    private static function booking_email_html($body)
+    {
+        $linked_body = make_clickable(esc_html((string) $body));
+        $favicon = sprintf(
+            '<img src="%s" alt="Connect767" width="36" height="36" style="display:block;width:36px;height:36px;object-fit:contain;border:0;" />',
+            esc_url(self::frontend_url('/connect767-favicon.png'))
+        );
+        $linked_body = str_replace('__C767_FAVICON__', $favicon, $linked_body);
+
+        return '<div style="font-family:Arial,sans-serif;font-size:16px;line-height:1.6;color:#172019;">'
+            . nl2br($linked_body)
+            . '</div>';
+    }
+
+    /** Preserve optional Reply-To headers while sending a standards-compliant HTML email. */
+    private static function booking_email_headers($headers = [])
+    {
+        return array_merge((array) $headers, ['Content-Type: text/html; charset=UTF-8']);
+    }
+
     private static function directory_mail_from()
     {
         $email = sanitize_email((string) get_option('c767_directory_mail_from', 'no-reply@connect767.com'));
@@ -371,6 +392,7 @@ class C767_Notifications
             return;
         }
         $owner = get_userdata($listing->post_author);
+        $listing_url = self::frontend_url('/listings/' . $listing->post_name);
 
         $name = get_post_meta($booking_id, 'name', true);
         $email = get_post_meta($booking_id, 'email', true);
@@ -393,7 +415,7 @@ class C767_Notifications
         if ($owner) {
             $subject = sprintf('New booking request — %s', $listing->post_title);
             $body = sprintf(
-                "Hi %s,\n\n%s just requested a %s for \"%s\":\n\n%s\nEmail: %s\nPhone: %s\nNotes: %s\nPayment: %s\n\nTrack and manage this booking from your dashboard:\n%s",
+                "Hi %s,\n\n%s just requested a %s for \"%s\":\n\n%s\nEmail: %s\nPhone: %s\nNotes: %s\nPayment: %s\n\nView the listing:\n%s\n\nTrack and manage this booking from your dashboard:\n%s",
                 $owner->display_name ?: $owner->user_login,
                 $name ?: 'Someone',
                 $is_rental ? 'rental' : 'booking',
@@ -403,9 +425,15 @@ class C767_Notifications
                 $phone ?: 'not provided',
                 $notes ?: '—',
                 $amount_cents > 0 ? 'Awaiting online payment of $' . number_format($amount_cents / 100, 2) : 'No payment required',
+                $listing_url,
                 self::frontend_url('/dashboard')
             );
-            wp_mail($owner->user_email, $subject, $body, self::reply_to($email));
+            wp_mail(
+                $owner->user_email,
+                $subject,
+                self::booking_email_html($body),
+                self::booking_email_headers(self::reply_to($email))
+            );
         }
 
         // Customer: confirmation their request went through.
@@ -413,21 +441,21 @@ class C767_Notifications
             $subject = sprintf('Your booking request to %s', $listing->post_title);
             if ($amount_cents > 0 && $is_rental) {
                 $body = sprintf(
-                    "Hi %s,\n\nYour rental request to \"%s\" was created for %d %s%s. Complete payment on the booking screen to confirm it.\n\n— %s",
-                    $name ?: 'there', $listing->post_title, $units, $rate_unit, $units === 1 ? '' : 's', self::site_name()
+                    "Hi %s,\n\nYour rental request to \"%s\" was created for %d %s%s. Complete payment on the booking screen to confirm it.\n\nView the listing:\n%s\n\n__C767_FAVICON__",
+                    $name ?: 'there', $listing->post_title, $units, $rate_unit, $units === 1 ? '' : 's', $listing_url
                 );
             } elseif ($amount_cents > 0) {
                 $body = sprintf(
-                    "Hi %s,\n\nYour appointment request to \"%s\" was created. Complete payment on the booking screen to confirm it and receive the meeting link.\n\n— %s",
-                    $name ?: 'there', $listing->post_title, self::site_name()
+                    "Hi %s,\n\nYour appointment request to \"%s\" was created. Complete payment on the booking screen to confirm it and receive the meeting link.\n\nView the listing:\n%s\n\n__C767_FAVICON__",
+                    $name ?: 'there', $listing->post_title, $listing_url
                 );
             } else {
                 $body = sprintf(
-                    "Hi %s,\n\nYour booking request to \"%s\" was sent. They'll reach out to you directly at this email or the phone number you provided to confirm.\n\n— %s",
-                    $name ?: 'there', $listing->post_title, self::site_name()
+                    "Hi %s,\n\nYour booking request to \"%s\" was sent. They'll reach out to you directly at this email or the phone number you provided to confirm.\n\nView the listing:\n%s\n\n__C767_FAVICON__",
+                    $name ?: 'there', $listing->post_title, $listing_url
                 );
             }
-            wp_mail($email, $subject, $body);
+            wp_mail($email, $subject, self::booking_email_html($body), self::booking_email_headers());
         }
     }
 
@@ -438,6 +466,7 @@ class C767_Notifications
         if (!$listing) {
             return;
         }
+        $listing_url = self::frontend_url('/listings/' . $listing->post_name);
 
         $name = get_post_meta($booking_id, 'name', true);
         $email = get_post_meta($booking_id, 'email', true);
@@ -457,25 +486,25 @@ class C767_Notifications
             $subject = sprintf('Booking confirmed — %s', $listing->post_title);
             $body = $is_rental
                 ? sprintf(
-                    "Hi %s,\n\nYour rental with \"%s\" is confirmed.\n\nStart: %s\nEnd: %s\nRental: %d %s%s\n\nThe owner will contact you with the remaining details.\n\n— %s",
-                    $name ?: 'there', $listing->post_title, $check_in, $check_out, $units, $rate_unit, $units === 1 ? '' : 's', self::site_name()
+                    "Hi %s,\n\nYour rental with \"%s\" is confirmed.\n\nStart: %s\nEnd: %s\nRental: %d %s%s\n\nView the listing:\n%s\n\nThe owner will contact you with the remaining details.\n\n__C767_FAVICON__",
+                    $name ?: 'there', $listing->post_title, $check_in, $check_out, $units, $rate_unit, $units === 1 ? '' : 's', $listing_url
                 )
                 : sprintf(
-                    "Hi %s,\n\nYour booking with \"%s\" is confirmed.\n\nDate: %s\nTime: %s\nDuration: %d minutes\nMeeting link: %s\n\nKeep this email private; the meeting link is intended for you.\n\n— %s",
+                    "Hi %s,\n\nYour booking with \"%s\" is confirmed.\n\nDate: %s\nTime: %s\nDuration: %d minutes\nMeeting link: %s\n\nView the listing:\n%s\n\nKeep this email private; the meeting link is intended for you.\n\n__C767_FAVICON__",
                     $name ?: 'there', $listing->post_title, $date ?: 'To be arranged', $time ?: 'To be arranged', $duration,
-                    $meeting_url ?: 'The business will send this separately.', self::site_name()
+                    $meeting_url ?: 'The business will send this separately.', $listing_url
                 );
-            wp_mail($email, $subject, $body);
+            wp_mail($email, $subject, self::booking_email_html($body), self::booking_email_headers());
         }
 
         if ($owner) {
             wp_mail(
                 $owner->user_email,
                 sprintf('Booking confirmed — %s', $listing->post_title),
-                $is_rental
-                    ? sprintf("%s's rental is confirmed from %s to %s. Manage it from your dashboard:\n%s", $name ?: 'A customer', $check_in, $check_out, self::frontend_url('/dashboard'))
-                    : sprintf("%s's booking is confirmed for %s at %s. Manage it from your dashboard:\n%s", $name ?: 'A customer', $date ?: 'a date to be arranged', $time ?: 'a time to be arranged', self::frontend_url('/dashboard')),
-                self::reply_to($email)
+                self::booking_email_html($is_rental
+                    ? sprintf("%s's rental is confirmed from %s to %s.\n\nView the listing:\n%s\n\nManage it from your dashboard:\n%s", $name ?: 'A customer', $check_in, $check_out, $listing_url, self::frontend_url('/dashboard'))
+                    : sprintf("%s's booking is confirmed for %s at %s.\n\nView the listing:\n%s\n\nManage it from your dashboard:\n%s", $name ?: 'A customer', $date ?: 'a date to be arranged', $time ?: 'a time to be arranged', $listing_url, self::frontend_url('/dashboard'))),
+                self::booking_email_headers(self::reply_to($email))
             );
         }
     }
