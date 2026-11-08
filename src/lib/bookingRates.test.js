@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bookingPriceForSelection, bookingRateForDate, checkoutAfterFlatRateSelection, normalizeBookingRateRules, ruleDates } from "./bookingRates";
+import { bookingPriceForSelection, bookingRateForDate, checkoutAfterFlatRateSelection, checkoutForFlatRateStart, normalizeBookingRateRules, ruleDates } from "./bookingRates";
 
 describe("booking rate calendar", () => {
   const rules = [
@@ -68,6 +68,8 @@ describe("booking rate calendar", () => {
     }];
     expect(checkoutAfterFlatRateSelection("2030-01-01", "2030-01-07", weeklyRule)).toBe("2030-01-08");
     expect(checkoutAfterFlatRateSelection("2030-01-02", "2030-01-07", weeklyRule)).toBe("2030-01-07");
+    expect(checkoutForFlatRateStart("2030-01-01", weeklyRule)).toBe("2030-01-08");
+    expect(checkoutForFlatRateStart("2030-01-02", weeklyRule)).toBe("");
   });
 
   it("uses nightly pricing when a stay does not cover the complete special week", () => {

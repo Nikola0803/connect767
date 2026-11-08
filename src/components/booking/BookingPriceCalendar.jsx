@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { bookingRateForDate, bookingRateRuleForDate, checkoutAfterFlatRateSelection, toDateKey } from "../../lib/bookingRates";
+import { bookingRateForDate, bookingRateRuleForDate, checkoutAfterFlatRateSelection, checkoutForFlatRateStart, toDateKey } from "../../lib/bookingRates";
 
 const money = (cents) => `$${(Number(cents || 0) / 100).toFixed(Number(cents) % 100 ? 2 : 0)}`;
 const monthTitle = (date) => date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -36,7 +36,7 @@ export default function BookingPriceCalendar({
       onSelect?.(date, "");
       return;
     }
-    if (!selectedStart || selectedEnd || date <= selectedStart) onSelect?.(date, "");
+    if (!selectedStart || selectedEnd || date <= selectedStart) onSelect?.(date, checkoutForFlatRateStart(date, rules));
     else onSelect?.(selectedStart, checkoutAfterFlatRateSelection(selectedStart, date, rules));
   };
 
@@ -74,7 +74,7 @@ export default function BookingPriceCalendar({
               : "";
           const flatRateIncluded = ["week", "month"].includes(matchingRule?.period)
             && date !== matchingRule.startDate;
-          const rateText = flatRateIncluded ? "Included" : `${money(displayedRate)}${rateSuffix}`;
+          const rateText = flatRateIncluded ? "Incl." : `${money(displayedRate)}${rateSuffix}`;
           return (
             <button
               key={date}
