@@ -29,6 +29,7 @@ import PaypalButton from "../components/PaypalButton";
 import { FormField, Input, Select, Textarea } from "../components/ui/FormField";
 import PositionPicker from "../components/ui/PositionPicker";
 import PayoutSettingsFields from "../components/PayoutSettingsFields";
+import BookingRateEditor from "../components/booking/BookingRateEditor";
 import { hasCompletePayoutDetails } from "../lib/payoutSettings";
 import { Spinner, ErrorState } from "../components/ui/States";
 import { isLiveApi } from "../lib/config";
@@ -114,7 +115,10 @@ const initialForm = {
   hideContactInfo: false,
   bookingType: "appointment",
   bookingPrice: "0",
+  bookingRateRules: [],
   bookingDurationMinutes: "30",
+  bookingPriceUnit: "appointment",
+  bookingMaxDurationMinutes: "120",
   bookingMeetingUrl: "",
   bookingPayoutMethod: "",
   bookingPayoutAccountName: "",
@@ -139,7 +143,7 @@ function buildPreviewData(form) {
   const industry = findIndustry(form.category);
   const contactHidden = Boolean(
     form.bookingEnabled &&
-      Number(form.bookingPrice) > 0
+      (Number(form.bookingPrice) > 0 || form.bookingRateRules.some((rule) => Number(rule.priceCents) > 0))
   );
   const hasContactInfo = Boolean(
     form.phone ||
@@ -227,7 +231,10 @@ function buildPreviewData(form) {
     bookingEnabled: form.bookingEnabled,
     bookingType: form.bookingType,
     bookingPriceCents: Math.max(0, Math.round((Number(form.bookingPrice) || 0) * 100)),
+    bookingRateRules: form.bookingRateRules,
     bookingDurationMinutes: Number(form.bookingDurationMinutes) || 30,
+    bookingPriceUnit: form.bookingPriceUnit || "appointment",
+    bookingMaxDurationMinutes: Number(form.bookingMaxDurationMinutes) || 120,
   };
 }
 
@@ -350,7 +357,10 @@ export default function AddListingPage() {
           hideContactInfo: Boolean(data.contactHidden),
           bookingType: normalizeBookingType(data.bookingType),
           bookingPrice: ((data.bookingPriceCents || 0) / 100).toFixed(2),
+          bookingRateRules: data.bookingRateRules || [],
           bookingDurationMinutes: String(data.bookingDurationMinutes || 30),
+          bookingPriceUnit: data.bookingPriceUnit || "appointment",
+          bookingMaxDurationMinutes: String(data.bookingMaxDurationMinutes || 120),
           photoPreview: data.coverPhoto || "",
           coverPosition: data.coverPosition || "center",
           coverZoom: data.coverZoom || 1,
@@ -381,7 +391,10 @@ export default function AddListingPage() {
               whatsapp: settings.whatsapp ?? f.whatsapp,
               bookingType: normalizeBookingType(settings.bookingType),
               bookingPrice: ((settings.bookingPriceCents || 0) / 100).toFixed(2),
+              bookingRateRules: settings.bookingRateRules || [],
               bookingDurationMinutes: String(settings.bookingDurationMinutes || 30),
+              bookingPriceUnit: settings.bookingPriceUnit || "appointment",
+              bookingMaxDurationMinutes: String(settings.bookingMaxDurationMinutes || 120),
               bookingMeetingUrl: settings.bookingMeetingUrl || "",
               bookingPayoutMethod: settings.bookingPayoutMethod || "",
               bookingPayoutAccountName: settings.bookingPayoutAccountName || "",
@@ -946,7 +959,11 @@ export default function AddListingPage() {
                     <FormField
                       label={isRentalBookingType(form.bookingType)
                         ? `${bookingRateLabel(form.bookingType)} rate (USD)`
-                        : "Booking price (USD)"}
+                        : form.bookingPriceUnit === "minute"
+                          ? "Price per minute (USD)"
+                          : form.bookingPriceUnit === "hour"
+                            ? "Price per hour (USD)"
+                            : "Fixed meeting price (USD)"}
                       htmlFor="bookingPrice"
                       hint={isRentalBookingType(form.bookingType)
                         ? `The total is calculated from the number of ${bookingRateUnit(form.bookingType)}s`
@@ -968,21 +985,51 @@ export default function AddListingPage() {
                         placeholder="0.00"
                       />
                     </FormField>
-                    {!isRentalBookingType(form.bookingType) && <FormField label="Meeting duration" htmlFor="bookingDurationMinutes">
-                      <Select
-                        id="bookingDurationMinutes"
-                        value={form.bookingDurationMinutes}
-                        onChange={update("bookingDurationMinutes")}
-                      >
-                        <option value="15">15 minutes</option>
-                        <option value="30">30 minutes</option>
-                        <option value="45">45 minutes</option>
-                        <option value="60">60 minutes</option>
-                        <option value="90">90 minutes</option>
-                        <option value="120">2 hours</option>
-                      </Select>
-                    </FormField>}
-                    {Number(form.bookingPrice) > 0 && (
+                    {!isRentalBookingType(form.bookingType) && <>
+                      <FormField label="Meeting pricing" htmlFor="bookingPriceUnit" hint="Charge one fixed price, by the minute, or by the hour.">
+                        <Select id="bookingPriceUnit" value={form.bookingPriceUnit} onChange={update("bookingPriceUnit")}>
+                          <option value="appointment">Fixed price per meeting</option>
+                          <option value="minute">Price per minute</option>
+                          <option value="hour">Price per hour</option>
+                        </Select>
+                      </FormField>
+                      <FormField label="Minimum meeting length" htmlFor="bookingDurationMinutes">
+                        <Select id="bookingDurationMinutes" value={form.bookingDurationMinutes} onChange={(event) => setForm((current) => ({
+                          ...current,
+                          bookingDurationMinutes: event.target.value,
+                          bookingMaxDurationMinutes: String(Math.max(Number(event.target.value), Number(current.bookingMaxDurationMinutes) || 0)),
+                        }))}>
+                          <option value="15">15 minutes</option>
+                          <option value="30">30 minutes</option>
+                          <option value="45">45 minutes</option>
+                          <option value="60">1 hour</option>
+                        </Select>
+                      </FormField>
+                      <FormField label="Maximum meeting length" htmlFor="bookingMaxDurationMinutes" hint="Visitors choose in 15-minute increments.">
+                        <Select id="bookingMaxDurationMinutes" value={form.bookingMaxDurationMinutes} onChange={update("bookingMaxDurationMinutes")}>
+                          <option value="30">30 minutes</option>
+                          <option value="60">1 hour</option>
+                          <option value="90">1 hour 30 minutes</option>
+                          <option value="120">2 hours</option>
+                          <option value="180">3 hours</option>
+                          <option value="240">4 hours</option>
+                          <option value="480">8 hours</option>
+                        </Select>
+                      </FormField>
+                    </>}
+                    <BookingRateEditor
+                      basePriceCents={Math.max(0, Math.round((Number(form.bookingPrice) || 0) * 100))}
+                      rules={form.bookingRateRules}
+                      rateLabel={isRentalBookingType(form.bookingType)
+                        ? `${bookingRateUnit(form.bookingType)}ly rate`
+                        : form.bookingPriceUnit === "minute"
+                          ? "per-minute rate"
+                          : form.bookingPriceUnit === "hour"
+                            ? "hourly rate"
+                            : "appointment rate"}
+                      onChange={(bookingRateRules) => setForm((current) => ({ ...current, bookingRateRules }))}
+                    />
+                    {(Number(form.bookingPrice) > 0 || form.bookingRateRules.some((rule) => Number(rule.priceCents) > 0)) && (
                       <div
                         className="sm:col-span-2 flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4"
                         role="note"

@@ -2,6 +2,7 @@ import { createListingSearchText } from "./listingSearch";
 import { currentYearsExperience } from "./experience";
 import { findCategory, findIndustry } from "../data/industries";
 import { normalizeBookingType } from "./bookingTypes";
+import { normalizeBookingRateRules } from "./bookingRates";
 import { sortVariationOptions } from "./productVariations";
 
 /**
@@ -448,7 +449,10 @@ export function mapListingCpt(wp) {
     contactHidden,
     bookingType: normalizeBookingType(acf.booking_type),
     bookingPriceCents: Math.max(0, Number(acf.booking_price_cents) || 0),
+    bookingRateRules: normalizeBookingRateRules(acf.booking_rate_rules),
     bookingDurationMinutes: Math.max(15, Number(acf.booking_duration_minutes) || 30),
+    bookingPriceUnit: ["appointment", "minute", "hour"].includes(acf.booking_price_unit) ? acf.booking_price_unit : "appointment",
+    bookingMaxDurationMinutes: Math.max(15, Number(acf.booking_max_duration_minutes) || 120),
     rating: acf.rating || "0",
     reviews: `(${acf.review_count ?? 0})`,
     // The cover photo IS the WordPress featured image — class-rest-listings.php

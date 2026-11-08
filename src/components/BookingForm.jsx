@@ -15,12 +15,21 @@ import {
   isRentalBookingType,
   rentalUnitsBetween,
 } from "../lib/bookingTypes";
+import { bookingPriceForSelection, normalizeBookingRateRules } from "../lib/bookingRates";
 import PaypalButton from "./PaypalButton";
+import BookingPriceCalendar from "./booking/BookingPriceCalendar";
 import Button from "./ui/Button";
-import { FormField, Input, Textarea } from "./ui/FormField";
+import { FormField, Input, Select, Textarea } from "./ui/FormField";
 
 const formatPrice = (cents) => `$${(Number(cents || 0) / 100).toFixed(2)}`;
 const pluralize = (unit, count) => `${unit}${count === 1 ? "" : "s"}`;
+const formatDuration = (minutes) => {
+  const value = Number(minutes) || 0;
+  if (value < 60) return `${value} minutes`;
+  const hours = Math.floor(value / 60);
+  const remainder = value % 60;
+  return remainder ? `${hours} hr ${remainder} min` : `${hours} ${hours === 1 ? "hour" : "hours"}`;
+};
 
 function BookingCardPayment({ booking, onSuccess }) {
   const stripe = useStripe();
@@ -66,7 +75,10 @@ export default function BookingForm({
   businessName,
   bookingType = "appointment",
   priceCents = 0,
+  rateRules = [],
   durationMinutes = 30,
+  priceUnit = "appointment",
+  maxDurationMinutes = 120,
 }) {
   const [form, setForm] = useState({
     name: "",
@@ -77,6 +89,7 @@ export default function BookingForm({
     checkIn: "",
     checkOut: "",
     notes: "",
+    durationMinutes: String(durationMinutes),
   });
   const [step, setStep] = useState("details");
   const [booking, setBooking] = useState(null);
@@ -92,8 +105,21 @@ export default function BookingForm({
   const rateUnit = bookingRateUnit(bookingType);
   const units = rentalUnitsBetween(form.checkIn, form.checkOut, rateUnit);
   const unitLabel = pluralize(rateUnit, units);
-  const totalCents = isRental ? Number(priceCents) * units : Number(priceCents);
-  const isPaid = Number(priceCents) > 0;
+  const normalizedRules = normalizeBookingRateRules(rateRules);
+  const totalCents = bookingPriceForSelection({
+    bookingType: isRental ? bookingType : "appointment",
+    basePriceCents: priceCents,
+    rules: normalizedRules,
+    preferredDate: form.preferredDate,
+    checkIn: form.checkIn,
+    checkOut: form.checkOut,
+    rateUnit,
+    durationMinutes: form.durationMinutes,
+    priceUnit,
+  });
+  const hasPaidRates = Number(priceCents) > 0 || normalizedRules.some((rule) => rule.priceCents > 0);
+  const hasDateSelection = isRental ? units > 0 : Boolean(form.preferredDate);
+  const isPaid = hasDateSelection ? totalCents > 0 : hasPaidRates;
   const commonValid = [form.name, form.email, form.phone, form.notes].every((value) => value.trim());
   const valid = commonValid && (!isPaid || termsAccepted) && (isRental
     ? Boolean(form.checkIn && form.checkOut && units > 0)
@@ -121,7 +147,7 @@ export default function BookingForm({
           throw new Error("Online payment is temporarily unavailable. Please contact the business.");
         }
       }
-      const result = await submitBooking(slug, { ...form, bookingType, termsAccepted });
+      const result = await submitBooking(slug, { ...form, durationMinutes: Number(form.durationMinutes), bookingType, termsAccepted });
       setBooking(result);
       if (result.paymentRequired) {
         setPaymentConfig(config);
@@ -169,7 +195,7 @@ export default function BookingForm({
           {confirmed
             ? isRental
               ? `Your ${units}-${rateUnit} ${bookingTypeLabel(bookingType).toLowerCase()} booking with ${businessName} is confirmed.`
-              : `Your ${durationMinutes}-minute appointment with ${businessName} is confirmed.`
+              : `Your ${formatDuration(form.durationMinutes)} appointment with ${businessName} is confirmed.`
             : isRental
               ? `${businessName} will review your rental dates and confirm with you directly.`
               : `${businessName} will review your preferred time and confirm with you directly.`}
@@ -199,11 +225,11 @@ export default function BookingForm({
       <div className="flex items-start justify-between gap-4 mb-1">
         <h3 className="font-heading text-lg font-medium text-foreground-950">{isRental ? `Book ${bookingTypeLabel(bookingType).toLowerCase()}` : "Book an appointment"}</h3>
         <span className="text-sm font-semibold text-primary-800 whitespace-nowrap">
-          {isPaid ? `${formatPrice(priceCents)}${isRental ? ` / ${rateUnit}` : ""}` : "Free"}
+          {isPaid ? `${formatPrice(priceCents)}${isRental ? ` / ${rateUnit}` : priceUnit === "minute" ? " / minute" : priceUnit === "hour" ? " / hour" : ""}` : "Free"}
         </span>
       </div>
       <p className="text-xs text-foreground-600 font-label mb-5">
-        {isRental ? (rateUnit === "night" ? "Select your check-in and check-out dates. " : "Select your start and end dates. ") : `${durationMinutes}-minute appointment. `}{isPaid
+        {isRental ? (rateUnit === "night" ? "Select your check-in and check-out dates. " : "Select your start and end dates. ") : `Choose a meeting length from ${formatDuration(durationMinutes)} to ${formatDuration(Math.max(durationMinutes, maxDurationMinutes))}. `}{isPaid
           ? isRental ? `Your total is calculated by the number of ${rateUnit}s and paid securely online.` : "Choose a preferred time, then pay securely to confirm and receive the private meeting link."
           : isRental ? "Send a request and the owner will confirm availability." : "Choose a preferred time; the business will confirm it with you."}
       </p>
@@ -222,6 +248,17 @@ export default function BookingForm({
                 <Input id="booking-phone" type="tel" value={form.phone} onChange={update("phone")} placeholder="+1 (767) 555-0100" required />
               </FormField>
             </div>
+            <BookingPriceCalendar
+              basePriceCents={priceCents}
+              rules={normalizedRules}
+              mode={isRental ? "range" : "single"}
+              selectedStart={isRental ? form.checkIn : form.preferredDate}
+              selectedEnd={isRental ? form.checkOut : ""}
+              onSelect={(start, end) => setForm((current) => isRental
+                ? { ...current, checkIn: start, checkOut: end }
+                : { ...current, preferredDate: start })}
+              unitLabel={isRental ? rateUnit : priceUnit === "minute" ? "minute" : priceUnit === "hour" ? "hour" : "meeting"}
+            />
             {isRental ? <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FormField label={rateUnit === "night" ? "Check-in" : "Start date"} htmlFor="booking-check-in" required>
                 <Input id="booking-check-in" type="date" min={new Date().toISOString().slice(0, 10)} value={form.checkIn} onChange={update("checkIn")} required />
@@ -229,18 +266,32 @@ export default function BookingForm({
               <FormField label={rateUnit === "night" ? "Check-out" : "End date"} htmlFor="booking-check-out" required>
                 <Input id="booking-check-out" type="date" min={form.checkIn || new Date().toISOString().slice(0, 10)} value={form.checkOut} onChange={update("checkOut")} required />
               </FormField>
-            </div> : <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            </div> : <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <FormField label="Preferred date" htmlFor="booking-date" required>
                 <Input id="booking-date" type="date" value={form.preferredDate} onChange={update("preferredDate")} required />
               </FormField>
               <FormField label="Preferred time" htmlFor="booking-time" required>
                 <Input id="booking-time" type="time" value={form.preferredTime} onChange={update("preferredTime")} required />
               </FormField>
+              <FormField label="Meeting length" htmlFor="booking-duration" required>
+                <Select id="booking-duration" value={form.durationMinutes} onChange={update("durationMinutes")} required>
+                  {Array.from(
+                    { length: Math.floor((Math.max(Number(durationMinutes), Number(maxDurationMinutes)) - Number(durationMinutes)) / 15) + 1 },
+                    (_, index) => Number(durationMinutes) + index * 15,
+                  ).map((minutes) => <option key={minutes} value={minutes}>{formatDuration(minutes)}</option>)}
+                </Select>
+              </FormField>
             </div>}
             {isRental && units > 0 && (
               <div className="flex items-center justify-between rounded-lg bg-primary-50 px-4 py-3 text-sm font-label">
-                <span>{units} {unitLabel} × {formatPrice(priceCents)}</span>
+                <span>{units} {unitLabel} · rates shown on calendar</span>
                 <strong className="text-primary-900">Total {formatPrice(totalCents)}</strong>
+              </div>
+            )}
+            {!isRental && form.preferredDate && (
+              <div className="flex items-center justify-between rounded-lg bg-primary-50 px-4 py-3 text-sm font-label">
+                <span>{new Date(`${form.preferredDate}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} · {formatDuration(form.durationMinutes)}</span>
+                <strong className="text-primary-900">{totalCents > 0 ? formatPrice(totalCents) : "Free"}</strong>
               </div>
             )}
             <FormField label="Notes & Preferences" htmlFor="booking-notes" required>

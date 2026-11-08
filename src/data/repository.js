@@ -576,12 +576,16 @@ export async function setListingTier(listingId, tier) {
 async function saveBookingSettings(listingId, form) {
   if (!listingId) return;
   const dollars = Number(form.bookingPrice || 0);
+  const hasPaidRate = dollars > 0 || (form.bookingRateRules || []).some((rule) => Number(rule.priceCents) > 0);
   return customClient.post(`/listings/${listingId}/booking`, {
     enabled: form.bookingEnabled ? 1 : 0,
-    hideContactInfo: form.bookingEnabled && dollars > 0 ? 1 : 0,
+    hideContactInfo: form.bookingEnabled && hasPaidRate ? 1 : 0,
     bookingType: normalizeBookingType(form.bookingType),
     bookingPriceCents: Number.isFinite(dollars) ? Math.max(0, Math.round(dollars * 100)) : 0,
+    bookingRateRules: Array.isArray(form.bookingRateRules) ? form.bookingRateRules : [],
     bookingDurationMinutes: Number(form.bookingDurationMinutes) || 30,
+    bookingPriceUnit: form.bookingPriceUnit || "appointment",
+    bookingMaxDurationMinutes: Number(form.bookingMaxDurationMinutes) || 120,
     bookingMeetingUrl: form.bookingMeetingUrl || "",
     bookingPayoutMethod: form.bookingPayoutMethod || "",
     bookingPayoutAccountName: form.bookingPayoutAccountName || "",
@@ -610,7 +614,10 @@ export async function getBookingSettings(listingId) {
       whatsapp: "",
       bookingType: "appointment",
       bookingPriceCents: 0,
+      bookingRateRules: [],
       bookingDurationMinutes: 30,
+      bookingPriceUnit: "appointment",
+      bookingMaxDurationMinutes: 120,
       bookingMeetingUrl: "",
       bookingPayoutMethod: "",
       bookingPayoutAccountName: "",

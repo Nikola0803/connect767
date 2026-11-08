@@ -21,7 +21,9 @@ export const DIGITAL_PAYOUT_PROVIDER_HELP = {
 };
 
 export function hasCompletePayoutDetails(form) {
-  if (!form.bookingEnabled || Number(form.bookingPrice || 0) <= 0) return true;
+  const hasPaidRate = Number(form.bookingPrice || 0) > 0 ||
+    (form.bookingRateRules || []).some((rule) => Number(rule.priceCents) > 0);
+  if (!form.bookingEnabled || !hasPaidRate) return true;
   if (form.bookingPayoutMethod === "bank") {
     return Boolean(
       form.bookingPayoutAccountName?.trim() &&

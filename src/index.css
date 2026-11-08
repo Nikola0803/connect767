@@ -156,6 +156,15 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media (max-width: 767px) {
+  /* Mobile listing covers show the entire uploaded image. Desktop retains the
+     established edge-to-edge crop and the owner's saved crop/zoom settings. */
+  .listing-cover-media,
+  .listing-profile-cover-media {
+    object-fit: contain !important;
+    object-position: center !important;
+    transform: none !important;
+  }
+
   input, select, textarea {
     /* Prevent Safari from zooming the page when a form control receives focus. */
     font-size: 16px;

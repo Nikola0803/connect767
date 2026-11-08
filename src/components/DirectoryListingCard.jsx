@@ -147,7 +147,7 @@ function Cover({ listing, listView = false, saved = false, onToggleSaved }) {
             decoding="async"
             alt={`${listing.title} — ${industryLabel(listing)}`}
             title={`${listing.title} — ${industryLabel(listing)}`}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            className="listing-cover-media h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
             src={listing.image}
             style={imageCropStyle(coverPosition, listing.coverZoom, "cover")}
           />
