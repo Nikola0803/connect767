@@ -250,14 +250,14 @@ export default function BookingForm({
   return (
     <div className="rounded-2xl border border-background-200/70 bg-background-50 p-5 md:p-6">
       <div className="flex items-start justify-between gap-4 mb-1">
-        <h3 className="font-heading text-lg font-medium text-foreground-950">{isRental ? `Book ${bookingTypeLabel(bookingType).toLowerCase()}` : "Book an appointment"}</h3>
-        <span className="text-sm font-semibold text-primary-800 whitespace-nowrap">
-          {showingPayment
-            ? `Total due ${formatPrice(paymentAmountCents)}`
-            : isPaid
+        <h3 className="font-heading text-lg font-medium text-foreground-950">{showingPayment ? businessName : isRental ? `Book ${bookingTypeLabel(bookingType).toLowerCase()}` : "Book an appointment"}</h3>
+        {!showingPayment && (
+          <span className="text-sm font-semibold text-primary-800 whitespace-nowrap">
+            {isPaid
               ? `${variablePricing ? "From " : ""}${formatPrice(priceCents)}${isRental ? ` / ${rateUnit}` : priceUnit === "minute" ? " / minute" : priceUnit === "hour" ? " / hour" : ""}`
               : "Free"}
-        </span>
+          </span>
+        )}
       </div>
       <p className="text-xs text-foreground-600 font-label mb-5">
         {isRental ? (rateUnit === "night" ? "Select your check-in and check-out dates. " : "Select your start and end dates. ") : `Choose a meeting length from ${formatDuration(durationMinutes)} to ${formatDuration(Math.max(durationMinutes, maxDurationMinutes))}. `}{isPaid
