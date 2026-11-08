@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useAsync } from "../hooks/useAsync";
 import {
   deleteRejectedBooking,
+  deleteRejectedBookings,
   getMyBookings,
   getMyListings,
   requestBookingCashout,
@@ -76,6 +77,16 @@ export default function DashboardPage() {
   const storefrontListingId = searchParams.get("storefront") || "";
   const [bookingBusy, setBookingBusy] = useState(null);
   const [bookingError, setBookingError] = useState(null);
+  const [selectedBookingIds, setSelectedBookingIds] = useState([]);
+  const [bulkDeleteBusy, setBulkDeleteBusy] = useState(false);
+  const deletableRejectedBookings = useMemo(
+    () => (bookings || []).filter(
+      (booking) => booking.status === "declined" && booking.paymentStatus !== "paid",
+    ),
+    [bookings],
+  );
+  const allRejectedSelected = deletableRejectedBookings.length > 0
+    && deletableRejectedBookings.every((booking) => selectedBookingIds.includes(booking.id));
 
   useEffect(() => {
     if (!productListingId || !listings?.length) return;
@@ -110,11 +121,48 @@ export default function DashboardPage() {
     setBookingError(null);
     try {
       await deleteRejectedBooking(booking.id);
+      setSelectedBookingIds((ids) => ids.filter((id) => id !== booking.id));
       await reloadBookings();
     } catch (err) {
       setBookingError(err.message || "Couldn't delete this rejected booking.");
     } finally {
       setBookingBusy(null);
+    }
+  };
+
+  const toggleBookingSelection = (bookingId) => {
+    setSelectedBookingIds((ids) => ids.includes(bookingId)
+      ? ids.filter((id) => id !== bookingId)
+      : [...ids, bookingId]);
+  };
+
+  const toggleAllRejectedBookings = () => {
+    setSelectedBookingIds(allRejectedSelected
+      ? []
+      : deletableRejectedBookings.map((booking) => booking.id));
+  };
+
+  const deleteSelectedBookings = async () => {
+    const selected = deletableRejectedBookings.filter((booking) => selectedBookingIds.includes(booking.id));
+    if (selected.length === 0) return;
+
+    const confirmed = window.confirm(
+      `Delete ${selected.length} rejected booking${selected.length === 1 ? "" : "s"}? They will be removed from your dashboard.`,
+    );
+    if (!confirmed) return;
+
+    setBulkDeleteBusy(true);
+    setBookingError(null);
+    try {
+      await deleteRejectedBookings(selected.map((booking) => booking.id));
+      setSelectedBookingIds([]);
+      await reloadBookings();
+    } catch (err) {
+      await reloadBookings();
+      setSelectedBookingIds([]);
+      setBookingError(err.message || "Couldn't delete the selected rejected bookings.");
+    } finally {
+      setBulkDeleteBusy(false);
     }
   };
 
@@ -369,6 +417,30 @@ export default function DashboardPage() {
                 </button>
               </div>
 
+              {!bookingsLoading && !bookingsError && deletableRejectedBookings.length > 0 && (
+                <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-background-200 bg-background-100/70 p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-foreground-800">
+                    <input
+                      type="checkbox"
+                      checked={allRejectedSelected}
+                      onChange={toggleAllRejectedBookings}
+                      disabled={bulkDeleteBusy}
+                      className="h-4 w-4 rounded border-background-300 text-primary-700 focus:ring-primary-500"
+                    />
+                    Select all rejected ({deletableRejectedBookings.length})
+                  </label>
+                  <button
+                    type="button"
+                    onClick={deleteSelectedBookings}
+                    disabled={selectedBookingIds.length === 0 || bulkDeleteBusy}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-accent-200 bg-accent-50 px-4 py-2 text-xs font-semibold text-accent-800 transition hover:border-accent-300 hover:bg-accent-100 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <i className="ri-delete-bin-line" aria-hidden="true" />
+                    {bulkDeleteBusy ? "Deleting selected…" : `Delete selected (${selectedBookingIds.length})`}
+                  </button>
+                </div>
+              )}
+
             {bookingError && (
               <p className="mb-4 text-xs text-accent-600 font-label">{bookingError}</p>
             )}
@@ -442,6 +514,19 @@ export default function DashboardPage() {
                           )}
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
+                          {booking.status === "declined" && booking.paymentStatus !== "paid" && (
+                            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-background-300 bg-background-50 px-3 py-2 text-xs font-semibold text-foreground-700">
+                              <input
+                                type="checkbox"
+                                checked={selectedBookingIds.includes(booking.id)}
+                                onChange={() => toggleBookingSelection(booking.id)}
+                                disabled={bulkDeleteBusy || bookingBusy === booking.id}
+                                className="h-4 w-4 rounded border-background-300 text-primary-700 focus:ring-primary-500"
+                                aria-label={`Select rejected booking from ${booking.name || "customer"}`}
+                              />
+                              Select
+                            </label>
+                          )}
                           {booking.status === "confirmed" && booking.meetingUrl && (
                             <a
                               href={booking.meetingUrl}

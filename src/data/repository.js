@@ -723,6 +723,22 @@ export async function deleteRejectedBooking(bookingId) {
   return customClient.del(`/bookings/${bookingId}`);
 }
 
+export async function deleteRejectedBookings(bookingIds) {
+  const ids = [...new Set((bookingIds || []).map(Number).filter(Number.isFinite))];
+  const results = await Promise.allSettled(ids.map((id) => deleteRejectedBooking(id)));
+  const failures = results.filter((result) => result.status === "rejected");
+
+  if (failures.length > 0) {
+    const error = new Error(
+      `${failures.length} rejected booking${failures.length === 1 ? "" : "s"} could not be deleted.`,
+    );
+    error.failures = failures;
+    throw error;
+  }
+
+  return results.map((result) => result.value);
+}
+
 export async function requestBookingCashout(bookingId) {
   if (!isLiveApi) {
     return { bookingId, ownerPayoutStatus: "requested" };
