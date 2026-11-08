@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import {
   categoryTaxonomy,
@@ -285,6 +285,7 @@ function StepIndicator({ current }) {
 }
 
 export default function AddListingPage() {
+  const navigate = useNavigate();
   const { slug: editSlug } = useParams();
   const [searchParams] = useSearchParams();
   const isEditing = Boolean(editSlug);
@@ -507,6 +508,8 @@ export default function AddListingPage() {
       }
       if (form.tier === "classified" && result?.id) {
         setPendingPayment({ listingId: result.id });
+      } else if (form.sellProducts && result?.id) {
+        navigate(`/dashboard?products=${result.id}#products-services`, { replace: true });
       } else {
         setSubmitted(true);
       }
@@ -572,7 +575,11 @@ export default function AddListingPage() {
         onDone={(paid) => {
           setJustPaid(paid);
           setPendingPayment(null);
-          setSubmitted(true);
+          if (form.sellProducts && listingId) {
+            navigate(`/dashboard?products=${listingId}#products-services`, { replace: true });
+          } else {
+            setSubmitted(true);
+          }
         }}
       />
     );
@@ -957,8 +964,9 @@ export default function AddListingPage() {
                           Sell products from this listing
                         </span>
                         <span className="block text-xs text-foreground-600 font-label mt-0.5">
-                          Available to every listing. After saving, add product photos, prices,
-                          shipping and local-pickup options in your dashboard.
+                          Available to every listing. When you submit this listing, the product
+                          editor will open automatically for photos, prices, inventory, shipping,
+                          and local-pickup options.
                         </span>
                       </span>
                     </label>
@@ -1549,6 +1557,20 @@ export default function AddListingPage() {
 
           {step === 5 && !isLiveApi && <DemoModeNotice className="mt-6" />}
 
+          {step === 5 && form.sellProducts && !isEditing && (
+            <div className="mt-6 flex items-start gap-3 rounded-2xl border border-primary-200 bg-primary-50/80 px-4 py-4 sm:px-5">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-background-50">
+                <i className="ri-store-2-line" aria-hidden="true" />
+              </span>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary-800">Next: list your first product</p>
+                <p className="mt-1 text-sm leading-relaxed text-foreground-700">
+                  Saving this listing will take you directly to the product editor with this storefront selected.
+                </p>
+              </div>
+            </div>
+          )}
+
           {submitError && (
             <div className="mt-6 px-4 py-3 rounded-lg bg-accent-50 border border-accent-200 text-sm text-accent-700 flex items-start gap-2">
               <i className="ri-error-warning-line mt-0.5" />
@@ -1585,7 +1607,13 @@ export default function AddListingPage() {
                 disabled={submitting}
                 icon="ri-check-line"
               >
-                {submitting ? "Saving…" : isEditing ? "Save changes" : "Submit Listing"}
+                {submitting
+                  ? "Saving…"
+                  : isEditing
+                    ? "Save changes"
+                    : form.sellProducts
+                      ? "Save listing & add product"
+                      : "Submit Listing"}
               </Button>
             )}
           </div>
