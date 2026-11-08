@@ -16,6 +16,7 @@ import ProductInventoryEditor from "./ProductInventoryEditor";
 import {
   inferProductType,
   inventoryRowsToVariants,
+  validateInventoryForm,
   variantsToInventoryRows,
 } from "../../lib/productInventory";
 import {
@@ -216,8 +217,9 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
       setError("Pick a listing, add a name, and a price above $0.");
       return;
     }
-    if (form.productType === "variable" && variants.length === 0) {
-      setError("Add at least one size or color variation before saving this variable product.");
+    const inventoryError = validateInventoryForm(form);
+    if (inventoryError) {
+      setError(inventoryError);
       return;
     }
     if (selectedListing && !selectedListing.payoutConfigured) {

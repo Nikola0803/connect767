@@ -36,7 +36,10 @@ export function normalizeBookingRateRules(rules) {
       endDate: toDateKey(rule?.endDate || rule?.startDate),
       priceCents: Math.max(0, Math.min(10000000, Math.round(Number(rule?.priceCents) || 0))),
     }))
-    .filter((rule) => rule.startDate && rule.endDate && rule.endDate >= rule.startDate);
+    .filter((rule) => rule.startDate && rule.endDate && rule.endDate >= rule.startDate && rule.priceCents > 0)
+    .sort((a, b) => a.startDate.localeCompare(b.startDate)
+      || a.endDate.localeCompare(b.endDate)
+      || (periodPriority[b.period] || 0) - (periodPriority[a.period] || 0));
 }
 
 const periodPriority = { season: 1, month: 2, week: 3, day: 4 };
@@ -99,5 +102,5 @@ export function ruleDates(period, anchor, seasonEnd = "") {
     const endDate = toDateKey(new Date(Date.UTC(year, month, 0)));
     return { startDate, endDate };
   }
-  return { startDate: anchor, endDate: seasonEnd || anchor };
+  return { startDate: anchor, endDate: seasonEnd };
 }

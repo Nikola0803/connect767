@@ -21,7 +21,7 @@ describe("ProductInventoryEditor", () => {
     render(<Harness />);
 
     expect(screen.getByRole("radio", { name: /simple item/i })).toBeChecked();
-    expect(screen.getByLabelText("Stock quantity")).toHaveValue(10);
+    expect(screen.getByRole("spinbutton", { name: /stock quantity/i })).toHaveValue(10);
 
     fireEvent.click(screen.getByText("Variable product"));
 

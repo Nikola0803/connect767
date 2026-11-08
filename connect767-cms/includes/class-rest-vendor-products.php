@@ -199,6 +199,31 @@ class C767_Rest_Vendor_Products
         return $variants;
     }
 
+    private static function validate_inventory($product_type, $track_stock, $stock_quantity, $variants)
+    {
+        if ($product_type === 'simple') {
+            if ($track_stock && $stock_quantity < 0) {
+                return new WP_Error('c767_invalid_inventory', 'Stock quantity cannot be below zero.', ['status' => 400]);
+            }
+            return true;
+        }
+        if (empty($variants)) {
+            return new WP_Error('c767_invalid_inventory', 'Add at least one complete product variation.', ['status' => 400]);
+        }
+        foreach ($variants as $index => $variant) {
+            if (($variant['size'] === '' && $variant['color'] === '')
+                || $variant['sku'] === ''
+                || (int) $variant['priceCents'] <= 0) {
+                return new WP_Error(
+                    'c767_invalid_inventory',
+                    sprintf('Complete the size or color, SKU, price, and stock for variation %d.', $index + 1),
+                    ['status' => 400]
+                );
+            }
+        }
+        return true;
+    }
+
     private static function refresh_listing_storefront_meta($listing_id)
     {
         $products = get_posts([
@@ -677,11 +702,20 @@ class C767_Rest_Vendor_Products
         update_post_meta($product_id, 'sku', sanitize_text_field((string) $request->get_param('sku')));
         update_post_meta($product_id, 'product_category', sanitize_text_field((string) $request->get_param('category')));
         $product_type = sanitize_key((string) $request->get_param('productType'));
-        update_post_meta($product_id, 'product_type', in_array($product_type, ['simple', 'variable'], true) ? $product_type : 'simple');
-        update_post_meta($product_id, 'track_stock', filter_var($request->get_param('trackStock'), FILTER_VALIDATE_BOOLEAN) ? '1' : '0');
-        update_post_meta($product_id, 'stock_quantity', max(0, (int) $request->get_param('stockQuantity')));
+        $product_type = in_array($product_type, ['simple', 'variable'], true) ? $product_type : 'simple';
+        $track_stock = filter_var($request->get_param('trackStock'), FILTER_VALIDATE_BOOLEAN) || $product_type === 'variable';
+        $stock_quantity = max(0, (int) $request->get_param('stockQuantity'));
+        $variants = self::sanitize_variants($request->get_param('variants'));
+        $inventory_valid = self::validate_inventory($product_type, $track_stock, $stock_quantity, $variants);
+        if (is_wp_error($inventory_valid)) {
+            wp_delete_post($product_id, true);
+            return $inventory_valid;
+        }
+        update_post_meta($product_id, 'product_type', $product_type);
+        update_post_meta($product_id, 'track_stock', $track_stock ? '1' : '0');
+        update_post_meta($product_id, 'stock_quantity', $stock_quantity);
         update_post_meta($product_id, 'low_stock_threshold', max(0, (int) ($request->get_param('lowStockThreshold') ?: 3)));
-        update_post_meta($product_id, 'variants', wp_json_encode(self::sanitize_variants($request->get_param('variants'))));
+        update_post_meta($product_id, 'variants', wp_json_encode($variants));
 
         self::handle_image_upload($product_id);
         self::refresh_listing_storefront_meta($listing_id);
@@ -786,6 +820,26 @@ class C767_Rest_Vendor_Products
         }
         if ($request->get_param('category') !== null) {
             update_post_meta($product_id, 'product_category', sanitize_text_field((string) $request->get_param('category')));
+        }
+        if ($request->get_param('productType') !== null || $request->get_param('variants') !== null) {
+            $current_type = sanitize_key((string) get_post_meta($product_id, 'product_type', true));
+            $next_type = $request->get_param('productType') !== null
+                ? sanitize_key((string) $request->get_param('productType'))
+                : $current_type;
+            $next_type = in_array($next_type, ['simple', 'variable'], true) ? $next_type : 'simple';
+            $next_track = $request->get_param('trackStock') !== null
+                ? filter_var($request->get_param('trackStock'), FILTER_VALIDATE_BOOLEAN)
+                : get_post_meta($product_id, 'track_stock', true) === '1';
+            $next_stock = $request->get_param('stockQuantity') !== null
+                ? max(0, (int) $request->get_param('stockQuantity'))
+                : max(0, (int) get_post_meta($product_id, 'stock_quantity', true));
+            $next_variants = $request->get_param('variants') !== null
+                ? self::sanitize_variants($request->get_param('variants'))
+                : self::sanitize_variants(get_post_meta($product_id, 'variants', true));
+            $inventory_valid = self::validate_inventory($next_type, $next_track || $next_type === 'variable', $next_stock, $next_variants);
+            if (is_wp_error($inventory_valid)) {
+                return $inventory_valid;
+            }
         }
         if ($request->get_param('productType') !== null) {
             $product_type = sanitize_key((string) $request->get_param('productType'));

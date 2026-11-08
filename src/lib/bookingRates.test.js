@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bookingPriceForSelection, bookingRateForDate, ruleDates } from "./bookingRates";
+import { bookingPriceForSelection, bookingRateForDate, normalizeBookingRateRules, ruleDates } from "./bookingRates";
 
 describe("booking rate calendar", () => {
   const rules = [
@@ -44,6 +44,18 @@ describe("booking rate calendar", () => {
   it("expands week and month shortcuts", () => {
     expect(ruleDates("week", "2030-06-10")).toEqual({ startDate: "2030-06-10", endDate: "2030-06-16" });
     expect(ruleDates("month", "2030-02-01")).toEqual({ startDate: "2030-02-01", endDate: "2030-02-28" });
+  });
+
+  it("requires an explicit seasonal end date", () => {
+    expect(ruleDates("season", "2030-06-10")).toEqual({ startDate: "2030-06-10", endDate: "" });
+  });
+
+  it("keeps persisted rate periods in chronological order", () => {
+    expect(normalizeBookingRateRules([
+      { id: "later", period: "day", startDate: "2030-09-10", endDate: "2030-09-10", priceCents: 20000 },
+      { id: "earlier", period: "season", startDate: "2030-05-01", endDate: "2030-06-01", priceCents: 15000 },
+      { id: "empty", period: "day", startDate: "2030-01-01", endDate: "2030-01-01", priceCents: 0 },
+    ]).map((rule) => rule.id)).toEqual(["earlier", "later"]);
   });
 
   it("prices meetings by the minute or hour", () => {

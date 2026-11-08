@@ -67,7 +67,7 @@ export default function ProductInventoryEditor({ form, setForm }) {
           </label>
           {form.trackStock && (
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormField label="Stock quantity" htmlFor="vp-stock"><Input id="vp-stock" type="number" min="0" value={form.stockQuantity} onChange={(event) => setForm((current) => ({ ...current, stockQuantity: event.target.value }))} /></FormField>
+              <FormField label="Stock quantity" htmlFor="vp-stock" required><Input id="vp-stock" type="number" min="0" value={form.stockQuantity} required onChange={(event) => setForm((current) => ({ ...current, stockQuantity: event.target.value }))} /></FormField>
               <FormField label="Low-stock warning" htmlFor="vp-low-stock"><Input id="vp-low-stock" type="number" min="0" value={form.lowStockThreshold} onChange={(event) => setForm((current) => ({ ...current, lowStockThreshold: event.target.value }))} /></FormField>
             </div>
           )}
@@ -83,11 +83,11 @@ export default function ProductInventoryEditor({ form, setForm }) {
               <div key={variant.id} className="rounded-xl border border-background-200 bg-white p-4">
                 <div className="mb-3 flex items-center justify-between"><p className="text-xs font-bold uppercase tracking-[0.14em] text-primary-700">Variation {index + 1}</p><button type="button" onClick={() => removeVariant(variant.id)} disabled={form.variants.length === 1} className="rounded-full px-2 py-1 text-xs font-semibold text-accent-700 hover:bg-accent-50 disabled:cursor-not-allowed disabled:opacity-35"><i className="ri-delete-bin-line mr-1" /> Remove</button></div>
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
-                  <FormField label="Size" htmlFor={`variant-size-${variant.id}`}><Input id={`variant-size-${variant.id}`} value={variant.size} onChange={(event) => updateVariant(variant.id, "size", event.target.value)} placeholder="Small" /></FormField>
+                  <FormField label="Size" htmlFor={`variant-size-${variant.id}`} hint="Size or color is required."><Input id={`variant-size-${variant.id}`} value={variant.size} onChange={(event) => updateVariant(variant.id, "size", event.target.value)} placeholder="Small" /></FormField>
                   <FormField label="Color" htmlFor={`variant-color-${variant.id}`}><Input id={`variant-color-${variant.id}`} value={variant.color} onChange={(event) => updateVariant(variant.id, "color", event.target.value)} placeholder="Green" /></FormField>
-                  <FormField label="SKU" htmlFor={`variant-sku-${variant.id}`}><Input id={`variant-sku-${variant.id}`} value={variant.sku} onChange={(event) => updateVariant(variant.id, "sku", event.target.value)} placeholder="TEE-S-GRN" /></FormField>
-                  <FormField label="Price (USD)" htmlFor={`variant-price-${variant.id}`}><Input id={`variant-price-${variant.id}`} type="number" min="0" step="0.01" value={variant.priceDollars} onChange={(event) => updateVariant(variant.id, "priceDollars", event.target.value)} placeholder="25.00" /></FormField>
-                  <FormField label="Stock" htmlFor={`variant-stock-${variant.id}`}><Input id={`variant-stock-${variant.id}`} type="number" min="0" value={variant.stockQuantity} onChange={(event) => updateVariant(variant.id, "stockQuantity", event.target.value)} placeholder="10" /></FormField>
+                  <FormField label="SKU" htmlFor={`variant-sku-${variant.id}`} required><Input id={`variant-sku-${variant.id}`} value={variant.sku} required onChange={(event) => updateVariant(variant.id, "sku", event.target.value)} placeholder="TEE-S-GRN" /></FormField>
+                  <FormField label="Price (USD)" htmlFor={`variant-price-${variant.id}`} required><Input id={`variant-price-${variant.id}`} type="number" min="0.01" step="0.01" value={variant.priceDollars} required onChange={(event) => updateVariant(variant.id, "priceDollars", event.target.value)} placeholder="25.00" /></FormField>
+                  <FormField label="Stock" htmlFor={`variant-stock-${variant.id}`} required><Input id={`variant-stock-${variant.id}`} type="number" min="0" value={variant.stockQuantity} required onChange={(event) => updateVariant(variant.id, "stockQuantity", event.target.value)} placeholder="10" /></FormField>
                   <FormField label="Low-stock alert" htmlFor={`variant-low-${variant.id}`}><Input id={`variant-low-${variant.id}`} type="number" min="0" value={variant.lowStockThreshold} onChange={(event) => updateVariant(variant.id, "lowStockThreshold", event.target.value)} placeholder="3" /></FormField>
                 </div>
               </div>
