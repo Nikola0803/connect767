@@ -285,6 +285,7 @@ export default function AddListingPage() {
   const isEditing = Boolean(editSlug);
   const requestedTier = searchParams.get("tier");
   const isManagingPlan = isEditing && searchParams.get("managePlan") === "1";
+  const isManagingBookings = isEditing && searchParams.get("manageBookings") === "1";
 
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(() => ({
@@ -423,7 +424,7 @@ export default function AddListingPage() {
         // Normal edits start on Business Info. The Seller Center plan action
         // opens the existing review step directly, where both plan cards are
         // visible and the owner can upgrade or downgrade without hunting.
-        setStep(isManagingPlan ? 4 : 2);
+        setStep(isManagingPlan ? 4 : isManagingBookings ? 3 : 2);
       })
       .catch(() => {
         if (!cancelled) setLoadError("Couldn't load this listing.");
@@ -434,7 +435,18 @@ export default function AddListingPage() {
     return () => {
       cancelled = true;
     };
-  }, [isEditing, editSlug, isManagingPlan]);
+  }, [isEditing, editSlug, isManagingBookings, isManagingPlan]);
+
+  useEffect(() => {
+    if (!isManagingBookings || loadingExisting || step !== 3) return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById("booking-settings")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [isManagingBookings, loadingExisting, step]);
 
   const handleSubmit = async () => {
     setSubmitError(null);
@@ -932,34 +944,35 @@ export default function AddListingPage() {
                     page and supported end-to-end in the CMS (booking_enabled
                     meta + class-rest-bookings.php), but no screen ever let an
                     owner switch it on. */}
-                <FormField label="Bookings">
-                  <label className="flex items-start gap-3 p-4 rounded-lg border border-background-300 hover:border-primary-300 cursor-pointer transition-colors">
-                    <input
-                      type="checkbox"
-                      className="mt-0.5 rounded border-background-300 cursor-pointer"
-                      checked={form.bookingEnabled}
-                      onChange={(e) =>
-                        setForm((f) => ({
-                          ...f,
-                          bookingEnabled: e.target.checked,
-                          hideContactInfo:
-                            e.target.checked && Number(f.bookingPrice) > 0,
-                        }))
-                      }
-                    />
-                    <span>
-                      <span className="block text-sm font-semibold text-foreground-900">
-                        Accept bookings and appointments
+                <div id="booking-settings" className="scroll-mt-28">
+                  <FormField label="Bookings">
+                    <label className="flex items-start gap-3 p-4 rounded-lg border border-background-300 hover:border-primary-300 cursor-pointer transition-colors">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 rounded border-background-300 cursor-pointer"
+                        checked={form.bookingEnabled}
+                        onChange={(e) =>
+                          setForm((f) => ({
+                            ...f,
+                            bookingEnabled: e.target.checked,
+                            hideContactInfo:
+                              e.target.checked && Number(f.bookingPrice) > 0,
+                          }))
+                        }
+                      />
+                      <span>
+                        <span className="block text-sm font-semibold text-foreground-900">
+                          Accept bookings and appointments
+                        </span>
+                        <span className="block text-xs text-foreground-600 font-label mt-0.5">
+                          Adds a secure booking form to your profile. Set a price for automatic
+                          Stripe/PayPal confirmation, or leave it at $0 for owner approval.
+                        </span>
                       </span>
-                      <span className="block text-xs text-foreground-600 font-label mt-0.5">
-                        Adds a secure booking form to your profile. Set a price for automatic
-                        Stripe/PayPal confirmation, or leave it at $0 for owner approval.
-                      </span>
-                    </span>
-                  </label>
-                </FormField>
-                {form.bookingEnabled && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 rounded-xl border border-primary-200 bg-primary-50/30 p-4">
+                    </label>
+                  </FormField>
+                  {form.bookingEnabled && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 rounded-xl border border-primary-200 bg-primary-50/30 p-4">
                     <div className="sm:col-span-2">
                       <FormField
                         label="Booking type"
@@ -1109,8 +1122,9 @@ export default function AddListingPage() {
                       form={form}
                       onChange={(field, value) => setForm((current) => ({ ...current, [field]: value }))}
                     />
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-5 items-start">
                   <FormField
                     label="Profile Photo"

@@ -68,8 +68,9 @@ export default function DashboardPage() {
     [bookingPreviewEnabled, isDesignPreview, loadedListings, storefrontPreviewEnabled],
   );
   const storefrontListings = listings?.filter((listing) => listing?.sellProducts === true) || [];
+  const bookingListings = listings?.filter((listing) => listing?.bookingEnabled === true) || [];
   const showSellerWorkspace = storefrontListings.length > 0;
-  const showScheduling = Boolean(listings?.some((listing) => listing?.bookingEnabled === true));
+  const showScheduling = bookingListings.length > 0;
   const productListingId = searchParams.get("products") || "";
   const storefrontListingId = searchParams.get("storefront") || "";
   const [bookingBusy, setBookingBusy] = useState(null);
@@ -315,6 +316,30 @@ export default function DashboardPage() {
             </div>
 
             <div className="p-5 sm:p-7">
+              <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {bookingListings.map((listing) => (
+                  <Link
+                    key={listing.id || listing.slug}
+                    to={`/listings/${listing.slug}/edit?manageBookings=1#booking-settings`}
+                    className="group rounded-2xl border border-primary-200 border-t-4 border-t-primary-600 bg-gradient-to-br from-primary-50/90 to-background-50 p-4 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-primary-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                    aria-label={`Edit appointments and bookings for ${listing.title}`}
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100 text-lg text-primary-800 transition group-hover:bg-primary-200">
+                      <i className="ri-calendar-schedule-line" aria-hidden="true" />
+                    </span>
+                    <span className="mt-3 block text-[10px] font-bold uppercase tracking-[0.16em] text-primary-800">
+                      {listing.title}
+                    </span>
+                    <span className="mt-1 flex items-center justify-between gap-3 text-sm font-semibold text-foreground-950">
+                      Edit Appointments/Bookings
+                      <i className="ri-arrow-right-line text-primary-700 transition group-hover:translate-x-1" aria-hidden="true" />
+                    </span>
+                    <span className="mt-1 block text-xs leading-relaxed text-foreground-600">
+                      Update availability, rates, meeting times and seasonal pricing.
+                    </span>
+                  </Link>
+                ))}
+              </div>
               <div className="mb-4 flex justify-end">
                 <button
                   type="button"
