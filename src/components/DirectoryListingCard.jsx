@@ -46,7 +46,7 @@ function BookingSignal({ listing }) {
     ? `${price} / ${normalizeRentalRateUnit(listing.bookingRentalRateUnit, listing.bookingType)}`
     : `${price} · ${listing.bookingDurationMinutes || 30} min`;
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-2.5 py-1 text-[10px] font-semibold text-primary-800 border border-primary-100 whitespace-nowrap">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-[10px] font-semibold text-primary-800 shadow-[0_6px_18px_rgba(31,112,78,0.08)] whitespace-nowrap">
       <i className="ri-calendar-check-line text-xs" />
       Book · {detail}
     </span>
@@ -81,14 +81,17 @@ function ListingIdentity({ listing, compact = false }) {
     <>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p
-            data-testid="listing-category-industry"
-            className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary-700 truncate"
-            title={category}
-          >
-            {category}
-          </p>
-          <h3 className={`${compact ? "text-xl" : "text-lg"} font-heading font-medium text-foreground-950 group-hover:text-primary-700 transition-colors leading-snug flex items-center gap-1.5 mt-1`}>
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent-500" aria-hidden="true" />
+            <p
+              data-testid="listing-category-industry"
+              className="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-primary-700"
+              title={category}
+            >
+              {category}
+            </p>
+          </div>
+          <h3 className={`${compact ? "text-xl" : "text-[1.22rem]"} mt-1.5 flex items-center gap-1.5 font-heading font-semibold leading-tight tracking-[-0.02em] text-foreground-950 transition-colors group-hover:text-primary-700`}>
             <span className="line-clamp-2">{listing.title}</span>
             {listing.verified && (
               <i
@@ -100,12 +103,14 @@ function ListingIdentity({ listing, compact = false }) {
             )}
           </h3>
         </div>
-        <span className="font-label font-semibold text-foreground-800 text-sm whitespace-nowrap" title="Price level">
+        <span className="rounded-full border border-background-200 bg-background-100 px-2.5 py-1 font-label text-xs font-bold text-foreground-800 whitespace-nowrap" title="Price level">
           {listing.price}
         </span>
       </div>
-      <div className="flex items-center gap-1.5 text-xs text-foreground-600 mt-2">
-        <i className="ri-map-pin-2-line text-sm text-foreground-500" />
+      <div className="mt-2.5 flex items-center gap-1.5 text-xs text-foreground-600">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-50 text-primary-700">
+          <i className="ri-map-pin-2-line text-sm" />
+        </span>
         <span className="font-label truncate">{listing.location || "Location available on profile"}</span>
       </div>
     </>
@@ -117,17 +122,17 @@ function ListingHighlights({ listing }) {
     ? String(listing.yearsExperience)
     : "Not provided";
   return (
-    <div className="grid grid-cols-[0.7fr_1.3fr] gap-2 mt-3 rounded-lg border border-background-200/70 bg-background-100/70 px-3 py-2.5">
-      <div className="min-w-0 border-r border-background-200 pr-2">
+    <div className="mt-3 grid grid-cols-[0.7fr_1.3fr] gap-2">
+      <div className="min-w-0 rounded-xl border border-background-200 bg-background-100/75 px-3 py-2.5">
         <span className="block text-[9px] font-semibold uppercase tracking-[0.08em] text-foreground-500">Yrs Exp.</span>
-        <span className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold text-foreground-800 truncate" title={experience}>
+        <span className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-foreground-800 truncate" title={experience}>
           <i className="ri-briefcase-line text-primary-700 flex-shrink-0" />
           {experience}
         </span>
       </div>
-      <div className="min-w-0 pl-1">
+      <div className="min-w-0 rounded-xl border border-background-200 bg-background-100/75 px-3 py-2.5">
         <span className="block text-[9px] font-semibold uppercase tracking-[0.1em] text-foreground-500">Industry</span>
-        <span className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold text-foreground-800 truncate" title={industryLabel(listing)}>
+        <span className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-foreground-800 truncate" title={industryLabel(listing)}>
           <i className="ri-building-line text-primary-700 flex-shrink-0" />
           {industryLabel(listing)}
         </span>
@@ -139,7 +144,7 @@ function ListingHighlights({ listing }) {
 function Cover({ listing, listView = false, saved = false, onToggleSaved }) {
   const coverPosition = listing.coverPosition || "center";
   return (
-    <div className={`relative flex-shrink-0 ${listView ? "sm:w-64" : ""}`}>
+    <div className={`relative flex-shrink-0 overflow-hidden rounded-[1.15rem] ${listView ? "m-2 sm:w-64" : "m-2 mb-0"}`}>
       <div className={`w-full overflow-hidden bg-background-100 ${listView ? "h-52 sm:h-full" : "aspect-[4/3]"}`}>
         {listing.image ? (
           <img
@@ -147,7 +152,7 @@ function Cover({ listing, listView = false, saved = false, onToggleSaved }) {
             decoding="async"
             alt={`${listing.title} — ${industryLabel(listing)}`}
             title={`${listing.title} — ${industryLabel(listing)}`}
-            className="listing-cover-media h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            className="listing-cover-media h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.045]"
             src={listing.image}
             style={imageCropStyle(coverPosition, listing.coverZoom, "cover")}
           />
@@ -155,15 +160,15 @@ function Cover({ listing, listView = false, saved = false, onToggleSaved }) {
           <DefaultListingCover title={listing.title} compact />
         )}
       </div>
-      <div className="absolute inset-0 z-10 bg-gradient-to-t from-foreground-950/35 via-transparent to-transparent pointer-events-none" />
-      <TierBadge tier={listing.badge} featured={listing.isFeatured} className="absolute top-3 left-3 z-20 shadow-sm" />
+      <div className="absolute inset-0 z-10 bg-gradient-to-t from-foreground-950/40 via-transparent to-foreground-950/5 pointer-events-none" />
+      <TierBadge tier={listing.badge} featured={listing.isFeatured} className="absolute left-3 top-3 z-20 shadow-[0_8px_22px_rgba(0,0,0,0.18)]" />
       {onToggleSaved && (
         <div className="absolute top-3 right-3 z-20 flex flex-col items-end gap-2">
           <button
             aria-label={saved ? "Remove from saved" : "Save listing"}
             type="button"
             onClick={(event) => onToggleSaved(event, listing)}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-background-50/95 backdrop-blur text-foreground-700 hover:text-accent-500 shadow-sm cursor-pointer"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-background-50/70 bg-background-50/90 text-foreground-700 shadow-[0_8px_22px_rgba(0,0,0,0.16)] backdrop-blur-md transition-all hover:scale-105 hover:text-accent-500 cursor-pointer"
           >
             <i className={saved ? "ri-heart-fill text-accent-500" : "ri-heart-line"} />
           </button>
@@ -187,10 +192,10 @@ export default function DirectoryListingCard({
     return (
       <Link
         to={`/listings/${listing.slug}`}
-        className={`group overflow-hidden rounded-2xl border border-t-4 border-primary-200 border-t-primary-500 bg-gradient-to-br from-background-50 to-background-100/55 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(31,112,78,0.14)] flex flex-col sm:flex-row cursor-pointer ${className}`}
+        className={`group relative isolate flex cursor-pointer flex-col overflow-hidden rounded-[1.5rem] border border-background-200/90 bg-background-50 shadow-[0_10px_34px_rgba(37,30,20,0.07)] transition-all duration-300 before:absolute before:inset-x-6 before:top-0 before:z-20 before:h-[3px] before:rounded-b-full before:bg-gradient-to-r before:from-primary-500 before:via-primary-300 before:to-accent-400 hover:-translate-y-1.5 hover:border-primary-200 hover:shadow-[0_24px_60px_rgba(31,112,78,0.16)] sm:flex-row ${className}`}
       >
         <Cover listing={listing} listView saved={saved} onToggleSaved={onToggleSaved} />
-        <div className="p-5 flex flex-col flex-1 min-w-0">
+        <div className="flex min-w-0 flex-1 flex-col p-5">
           <div className="flex items-start gap-4">
             <div className="flex-1 min-w-0"><ListingIdentity listing={listing} compact /></div>
             {matchScore !== undefined && (
@@ -202,9 +207,9 @@ export default function DirectoryListingCard({
           </div>
           {description && <p className="text-sm text-foreground-600 leading-relaxed mt-3 line-clamp-2 max-w-3xl">{description}</p>}
           <ListingHighlights listing={listing} />
-          <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-background-200/70">
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-background-200/70 pt-4">
             <div className="flex flex-wrap items-center gap-3"><RatingSignal listing={listing} /><BookingSignal listing={listing} /></div>
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary-700 whitespace-nowrap">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-700 px-3.5 py-2 text-xs font-semibold text-background-50 shadow-[0_8px_20px_rgba(31,112,78,0.2)] transition-colors group-hover:bg-primary-800 whitespace-nowrap">
               View profile <i className="ri-arrow-right-line" />
             </span>
           </div>
@@ -216,17 +221,17 @@ export default function DirectoryListingCard({
   return (
     <Link
       to={`/listings/${listing.slug}`}
-      className={`group overflow-hidden rounded-2xl border border-t-4 border-primary-200 border-t-primary-500 bg-gradient-to-br from-background-50 to-background-100/55 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(31,112,78,0.14)] flex flex-col cursor-pointer ${className}`}
+      className={`group relative isolate flex cursor-pointer flex-col overflow-hidden rounded-[1.5rem] border border-background-200/90 bg-background-50 shadow-[0_10px_34px_rgba(37,30,20,0.07)] transition-all duration-300 before:absolute before:inset-x-6 before:top-0 before:z-20 before:h-[3px] before:rounded-b-full before:bg-gradient-to-r before:from-primary-500 before:via-primary-300 before:to-accent-400 hover:-translate-y-1.5 hover:border-primary-200 hover:shadow-[0_24px_60px_rgba(31,112,78,0.16)] ${className}`}
     >
       <Cover listing={listing} saved={saved} onToggleSaved={onToggleSaved} />
-      <div className="p-4 flex flex-col flex-1 min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col p-4 pt-4.5">
         <ListingIdentity listing={listing} />
         {description && <p className="text-xs text-foreground-600 leading-relaxed mt-3 line-clamp-2">{description}</p>}
         <ListingHighlights listing={listing} />
         {listing.bookingEnabled && <div className="mt-3"><BookingSignal listing={listing} /></div>}
-        <div className="mt-auto flex items-center justify-between gap-3 pt-4 border-t border-background-200/70">
+        <div className="mt-auto flex items-center justify-between gap-3 border-t border-background-200/70 pt-4">
           <RatingSignal listing={listing} />
-          <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary-700 whitespace-nowrap">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-700 px-3.5 py-2 text-xs font-semibold text-background-50 shadow-[0_8px_20px_rgba(31,112,78,0.2)] transition-colors group-hover:bg-primary-800 whitespace-nowrap">
             Profile <i className="ri-arrow-right-line" />
           </span>
         </div>
