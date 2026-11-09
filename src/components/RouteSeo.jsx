@@ -12,6 +12,7 @@ const NOINDEX_PREFIXES = [
   "/messages",
   "/saved",
   "/shop/customize",
+  "/design-studio",
 ];
 
 function pageMeta(pathname) {
@@ -37,7 +38,14 @@ function pageMeta(pathname) {
       label: "Article",
     };
   }
-  return DEFAULT_META;
+  if (/^\/listings\/[^/]+\/shop$/.test(pathname)) {
+    return {
+      title: "Listing Storefront | Connect767",
+      description: "Shop products from this Connect767 directory listing.",
+      label: "Listing Storefront",
+    };
+  }
+  return null;
 }
 
 function setMeta(selector, attributes) {
@@ -117,20 +125,25 @@ export default function RouteSeo() {
     const normalizedPath = pathname !== "/" ? pathname.replace(/\/$/, "") : "/";
     const meta = pageMeta(normalizedPath);
     const canonical = `${SITE_URL}${normalizedPath === "/" ? "/" : normalizedPath}`;
-    const noindex = NOINDEX_PREFIXES.some(
+    const noindex = !meta || NOINDEX_PREFIXES.some(
       (prefix) => normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`),
     ) || /^\/listings\/[^/]+\/edit$/.test(normalizedPath);
+    const resolvedMeta = meta || {
+      title: "Page Not Found | Connect767",
+      description: "The requested Connect767 page could not be found.",
+      label: "Not Found",
+    };
 
-    document.title = meta.title;
-    setMeta('meta[name="description"]', { name: "description", content: meta.description });
+    document.title = resolvedMeta.title;
+    setMeta('meta[name="description"]', { name: "description", content: resolvedMeta.description });
     setMeta('meta[name="robots"]', {
       name: "robots",
       content: noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large",
     });
-    setMeta('meta[property="og:title"]', { property: "og:title", content: meta.title });
+    setMeta('meta[property="og:title"]', { property: "og:title", content: resolvedMeta.title });
     setMeta('meta[property="og:description"]', {
       property: "og:description",
-      content: meta.description,
+      content: resolvedMeta.description,
     });
     setMeta('meta[property="og:url"]', { property: "og:url", content: canonical });
     setMeta('meta[property="og:type"]', { property: "og:type", content: "website" });
@@ -143,13 +156,13 @@ export default function RouteSeo() {
       content: "Connect767 C logo",
     });
     setMeta('meta[name="twitter:card"]', { name: "twitter:card", content: "summary" });
-    setMeta('meta[name="twitter:title"]', { name: "twitter:title", content: meta.title });
+    setMeta('meta[name="twitter:title"]', { name: "twitter:title", content: resolvedMeta.title });
     setMeta('meta[name="twitter:description"]', {
       name: "twitter:description",
-      content: meta.description,
+      content: resolvedMeta.description,
     });
     setCanonical(canonical);
-    setStructuredData(normalizedPath, meta, canonical);
+    setStructuredData(normalizedPath, resolvedMeta, canonical);
   }, [pathname]);
 
   return null;

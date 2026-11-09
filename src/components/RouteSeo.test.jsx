@@ -58,4 +58,17 @@ describe("RouteSeo", () => {
     renderRoute("/listings/example/edit");
     await waitFor(() => expect(robots()).toBe("noindex, nofollow"));
   });
+
+  it("indexes real storefront routes with a self-referencing canonical", async () => {
+    renderRoute("/listings/jmwa/shop");
+    await waitFor(() => expect(document.title).toBe("Listing Storefront | Connect767"));
+    expect(canonical()).toBe("https://connect767.com/listings/jmwa/shop");
+    expect(robots()).toBe("index, follow, max-image-preview:large");
+  });
+
+  it("marks unknown routes as not found and prevents indexing", async () => {
+    renderRoute("/this-page-does-not-exist");
+    await waitFor(() => expect(document.title).toBe("Page Not Found | Connect767"));
+    expect(robots()).toBe("noindex, nofollow");
+  });
 });
