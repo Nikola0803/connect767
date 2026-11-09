@@ -85,18 +85,11 @@ export default function Hero() {
                   onChange={(e) => setQuery(e.target.value)}
                 />
               </div>
-              <div className="grid grid-cols-2 items-center gap-2 border-t border-background-200 pt-2 lg:flex lg:border-t-0 lg:pl-2 lg:pt-0">
-                <button
-                  type="submit"
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary-600 px-5 text-sm font-semibold text-background-50 transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 sm:h-12"
-                >
-                  <i className="ri-search-line" aria-hidden="true" />
-                  Search
-                </button>
+              <div className="flex items-center justify-end gap-2 border-t border-background-200 pt-2 lg:border-t-0 lg:pl-2 lg:pt-0">
                 <Link
                   to="/match"
                   aria-label="Open AI Matching"
-                  className="inline-flex h-11 min-w-28 items-center justify-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-5 text-sm font-semibold text-primary-800 transition-colors hover:bg-primary-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 sm:h-12"
+                  className="inline-flex h-11 w-full min-w-28 items-center justify-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-5 text-sm font-semibold text-primary-800 transition-colors hover:bg-primary-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 sm:h-12 lg:w-auto"
                 >
                   <i className="ri-sparkling-2-fill" aria-hidden="true" />
                   AI Match
