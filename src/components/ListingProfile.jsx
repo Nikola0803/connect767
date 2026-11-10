@@ -45,6 +45,7 @@ export function listingContactActionLinks(contact = {}) {
  */
 export default function ListingProfile({ data, isPreview = false }) {
   const [activeImage, setActiveImage] = useState(0);
+  const [activeSection, setActiveSection] = useState("overview");
   const [mapCoords, setMapCoords] = useState(null);
   const [hasProducts, setHasProducts] = useState(false);
   const [relatedBlogPost, setRelatedBlogPost] = useState(null);
@@ -55,6 +56,14 @@ export default function ListingProfile({ data, isPreview = false }) {
   const contactActions = listingContactActionLinks(data.contact);
   const hasContactActions = Object.values(contactActions).some(Boolean);
   const isClassified = String(data.badge || "").toLowerCase() === "classified";
+
+  const jumpToSection = (section) => {
+    setActiveSection(section);
+    document.getElementById(`listing-${section}`)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
 
   const handleSave = () => {
     if (isPreview) return;
@@ -144,9 +153,158 @@ export default function ListingProfile({ data, isPreview = false }) {
 
       <div className="w-full px-4 md:px-8 lg:px-12 py-8">
         <div className="max-w-7xl mx-auto">
+          <section className="relative overflow-hidden rounded-[1.75rem] border border-background-200/80 bg-background-100 shadow-[0_24px_70px_rgba(29,42,35,0.12)]">
+            <div className="relative h-[340px] sm:h-[420px] lg:h-[500px]">
+              {gallery[activeImage]?.src ? (
+                <img
+                  alt={gallery[activeImage]?.alt}
+                  className={`h-full w-full ${activeImage === 0 ? "listing-profile-cover-media object-cover" : "object-contain bg-background-100"}`}
+                  src={gallery[activeImage]?.src}
+                  style={
+                    activeImage === 0
+                      ? imageCropStyle(data.coverPosition, data.coverZoom, "cover")
+                      : undefined
+                  }
+                />
+              ) : (
+                <DefaultListingCover title={data.title} />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-foreground-950/85 via-foreground-950/15 to-transparent" />
+
+              <div className="absolute left-5 top-5 sm:left-7 sm:top-7">
+                <TierBadge tier={data.badge} featured={data.isFeatured} />
+              </div>
+
+              {gallery.length > 1 && (
+                <>
+                  <button
+                    aria-label="Previous image"
+                    type="button"
+                    onClick={() => setActiveImage((i) => (i - 1 + gallery.length) % gallery.length)}
+                    className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-foreground-950 shadow-md backdrop-blur transition hover:bg-white"
+                  >
+                    <i className="ri-arrow-left-s-line text-xl" />
+                  </button>
+                  <button
+                    aria-label="Next image"
+                    type="button"
+                    onClick={() => setActiveImage((i) => (i + 1) % gallery.length)}
+                    className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-foreground-950 shadow-md backdrop-blur transition hover:bg-white"
+                  >
+                    <i className="ri-arrow-right-s-line text-xl" />
+                  </button>
+                </>
+              )}
+
+              <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 lg:p-10 text-white">
+                <div className="flex items-end gap-4">
+                  {data.logo && (
+                    <div className="hidden h-16 w-16 shrink-0 overflow-hidden rounded-2xl border-2 border-white/80 bg-white shadow-lg sm:block">
+                      <img
+                        src={data.logo}
+                        alt={`${data.title} logo`}
+                        className="h-full w-full object-cover"
+                        style={imageCropStyle(data.logoPosition, data.logoZoom)}
+                      />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <h1 className="flex items-center gap-2 font-heading text-3xl font-medium leading-tight sm:text-4xl lg:text-5xl">
+                      <span className="truncate">{data.title}</span>
+                      {data.verified && (
+                        <i className="ri-verified-badge-fill shrink-0 text-xl text-primary-300 sm:text-2xl" title="Verified business" />
+                      )}
+                    </h1>
+                    <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/85 sm:text-base">
+                      <span>{data.industryLabel || data.categoryLabel}</span>
+                      {data.location && <span>· {data.location}</span>}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {gallery.length > 1 && (
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+              {gallery.map((img, i) => (
+                <button
+                  key={img.src || i}
+                  type="button"
+                  onClick={() => setActiveImage(i)}
+                  className={`h-16 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
+                    i === activeImage
+                      ? "border-primary-500 ring-2 ring-primary-100"
+                      : "border-background-200 opacity-70 hover:opacity-100"
+                  }`}
+                >
+                  <img alt={`${data.title} thumbnail ${i + 1}`} className="h-full w-full object-cover" src={img.src} />
+                </button>
+              ))}
+            </div>
+          )}
+
+          <section className="relative z-10 mt-5 rounded-2xl border border-background-200/80 bg-background-50 p-4 shadow-[0_12px_36px_rgba(29,42,35,0.08)] sm:p-5">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+              <div className="grid grid-cols-3 divide-x divide-background-200 text-center sm:min-w-[390px]">
+                <div className="px-3">
+                  <p className="text-xl font-semibold text-foreground-950">{data.yearsExperience || "—"}</p>
+                  <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-foreground-500">Years experience</p>
+                </div>
+                <div className="px-3">
+                  <p className="text-xl font-semibold text-foreground-950">{data.rating || "New"}</p>
+                  <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-foreground-500">Profile rating</p>
+                </div>
+                <div className="px-3">
+                  <p className="text-xl font-semibold text-foreground-950">{data.reviewCount || 0}</p>
+                  <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-foreground-500">Reviews</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-end">
+                {relatedBlogPost && !isPreview && (
+                  <Link to={`/blog/${relatedBlogPost.slug}`} className="inline-flex h-11 items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 text-sm font-semibold text-primary-800 transition hover:-translate-y-0.5 hover:bg-primary-100">
+                    <i className="ri-article-line" /> Story
+                  </Link>
+                )}
+                {hasProducts && !isPreview && (
+                  <Link to={`/listings/${data.slug}/shop`} className="inline-flex h-11 items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 text-sm font-semibold text-primary-800 transition hover:-translate-y-0.5 hover:bg-primary-100">
+                    <i className="ri-store-3-line" /> Shop
+                  </Link>
+                )}
+                <button type="button" onClick={handleSave} aria-pressed={saved} className="inline-flex h-11 items-center gap-2 rounded-xl border border-background-300 px-4 text-sm font-semibold text-foreground-800 transition hover:-translate-y-0.5 hover:bg-background-100">
+                  <i className={saved ? "ri-heart-fill text-accent-600" : "ri-heart-line"} /> {saved ? "Saved" : "Save"}
+                </button>
+                {!isPreview && <ShareMenu title={data.title} />}
+                {messagePath ? (
+                  <Link to={messagePath} className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-primary-700">
+                    <i className="ri-chat-3-line" /> Message owner
+                  </Link>
+                ) : null}
+              </div>
+            </div>
+          </section>
+
+          <nav className="mt-7 flex gap-1 overflow-x-auto border-b border-background-200" aria-label="Profile sections">
+            {[
+              ["overview", "Overview"],
+              ["services", "Services"],
+              ["gallery", "Gallery"],
+              ["reviews", "Reviews"],
+            ].map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => jumpToSection(id)}
+                className={`whitespace-nowrap border-b-2 px-5 py-3 text-sm font-semibold transition ${activeSection === id ? "border-primary-600 text-primary-800" : "border-transparent text-foreground-500 hover:text-foreground-900"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </nav>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-              <div className="relative">
+              <div className="relative hidden" aria-hidden="true">
                 <div className="w-full h-[320px] md:h-[500px] rounded-2xl overflow-hidden border border-background-200/70 bg-background-100 flex items-center justify-center">
                   {gallery[activeImage]?.src ? (
                     <img
@@ -208,7 +366,7 @@ export default function ListingProfile({ data, isPreview = false }) {
               </div>
 
               <div className="mt-8">
-                <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+                <div className="hidden flex-wrap items-start justify-between gap-4 mb-6">
                   <div className="flex-1 min-w-0">
                     {/* Verified is no longer its own pill. A separate
                         "Verified" chip competed with the tier badge and read
@@ -341,7 +499,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-4 mb-6 text-sm">
+                <div className="hidden flex-wrap items-center gap-4 mb-6 text-sm">
                   <div className="flex items-center gap-1.5">
                     <StarRating rating={data.rating} size="text-sm" />
                     <span className="font-semibold text-foreground-950">{data.rating}</span>
@@ -360,14 +518,13 @@ export default function ListingProfile({ data, isPreview = false }) {
                   </span>
                 </div>
 
-                <div className="prose prose-sm max-w-none">
+                <div id="listing-overview" className="scroll-mt-28 rounded-2xl border border-background-200/80 bg-background-50 p-6 shadow-[0_10px_30px_rgba(29,42,35,0.05)] sm:p-8">
+                  <h2 className="mb-4 font-heading text-2xl font-medium text-foreground-950">About</h2>
                   <p className="text-foreground-700 leading-relaxed whitespace-pre-line">
                     {data.description}
                   </p>
-                </div>
-
-                {data.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-5">
+                  {data.tags.length > 0 && (
+                  <div className="mt-5 flex flex-wrap gap-1.5">
                     {data.tags.map((tag) => (
                       <span
                         key={tag}
@@ -377,12 +534,13 @@ export default function ListingProfile({ data, isPreview = false }) {
                       </span>
                     ))}
                   </div>
-                )}
+                  )}
+                </div>
 
                 {data.amenities.length > 0 && (
-                  <div className="mt-8 pt-8 border-t border-background-200/70">
-                    <h3 className="font-heading text-lg font-medium text-foreground-950 mb-4">
-                      Amenities
+                  <div id="listing-services" className="scroll-mt-28 mt-5 rounded-2xl border border-background-200/80 bg-background-50 p-6 shadow-[0_10px_30px_rgba(29,42,35,0.05)] sm:p-8">
+                    <h3 className="font-heading text-2xl font-medium text-foreground-950 mb-5">
+                      Services & amenities
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {data.amenities.map((a) => (
@@ -399,7 +557,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                 )}
 
                 {data.hours.length > 0 && (
-                  <div className="mt-8 pt-8 border-t border-background-200/70">
+                  <div className="mt-5 rounded-2xl border border-background-200/80 bg-background-50 p-6 shadow-[0_10px_30px_rgba(29,42,35,0.05)] sm:p-8">
                     <h3 className="font-heading text-lg font-medium text-foreground-950 mb-4">
                       Hours
                     </h3>
@@ -413,14 +571,16 @@ export default function ListingProfile({ data, isPreview = false }) {
                   </div>
                 )}
 
-                <ListingProducts
-                  slug={data.slug}
-                  isPreview={isPreview}
-                  listingTitle={data.title}
-                  onAvailabilityChange={setHasProducts}
-                />
+                <div id="listing-gallery" className="scroll-mt-28">
+                  <ListingProducts
+                    slug={data.slug}
+                    isPreview={isPreview}
+                    listingTitle={data.title}
+                    onAvailabilityChange={setHasProducts}
+                  />
+                </div>
 
-                <section className="mt-10 pt-10 border-t border-background-200/70">
+                <section id="listing-reviews" className="scroll-mt-28 mt-5 rounded-2xl border border-background-200/80 bg-background-50 p-6 shadow-[0_10px_30px_rgba(29,42,35,0.05)] sm:p-8">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="font-heading text-2xl font-light text-foreground-950">
                       Reviews
