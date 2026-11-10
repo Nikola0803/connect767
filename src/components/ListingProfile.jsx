@@ -215,10 +215,6 @@ export default function ListingProfile({ data, isPreview = false }) {
                         <i className="ri-verified-badge-fill shrink-0 text-xl text-primary-300 sm:text-2xl" title="Verified business" />
                       )}
                     </h1>
-                    <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/85 sm:text-base">
-                      <span>{data.industryLabel || data.categoryLabel}</span>
-                      {data.location && <span>· {data.location}</span>}
-                    </p>
                   </div>
                 </div>
               </div>
@@ -246,7 +242,7 @@ export default function ListingProfile({ data, isPreview = false }) {
 
           <section className="relative z-10 mt-5 rounded-2xl border border-background-200/80 bg-background-50 p-4 shadow-[0_12px_36px_rgba(29,42,35,0.08)] sm:p-5">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-              <div className="grid grid-cols-3 divide-x divide-background-200 text-center sm:min-w-[390px]">
+              <div className="grid w-full grid-cols-2 divide-x divide-y divide-background-200 text-center sm:grid-cols-4 sm:divide-y-0 lg:min-w-[620px] lg:w-auto">
                 <div className="px-3">
                   <p className="text-xl font-semibold text-foreground-950">{data.yearsExperience || "—"}</p>
                   <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-foreground-500">Years experience</p>
@@ -258,6 +254,12 @@ export default function ListingProfile({ data, isPreview = false }) {
                 <div className="px-3">
                   <p className="text-xl font-semibold text-foreground-950">{data.reviewCount || 0}</p>
                   <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-foreground-500">Reviews</p>
+                </div>
+                <div className="px-3 pt-4 sm:pt-0">
+                  <p className="truncate text-base font-semibold text-foreground-950 sm:text-lg" title={data.industryLabel || data.categoryLabel || "Not provided"}>
+                    {data.industryLabel || data.categoryLabel || "—"}
+                  </p>
+                  <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-foreground-500">Industry</p>
                 </div>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-end">
@@ -523,6 +525,32 @@ export default function ListingProfile({ data, isPreview = false }) {
                   <p className="text-foreground-700 leading-relaxed whitespace-pre-line">
                     {data.description}
                   </p>
+                  {(data.education || data.degreeType) && (
+                    <div className="mt-6 grid gap-3 border-t border-background-200 pt-5 sm:grid-cols-2">
+                      {data.education && (
+                        <div className="flex items-start gap-3 rounded-xl bg-background-100/70 p-4">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                            <i className="ri-graduation-cap-line" />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-foreground-500">Education</p>
+                            <p className="mt-1 text-sm font-semibold text-foreground-900">{data.education}</p>
+                          </div>
+                        </div>
+                      )}
+                      {data.degreeType && (
+                        <div className="flex items-start gap-3 rounded-xl bg-background-100/70 p-4">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                            <i className="ri-book-open-line" />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-foreground-500">Degree</p>
+                            <p className="mt-1 text-sm font-semibold text-foreground-900">{data.degreeType}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {data.tags.length > 0 && (
                   <div className="mt-5 flex flex-wrap gap-1.5">
                     {data.tags.map((tag) => (
