@@ -17,6 +17,20 @@ export function listingOwnerMessagePath(data, isPreview = false) {
   return `/messages?listing=${encodeURIComponent(data.slug)}&title=${encodeURIComponent(data.title || "")}`;
 }
 
+export function listingContactActionLinks(contact = {}) {
+  const phone = String(contact?.phone || "").trim();
+  const phoneTarget = phone.replace(/[^\d+]/g, "");
+  const phoneDigits = phoneTarget.replace(/\D/g, "");
+  const website = String(contact?.websiteUrl || "").trim();
+  const whatsappDigits = String(contact?.whatsapp || "").replace(/\D/g, "");
+
+  return {
+    call: phoneDigits.length >= 7 ? `tel:${phoneTarget}` : "",
+    website,
+    whatsapp: whatsappDigits.length >= 7 ? `https://wa.me/${whatsappDigits}` : "",
+  };
+}
+
 /**
  * The actual listing profile presentation — used by both
  * ListingDetailPage.jsx (real, fetched data) and AddListingPage.jsx's
@@ -38,6 +52,8 @@ export default function ListingProfile({ data, isPreview = false }) {
   const gallery = data.gallery.length > 0 ? data.gallery : [{ alt: data.title, src: "" }];
   const saved = !isPreview && isSaved(data.slug);
   const messagePath = listingOwnerMessagePath(data, isPreview);
+  const contactActions = listingContactActionLinks(data.contact);
+  const hasContactActions = Object.values(contactActions).some(Boolean);
   const isClassified = String(data.badge || "").toLowerCase() === "classified";
 
   const handleSave = () => {
@@ -489,32 +505,76 @@ export default function ListingProfile({ data, isPreview = false }) {
                     </div>
                   ) : data.contact ? (
                     <>
-                      {data.contact.phone && (
-                        <a
-                          className="flex items-center gap-3 py-3 border-b border-background-100 text-sm text-foreground-700 hover:text-primary-700 font-label cursor-pointer transition-colors"
-                          href={`tel:${data.contact.phone.replace(/\s/g, "")}`}
-                        >
-                          <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-primary-50 text-primary-600 shrink-0">
-                            <i className="ri-phone-line" />
-                          </div>
-                          <span>{data.contact.phone}</span>
-                        </a>
-                      )}
-                      {data.contact.websiteUrl && (
-                        <a
-                          className="flex items-center gap-3 py-3 border-b border-background-100 text-sm text-foreground-700 hover:text-primary-700 font-label cursor-pointer transition-colors"
-                          href={data.contact.websiteUrl}
-                          rel="noopener noreferrer"
-                          target="_blank"
-                        >
-                          <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-accent-50 text-accent-600 shrink-0">
-                            <i className="ri-global-line" />
-                          </div>
-                          <span className="truncate">{data.contact.website}</span>
-                        </a>
+                      {hasContactActions && (
+                        <div className="grid gap-2">
+                          {contactActions.call && (
+                            <a
+                              aria-label={`Call ${data.title}`}
+                              className="group flex min-h-16 items-center gap-3 rounded-xl border border-background-200 bg-white px-3.5 py-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary-300 hover:bg-primary-50/50 hover:shadow-md"
+                              href={contactActions.call}
+                            >
+                              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-lg text-white shadow-sm">
+                                <i className="ri-phone-line" />
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block text-sm font-semibold text-foreground-950 font-label">
+                                  Call
+                                </span>
+                                <span className="block text-xs text-foreground-600 font-label">
+                                  Call listing owner
+                                </span>
+                              </span>
+                              <i className="ri-arrow-right-up-line text-foreground-400 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary-700" />
+                            </a>
+                          )}
+                          {contactActions.website && (
+                            <a
+                              aria-label={`Visit ${data.title} website`}
+                              className="group flex min-h-16 items-center gap-3 rounded-xl border border-background-200 bg-white px-3.5 py-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary-300 hover:bg-primary-50/50 hover:shadow-md"
+                              href={contactActions.website}
+                              rel="noopener noreferrer"
+                              target="_blank"
+                            >
+                              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-lg text-white shadow-sm">
+                                <i className="ri-global-line" />
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block text-sm font-semibold text-foreground-950 font-label">
+                                  Website
+                                </span>
+                                <span className="block text-xs text-foreground-600 font-label">
+                                  Visit official website
+                                </span>
+                              </span>
+                              <i className="ri-arrow-right-up-line text-foreground-400 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary-700" />
+                            </a>
+                          )}
+                          {contactActions.whatsapp && (
+                            <a
+                              aria-label={`Chat with ${data.title} on WhatsApp`}
+                              className="group flex min-h-16 items-center gap-3 rounded-xl border border-background-200 bg-white px-3.5 py-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary-300 hover:bg-primary-50/50 hover:shadow-md"
+                              href={contactActions.whatsapp}
+                              rel="noopener noreferrer"
+                              target="_blank"
+                            >
+                              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-lg text-white shadow-sm">
+                                <i className="ri-whatsapp-line" />
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block text-sm font-semibold text-foreground-950 font-label">
+                                  WhatsApp
+                                </span>
+                                <span className="block text-xs text-foreground-600 font-label">
+                                  Start a WhatsApp chat
+                                </span>
+                              </span>
+                              <i className="ri-arrow-right-up-line text-foreground-400 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary-700" />
+                            </a>
+                          )}
+                        </div>
                       )}
                       {data.contact.address && (
-                        <div className="flex items-center gap-3 py-3 border-b border-background-100 text-sm text-foreground-700 font-label">
+                        <div className="mt-3 flex items-center gap-3 border-t border-background-100 pt-3 text-sm text-foreground-700 font-label">
                           <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-background-200 text-foreground-600 shrink-0">
                             <i className="ri-map-pin-line" />
                           </div>
@@ -566,42 +626,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                             <i className="ri-twitter-x-line" />
                           </a>
                         )}
-                        {data.contact.whatsapp && (
-                          <a
-                            aria-label="WhatsApp"
-                            className="w-9 h-9 flex items-center justify-center rounded-full bg-background-100 hover:bg-accent-100 text-foreground-600 hover:text-accent-700 cursor-pointer transition-colors"
-                            href={`https://wa.me/${data.contact.whatsapp.replace(/[^\d]/g, "")}`}
-                            rel="noopener noreferrer"
-                            target="_blank"
-                          >
-                            <i className="ri-whatsapp-line" />
-                          </a>
-                        )}
                       </div>
-                      {(data.contact.phone || data.contact.websiteUrl) && (
-                        <div className="mt-5 flex flex-col gap-2">
-                          {data.contact.phone && (
-                            <a
-                              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold rounded-lg bg-primary-500 text-background-50 hover:bg-primary-600 cursor-pointer whitespace-nowrap transition-colors"
-                              href={`tel:${data.contact.phone.replace(/\s/g, "")}`}
-                            >
-                              <i className="ri-phone-line" />
-                              Call Now
-                            </a>
-                          )}
-                          {!data.contact.phone && data.contact.websiteUrl && (
-                            <a
-                              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold rounded-lg bg-primary-500 text-background-50 hover:bg-primary-600 cursor-pointer whitespace-nowrap transition-colors"
-                              href={data.contact.websiteUrl}
-                              rel="noopener noreferrer"
-                              target="_blank"
-                            >
-                              <i className="ri-global-line" />
-                              Visit Website
-                            </a>
-                          )}
-                        </div>
-                      )}
                     </>
                   ) : (
                     <p className="text-sm text-foreground-500 font-label">
