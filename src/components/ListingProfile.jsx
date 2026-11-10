@@ -153,7 +153,8 @@ export default function ListingProfile({ data, isPreview = false }) {
 
       <div className="w-full px-4 md:px-8 lg:px-12 py-8">
         <div className="max-w-7xl mx-auto">
-          <section className="relative max-w-5xl overflow-hidden rounded-[1.75rem] border border-background-200/80 bg-background-100 shadow-[0_24px_70px_rgba(29,42,35,0.12)]">
+          <div id="listing-gallery" className="max-w-5xl scroll-mt-28">
+            <section className="relative w-full overflow-hidden rounded-[1.75rem] border border-background-200/80 bg-background-100 shadow-[0_24px_70px_rgba(29,42,35,0.12)]">
             <div className="relative aspect-[5/3] w-full">
               {gallery[activeImage]?.src ? (
                 <img
@@ -219,26 +220,27 @@ export default function ListingProfile({ data, isPreview = false }) {
                 </div>
               </div>
             </div>
-          </section>
+            </section>
 
-          {gallery.length > 1 && (
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-              {gallery.map((img, i) => (
-                <button
-                  key={img.src || i}
-                  type="button"
-                  onClick={() => setActiveImage(i)}
-                  className={`h-16 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
-                    i === activeImage
-                      ? "border-primary-500 ring-2 ring-primary-100"
-                      : "border-background-200 opacity-70 hover:opacity-100"
-                  }`}
-                >
-                  <img alt={`${data.title} thumbnail ${i + 1}`} className="h-full w-full object-cover" src={img.src} />
-                </button>
-              ))}
-            </div>
-          )}
+            {gallery.length > 1 && (
+              <div className="mt-3 flex w-full gap-2 overflow-x-auto pb-1" aria-label="Listing photo gallery">
+                {gallery.map((img, i) => (
+                  <button
+                    key={img.src || i}
+                    type="button"
+                    onClick={() => setActiveImage(i)}
+                    className={`h-16 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
+                      i === activeImage
+                        ? "border-primary-500 ring-2 ring-primary-100"
+                        : "border-background-200 opacity-70 hover:opacity-100"
+                    }`}
+                  >
+                    <img alt={`${data.title} thumbnail ${i + 1}`} className="h-full w-full object-cover" src={img.src} />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <section className="relative z-10 mt-5 rounded-2xl border border-background-200/80 bg-background-50 p-4 shadow-[0_12px_36px_rgba(29,42,35,0.08)] sm:p-5">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
@@ -615,7 +617,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                   </div>
                 )}
 
-                <div id="listing-gallery" className="scroll-mt-28">
+                <div id="listing-products" className="scroll-mt-28">
                   <ListingProducts
                     slug={data.slug}
                     isPreview={isPreview}
