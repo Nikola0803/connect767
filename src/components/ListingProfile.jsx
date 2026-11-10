@@ -152,8 +152,8 @@ export default function ListingProfile({ data, isPreview = false }) {
       </div>
 
       <div className="w-full px-4 md:px-8 lg:px-12 py-8">
-        <div className="max-w-7xl mx-auto">
-          <div id="listing-gallery" className="max-w-5xl scroll-mt-28">
+        <div className="max-w-7xl mx-auto lg:grid lg:grid-cols-3 lg:items-start lg:gap-x-8">
+          <div id="listing-gallery" className="max-w-5xl scroll-mt-28 lg:col-span-2 lg:col-start-1 lg:row-start-1">
             <section className="relative w-full overflow-hidden rounded-[1.75rem] border border-background-200/80 bg-background-100 shadow-[0_24px_70px_rgba(29,42,35,0.12)]">
             <div className="relative aspect-[5/3] w-full">
               {gallery[activeImage]?.src ? (
@@ -242,7 +242,7 @@ export default function ListingProfile({ data, isPreview = false }) {
             )}
           </div>
 
-          <section className="relative z-10 mt-5 rounded-2xl border border-background-200/80 bg-background-50 p-4 shadow-[0_12px_36px_rgba(29,42,35,0.08)] sm:p-5">
+          <section className="relative z-10 mt-5 rounded-2xl border border-background-200/80 bg-background-50 p-4 shadow-[0_12px_36px_rgba(29,42,35,0.08)] sm:p-5 lg:col-span-2 lg:col-start-1">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex w-full flex-wrap items-center gap-x-6 gap-y-3 lg:w-auto">
                 <div className="inline-flex items-center gap-2.5">
@@ -312,7 +312,7 @@ export default function ListingProfile({ data, isPreview = false }) {
             </div>
           </section>
 
-          <nav className="mt-7 flex gap-1 overflow-x-auto border-b border-background-200" aria-label="Profile sections">
+          <nav className="mt-7 flex gap-1 overflow-x-auto border-b border-background-200 lg:col-span-2 lg:col-start-1" aria-label="Profile sections">
             {[
               ["overview", "Overview"],
               ["services", "Services"],
@@ -330,8 +330,8 @@ export default function ListingProfile({ data, isPreview = false }) {
             ))}
           </nav>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
+          <div className="grid grid-cols-1 gap-8 lg:contents">
+            <div className="lg:col-span-2 lg:col-start-1">
               <div className="relative hidden" aria-hidden="true">
                 <div className="w-full h-[320px] md:h-[500px] rounded-2xl overflow-hidden border border-background-200/70 bg-background-100 flex items-center justify-center">
                   {gallery[activeImage]?.src ? (
@@ -583,8 +583,9 @@ export default function ListingProfile({ data, isPreview = false }) {
                   </div>
                 </div>
 
+                <div id="listing-services" className="scroll-mt-28">
                 {data.amenities.length > 0 && (
-                  <div id="listing-services" className="scroll-mt-28 mt-5 rounded-2xl border border-background-200/80 bg-background-50 p-6 shadow-[0_10px_30px_rgba(29,42,35,0.05)] sm:p-8">
+                  <div className="mt-5 rounded-2xl border border-background-200/80 bg-background-50 p-6 shadow-[0_10px_30px_rgba(29,42,35,0.05)] sm:p-8">
                     <h3 className="font-heading text-2xl font-medium text-foreground-950 mb-5">
                       Services & amenities
                     </h3>
@@ -616,6 +617,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                     </div>
                   </div>
                 )}
+                </div>
 
                 <div id="listing-products" className="scroll-mt-28">
                   <ListingProducts
@@ -690,7 +692,7 @@ export default function ListingProfile({ data, isPreview = false }) {
               </div>
             </div>
 
-            <div className="lg:col-span-1">
+            <div className="lg:col-start-3 lg:row-start-1 lg:row-span-[6]">
               <div className="sticky top-24 space-y-6">
                 <div className="rounded-2xl border border-background-200/70 bg-background-50 p-6">
                   <h3 className="font-heading text-lg font-medium text-foreground-950 mb-5">
