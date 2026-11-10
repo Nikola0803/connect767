@@ -170,12 +170,6 @@ export default function ListingProfile({ data, isPreview = false }) {
               ) : (
                 <DefaultListingCover title={data.title} />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-foreground-950/85 via-foreground-950/15 to-transparent" />
-
-              <div className="absolute left-5 top-5 sm:left-7 sm:top-7">
-                <TierBadge tier={data.badge} featured={data.isFeatured} />
-              </div>
-
               {gallery.length > 1 && (
                 <>
                   <button
@@ -197,28 +191,6 @@ export default function ListingProfile({ data, isPreview = false }) {
                 </>
               )}
 
-              <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 lg:p-10 text-white">
-                <div className="flex items-end gap-4">
-                  {data.logo && (
-                    <div className="hidden h-16 w-16 shrink-0 overflow-hidden rounded-2xl border-2 border-white/80 bg-white shadow-lg sm:block">
-                      <img
-                        src={data.logo}
-                        alt={`${data.title} logo`}
-                        className="h-full w-full object-cover"
-                        style={imageCropStyle(data.logoPosition, data.logoZoom)}
-                      />
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <h1 className="flex items-center gap-2 font-heading text-3xl font-medium leading-tight sm:text-4xl lg:text-5xl">
-                      <span className="truncate">{data.title}</span>
-                      {data.verified && (
-                        <i className="ri-verified-badge-fill shrink-0 text-xl text-primary-300 sm:text-2xl" title="Verified business" />
-                      )}
-                    </h1>
-                  </div>
-                </div>
-              </div>
             </div>
             </section>
 
@@ -242,72 +214,74 @@ export default function ListingProfile({ data, isPreview = false }) {
             )}
           </div>
 
-          <section className="relative z-10 mt-5 rounded-2xl border border-background-200/80 bg-background-50 p-4 shadow-[0_12px_36px_rgba(29,42,35,0.08)] sm:p-5 lg:col-span-2 lg:col-start-1">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex w-full flex-wrap items-center gap-x-6 gap-y-3 lg:w-auto">
-                <div className="inline-flex items-center gap-2.5">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
-                    <i className="ri-briefcase-4-line" />
-                  </span>
-                  <p className="text-sm font-semibold text-foreground-800">
-                    {data.yearsExperience !== "" && data.yearsExperience != null
-                      ? data.yearsExperience
-                      : "—"} Yrs. Exp.
-                  </p>
+          <section className="relative z-10 mt-5 lg:col-span-2 lg:col-start-1">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <div className="mb-2">
+                  <TierBadge tier={data.badge} featured={data.isFeatured} />
                 </div>
-                {data.education && (
-                  <div className="inline-flex items-center gap-2.5">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
-                      <i className="ri-graduation-cap-line" />
-                    </span>
-                    <p className="max-w-[220px] truncate text-sm font-semibold text-foreground-800" title={data.education}>
-                      {data.education}
+                <div className="flex min-w-0 items-center gap-3">
+                  {data.logo && (
+                    <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full border border-background-200 bg-white shadow-sm">
+                      <img
+                        src={data.logo}
+                        alt={`${data.title} logo`}
+                        className="h-full w-full object-cover"
+                        style={imageCropStyle(data.logoPosition, data.logoZoom)}
+                      />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <h1 className="flex min-w-0 items-center gap-2 font-heading text-3xl font-medium leading-tight text-foreground-950 sm:text-4xl">
+                      <span className="truncate">{data.title}</span>
+                      {data.verified && (
+                        <i
+                          className="ri-verified-badge-fill shrink-0 text-xl text-primary-600 sm:text-2xl"
+                          title="Verified business"
+                          aria-label="Verified business"
+                          role="img"
+                        />
+                      )}
+                    </h1>
+                    <p className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground-600">
+                      {(data.parentCategoryLabel || data.categoryLabel) && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <i className="ri-folder-line text-foreground-400" />
+                          {data.parentCategoryLabel || data.categoryLabel}
+                        </span>
+                      )}
+                      {data.industryLabel && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <i className="ri-building-line text-foreground-400" />
+                          {data.industryLabel}
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1.5">
+                        <i className="ri-time-line text-foreground-400" />
+                        {data.yearsExperience !== "" && data.yearsExperience != null
+                          ? data.yearsExperience
+                          : "—"} Yrs. Exp.
+                      </span>
                     </p>
                   </div>
-                )}
-                {data.degreeType && (
-                  <div className="inline-flex items-center gap-2.5">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
-                      <i className="ri-book-open-line" />
-                    </span>
-                    <p className="max-w-[220px] truncate text-sm font-semibold text-foreground-800" title={data.degreeType}>
-                      {data.degreeType}
-                    </p>
-                  </div>
-                )}
-                <div className="inline-flex items-center gap-2.5">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
-                    <i className="ri-building-line" />
-                  </span>
-                  <p className="max-w-[220px] truncate text-sm font-semibold text-foreground-800" title={data.industryLabel || data.categoryLabel || "Not provided"}>
-                    {data.industryLabel || data.categoryLabel || "—"}
-                  </p>
                 </div>
-                {(data.parentCategoryLabel || data.categoryLabel) && (
-                  <div className="inline-flex items-center gap-2.5">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
-                      <i className="ri-folder-line" />
-                    </span>
-                    <p
-                      className="max-w-[220px] truncate text-sm font-semibold text-foreground-800"
-                      title={data.parentCategoryLabel || data.categoryLabel}
-                    >
-                      {data.parentCategoryLabel || data.categoryLabel}
-                    </p>
-                  </div>
-                )}
               </div>
-              <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-end">
-                {relatedBlogPost && !isPreview && (
-                  <Link to={`/blog/${relatedBlogPost.slug}`} className="inline-flex h-11 items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 text-sm font-semibold text-primary-800 transition hover:-translate-y-0.5 hover:bg-primary-100">
-                    <i className="ri-article-line" /> Story
-                  </Link>
-                )}
-                {hasProducts && !isPreview && (
-                  <Link to={`/listings/${data.slug}/shop`} className="inline-flex h-11 items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 text-sm font-semibold text-primary-800 transition hover:-translate-y-0.5 hover:bg-primary-100">
-                    <i className="ri-store-3-line" /> Shop
-                  </Link>
-                )}
+
+              <div className="flex shrink-0 items-center gap-2 sm:self-center">
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  aria-pressed={saved}
+                  className={`inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-sm font-semibold transition hover:-translate-y-0.5 ${
+                    saved
+                      ? "border-accent-300 bg-accent-50 text-accent-700"
+                      : "border-background-300 bg-background-50 text-foreground-700 hover:bg-background-100"
+                  }`}
+                >
+                  <i className={saved ? "ri-heart-fill" : "ri-heart-line"} />
+                  {saved ? "Saved" : "Save"}
+                </button>
+                {!isPreview && <ShareMenu title={data.title} />}
               </div>
             </div>
           </section>
@@ -565,7 +539,26 @@ export default function ListingProfile({ data, isPreview = false }) {
                     ))}
                   </div>
                   )}
-                  <div className="mt-6 flex items-center justify-end gap-2 border-t border-background-200 pt-5">
+                  <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-background-200 pt-5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {relatedBlogPost && !isPreview && (
+                        <Link
+                          to={`/blog/${relatedBlogPost.slug}`}
+                          className="inline-flex h-10 items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 text-sm font-semibold text-primary-800 transition hover:-translate-y-0.5 hover:bg-primary-100"
+                        >
+                          <i className="ri-article-line" /> Story
+                        </Link>
+                      )}
+                      {hasProducts && !isPreview && (
+                        <Link
+                          to={`/listings/${data.slug}/shop`}
+                          className="inline-flex h-10 items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 text-sm font-semibold text-primary-800 transition hover:-translate-y-0.5 hover:bg-primary-100"
+                        >
+                          <i className="ri-store-3-line" /> Shop
+                        </Link>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={handleSave}
@@ -580,6 +573,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                       {saved ? "Saved" : "Save"}
                     </button>
                     {!isPreview && <ShareMenu title={data.title} />}
+                    </div>
                   </div>
                 </div>
 
