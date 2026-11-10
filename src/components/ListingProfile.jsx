@@ -244,18 +244,34 @@ export default function ListingProfile({ data, isPreview = false }) {
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
               <div className="grid w-full grid-cols-2 divide-x divide-y divide-background-200 text-center sm:grid-cols-4 sm:divide-y-0 lg:min-w-[620px] lg:w-auto">
                 <div className="px-3">
+                  <span className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                    <i className="ri-briefcase-4-line" />
+                  </span>
                   <p className="text-xl font-semibold text-foreground-950">{data.yearsExperience || "—"}</p>
                   <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-foreground-500">Years experience</p>
                 </div>
                 <div className="px-3">
-                  <p className="text-xl font-semibold text-foreground-950">{data.rating || "New"}</p>
-                  <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-foreground-500">Profile rating</p>
+                  <span className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                    <i className="ri-graduation-cap-line" />
+                  </span>
+                  <p className="truncate text-base font-semibold text-foreground-950 sm:text-lg" title={data.education || "Not provided"}>
+                    {data.education || "—"}
+                  </p>
+                  <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-foreground-500">Education</p>
                 </div>
                 <div className="px-3">
-                  <p className="text-xl font-semibold text-foreground-950">{data.reviewCount || 0}</p>
-                  <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-foreground-500">Reviews</p>
+                  <span className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                    <i className="ri-book-open-line" />
+                  </span>
+                  <p className="truncate text-base font-semibold text-foreground-950 sm:text-lg" title={data.degreeType || "Not provided"}>
+                    {data.degreeType || "—"}
+                  </p>
+                  <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-foreground-500">Degree</p>
                 </div>
                 <div className="px-3 pt-4 sm:pt-0">
+                  <span className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                    <i className="ri-building-line" />
+                  </span>
                   <p className="truncate text-base font-semibold text-foreground-950 sm:text-lg" title={data.industryLabel || data.categoryLabel || "Not provided"}>
                     {data.industryLabel || data.categoryLabel || "—"}
                   </p>
@@ -277,11 +293,6 @@ export default function ListingProfile({ data, isPreview = false }) {
                   <i className={saved ? "ri-heart-fill text-accent-600" : "ri-heart-line"} /> {saved ? "Saved" : "Save"}
                 </button>
                 {!isPreview && <ShareMenu title={data.title} />}
-                {messagePath ? (
-                  <Link to={messagePath} className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-primary-700">
-                    <i className="ri-chat-3-line" /> Message owner
-                  </Link>
-                ) : null}
               </div>
             </div>
           </section>
@@ -525,32 +536,6 @@ export default function ListingProfile({ data, isPreview = false }) {
                   <p className="text-foreground-700 leading-relaxed whitespace-pre-line">
                     {data.description}
                   </p>
-                  {(data.education || data.degreeType) && (
-                    <div className="mt-6 grid gap-3 border-t border-background-200 pt-5 sm:grid-cols-2">
-                      {data.education && (
-                        <div className="flex items-start gap-3 rounded-xl bg-background-100/70 p-4">
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
-                            <i className="ri-graduation-cap-line" />
-                          </span>
-                          <div className="min-w-0">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-foreground-500">Education</p>
-                            <p className="mt-1 text-sm font-semibold text-foreground-900">{data.education}</p>
-                          </div>
-                        </div>
-                      )}
-                      {data.degreeType && (
-                        <div className="flex items-start gap-3 rounded-xl bg-background-100/70 p-4">
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
-                            <i className="ri-book-open-line" />
-                          </span>
-                          <div className="min-w-0">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-foreground-500">Degree</p>
-                            <p className="mt-1 text-sm font-semibold text-foreground-900">{data.degreeType}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
                   {data.tags.length > 0 && (
                   <div className="mt-5 flex flex-wrap gap-1.5">
                     {data.tags.map((tag) => (
