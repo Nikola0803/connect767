@@ -242,40 +242,42 @@ export default function ListingProfile({ data, isPreview = false }) {
 
           <section className="relative z-10 mt-5 rounded-2xl border border-background-200/80 bg-background-50 p-4 shadow-[0_12px_36px_rgba(29,42,35,0.08)] sm:p-5">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-              <div className="grid w-full grid-cols-2 divide-x divide-y divide-background-200 text-center sm:grid-cols-4 sm:divide-y-0 lg:min-w-[620px] lg:w-auto">
-                <div className="px-3">
-                  <span className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+              <div className="flex w-full flex-wrap items-center gap-x-6 gap-y-3 lg:w-auto">
+                <div className="inline-flex items-center gap-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
                     <i className="ri-briefcase-4-line" />
                   </span>
-                  <p className="text-xl font-semibold text-foreground-950">{data.yearsExperience || "—"}</p>
-                  <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-foreground-500">Years experience</p>
-                </div>
-                <div className="px-3">
-                  <span className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
-                    <i className="ri-graduation-cap-line" />
-                  </span>
-                  <p className="truncate text-base font-semibold text-foreground-950 sm:text-lg" title={data.education || "Not provided"}>
-                    {data.education || "—"}
+                  <p className="text-sm font-semibold text-foreground-800">
+                    {data.yearsExperience || "—"} {Number(data.yearsExperience) === 1 ? "Year" : "Years"} Experience
                   </p>
-                  <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-foreground-500">Education</p>
                 </div>
-                <div className="px-3">
-                  <span className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
-                    <i className="ri-book-open-line" />
-                  </span>
-                  <p className="truncate text-base font-semibold text-foreground-950 sm:text-lg" title={data.degreeType || "Not provided"}>
-                    {data.degreeType || "—"}
-                  </p>
-                  <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-foreground-500">Degree</p>
-                </div>
-                <div className="px-3 pt-4 sm:pt-0">
-                  <span className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                {data.education && (
+                  <div className="inline-flex items-center gap-2.5">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                      <i className="ri-graduation-cap-line" />
+                    </span>
+                    <p className="max-w-[220px] truncate text-sm font-semibold text-foreground-800" title={data.education}>
+                      {data.education}
+                    </p>
+                  </div>
+                )}
+                {data.degreeType && (
+                  <div className="inline-flex items-center gap-2.5">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                      <i className="ri-book-open-line" />
+                    </span>
+                    <p className="max-w-[220px] truncate text-sm font-semibold text-foreground-800" title={data.degreeType}>
+                      {data.degreeType}
+                    </p>
+                  </div>
+                )}
+                <div className="inline-flex items-center gap-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
                     <i className="ri-building-line" />
                   </span>
-                  <p className="truncate text-base font-semibold text-foreground-950 sm:text-lg" title={data.industryLabel || data.categoryLabel || "Not provided"}>
+                  <p className="max-w-[220px] truncate text-sm font-semibold text-foreground-800" title={data.industryLabel || data.categoryLabel || "Not provided"}>
                     {data.industryLabel || data.categoryLabel || "—"}
                   </p>
-                  <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-foreground-500">Industry</p>
                 </div>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-end">
@@ -289,10 +291,6 @@ export default function ListingProfile({ data, isPreview = false }) {
                     <i className="ri-store-3-line" /> Shop
                   </Link>
                 )}
-                <button type="button" onClick={handleSave} aria-pressed={saved} className="inline-flex h-11 items-center gap-2 rounded-xl border border-background-300 px-4 text-sm font-semibold text-foreground-800 transition hover:-translate-y-0.5 hover:bg-background-100">
-                  <i className={saved ? "ri-heart-fill text-accent-600" : "ri-heart-line"} /> {saved ? "Saved" : "Save"}
-                </button>
-                {!isPreview && <ShareMenu title={data.title} />}
               </div>
             </div>
           </section>
@@ -548,6 +546,22 @@ export default function ListingProfile({ data, isPreview = false }) {
                     ))}
                   </div>
                   )}
+                  <div className="mt-6 flex items-center justify-end gap-2 border-t border-background-200 pt-5">
+                    <button
+                      type="button"
+                      onClick={handleSave}
+                      aria-pressed={saved}
+                      className={`inline-flex h-10 items-center gap-2 rounded-xl border px-4 text-sm font-semibold transition hover:-translate-y-0.5 ${
+                        saved
+                          ? "border-accent-300 bg-accent-50 text-accent-700"
+                          : "border-background-300 text-foreground-700 hover:bg-background-100"
+                      }`}
+                    >
+                      <i className={saved ? "ri-heart-fill" : "ri-heart-line"} />
+                      {saved ? "Saved" : "Save"}
+                    </button>
+                    {!isPreview && <ShareMenu title={data.title} />}
+                  </div>
                 </div>
 
                 {data.amenities.length > 0 && (
