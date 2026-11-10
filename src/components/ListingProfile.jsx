@@ -153,8 +153,8 @@ export default function ListingProfile({ data, isPreview = false }) {
 
       <div className="w-full px-4 md:px-8 lg:px-12 py-8">
         <div className="max-w-7xl mx-auto">
-          <section className="relative overflow-hidden rounded-[1.75rem] border border-background-200/80 bg-background-100 shadow-[0_24px_70px_rgba(29,42,35,0.12)]">
-            <div className="relative h-[340px] sm:h-[420px] lg:h-[500px]">
+          <section className="relative max-w-5xl overflow-hidden rounded-[1.75rem] border border-background-200/80 bg-background-100 shadow-[0_24px_70px_rgba(29,42,35,0.12)]">
+            <div className="relative aspect-[5/3] w-full">
               {gallery[activeImage]?.src ? (
                 <img
                   alt={gallery[activeImage]?.alt}
@@ -248,7 +248,9 @@ export default function ListingProfile({ data, isPreview = false }) {
                     <i className="ri-briefcase-4-line" />
                   </span>
                   <p className="text-sm font-semibold text-foreground-800">
-                    {data.yearsExperience || "—"} {Number(data.yearsExperience) === 1 ? "Year" : "Years"} Experience
+                    {data.yearsExperience !== "" && data.yearsExperience != null
+                      ? data.yearsExperience
+                      : "—"} Yrs. Exp.
                   </p>
                 </div>
                 {data.education && (
@@ -279,6 +281,19 @@ export default function ListingProfile({ data, isPreview = false }) {
                     {data.industryLabel || data.categoryLabel || "—"}
                   </p>
                 </div>
+                {(data.parentCategoryLabel || data.categoryLabel) && (
+                  <div className="inline-flex items-center gap-2.5">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                      <i className="ri-folder-line" />
+                    </span>
+                    <p
+                      className="max-w-[220px] truncate text-sm font-semibold text-foreground-800"
+                      title={data.parentCategoryLabel || data.categoryLabel}
+                    >
+                      {data.parentCategoryLabel || data.categoryLabel}
+                    </p>
+                  </div>
+                )}
               </div>
               <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-end">
                 {relatedBlogPost && !isPreview && (
@@ -426,16 +441,18 @@ export default function ListingProfile({ data, isPreview = false }) {
                           icon: "ri-building-line",
                           text: data.industryLabel,
                         },
-                        (data.yearsExperience || data.experienceLevel) && {
+                        {
                           icon: "ri-time-line",
-                          text: data.yearsExperience
-                            ? `${data.yearsExperience} ${years === 1 ? "Yr." : "Yrs."} Exp.`
-                            : data.experienceLevel,
-                          title: data.yearsExperience
-                            ? `${data.yearsExperience} ${
+                          text:
+                            data.yearsExperience !== "" && data.yearsExperience != null
+                              ? `${data.yearsExperience} ${years === 1 ? "Yr." : "Yrs."} Exp.`
+                              : "— Yrs. Exp.",
+                          title:
+                            data.yearsExperience !== "" && data.yearsExperience != null
+                              ? `${data.yearsExperience} ${
                                 years === 1 ? "Year" : "Years"
                               } of Experience`
-                            : data.experienceLevel,
+                              : "Years of experience not provided",
                         },
                         data.education && {
                           icon: "ri-graduation-cap-line",
