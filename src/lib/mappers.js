@@ -603,6 +603,10 @@ export function mapWpPost(wp, { detail = false } = {}) {
     title: stripHtml(wp.title?.rendered || ""),
     excerpt: stripHtml(wp.excerpt?.rendered || ""),
     image: featuredImage(wp) || acf.fallback_image || "",
+    // Optional explicit relationship to a directory profile. Editors set the
+    // listing slug in WordPress; the profile then exposes a direct article
+    // link without relying on matching display titles.
+    relatedListingSlug: String(acf.related_listing_slug || "").trim(),
   };
 
   if (!detail) return base;

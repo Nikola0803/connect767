@@ -10,6 +10,7 @@ import ShareMenu from "./ShareMenu";
 import { WriteReviewButton } from "./WriteReviewModal";
 import DefaultListingCover from "./ui/DefaultListingCover";
 import ListingProducts from "./ListingProducts";
+import { getBlogPostForListing } from "../data/repository";
 
 export function listingOwnerMessagePath(data, isPreview = false) {
   if (isPreview || !data?.slug) return "";
@@ -32,10 +33,12 @@ export default function ListingProfile({ data, isPreview = false }) {
   const [activeImage, setActiveImage] = useState(0);
   const [mapCoords, setMapCoords] = useState(null);
   const [hasProducts, setHasProducts] = useState(false);
+  const [relatedBlogPost, setRelatedBlogPost] = useState(null);
   const { isSaved, toggleSaved } = useSavedListings();
   const gallery = data.gallery.length > 0 ? data.gallery : [{ alt: data.title, src: "" }];
   const saved = !isPreview && isSaved(data.slug);
   const messagePath = listingOwnerMessagePath(data, isPreview);
+  const isClassified = String(data.badge || "").toLowerCase() === "classified";
 
   const handleSave = () => {
     if (isPreview) return;
@@ -63,6 +66,26 @@ export default function ListingProfile({ data, isPreview = false }) {
       cancelled = true;
     };
   }, [data.location]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setRelatedBlogPost(null);
+
+    if (!isPreview && isClassified && data.slug) {
+      getBlogPostForListing(data)
+        .then((post) => {
+          if (!cancelled) setRelatedBlogPost(post);
+        })
+        .catch(() => {
+          // A blog lookup should never prevent the directory profile itself
+          // from rendering. Profiles simply omit the optional story link.
+        });
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [data.slug, data.title, isClassified, isPreview]);
 
   return (
     <div>
@@ -263,6 +286,18 @@ export default function ListingProfile({ data, isPreview = false }) {
                     })()}
                   </div>
                   <div className="flex items-center gap-2">
+                    {relatedBlogPost && !isPreview && (
+                      <Link
+                        to={`/blog/${relatedBlogPost.slug}`}
+                        className="group inline-flex items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-4 py-2.5 text-sm font-semibold text-primary-800 shadow-[0_8px_24px_rgba(15,107,79,0.10)] transition-all hover:-translate-y-0.5 hover:border-primary-400 hover:bg-primary-100 hover:shadow-[0_12px_28px_rgba(15,107,79,0.16)]"
+                        aria-label={`Read the featured story about ${data.title}`}
+                      >
+                        <i className="ri-article-line text-base" />
+                        <span className="hidden sm:inline">Read featured story</span>
+                        <span className="sm:hidden">Story</span>
+                        <i className="ri-arrow-right-line transition-transform group-hover:translate-x-0.5" />
+                      </Link>
+                    )}
                     {hasProducts && !isPreview && (
                       <Link
                         to={`/listings/${data.slug}/shop`}

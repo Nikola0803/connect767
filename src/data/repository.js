@@ -390,6 +390,44 @@ export async function getBlogPosts() {
   return localBlogPosts;
 }
 
+function normalizeRelatedTitle(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[’']/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/**
+ * Find the published story connected to a directory listing.
+ *
+ * `relatedListingSlug` is authoritative and is editable on every WordPress
+ * post. The title fallback immediately connects older spotlight articles
+ * created before that field existed, provided the listing's full name appears
+ * in the article title.
+ */
+export function findBlogPostForListing(posts, listing) {
+  if (!listing?.slug || !Array.isArray(posts)) return null;
+
+  const explicit = posts.find(
+    (post) => String(post.relatedListingSlug || "").trim() === String(listing.slug).trim(),
+  );
+  if (explicit) return explicit;
+
+  const listingTitle = normalizeRelatedTitle(listing.title);
+  if (listingTitle.length < 4) return null;
+
+  return (
+    posts.find((post) => normalizeRelatedTitle(post.title).includes(listingTitle)) || null
+  );
+}
+
+export async function getBlogPostForListing(listing) {
+  return findBlogPostForListing(await getBlogPosts(), listing);
+}
+
 export async function getBlogCategories() {
   if (isLiveApi) {
     const wp = await wpClient.get("/categories", { per_page: 20 });

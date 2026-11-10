@@ -387,6 +387,10 @@ class C767_Importer
             update_post_meta($post_id, 'tags', wp_json_encode($item['tags'] ?? []));
             update_post_meta($post_id, 'body', wp_json_encode($item['body'] ?? []));
 
+            if (!empty($item['relatedListingSlug'])) {
+                update_post_meta($post_id, 'related_listing_slug', sanitize_title($item['relatedListingSlug']));
+            }
+
             if (!empty($item['image'])) {
                 update_post_meta($post_id, 'fallback_image', esc_url_raw(self::resolve_image_url($item['image'])));
             }
