@@ -279,6 +279,7 @@ class C767_Meta_Fields
             'tags' => ['label' => 'Tags (one per line)', 'type' => 'array'],
             'body' => ['label' => 'Structured body (JSON array of {"type":"p"|"h2","text"}) — leave blank to use the main editor content instead', 'type' => 'array', 'json' => true],
             'fallback_image' => ['label' => 'Fallback image URL (used when no featured image is set)', 'type' => 'string'],
+            'related_listing_slug' => ['label' => 'Related directory listing slug (shows this article on that Classified profile)', 'type' => 'string'],
         ];
     }
 

@@ -32,6 +32,7 @@ export const blogPosts = [
   // listings (Kalinago Tours, Finance Focus Consultancy, Catherine Lewis).
   {
     slug: "spotlight-kalinago-tours",
+    relatedListingSlug: "kalinago-tours",
     tag: "Community",
     categorySlug: "community",
     date: "June 2, 2026",
@@ -65,6 +66,7 @@ export const blogPosts = [
   },
   {
     slug: "spotlight-finance-focus-consultancy",
+    relatedListingSlug: "finance-focus-consultancy",
     tag: "Community",
     categorySlug: "community",
     date: "June 9, 2026",
@@ -103,6 +105,7 @@ export const blogPosts = [
   },
   {
     slug: "spotlight-catherine-lewis",
+    relatedListingSlug: "catherine-lewis",
     tag: "Community",
     categorySlug: "community",
     date: "June 16, 2026",
