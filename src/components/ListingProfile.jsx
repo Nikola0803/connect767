@@ -31,6 +31,24 @@ export function listingContactActionLinks(contact = {}) {
   };
 }
 
+const BUSINESS_DAY = "(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)";
+
+export function parseBusinessHours(entry) {
+  const text = String(entry || "").trim();
+  if (!text) return { day: "", time: "" };
+
+  const pipeParts = text.split("|").map((part) => part.trim()).filter(Boolean);
+  if (pipeParts.length > 1) {
+    return { day: pipeParts[0], time: pipeParts.slice(1).join(" | ") };
+  }
+
+  const dayRange = new RegExp(`^(${BUSINESS_DAY}(?:\\s*[–—-]\\s*${BUSINESS_DAY})?)\\s*:?[\\s]+(.+)$`, "i");
+  const match = text.match(dayRange);
+  if (match) return { day: match[1], time: match[2] };
+
+  return { day: text, time: "" };
+}
+
 /**
  * The actual listing profile presentation — used by both
  * ListingDetailPage.jsx (real, fetched data) and AddListingPage.jsx's
@@ -56,6 +74,9 @@ export default function ListingProfile({ data, isPreview = false }) {
   const contactActions = listingContactActionLinks(data.contact);
   const hasContactActions = Object.values(contactActions).some(Boolean);
   const isClassified = String(data.badge || "").toLowerCase() === "classified";
+  const parsedHours = data.hours.map(parseBusinessHours);
+  const regularHours = parsedHours.filter(({ day }) => !/^(sat(?:urday)?|sun(?:day)?)\b/i.test(day));
+  const weekendHours = parsedHours.filter(({ day }) => /^(sat(?:urday)?|sun(?:day)?)\b/i.test(day));
 
   const jumpToSection = (section) => {
     setActiveSection(section);
@@ -267,7 +288,15 @@ export default function ListingProfile({ data, isPreview = false }) {
                 </div>
               </div>
 
-              <div className="flex shrink-0 items-center gap-2 sm:self-center">
+              <div className="flex shrink-0 flex-wrap items-center gap-2 sm:self-center sm:justify-end">
+                {isClassified && relatedBlogPost && !isPreview && (
+                  <Link
+                    to={`/blog/${relatedBlogPost.slug}`}
+                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-4 text-sm font-semibold text-primary-800 transition hover:-translate-y-0.5 hover:bg-primary-100"
+                  >
+                    <i className="ri-article-line" /> Read Featured Story
+                  </Link>
+                )}
                 <button
                   type="button"
                   onClick={handleSave}
@@ -464,7 +493,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                     })()}
                   </div>
                   <div className="flex items-center gap-2">
-                    {relatedBlogPost && !isPreview && (
+                    {isClassified && relatedBlogPost && !isPreview && (
                       <Link
                         to={`/blog/${relatedBlogPost.slug}`}
                         className="group inline-flex items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-4 py-2.5 text-sm font-semibold text-primary-800 shadow-[0_8px_24px_rgba(15,107,79,0.10)] transition-all hover:-translate-y-0.5 hover:border-primary-400 hover:bg-primary-100 hover:shadow-[0_12px_28px_rgba(15,107,79,0.16)]"
@@ -539,76 +568,60 @@ export default function ListingProfile({ data, isPreview = false }) {
                     ))}
                   </div>
                   )}
-                  <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-background-200 pt-5">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {relatedBlogPost && !isPreview && (
-                        <Link
-                          to={`/blog/${relatedBlogPost.slug}`}
-                          className="inline-flex h-10 items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 text-sm font-semibold text-primary-800 transition hover:-translate-y-0.5 hover:bg-primary-100"
-                        >
-                          <i className="ri-article-line" /> Story
-                        </Link>
-                      )}
-                      {hasProducts && !isPreview && (
+                  {hasProducts && !isPreview && (
+                    <div className="mt-6 border-t border-background-200 pt-5">
                         <Link
                           to={`/listings/${data.slug}/shop`}
                           className="inline-flex h-10 items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 text-sm font-semibold text-primary-800 transition hover:-translate-y-0.5 hover:bg-primary-100"
                         >
                           <i className="ri-store-3-line" /> Shop
                         </Link>
-                      )}
                     </div>
-                    <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleSave}
-                      aria-pressed={saved}
-                      className={`inline-flex h-10 items-center gap-2 rounded-xl border px-4 text-sm font-semibold transition hover:-translate-y-0.5 ${
-                        saved
-                          ? "border-accent-300 bg-accent-50 text-accent-700"
-                          : "border-background-300 text-foreground-700 hover:bg-background-100"
-                      }`}
-                    >
-                      <i className={saved ? "ri-heart-fill" : "ri-heart-line"} />
-                      {saved ? "Saved" : "Save"}
-                    </button>
-                    {!isPreview && <ShareMenu title={data.title} />}
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 <div id="listing-services" className="scroll-mt-28">
-                {data.amenities.length > 0 && (
+                {(data.amenities.length > 0 || data.hours.length > 0) && (
                   <div className="mt-5 rounded-2xl border border-background-200/80 bg-background-50 p-6 shadow-[0_10px_30px_rgba(29,42,35,0.05)] sm:p-8">
                     <h3 className="font-heading text-2xl font-medium text-foreground-950 mb-5">
                       Services & amenities
                     </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {data.amenities.map((a) => (
-                        <div
-                          key={a}
-                          className="flex items-center gap-2 text-sm text-foreground-700 font-label"
-                        >
-                          <i className="ri-check-line text-primary-600 text-sm" />
-                          {a}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                    {data.amenities.length > 0 && (
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        {data.amenities.map((a) => (
+                          <div
+                            key={a}
+                            className="flex items-center gap-2 text-sm text-foreground-700 font-label"
+                          >
+                            <i className="ri-check-line text-primary-600 text-sm" />
+                            {a}
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
-                {data.hours.length > 0 && (
-                  <div className="mt-5 rounded-2xl border border-background-200/80 bg-background-50 p-6 shadow-[0_10px_30px_rgba(29,42,35,0.05)] sm:p-8">
-                    <h3 className="font-heading text-lg font-medium text-foreground-950 mb-4">
-                      Hours
-                    </h3>
-                    <div className="space-y-1">
-                      {data.hours.map((h) => (
-                        <p key={h} className="text-sm text-foreground-700 font-label">
-                          {h}
-                        </p>
-                      ))}
-                    </div>
+                    {data.hours.length > 0 && (
+                      <div className={`${data.amenities.length > 0 ? "mt-6 border-t border-background-200 pt-5" : ""}`}>
+                        <h4 className="mb-3 flex items-center gap-2 font-heading text-lg font-medium text-foreground-950">
+                          <i className="ri-time-line text-primary-600" />
+                          Hours
+                        </h4>
+                        <div className="grid grid-cols-1 gap-x-8 gap-y-1 sm:grid-cols-2">
+                          {regularHours.map(({ day, time }) => (
+                            <p key={`${day}-${time}`} className="flex items-baseline justify-between gap-4 text-sm font-label sm:col-span-2">
+                              <span className="text-foreground-600">{day}</span>
+                              {time && <span className="text-right font-semibold text-foreground-900">{time}</span>}
+                            </p>
+                          ))}
+                          {weekendHours.map(({ day, time }) => (
+                            <p key={`${day}-${time}`} className="flex items-baseline justify-between gap-4 text-sm font-label">
+                              <span className="text-foreground-600">{day}</span>
+                              {time && <span className="text-right font-semibold text-foreground-900">{time}</span>}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
                 </div>
