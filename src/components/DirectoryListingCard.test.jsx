@@ -56,7 +56,7 @@ describe("DirectoryListingCard parent category", () => {
     expect(screen.queryByText("Classified")).not.toBeInTheDocument();
   });
 
-  it("shows only the numeric experience value beneath Yrs Exp.", () => {
+  it("shows only the numeric experience value beneath Yrs. Exp.", () => {
     render(
       <MemoryRouter>
         <DirectoryListingCard listing={{ ...listing, yearsExperience: "12" }} />

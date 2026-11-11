@@ -124,7 +124,7 @@ function ListingHighlights({ listing }) {
   return (
     <div className="mt-3 grid grid-cols-[0.7fr_1.3fr] gap-2">
       <div className="min-w-0 rounded-xl border border-background-200 bg-background-100/75 px-3 py-2.5">
-        <span className="block text-[9px] font-semibold uppercase tracking-[0.08em] text-foreground-500">Yrs Exp.</span>
+        <span className="block text-[9px] font-semibold uppercase tracking-[0.08em] text-foreground-500">Yrs. Exp.</span>
         <span className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-foreground-800 truncate" title={experience}>
           <i className="ri-briefcase-line text-primary-700 flex-shrink-0" />
           {experience}
