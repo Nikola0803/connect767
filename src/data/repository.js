@@ -285,7 +285,18 @@ export async function getListings({ search = "" } = {}) {
 
 export async function getListingBySlug(slug) {
   if (isLiveApi) {
-    const wp = await wpClient.get("/listing", { slug, _embed: 1 });
+    // Profile metadata can be edited long after a listing is first
+    // published (education, degree type, contact details, etc.).  Some
+    // browsers and intermediary caches were reusing an older REST response,
+    // which left those newly completed fields missing on existing profiles
+    // even though WordPress already stored and exposed them.  A lightweight
+    // revision query keeps the canonical endpoint unchanged while ensuring
+    // every profile visit receives the current WordPress record.
+    const wp = await wpClient.get("/listing", {
+      slug,
+      _embed: 1,
+      profileRevision: Date.now(),
+    });
     return wp[0] ? mapListingDetail(wp[0]) : null;
   }
   return localListingDetails[slug] || null;
