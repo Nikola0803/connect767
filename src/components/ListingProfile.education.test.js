@@ -11,7 +11,7 @@ describe("listingEducationDetails", () => {
     ).toEqual([]);
   });
 
-  it("shows only Highest degree level when Degree Type is blank", () => {
+  it("shows only Highest Degree Level when Degree Type is blank", () => {
     expect(
       listingEducationDetails({
         highestDegreeLevel: "Master's Degree",
@@ -21,12 +21,12 @@ describe("listingEducationDetails", () => {
       {
         icon: "ri-graduation-cap-line",
         text: "Master's Degree",
-        title: "Highest degree level: Master's Degree",
+        title: "Highest Degree Level: Master's Degree",
       },
     ]);
   });
 
-  it("shows only Degree Type when Highest degree level is blank", () => {
+  it("shows only Degree Type when Highest Degree Level is blank", () => {
     expect(
       listingEducationDetails({
         highestDegreeLevel: "",
