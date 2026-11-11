@@ -364,6 +364,28 @@ export function mapListingCpt(wp) {
     acf.years_experience_as_of_year,
   );
   const contactHidden = isTruthyMeta(acf.hide_contact_info);
+  // Older listings and custom REST responses do not all expose these fields
+  // under the same key. Normalize the known persisted aliases here so a
+  // filled location or credential never disappears merely because the
+  // profile predates the current form field names.
+  const listingLocation =
+    acf.location || acf.location_display || wp.location || wp.locationDisplay || "";
+  const education = String(
+    acf.education ||
+    acf.degree_level ||
+    acf.highest_degree_level ||
+    wp.education ||
+    wp.degreeLevel ||
+    ""
+  ).trim();
+  const degreeType = String(
+    acf.degree_type ||
+    acf.degreeType ||
+    acf.field_of_study ||
+    wp.degreeType ||
+    wp.fieldOfStudy ||
+    ""
+  ).trim();
   const publicProfile = {
     title,
     slug: wp.slug,
@@ -380,14 +402,14 @@ export function mapListingCpt(wp) {
     rating: acf.rating || "0",
     reviewCount: acf.review_count ?? 0,
     location: {
-      display: acf.location || acf.location_display || "",
+      display: listingLocation,
       country: acf.location_country || "",
       region: acf.location_region || "",
       city: acf.location_city || "",
       address: contactHidden ? "" : acf.address || "",
     },
-    education: acf.education || "",
-    degreeType: acf.degree_type || "",
+    education,
+    degreeType,
     experienceLevel: acf.experience_level || "",
     yearsExperience,
     tags: acf.tags || [],
@@ -436,7 +458,7 @@ export function mapListingCpt(wp) {
     tags: (acf.tags || []).map((tag) => decodeEntities(tag)),
     amenities: (acf.amenities || []).map((amenity) => decodeEntities(amenity)),
     price: acf.price_tier || "$",
-    location: acf.location || "",
+    location: listingLocation,
     badge: listingTier,
     badgeIcon:
       listingTier === "Classified"
@@ -485,8 +507,8 @@ export function mapListingCpt(wp) {
     // alongside them rather than replacing them, so listings created before
     // the split keep rendering exactly as they did — ListingProfile falls
     // back to experienceLevel whenever yearsExperience is absent.
-    education: acf.education || "",
-    degreeType: acf.degree_type || "",
+    education,
+    degreeType,
     experienceLevel: acf.experience_level || "",
     yearsExperience,
     // Crop anchor + zoom the owner picked in AddListingPage.jsx's
@@ -511,12 +533,17 @@ export function mapListingCpt(wp) {
 /** WordPress `listing` CPT -> full listing detail view model */
 export function mapListingDetail(wp) {
   const base = mapListingCpt(wp);
-  const acf = wp.acf || wp.meta || {};
+  // Match mapListingCpt's merge behavior. Some WordPress/ACF responses
+  // include an `acf` object but leave newer fields only in registered meta;
+  // choosing one object made those saved values vanish on the full profile.
+  const acf = { ...(wp.meta || {}), ...(wp.acf || {}) };
+  const contactLocation =
+    acf.address || acf.location || acf.location_display || base.location || "";
   const hasContactInfo = Boolean(
     acf.phone ||
       acf.email ||
       acf.website ||
-      acf.address ||
+      contactLocation ||
       acf.instagram ||
       acf.facebook ||
       acf.youtube ||
@@ -570,7 +597,7 @@ export function mapListingDetail(wp) {
               ? acf.website
               : `https://${acf.website}`
             : "",
-          address: acf.address || "",
+          address: contactLocation,
           instagram: acf.instagram || "",
           facebook: acf.facebook || "",
           youtube: acf.youtube || "",
