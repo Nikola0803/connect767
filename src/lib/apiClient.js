@@ -61,8 +61,8 @@ function buildQuery(params = {}) {
 
 /** WordPress core REST API (wp/v2) — listings CPT, blog posts, taxonomies. */
 export const wpClient = {
-  get(path, params) {
-    return request(`${config.wpApiUrl}${path}${buildQuery(params)}`);
+  get(path, params, options = {}) {
+    return request(`${config.wpApiUrl}${path}${buildQuery(params)}`, options);
   },
   post(path, body) {
     return request(`${config.wpApiUrl}${path}`, {
