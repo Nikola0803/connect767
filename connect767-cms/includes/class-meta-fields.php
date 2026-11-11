@@ -156,7 +156,7 @@ class C767_Meta_Fields
             // class-rest-listings.php's sanitize_education()/
             // sanitize_experience_level(), same pattern as tier/position.
             'education' => [
-                'label' => 'Degree level',
+                'label' => 'Highest Degree Level',
                 'type' => 'string',
                 'options' => [
                     '',
@@ -170,7 +170,7 @@ class C767_Meta_Fields
                     'Other',
                 ],
             ],
-            'degree_type' => ['label' => 'Degree type / field of study (e.g. Nursing, Business Administration)', 'type' => 'string'],
+            'degree_type' => ['label' => 'Degree Type', 'type' => 'string'],
             'experience_level' => [
                 'label' => 'Experience level',
                 'type' => 'string',

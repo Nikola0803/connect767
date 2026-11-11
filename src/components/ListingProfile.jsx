@@ -43,7 +43,7 @@ export function listingEducationDetails(data = {}) {
     educationLevel && {
       icon: "ri-graduation-cap-line",
       text: educationLevel,
-      title: `Highest degree level: ${educationLevel}`,
+      title: `Highest Degree Level: ${educationLevel}`,
     },
     degreeType && {
       icon: "ri-book-open-line",

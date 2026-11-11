@@ -774,9 +774,9 @@ export default function AddListingPage() {
                   </FormField>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <FormField label="Highest degree level" htmlFor="education">
+                  <FormField label="Highest Degree Level" htmlFor="education">
                     <Select id="education" value={form.education} onChange={update("education")}>
-                      <option value="">Select highest degree level</option>
+                      <option value="">Select Highest Degree Level</option>
                       {EDUCATION_CHOICES.map((choice) => (
                         <option key={choice} value={choice}>
                           {choice}
@@ -787,7 +787,7 @@ export default function AddListingPage() {
                   <FormField
                     label="Degree Type"
                     htmlFor="degreeType"
-                    hint="Field of study — shown next to your highest degree level"
+                    hint="Shown next to your Highest Degree Level"
                   >
                     <Input
                       id="degreeType"
@@ -1427,7 +1427,7 @@ export default function AddListingPage() {
                       : "—",
                   ],
                   ["Price tier", form.priceTier || "—"],
-                  ["Highest degree level", form.education || "—"],
+                  ["Highest Degree Level", form.education || "—"],
                   ["Degree Type", form.degreeType || "—"],
                   ["Years of Experience", form.yearsExperience ? `${form.yearsExperience}` : "—"],
                   ["Location", form.location || "—"],
