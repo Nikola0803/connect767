@@ -301,10 +301,6 @@ export async function getListingBySlug(slug) {
       },
       {
         cache: "no-store",
-        headers: {
-          "Cache-Control": "no-cache",
-          Pragma: "no-cache",
-        },
       },
     );
     return wp[0] ? mapListingDetail(wp[0]) : null;
