@@ -788,19 +788,36 @@ export default function ListingProfile({ data, isPreview = false }) {
                           )}
                         </div>
                       )}
-                      {data.contact.address && (
-                        <div className="mt-3 flex items-center gap-3 border-t border-background-100 pt-3 text-sm text-foreground-700 font-label">
-                          <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-background-200 text-foreground-600 shrink-0">
-                            <i className="ri-map-pin-line" />
-                          </div>
-                          <span>{data.contact.address}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2 pt-4">
+                      {(data.contact.address || data.contact.instagram || data.contact.facebook || data.contact.youtube || data.contact.twitter) && (
+                        <div className="mt-3 flex items-center gap-2 overflow-x-auto rounded-xl border border-background-200 bg-primary-50/40 p-3 text-sm text-foreground-700 shadow-sm font-label">
+                          {data.contact.address && (
+                            <div className="flex min-w-0 flex-1 items-center gap-3 pr-2">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-lg text-white shadow-sm">
+                            <svg
+                              aria-hidden="true"
+                              className="h-6 w-6"
+                              viewBox="0 0 32 32"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="M16 3.5a8 8 0 0 0-8 8c0 5.8 8 13.1 8 13.1s8-7.3 8-13.1a8 8 0 0 0-8-8Z"
+                                fill="currentColor"
+                              />
+                              <circle cx="16" cy="11.5" r="3.25" fill="#008654" />
+                              <ellipse cx="16" cy="27" rx="9.5" ry="2.6" stroke="currentColor" strokeWidth="2.25" />
+                            </svg>
+                              </div>
+                              <span className="min-w-0 truncate">{data.contact.address}</span>
+                            </div>
+                          )}
+                          {data.contact.address && (data.contact.instagram || data.contact.facebook || data.contact.youtube || data.contact.twitter) && (
+                            <span className="h-8 w-px shrink-0 bg-background-300" aria-hidden="true" />
+                          )}
                         {data.contact.instagram && (
                           <a
                             aria-label="Instagram"
-                            className="w-9 h-9 flex items-center justify-center rounded-full bg-background-100 hover:bg-accent-100 text-foreground-600 hover:text-accent-700 cursor-pointer transition-colors"
+                            className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 text-lg text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-primary-700 hover:shadow-md"
                             href={data.contact.instagram}
                             rel="noopener noreferrer"
                             target="_blank"
@@ -811,7 +828,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                         {data.contact.facebook && (
                           <a
                             aria-label="Facebook"
-                            className="w-9 h-9 flex items-center justify-center rounded-full bg-background-100 hover:bg-accent-100 text-foreground-600 hover:text-accent-700 cursor-pointer transition-colors"
+                            className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 text-lg text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-primary-700 hover:shadow-md"
                             href={data.contact.facebook}
                             rel="noopener noreferrer"
                             target="_blank"
@@ -822,7 +839,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                         {data.contact.youtube && (
                           <a
                             aria-label="YouTube"
-                            className="w-9 h-9 flex items-center justify-center rounded-full bg-background-100 hover:bg-accent-100 text-foreground-600 hover:text-accent-700 cursor-pointer transition-colors"
+                            className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 text-lg text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-primary-700 hover:shadow-md"
                             href={data.contact.youtube}
                             rel="noopener noreferrer"
                             target="_blank"
@@ -833,7 +850,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                         {data.contact.twitter && (
                           <a
                             aria-label="Twitter / X"
-                            className="w-9 h-9 flex items-center justify-center rounded-full bg-background-100 hover:bg-accent-100 text-foreground-600 hover:text-accent-700 cursor-pointer transition-colors"
+                            className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 text-lg text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-primary-700 hover:shadow-md"
                             href={data.contact.twitter}
                             rel="noopener noreferrer"
                             target="_blank"
@@ -841,7 +858,8 @@ export default function ListingProfile({ data, isPreview = false }) {
                             <i className="ri-twitter-x-line" />
                           </a>
                         )}
-                      </div>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <p className="text-sm text-foreground-500 font-label">
