@@ -292,11 +292,21 @@ export async function getListingBySlug(slug) {
     // even though WordPress already stored and exposed them.  A lightweight
     // revision query keeps the canonical endpoint unchanged while ensuring
     // every profile visit receives the current WordPress record.
-    const wp = await wpClient.get("/listing", {
-      slug,
-      _embed: 1,
-      profileRevision: Date.now(),
-    });
+    const wp = await wpClient.get(
+      "/listing",
+      {
+        slug,
+        _embed: 1,
+        profileRevision: Date.now(),
+      },
+      {
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+        },
+      },
+    );
     return wp[0] ? mapListingDetail(wp[0]) : null;
   }
   return localListingDetails[slug] || null;
