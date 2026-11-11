@@ -593,6 +593,55 @@ describe("mapListingDetail", () => {
     expect(withContact.contact.phone).toBe("555-1234");
   });
 
+  it("recovers saved location and credentials when ACF omits registered meta", () => {
+    const mapped = mapListingDetail({
+      id: 9,
+      slug: "legacy-professional",
+      title: "Legacy Professional",
+      acf: { phone: "555-1234" },
+      meta: {
+        location_display: "Roseau, Dominica",
+        education: "Master's Degree",
+        degree_type: "Business Administration",
+      },
+    });
+
+    expect(mapped.location).toBe("Roseau, Dominica");
+    expect(mapped.contact.address).toBe("Roseau, Dominica");
+    expect(mapped.education).toBe("Master's Degree");
+    expect(mapped.degreeType).toBe("Business Administration");
+  });
+
+  it("supports credential aliases used by older listing records", () => {
+    const mapped = mapListingDetail({
+      id: 10,
+      slug: "legacy-credential-keys",
+      title: "Legacy Credential Keys",
+      meta: {
+        degree_level: "Bachelor's Degree",
+        field_of_study: "Accounting",
+      },
+    });
+
+    expect(mapped.education).toBe("Bachelor's Degree");
+    expect(mapped.degreeType).toBe("Accounting");
+  });
+
+  it("treats blank credential fields as absent", () => {
+    const mapped = mapListingDetail({
+      id: 11,
+      slug: "blank-credentials",
+      title: "Blank Credentials",
+      meta: {
+        education: "   ",
+        degree_type: "\t",
+      },
+    });
+
+    expect(mapped.education).toBe("");
+    expect(mapped.degreeType).toBe("");
+  });
+
   it("keeps listing-owner email private on every public profile", () => {
     const mapped = mapListingDetail({
       id: 4,

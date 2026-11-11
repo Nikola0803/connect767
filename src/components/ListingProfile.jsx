@@ -73,6 +73,18 @@ export default function ListingProfile({ data, isPreview = false }) {
   const messagePath = listingOwnerMessagePath(data, isPreview);
   const contactActions = listingContactActionLinks(data.contact);
   const hasContactActions = Object.values(contactActions).some(Boolean);
+  const contactLocation = String(
+    data.contact?.address ||
+      (typeof data.location === "string"
+        ? data.location
+        : data.location?.display || data.location?.address || "")
+  ).trim();
+  const educationLevel = String(
+    data.education || data.degreeLevel || data.highestDegreeLevel || ""
+  ).trim();
+  const degreeField = String(
+    data.degreeType || data.degree || data.fieldOfStudy || ""
+  ).trim();
   const isClassified = String(data.badge || "").toLowerCase() === "classified";
   const parsedHours = data.hours.map(parseBusinessHours);
   const regularHours = parsedHours.filter(({ day }) => !/^(sat(?:urday)?|sun(?:day)?)\b/i.test(day));
@@ -459,13 +471,13 @@ export default function ListingProfile({ data, isPreview = false }) {
                               } of Experience`
                               : "Years of experience not provided",
                         },
-                        data.education && {
+                        educationLevel && {
                           icon: "ri-graduation-cap-line",
-                          text: data.education,
+                          text: educationLevel,
                         },
-                        data.degreeType && {
+                        degreeField && {
                           icon: "ri-book-open-line",
-                          text: data.degreeType,
+                          text: degreeField,
                         },
                       ].filter(Boolean);
 
@@ -788,9 +800,9 @@ export default function ListingProfile({ data, isPreview = false }) {
                           )}
                         </div>
                       )}
-                      {(data.contact.address || data.contact.instagram || data.contact.facebook || data.contact.youtube || data.contact.twitter) && (
+                      {(contactLocation || data.contact.instagram || data.contact.facebook || data.contact.youtube || data.contact.twitter) && (
                         <div className="mt-3 flex items-center gap-2 overflow-x-auto rounded-xl border border-background-200 bg-primary-50/40 p-3 text-sm text-foreground-700 shadow-sm font-label">
-                          {data.contact.address && (
+                          {contactLocation && (
                             <div className="flex min-w-0 flex-1 items-center gap-3 pr-2">
                               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-lg text-white shadow-sm">
                             <svg
@@ -808,10 +820,10 @@ export default function ListingProfile({ data, isPreview = false }) {
                               <ellipse cx="16" cy="27" rx="9.5" ry="2.6" stroke="currentColor" strokeWidth="2.25" />
                             </svg>
                               </div>
-                              <span className="min-w-0 truncate">{data.contact.address}</span>
+                              <span className="min-w-0 truncate">{contactLocation}</span>
                             </div>
                           )}
-                          {data.contact.address && (data.contact.instagram || data.contact.facebook || data.contact.youtube || data.contact.twitter) && (
+                          {contactLocation && (data.contact.instagram || data.contact.facebook || data.contact.youtube || data.contact.twitter) && (
                             <span className="h-8 w-px shrink-0 bg-background-300" aria-hidden="true" />
                           )}
                         {data.contact.instagram && (
