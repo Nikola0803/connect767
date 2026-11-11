@@ -31,6 +31,28 @@ export function listingContactActionLinks(contact = {}) {
   };
 }
 
+export function listingEducationDetails(data = {}) {
+  const educationLevel = String(
+    data.education || data.degreeLevel || data.highestDegreeLevel || ""
+  ).trim();
+  const degreeType = String(
+    data.degreeType || data.degree || data.fieldOfStudy || ""
+  ).trim();
+
+  return [
+    educationLevel && {
+      icon: "ri-graduation-cap-line",
+      text: educationLevel,
+      title: `Highest degree level: ${educationLevel}`,
+    },
+    degreeType && {
+      icon: "ri-book-open-line",
+      text: degreeType,
+      title: `Degree Type: ${degreeType}`,
+    },
+  ].filter(Boolean);
+}
+
 const BUSINESS_DAY = "(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)";
 
 export function parseBusinessHours(entry) {
@@ -79,12 +101,7 @@ export default function ListingProfile({ data, isPreview = false }) {
         ? data.location
         : data.location?.display || data.location?.address || "")
   ).trim();
-  const educationLevel = String(
-    data.education || data.degreeLevel || data.highestDegreeLevel || ""
-  ).trim();
-  const degreeField = String(
-    data.degreeType || data.degree || data.fieldOfStudy || ""
-  ).trim();
+  const educationDetails = listingEducationDetails(data);
   const isClassified = String(data.badge || "").toLowerCase() === "classified";
   const parsedHours = data.hours.map(parseBusinessHours);
   const regularHours = parsedHours.filter(({ day }) => !/^(sat(?:urday)?|sun(?:day)?)\b/i.test(day));
@@ -471,14 +488,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                               } of Experience`
                               : "Years of experience not provided",
                         },
-                        educationLevel && {
-                          icon: "ri-graduation-cap-line",
-                          text: educationLevel,
-                        },
-                        degreeField && {
-                          icon: "ri-book-open-line",
-                          text: degreeField,
-                        },
+                        ...educationDetails,
                       ].filter(Boolean);
 
                       if (!parts.length) return null;
