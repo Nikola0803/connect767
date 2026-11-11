@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import ShareMenu from "./ShareMenu";
 
 const listingTierPlans = {
   free: {
@@ -81,7 +82,6 @@ function PlanAction({ planKey, plan, selected, onSelect }) {
 function FullTierCard({ planKey, selected, onSelect }) {
   const plan = listingTierPlans[planKey];
   const isClassified = planKey === "classified";
-
   return (
     <article
       onClick={onSelect ? () => onSelect(planKey) : undefined}
@@ -137,7 +137,9 @@ function FullTierCard({ planKey, selected, onSelect }) {
         ))}
       </ul>
 
-      <PlanAction planKey={planKey} plan={plan} selected={selected} onSelect={onSelect} />
+      <div className="mt-auto">
+        <PlanAction planKey={planKey} plan={plan} selected={selected} onSelect={onSelect} />
+      </div>
     </article>
   );
 }
@@ -179,6 +181,39 @@ function CompactTierCard({ planKey, selected, onSelect }) {
 
 export default function ListingTierCards({ selectedTier = "", onSelect, compact = false, scale = 1, className = "" }) {
   const Card = compact ? CompactTierCard : FullTierCard;
+  const combinedShareUrl = typeof window !== "undefined"
+    ? new URL("/listings/submit", window.location.origin).toString()
+    : "/listings/submit";
+
+  if (!onSelect && !compact) {
+    return (
+      <section
+        className={`rounded-[1.75rem] border border-background-300 bg-background-100/60 p-4 shadow-[0_16px_42px_rgba(49,77,62,0.08)] md:p-6 ${className}`}
+        data-visual-scale={scale}
+        style={scale === 1 ? undefined : { "--listing-tier-scale": scale }}
+        aria-label="Connect767 listing plans"
+      >
+        <div className={`grid grid-cols-1 gap-6 md:grid-cols-2 ${scale === 1 ? "" : "md:[zoom:var(--listing-tier-scale)]"}`}>
+          {Object.keys(listingTierPlans).map((planKey) => (
+            <div key={planKey}>
+              <FullTierCard planKey={planKey} />
+            </div>
+          ))}
+        </div>
+        <footer className="mt-5 flex flex-col items-center justify-between gap-3 rounded-xl border border-background-300 bg-background-50 px-5 py-4 sm:flex-row">
+          <p className="text-center text-xs leading-relaxed text-foreground-600 sm:text-left">
+            Share both Connect767 listing options with one link.
+          </p>
+          <ShareMenu
+            title="Connect767 listing plans"
+            url={combinedShareUrl}
+            className="w-full shrink-0 sm:w-auto"
+            buttonClassName="min-h-11 w-full justify-center bg-background-50 px-5 hover:border-primary-300 hover:text-primary-800 sm:w-auto"
+          />
+        </footer>
+      </section>
+    );
+  }
 
   return (
     <div

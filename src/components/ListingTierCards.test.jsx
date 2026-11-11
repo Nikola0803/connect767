@@ -19,6 +19,8 @@ describe("ListingTierCards", () => {
       "href",
       "/listings/submit?tier=classified",
     );
+    expect(screen.getAllByRole("button", { name: "Share" })).toHaveLength(1);
+    expect(screen.getByRole("region", { name: "Connect767 listing plans" })).toBeInTheDocument();
     expect(screen.getAllByText("Connect767 Built-in Storefront")).toHaveLength(2);
   });
 
@@ -32,6 +34,7 @@ describe("ListingTierCards", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Select Classified" }));
     expect(onSelect).toHaveBeenCalledWith("classified");
+    expect(screen.queryByRole("button", { name: "Share" })).not.toBeInTheDocument();
   });
 
   it("applies an optional signup-only visual scale", () => {
