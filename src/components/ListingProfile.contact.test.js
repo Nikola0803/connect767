@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { listingContactActionLinks } from "./ListingProfile";
+import { listingContactActionLinks, listingLocationMapUrl } from "./ListingProfile";
 
 describe("listingContactActionLinks", () => {
   it("keeps every contact action hidden when its listing-form field is empty", () => {
@@ -32,5 +32,17 @@ describe("listingContactActionLinks", () => {
       website: "https://connect767.com",
       whatsapp: "",
     });
+  });
+});
+
+describe("listingLocationMapUrl", () => {
+  it("creates a clickable Google Maps search URL for a listing location", () => {
+    expect(listingLocationMapUrl("Roseau, Dominica")).toBe(
+      "https://www.google.com/maps/search/?api=1&query=Roseau%2C%20Dominica",
+    );
+  });
+
+  it("keeps the location action hidden when no location is available", () => {
+    expect(listingLocationMapUrl("   ")).toBe("");
   });
 });

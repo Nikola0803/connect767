@@ -31,6 +31,13 @@ export function listingContactActionLinks(contact = {}) {
   };
 }
 
+export function listingLocationMapUrl(location = "") {
+  const query = String(location || "").trim();
+  return query
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+    : "";
+}
+
 export function listingEducationDetails(data = {}) {
   const educationLevel = String(
     data.education || data.degreeLevel || data.highestDegreeLevel || ""
@@ -102,6 +109,7 @@ export default function ListingProfile({ data, isPreview = false }) {
         : data.location?.display || data.location?.address || "")
   ).trim();
   const educationDetails = listingEducationDetails(data);
+  const contactLocationUrl = listingLocationMapUrl(contactLocation);
   const isClassified = String(data.badge || "").toLowerCase() === "classified";
   const parsedHours = data.hours.map(parseBusinessHours);
   const regularHours = parsedHours.filter(({ day }) => !/^(sat(?:urday)?|sun(?:day)?)\b/i.test(day));
@@ -825,7 +833,13 @@ export default function ListingProfile({ data, isPreview = false }) {
                       {(contactLocation || data.contact.instagram || data.contact.facebook || data.contact.youtube || data.contact.twitter) && (
                         <div className="mt-3 flex items-center gap-2 overflow-x-auto rounded-xl border border-background-200 bg-primary-50/40 p-3 text-sm text-foreground-700 shadow-sm font-label">
                           {contactLocation && (
-                            <div className="flex min-w-0 flex-1 items-center gap-3 pr-2">
+                            <a
+                              aria-label={`Open ${contactLocation} in maps`}
+                              className="group flex min-w-0 flex-1 items-center gap-3 rounded-xl pr-2 transition-colors hover:text-primary-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+                              href={contactLocationUrl}
+                              rel="noopener noreferrer"
+                              target="_blank"
+                            >
                               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-lg text-white shadow-sm">
                             <svg
                               aria-hidden="true"
@@ -843,7 +857,8 @@ export default function ListingProfile({ data, isPreview = false }) {
                             </svg>
                               </div>
                               <span className="min-w-0 truncate">{contactLocation}</span>
-                            </div>
+                              <i className="ri-arrow-right-up-line shrink-0 text-foreground-400 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary-700" />
+                            </a>
                           )}
                           {contactLocation && (data.contact.instagram || data.contact.facebook || data.contact.youtube || data.contact.twitter) && (
                             <span className="h-8 w-px shrink-0 bg-background-300" aria-hidden="true" />
