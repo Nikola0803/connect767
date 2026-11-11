@@ -293,7 +293,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                         />
                       )}
                     </h1>
-                    <p className="mt-1.5 flex w-full flex-nowrap items-center gap-x-4 overflow-x-auto pb-1 text-sm text-foreground-600 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    <p className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground-600">
                       {[
                         (data.parentCategoryLabel || data.categoryLabel) && {
                           icon: "ri-folder-line",
@@ -511,7 +511,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                         // next begins. Dots on top of that were doing the same
                         // job twice and cluttering the line. Wider gaps do the
                         // separating instead.
-                        <p className="mt-2 flex w-full flex-nowrap items-center gap-x-5 overflow-x-auto pb-1 font-label text-sm text-foreground-600 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        <p className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-foreground-600 font-label mt-2">
                           {parts.map((part) => (
                             <span
                               key={part.text}
