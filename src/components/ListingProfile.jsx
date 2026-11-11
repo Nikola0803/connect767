@@ -294,24 +294,36 @@ export default function ListingProfile({ data, isPreview = false }) {
                       )}
                     </h1>
                     <p className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground-600">
-                      {(data.parentCategoryLabel || data.categoryLabel) && (
-                        <span className="inline-flex items-center gap-1.5">
-                          <i className="ri-folder-line text-foreground-400" />
-                          {data.parentCategoryLabel || data.categoryLabel}
-                        </span>
-                      )}
-                      {data.industryLabel && (
-                        <span className="inline-flex items-center gap-1.5">
-                          <i className="ri-building-line text-foreground-400" />
-                          {data.industryLabel}
-                        </span>
-                      )}
-                      <span className="inline-flex items-center gap-1.5">
-                        <i className="ri-time-line text-foreground-400" />
-                        {data.yearsExperience !== "" && data.yearsExperience != null
-                          ? data.yearsExperience
-                          : "—"} Yrs. Exp.
-                      </span>
+                      {[
+                        (data.parentCategoryLabel || data.categoryLabel) && {
+                          icon: "ri-folder-line",
+                          text: data.parentCategoryLabel || data.categoryLabel,
+                        },
+                        data.industryLabel && {
+                          icon: "ri-building-line",
+                          text: data.industryLabel,
+                        },
+                        {
+                          icon: "ri-time-line",
+                          text: `${
+                            data.yearsExperience !== "" && data.yearsExperience != null
+                              ? data.yearsExperience
+                              : "—"
+                          } Yrs. Exp.`,
+                        },
+                        ...educationDetails,
+                      ]
+                        .filter(Boolean)
+                        .map((part) => (
+                          <span
+                            key={`${part.icon}-${part.text}`}
+                            className="inline-flex items-center gap-1.5 whitespace-nowrap"
+                            title={part.title || undefined}
+                          >
+                            <i className={`${part.icon} text-foreground-400`} />
+                            {part.text}
+                          </span>
+                        ))}
                     </p>
                   </div>
                 </div>
