@@ -41,7 +41,7 @@ async function copyToClipboard(text) {
   }
 }
 
-export default function ShareMenu({ title, url, className = "" }) {
+export default function ShareMenu({ title, url, className = "", buttonClassName = "" }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
@@ -124,16 +124,16 @@ export default function ShareMenu({ title, url, className = "" }) {
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg border border-background-300 text-foreground-700 hover:bg-background-100 cursor-pointer whitespace-nowrap transition-colors"
+        className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg border border-background-300 text-foreground-700 hover:bg-background-100 cursor-pointer whitespace-nowrap transition-colors ${buttonClassName}`}
       >
         <i className="ri-share-forward-line" />
-        <span className="hidden sm:inline">Share</span>
+        <span>Share</span>
       </button>
 
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full mt-2 z-40 w-56 rounded-xl border border-background-200/70 bg-background-50 shadow-xl p-1.5"
+          className="fixed inset-x-4 bottom-4 z-[70] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-xl border border-background-200/70 bg-background-50 p-1.5 shadow-xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:top-full sm:mt-2 sm:w-56"
         >
           {/* Native sheet first where it exists (phones, Safari) — it reaches
               apps we can't link to directly. Desktop simply won't see it. */}
