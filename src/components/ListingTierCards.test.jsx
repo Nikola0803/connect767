@@ -22,6 +22,11 @@ describe("ListingTierCards", () => {
     expect(screen.getAllByRole("button", { name: "Share" })).toHaveLength(1);
     expect(screen.getByRole("region", { name: "Connect767 listing plans" })).toBeInTheDocument();
     expect(screen.getAllByText("Connect767 Built-in Storefront")).toHaveLength(2);
+
+    fireEvent.click(screen.getByRole("button", { name: "Share" }));
+    const shareMenu = screen.getByRole("menu");
+    expect(shareMenu).toHaveAttribute("data-placement", "top");
+    expect(screen.getByRole("menuitem", { name: "Text message" })).toBeInTheDocument();
   });
 
   it("selects a plan in the listing form", () => {

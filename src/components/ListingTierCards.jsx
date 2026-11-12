@@ -207,6 +207,7 @@ export default function ListingTierCards({ selectedTier = "", onSelect, compact 
           <ShareMenu
             title="Connect767 listing plans"
             url={combinedShareUrl}
+            placement="top"
             className="w-full shrink-0 sm:w-auto"
             buttonClassName="min-h-11 w-full justify-center bg-background-50 px-5 hover:border-primary-300 hover:text-primary-800 sm:w-auto"
           />

@@ -41,4 +41,16 @@ describe("ShareMenu", () => {
       expect.stringContaining(encodeURIComponent("https://connect767.com/listings/james-local-fruits")),
     );
   });
+
+  it("provides mobile-safe scrolling and an explicit close control", () => {
+    render(<ShareMenu title="Connect767 listing plans" url="https://connect767.com/listings/submit" />);
+    fireEvent.click(screen.getByRole("button", { name: "Share" }));
+
+    expect(screen.getByRole("menu")).toHaveClass("touch-pan-y", "overscroll-contain");
+    const closeButtons = screen.getAllByRole("button", { name: "Close share menu" });
+    expect(closeButtons).toHaveLength(2);
+
+    fireEvent.click(closeButtons[1]);
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
 });
