@@ -41,7 +41,13 @@ async function copyToClipboard(text) {
   }
 }
 
-export default function ShareMenu({ title, url, className = "", buttonClassName = "" }) {
+export default function ShareMenu({
+  title,
+  url,
+  className = "",
+  buttonClassName = "",
+  iconOnly = false,
+}) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
@@ -49,7 +55,9 @@ export default function ShareMenu({ title, url, className = "", buttonClassName 
 
   const shareUrl = url || (typeof window !== "undefined" ? window.location.href : "");
   const encodedUrl = encodeURIComponent(shareUrl);
-  const encodedTitle = encodeURIComponent(title || "");
+  const shareTitle = title || "Connect767 listing";
+  const encodedTitle = encodeURIComponent(shareTitle);
+  const encodedMessage = encodeURIComponent(`${shareTitle} ${shareUrl}`);
 
   useEffect(() => {
     if (!open) return;
@@ -91,10 +99,46 @@ export default function ShareMenu({ title, url, className = "", buttonClassName 
       href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
     },
     {
+      key: "threads",
+      label: "Threads",
+      icon: "ri-threads-line",
+      href: `https://www.threads.net/intent/post?text=${encodedMessage}`,
+    },
+    {
+      key: "bluesky",
+      label: "Bluesky",
+      icon: "ri-cloud-line",
+      href: `https://bsky.app/intent/compose?text=${encodedMessage}`,
+    },
+    {
+      key: "telegram",
+      label: "Telegram",
+      icon: "ri-telegram-2-line",
+      href: `https://t.me/share/url?url=${encodedUrl}&text=${encodedTitle}`,
+    },
+    {
+      key: "reddit",
+      label: "Reddit",
+      icon: "ri-reddit-line",
+      href: `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedTitle}`,
+    },
+    {
+      key: "pinterest",
+      label: "Pinterest",
+      icon: "ri-pinterest-line",
+      href: `https://www.pinterest.com/pin/create/button/?url=${encodedUrl}&description=${encodedTitle}`,
+    },
+    {
       key: "email",
       label: "Email",
       icon: "ri-mail-line",
-      href: `mailto:?subject=${encodedTitle}&body=${encodedUrl}`,
+      href: `mailto:?subject=${encodedTitle}&body=${encodedMessage}`,
+    },
+    {
+      key: "sms",
+      label: "Text message",
+      icon: "ri-message-2-line",
+      href: `sms:?&body=${encodedMessage}`,
     },
   ];
 
@@ -110,7 +154,7 @@ export default function ShareMenu({ title, url, className = "", buttonClassName 
 
   const handleNativeShare = async () => {
     try {
-      await navigator.share({ title, url: shareUrl });
+      await navigator.share({ title: shareTitle, url: shareUrl });
       setOpen(false);
     } catch {
       /* user dismissed the sheet */
@@ -124,16 +168,19 @@ export default function ShareMenu({ title, url, className = "", buttonClassName 
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg border border-background-300 text-foreground-700 hover:bg-background-100 cursor-pointer whitespace-nowrap transition-colors ${buttonClassName}`}
+        aria-label={iconOnly ? "Share listing" : undefined}
+        className={iconOnly
+          ? `flex h-9 w-9 items-center justify-center rounded-full bg-background-50/95 text-foreground-700 shadow-sm backdrop-blur transition-colors hover:text-primary-700 cursor-pointer ${buttonClassName}`
+          : `inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg border border-background-300 text-foreground-700 hover:bg-background-100 cursor-pointer whitespace-nowrap transition-colors ${buttonClassName}`}
       >
         <i className="ri-share-forward-line" />
-        <span>Share</span>
+        {!iconOnly && <span className="hidden sm:inline">Share</span>}
       </button>
 
       {open && (
         <div
           role="menu"
-          className="fixed inset-x-4 bottom-4 z-[70] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-xl border border-background-200/70 bg-background-50 p-1.5 shadow-xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:top-full sm:mt-2 sm:w-56"
+          className="fixed inset-x-4 bottom-4 z-[70] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-xl border border-background-200/70 bg-background-50 p-1.5 shadow-xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:top-full sm:mt-2 sm:w-72"
         >
           {/* Native sheet first where it exists (phones, Safari) — it reaches
               apps we can't link to directly. Desktop simply won't see it. */}
@@ -145,7 +192,7 @@ export default function ShareMenu({ title, url, className = "", buttonClassName 
               className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-foreground-800 hover:bg-background-100 cursor-pointer"
             >
               <i className="ri-share-line text-foreground-500" />
-              Share via…
+              More apps…
             </button>
           )}
 
@@ -176,20 +223,26 @@ export default function ShareMenu({ title, url, className = "", buttonClassName 
 
           <div className="h-px bg-background-200/70 my-1.5" />
 
-          {targets.map((t) => (
-            <a
-              key={t.key}
-              role="menuitem"
-              href={t.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setOpen(false)}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-foreground-800 hover:bg-background-100 cursor-pointer"
-            >
-              <i className={`${t.icon} text-foreground-500`} />
-              {t.label}
-            </a>
-          ))}
+          <p className="px-3 pb-1 pt-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-500">
+            Share to
+          </p>
+
+          <div className="grid max-h-72 grid-cols-2 gap-0.5 overflow-y-auto">
+            {targets.map((t) => (
+              <a
+                key={t.key}
+                role="menuitem"
+                href={t.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setOpen(false)}
+                className="flex min-w-0 items-center gap-2 px-3 py-2 rounded-lg text-sm text-foreground-800 hover:bg-background-100 cursor-pointer"
+              >
+                <i className={`${t.icon} shrink-0 text-foreground-500`} />
+                <span className="truncate">{t.label}</span>
+              </a>
+            ))}
+          </div>
         </div>
       )}
     </div>
