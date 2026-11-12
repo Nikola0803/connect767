@@ -10,11 +10,18 @@ import { findCategory } from "../data/industries";
 import { listingMatchesBookingAvailability, listingMatchesSearch } from "../lib/listingSearch";
 
 const PAGE_SIZE = 12;
+const LEGACY_CATEGORY_ALIASES = {
+  "fitness-2": "fitness",
+};
+
+function normalizeCategory(value) {
+  return LEGACY_CATEGORY_ALIASES[value] || value;
+}
 
 export default function DirectoryPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("q") || "");
-  const [category, setCategory] = useState(searchParams.get("category") || "all");
+  const [category, setCategory] = useState(normalizeCategory(searchParams.get("category") || "all"));
   const [industry, setIndustry] = useState("all");
   const [tier, setTier] = useState(searchParams.get("tier") || "all");
   const [bookingOnly, setBookingOnly] = useState(searchParams.get("booking") === "true");
@@ -27,6 +34,16 @@ export default function DirectoryPage() {
   const [page, setPage] = useState(1);
   const [databaseSearch, setDatabaseSearch] = useState(search.trim());
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  useEffect(() => {
+    const requestedCategory = searchParams.get("category");
+    const normalizedCategory = normalizeCategory(requestedCategory);
+    if (!requestedCategory || normalizedCategory === requestedCategory) return;
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("category", normalizedCategory);
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setDatabaseSearch(search.trim()), 250);

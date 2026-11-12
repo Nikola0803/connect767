@@ -71,4 +71,10 @@ describe("RouteSeo", () => {
     await waitFor(() => expect(document.title).toBe("Page Not Found | Connect767"));
     expect(robots()).toBe("noindex, nofollow");
   });
+
+  it("keeps filtered collection URLs out of the index while preserving their canonical page", async () => {
+    renderRoute("/listings?category=fitness");
+    await waitFor(() => expect(robots()).toBe("noindex, follow"));
+    expect(canonical()).toBe("https://connect767.com/listings");
+  });
 });

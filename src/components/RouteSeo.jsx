@@ -119,15 +119,17 @@ function setStructuredData(pathname, meta, canonical) {
 }
 
 export default function RouteSeo() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
 
   useEffect(() => {
     const normalizedPath = pathname !== "/" ? pathname.replace(/\/$/, "") : "/";
     const meta = pageMeta(normalizedPath);
     const canonical = `${SITE_URL}${normalizedPath === "/" ? "/" : normalizedPath}`;
-    const noindex = !meta || NOINDEX_PREFIXES.some(
+    const privateOrMissing = !meta || NOINDEX_PREFIXES.some(
       (prefix) => normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`),
     ) || /^\/listings\/[^/]+\/edit$/.test(normalizedPath);
+    const filteredCollection = Boolean(search)
+      && (normalizedPath === "/listings" || normalizedPath === "/shop");
     const resolvedMeta = meta || {
       title: "Page Not Found | Connect767",
       description: "The requested Connect767 page could not be found.",
@@ -138,7 +140,11 @@ export default function RouteSeo() {
     setMeta('meta[name="description"]', { name: "description", content: resolvedMeta.description });
     setMeta('meta[name="robots"]', {
       name: "robots",
-      content: noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large",
+      content: privateOrMissing
+        ? "noindex, nofollow"
+        : filteredCollection
+          ? "noindex, follow"
+          : "index, follow, max-image-preview:large",
     });
     setMeta('meta[property="og:title"]', { property: "og:title", content: resolvedMeta.title });
     setMeta('meta[property="og:description"]', {
@@ -163,7 +169,7 @@ export default function RouteSeo() {
     });
     setCanonical(canonical);
     setStructuredData(normalizedPath, resolvedMeta, canonical);
-  }, [pathname]);
+  }, [pathname, search]);
 
   return null;
 }

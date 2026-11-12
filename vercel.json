@@ -18,6 +18,31 @@
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
+    },
+    {
+      "source": "/listings",
+      "has": [{ "type": "query", "key": "category" }],
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
+    },
+    {
+      "source": "/listings",
+      "has": [{ "type": "query", "key": "q" }],
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
+    },
+    {
+      "source": "/listings",
+      "has": [{ "type": "query", "key": "tier" }],
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
+    },
+    {
+      "source": "/listings",
+      "has": [{ "type": "query", "key": "booking" }],
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
+    },
+    {
+      "source": "/shop",
+      "has": [{ "type": "query", "key": "category" }],
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
     }
   ],
   "redirects": [
@@ -27,6 +52,28 @@
       "destination": "https://connect767.com/$1",
       "permanent": true
     },
+    {
+      "source": "/listings",
+      "has": [{ "type": "query", "key": "category", "value": "fitness-2" }],
+      "destination": "/listings?category=fitness",
+      "permanent": true
+    },
+    {
+      "source": "/listing-category/:category",
+      "destination": "/listings?category=:category",
+      "permanent": true
+    },
+    {
+      "source": "/listing/:slug/feed",
+      "destination": "/listings/:slug",
+      "permanent": true
+    },
+    {
+      "source": "/listing/:slug",
+      "destination": "/listings/:slug",
+      "permanent": true
+    },
+    { "source": "/saved-searches", "destination": "/saved", "permanent": true },
     { "source": "/directory", "destination": "/listings", "permanent": true },
     { "source": "/add-listing", "destination": "/listings/submit", "permanent": true },
     { "source": "/the-shop", "destination": "/shop", "permanent": true },
