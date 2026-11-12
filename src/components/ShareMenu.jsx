@@ -47,6 +47,7 @@ export default function ShareMenu({
   className = "",
   buttonClassName = "",
   iconOnly = false,
+  placement = "bottom",
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -58,6 +59,9 @@ export default function ShareMenu({
   const shareTitle = title || "Connect767 listing";
   const encodedTitle = encodeURIComponent(shareTitle);
   const encodedMessage = encodeURIComponent(`${shareTitle} ${shareUrl}`);
+  const desktopPosition = placement === "top"
+    ? "sm:bottom-full sm:top-auto sm:mb-2 sm:mt-0"
+    : "sm:bottom-auto sm:top-full sm:mb-0 sm:mt-2";
 
   useEffect(() => {
     if (!open) return;
@@ -178,13 +182,32 @@ export default function ShareMenu({
       </button>
 
       {open && (
-        <div
-          role="menu"
-          className="fixed inset-x-4 bottom-4 z-[70] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-xl border border-background-200/70 bg-background-50 p-1.5 shadow-xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:top-full sm:mt-2 sm:w-72"
-        >
-          {/* Native sheet first where it exists (phones, Safari) — it reaches
-              apps we can't link to directly. Desktop simply won't see it. */}
-          {typeof navigator !== "undefined" && navigator.share && (
+        <>
+          <button
+            type="button"
+            aria-label="Close share menu"
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-[69] cursor-default bg-foreground-950/35 sm:hidden"
+          />
+          <div
+            role="menu"
+            data-placement={placement}
+            className={`fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-[70] max-h-[calc(100dvh-1.5rem-env(safe-area-inset-bottom))] touch-pan-y overscroll-contain overflow-y-auto rounded-xl border border-background-200/70 bg-background-50 p-1.5 shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:w-72 ${desktopPosition}`}
+          >
+            <div className="flex items-center justify-between px-3 py-2 sm:hidden">
+              <span className="text-sm font-semibold text-foreground-950">Share</span>
+              <button
+                type="button"
+                aria-label="Close share menu"
+                onClick={() => setOpen(false)}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-background-100 text-foreground-700"
+              >
+                <i className="ri-close-line text-lg" aria-hidden="true" />
+              </button>
+            </div>
+            {/* Native sheet first where it exists (phones, Safari) — it reaches
+                apps we can't link to directly. Desktop simply won't see it. */}
+            {typeof navigator !== "undefined" && navigator.share && (
             <button
               type="button"
               role="menuitem"
@@ -194,7 +217,7 @@ export default function ShareMenu({
               <i className="ri-share-line text-foreground-500" />
               More apps…
             </button>
-          )}
+            )}
 
           <button
             type="button"
@@ -243,7 +266,8 @@ export default function ShareMenu({
               </a>
             ))}
           </div>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );
