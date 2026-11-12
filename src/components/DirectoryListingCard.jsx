@@ -5,7 +5,6 @@ import { directoryCategories } from "../data/directory";
 import { findIndustry } from "../data/industries";
 import { isRentalBookingType, normalizeRentalRateUnit } from "../lib/bookingTypes";
 import DefaultListingCover from "./ui/DefaultListingCover";
-import ShareMenu from "./ShareMenu";
 
 const getCategoryLabel = (slug) =>
   directoryCategories.find((category) => category.slug === slug)?.label || "";
@@ -167,39 +166,10 @@ function Cover({ listing, listView = false }) {
   );
 }
 
-function CardActions({ listing, saved, onToggleSaved }) {
-  const shareUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/listings/${listing.slug}`
-    : `/listings/${listing.slug}`;
-
-  return (
-    <div className="absolute right-3 top-3 z-30 flex flex-col items-end gap-2">
-      {onToggleSaved && (
-        <button
-          aria-label={saved ? "Remove from saved" : "Save listing"}
-          type="button"
-          onClick={(event) => onToggleSaved(event, listing)}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-background-50/70 bg-background-50/90 text-foreground-700 shadow-[0_8px_22px_rgba(0,0,0,0.16)] backdrop-blur-md transition-all hover:scale-105 hover:text-accent-500 cursor-pointer"
-        >
-          <i className={saved ? "ri-heart-fill text-accent-500" : "ri-heart-line"} />
-        </button>
-      )}
-      <ShareMenu
-        title={listing.title}
-        url={shareUrl}
-        iconOnly
-        buttonClassName="h-10 w-10 border border-background-50/70 bg-background-50/90 shadow-[0_8px_22px_rgba(0,0,0,0.16)] hover:scale-105"
-      />
-    </div>
-  );
-}
-
 export default function DirectoryListingCard({
   listing,
   view = "grid",
   matchScore,
-  saved = false,
-  onToggleSaved,
   className = "",
 }) {
   const description = String(listing.description || "").trim();
@@ -232,7 +202,6 @@ export default function DirectoryListingCard({
             </div>
           </div>
         </Link>
-        <CardActions listing={listing} saved={saved} onToggleSaved={onToggleSaved} />
       </article>
     );
   }
@@ -254,7 +223,6 @@ export default function DirectoryListingCard({
           </div>
         </div>
       </Link>
-      <CardActions listing={listing} saved={saved} onToggleSaved={onToggleSaved} />
     </article>
   );
 }

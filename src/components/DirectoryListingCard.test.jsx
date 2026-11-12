@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import DirectoryListingCard from "./DirectoryListingCard";
@@ -214,7 +214,7 @@ describe("DirectoryListingCard parent category", () => {
   });
 
   it.each(["Free", "Classified"])(
-    "offers the complete share menu on %s directory cards",
+    "does not show a share icon on %s directory preview cards",
     (badge) => {
       render(
         <MemoryRouter>
@@ -222,13 +222,8 @@ describe("DirectoryListingCard parent category", () => {
         </MemoryRouter>,
       );
 
-      fireEvent.click(screen.getByRole("button", { name: "Share listing" }));
-
-      expect(screen.getByRole("menuitem", { name: "WhatsApp" })).toBeInTheDocument();
-      expect(screen.getByRole("menuitem", { name: "Telegram" })).toBeInTheDocument();
-      expect(screen.getByRole("menuitem", { name: "Pinterest" })).toBeInTheDocument();
-      expect(screen.getByRole("menuitem", { name: "Text message" })).toBeInTheDocument();
-      expect(screen.getByRole("menuitem", { name: "Copy link" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Share listing" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Save listing|Remove from saved/ })).not.toBeInTheDocument();
       expect(screen.getByRole("link", { name: /Island Bookkeeper/i })).toHaveAttribute(
         "href",
         "/listings/island-bookkeeper",
