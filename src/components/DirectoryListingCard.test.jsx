@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import DirectoryListingCard from "./DirectoryListingCard";
@@ -212,4 +212,27 @@ describe("DirectoryListingCard parent category", () => {
 
     expect(screen.getByText("Classified").parentElement).toHaveClass("z-20");
   });
+
+  it.each(["Free", "Classified"])(
+    "offers the complete share menu on %s directory cards",
+    (badge) => {
+      render(
+        <MemoryRouter>
+          <DirectoryListingCard listing={{ ...listing, badge }} />
+        </MemoryRouter>,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Share listing" }));
+
+      expect(screen.getByRole("menuitem", { name: "WhatsApp" })).toBeInTheDocument();
+      expect(screen.getByRole("menuitem", { name: "Telegram" })).toBeInTheDocument();
+      expect(screen.getByRole("menuitem", { name: "Pinterest" })).toBeInTheDocument();
+      expect(screen.getByRole("menuitem", { name: "Text message" })).toBeInTheDocument();
+      expect(screen.getByRole("menuitem", { name: "Copy link" })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /Island Bookkeeper/i })).toHaveAttribute(
+        "href",
+        "/listings/island-bookkeeper",
+      );
+    },
+  );
 });
