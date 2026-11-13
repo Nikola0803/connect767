@@ -584,6 +584,29 @@ describe("mapListingCpt", () => {
 });
 
 describe("mapListingDetail", () => {
+  it("does not repeat the featured cover photo in the listing gallery", () => {
+    const cover = "https://admin.connect767.com/uploads/island-guide.jpg";
+    const mapped = mapListingDetail({
+      id: 12,
+      slug: "island-guide",
+      title: "Island Guide",
+      _embedded: {
+        "wp:featuredmedia": [{ source_url: cover }],
+      },
+      acf: {
+        gallery: [
+          { url: `${cover}?version=2`, alt: "Repeated cover" },
+          { url: "https://admin.connect767.com/uploads/trail.jpg", alt: "Trail" },
+        ],
+      },
+    });
+
+    expect(mapped.gallery).toEqual([
+      { alt: "Island Guide cover photo", src: cover },
+      { alt: "Trail", src: "https://admin.connect767.com/uploads/trail.jpg" },
+    ]);
+  });
+
   it("only builds a contact object when at least one contact field is present", () => {
     const withoutContact = mapListingDetail({ id: 1, slug: "a", title: "A", acf: {} });
     expect(withoutContact.contact).toBeNull();

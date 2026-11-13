@@ -11,6 +11,7 @@ import { WriteReviewButton } from "./WriteReviewModal";
 import DefaultListingCover from "./ui/DefaultListingCover";
 import ListingProducts from "./ListingProducts";
 import { getBlogPostForListing } from "../data/repository";
+import { dedupeListingGallery } from "../lib/listingGallery";
 
 export function listingOwnerMessagePath(data, isPreview = false) {
   if (isPreview || !data?.slug) return "";
@@ -97,7 +98,8 @@ export default function ListingProfile({ data, isPreview = false }) {
   const [hasProducts, setHasProducts] = useState(false);
   const [relatedBlogPost, setRelatedBlogPost] = useState(null);
   const { isSaved, toggleSaved } = useSavedListings();
-  const gallery = data.gallery.length > 0 ? data.gallery : [{ alt: data.title, src: "" }];
+  const uniqueGallery = dedupeListingGallery(data.gallery);
+  const gallery = uniqueGallery.length > 0 ? uniqueGallery : [{ alt: data.title, src: "" }];
   const saved = !isPreview && isSaved(data.slug);
   const messagePath = listingOwnerMessagePath(data, isPreview);
   const contactActions = listingContactActionLinks(data.contact);
