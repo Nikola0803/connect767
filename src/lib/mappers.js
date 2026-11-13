@@ -4,6 +4,7 @@ import { findCategory, findIndustry } from "../data/industries";
 import { normalizeBookingType, normalizeRentalRateUnit } from "./bookingTypes";
 import { normalizeBookingRateRules } from "./bookingRates";
 import { sortVariationOptions } from "./productVariations";
+import { dedupeListingGallery } from "./listingGallery";
 
 /**
  * Mappers between raw WordPress/WooCommerce REST API shapes and the flat
@@ -563,10 +564,10 @@ export function mapListingDetail(wp) {
     // Cover photo leads the gallery so it's the hero image on the profile,
     // with the owner's uploaded gallery behind it. Without this the profile
     // showed gallery[0] as the main image and the cover never appeared at all.
-    gallery: [
+    gallery: dedupeListingGallery([
       ...(base.coverPhoto ? [{ alt: `${base.title} cover photo`, src: base.coverPhoto }] : []),
       ...(acf.gallery || []).map((img) => ({ alt: img.alt || base.title, src: img.url })),
-    ],
+    ]),
     reviews: (acf.reviews || []).map((r) => ({
       initial: r.name?.[0]?.toUpperCase() || "?",
       name: decodeEntities(r.name),
