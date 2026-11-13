@@ -27,4 +27,38 @@ describe("dedupeListingGallery", () => {
       { alt: "Second", src: "/uploads/second.jpg" },
     ]);
   });
+
+  it("removes a separately uploaded WordPress copy of the cover photo", () => {
+    expect(dedupeListingGallery([
+      {
+        alt: "MJ’s Elegant Suite cover photo",
+        src: "https://admin.connect767.com/wp-content/uploads/2026/08/night-view.jpg",
+      },
+      {
+        alt: "night view",
+        src: "https://admin.connect767.com/wp-content/uploads/2026/08/night-view-1.jpg",
+      },
+      {
+        alt: "house view",
+        src: "https://admin.connect767.com/wp-content/uploads/2026/08/house-view-1.jpg",
+      },
+    ])).toEqual([
+      {
+        alt: "MJ’s Elegant Suite cover photo",
+        src: "https://admin.connect767.com/wp-content/uploads/2026/08/night-view.jpg",
+      },
+      {
+        alt: "house view",
+        src: "https://admin.connect767.com/wp-content/uploads/2026/08/house-view-1.jpg",
+      },
+    ]);
+  });
+
+  it("keeps numbered gallery photos when they are not copies of the cover", () => {
+    expect(dedupeListingGallery([
+      { alt: "Cover", src: "https://example.com/wp-content/uploads/hero.jpg" },
+      { alt: "Room one", src: "https://example.com/wp-content/uploads/room.jpg" },
+      { alt: "Room two", src: "https://example.com/wp-content/uploads/room-1.jpg" },
+    ])).toHaveLength(3);
+  });
 });
