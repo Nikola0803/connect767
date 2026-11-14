@@ -149,6 +149,18 @@ describe("DirectoryListingCard parent category", () => {
     expect(screen.getByText("Book · Free · 30 min")).toBeInTheDocument();
   });
 
+  it("reserves aligned content rows when optional card details are absent", () => {
+    render(
+      <MemoryRouter>
+        <DirectoryListingCard listing={{ ...listing, description: "", bookingEnabled: false }} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId("listing-description-row")).toHaveClass("h-9");
+    expect(screen.getByTestId("listing-highlights")).toHaveClass("min-h-[4.35rem]", "items-stretch");
+    expect(screen.getByTestId("listing-booking-row")).toHaveClass("min-h-8");
+  });
+
   it("shows a rental rate unit instead of an appointment duration", () => {
     render(
       <MemoryRouter>
