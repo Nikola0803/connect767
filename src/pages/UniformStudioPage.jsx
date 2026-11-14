@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toPng } from "html-to-image";
 import * as THREE from "three";
@@ -11,6 +11,9 @@ import {
   kitTypeOptions,
   shirtSizeOptions,
   shortSizeOptions,
+  sockSizeOptions,
+  bottomLengthOptions,
+  playerRoleOptions,
   kitUnitPrice,
   FAN_JERSEY_PRICE,
   sportConfigFor,
@@ -19,7 +22,6 @@ import {
 import JerseyStage from "../components/uniform-studio/JerseyStage";
 import JerseyGraphic from "../components/uniform-studio/JerseyGraphic";
 import FloatingToolbar from "../components/uniform-studio/FloatingToolbar";
-import Product3DStage from "../components/product-customizer/garment3d/Product3DStage";
 import {
   DesignPanel,
   TextPanel,
@@ -82,20 +84,62 @@ const tools = [
   },
 ];
 
-/**
- * The 3D configurator is switched OFF for customers.
- *
- * Decision (client, this round): the flat editor is what people expect from a
- * kit builder and is easier to explain — the 3D view tested as fiddly to
- * place artwork in and unfamiliar to non-technical customers.
- *
- * Every 3D component is deliberately LEFT IN PLACE and still imported: decals
- * that conform to the garment, click-to-place, the two-tone/gradient shader,
- * and the WebGL screenshot used for the order preview. Flipping this back to
- * `true` restores the Edit/3D toggle with no other change. Nothing was
- * deleted, so this is reversible in one line.
- */
-const ENABLE_3D = false;
+const Product3DStage = lazy(
+  () => import("../components/product-customizer/garment3d/Product3DStage")
+);
+
+// Keep the fast flat editor as the initial surface, then load WebGL only when
+// the customer asks for a rotating preview. This gives customers a genuine 3D
+// proof without making every visit pay the model-loading cost up front.
+const ENABLE_3D = true;
+
+const newRosterEntry = () => ({
+  name: "",
+  number: "",
+  shortsNumber: "",
+  shirtSize: "AM",
+  shortSize: "AM",
+  sockSize: "Medium",
+  bottomLength: "Regular",
+  sleevePreference: "Team selection",
+  role: "Player",
+  quantity: 1,
+  notes: "",
+});
+
+const rosterUnitCount = (roster) =>
+  roster.reduce((total, entry) => total + Math.max(1, Number.parseInt(entry.quantity, 10) || 1), 0);
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let quoted = false;
+
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    if (char === '"' && quoted && text[i + 1] === '"') {
+      cell += '"';
+      i += 1;
+    } else if (char === '"') {
+      quoted = !quoted;
+    } else if (char === "," && !quoted) {
+      row.push(cell.trim());
+      cell = "";
+    } else if ((char === "\n" || char === "\r") && !quoted) {
+      if (char === "\r" && text[i + 1] === "\n") i += 1;
+      row.push(cell.trim());
+      if (row.some(Boolean)) rows.push(row);
+      row = [];
+      cell = "";
+    } else {
+      cell += char;
+    }
+  }
+  row.push(cell.trim());
+  if (row.some(Boolean)) rows.push(row);
+  return rows;
+}
 
 let layerIdCounter = 0;
 const nextLayerId = () => `layer-${Date.now()}-${layerIdCounter++}`;
@@ -128,10 +172,9 @@ export default function UniformStudioPage() {
   // product customizer already has (GarmentModel/Product3DStage/
   // DesignCapture): a real rotating mesh with the customer's text/logo
   // layers baked on as a live texture, not a flat mockup. ----------
-  // The 3D garment IS the studio — it opens live, no toggle to find. The flat
-  // editor is still there behind the Edit button for fine positioning, but
-  // it's the secondary surface now, not the entry point.
-  const [stageMode, setStageMode] = useState(ENABLE_3D ? "3d" : "edit"); // '3d' | 'edit'
+  // Start in the instant flat editor. The 3D mesh is mounted on demand, which
+  // keeps the initial page light while retaining a production-friendly proof.
+  const [stageMode, setStageMode] = useState("edit"); // '3d' | 'edit'
 
   // When set, the next click on the garment creates this item AT the click
   // point instead of dropping it on the chest and making the user drag it
@@ -200,13 +243,7 @@ export default function UniformStudioPage() {
   );
 
   // ---------- Roster state ----------
-  const [rosterEntry, setRosterEntry] = useState({
-    name: "",
-    number: "",
-    shortsNumber: "",
-    shirtSize: "AM",
-    shortSize: "AM",
-  });
+  const [rosterEntry, setRosterEntry] = useState(newRosterEntry);
   const [roster, setRoster] = useState([]);
   // Who to send the quote back to. The submission previously carried none of
   // this — the shop received a design and a roster with no way to reply, and
@@ -592,10 +629,55 @@ export default function UniformStudioPage() {
 
   const addToRoster = () => {
     if (!rosterEntry.name.trim()) return;
-    setRoster((r) => [...r, { ...rosterEntry, id: `${Date.now()}` }]);
-    setRosterEntry({ name: "", number: "", shortsNumber: "", shirtSize: "AM", shortSize: "AM" });
+    setRoster((r) => [
+      ...r,
+      {
+        ...rosterEntry,
+        quantity: Math.max(1, Number.parseInt(rosterEntry.quantity, 10) || 1),
+        id: `${Date.now()}-${r.length}`,
+      },
+    ]);
+    setRosterEntry(newRosterEntry());
   };
   const removeFromRoster = (id) => setRoster((r) => r.filter((entry) => entry.id !== id));
+
+  const importRosterCsv = (text) => {
+    const rows = parseCsv(text);
+    if (rows.length < 2) throw new Error("The CSV needs a header row and at least one player.");
+
+    const normalise = (value) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const headers = rows[0].map(normalise);
+    const valueFor = (row, aliases) => {
+      const index = headers.findIndex((header) => aliases.includes(header));
+      return index >= 0 ? row[index]?.trim() || "" : "";
+    };
+    const imported = rows
+      .slice(1)
+      .map((row, index) => {
+        const name = valueFor(row, ["name", "player", "playername", "fullname"]);
+        if (!name) return null;
+        return {
+          ...newRosterEntry(),
+          id: `${Date.now()}-csv-${index}`,
+          name,
+          number: valueFor(row, ["number", "shirtnumber", "jerseynumber"]),
+          shortsNumber: valueFor(row, ["shortsnumber", "pantsnumber", "bottomnumber"]),
+          shirtSize: valueFor(row, ["shirtsize", "jerseysize", "topsize"]) || "AM",
+          shortSize: valueFor(row, ["shortsize", "shortssize", "pantssize", "bottomsize"]) || "AM",
+          sockSize: valueFor(row, ["socksize", "sockssize"]) || "Medium",
+          bottomLength: valueFor(row, ["bottomlength", "pantlength", "shortlength"]) || "Regular",
+          sleevePreference: valueFor(row, ["sleeve", "sleevelength", "sleevepreference"]) || "Team selection",
+          role: valueFor(row, ["role", "playerrole", "position"]) || "Player",
+          quantity: Math.max(1, Number.parseInt(valueFor(row, ["quantity", "qty"]), 10) || 1),
+          notes: valueFor(row, ["notes", "note", "comments"]),
+        };
+      })
+      .filter(Boolean);
+
+    if (!imported.length) throw new Error('No players were found. Include a "Name" column.');
+    setRoster((current) => [...current, ...imported]);
+    return imported.length;
+  };
 
   const handleDownload = async () => {
     if (!stageRef.current) return;
@@ -652,7 +734,8 @@ export default function UniformStudioPage() {
     setQuoteError(null);
     setSubmittingQuote(true);
     try {
-      const grandTotal = unitPrice * roster.length + (fanJerseyAdded ? FAN_JERSEY_PRICE : 0);
+      const unitCount = rosterUnitCount(roster);
+      const grandTotal = unitPrice * unitCount + (fanJerseyAdded ? FAN_JERSEY_PRICE : 0);
       await submitUniformQuote({
         template: template?.name || "Blank Canvas",
         sport: activeSport,
@@ -705,7 +788,7 @@ export default function UniformStudioPage() {
             Quote request sent
           </h1>
           <p className="text-sm text-foreground-600 font-label mb-8">
-            We've got your {roster.length}-shirt roster for the {template?.name || "Blank Canvas"}{" "}
+            We've got your {rosterUnitCount(roster)}-kit roster for the {template?.name || "Blank Canvas"}{" "}
             design. Our team will follow up with a production proof and pricing within one
             business day.
           </p>
@@ -981,27 +1064,36 @@ export default function UniformStudioPage() {
                       </div>
                     ) : (
                       <div className="flex-1 min-h-0 w-full flex flex-col">
-                        <Product3DStage
-                          productType={studioProductType}
-                          color={colors.body}
-                          colorB={twoTone.enabled ? twoTone.colorB : undefined}
-                          splitAt={twoTone.splitAt}
-                          softness={twoTone.softness}
-                          fullscreen
-                          layers={layers}
-                          selectedLayerId={selectedLayerId}
-                          onSelectLayer={selectLayer}
-                          onPlaceLayer={placeLayer3d}
-                          onRemoveLayer={removeLayer}
-                          onUpdateLayer={(id, text) => updateLayer(id, { text })}
-                          onRecolorLayer={(id, color) => updateLayer(id, { color })}
-                          placements3d={placements3d}
-                          pendingLayer={pendingLayer}
-                          onCommitPending={commitPendingLayer}
-                          onCaptureReady={(fn) => {
-                            capture3dRef.current = fn;
-                          }}
-                        />
+                        <Suspense
+                          fallback={(
+                            <div className="flex-1 flex flex-col items-center justify-center text-background-50/70">
+                              <i className="ri-loader-4-line text-2xl animate-spin mb-2" />
+                              <span className="text-xs font-label">Loading 3D preview…</span>
+                            </div>
+                          )}
+                        >
+                          <Product3DStage
+                            productType={studioProductType}
+                            color={colors.body}
+                            colorB={twoTone.enabled ? twoTone.colorB : undefined}
+                            splitAt={twoTone.splitAt}
+                            softness={twoTone.softness}
+                            fullscreen
+                            layers={layers}
+                            selectedLayerId={selectedLayerId}
+                            onSelectLayer={selectLayer}
+                            onPlaceLayer={placeLayer3d}
+                            onRemoveLayer={removeLayer}
+                            onUpdateLayer={(id, text) => updateLayer(id, { text })}
+                            onRecolorLayer={(id, color) => updateLayer(id, { color })}
+                            placements3d={placements3d}
+                            pendingLayer={pendingLayer}
+                            onCommitPending={commitPendingLayer}
+                            onCaptureReady={(fn) => {
+                              capture3dRef.current = fn;
+                            }}
+                          />
+                        </Suspense>
                         <p className="text-[11px] text-background-50/40 font-label text-center mt-2 flex-shrink-0">
                           {!layers.length
                             ? "Add text or a logo — it lands on the chest ready to move."
@@ -1088,12 +1180,15 @@ export default function UniformStudioPage() {
                 {activeTool === "roster" && (
                   <RosterTool
                     bottomLabel={sportConfig.bottomLabel}
+                    hasSocks={sportConfig.hasSocks}
+                    sleeveOptions={sportConfig.sleeveOptions}
                     contact={contact}
                     setContact={setContact}
                     rosterEntry={rosterEntry}
                     setRosterEntry={setRosterEntry}
                     roster={roster}
                     addToRoster={addToRoster}
+                    importRosterCsv={importRosterCsv}
                     removeFromRoster={removeFromRoster}
                     onRequestQuote={handleRequestQuote}
                     submitting={submittingQuote}
@@ -1170,12 +1265,15 @@ export default function UniformStudioPage() {
         {activeTool === "roster" && (
           <RosterTool
             bottomLabel={sportConfig.bottomLabel}
+            hasSocks={sportConfig.hasSocks}
+            sleeveOptions={sportConfig.sleeveOptions}
             contact={contact}
             setContact={setContact}
             rosterEntry={rosterEntry}
             setRosterEntry={setRosterEntry}
             roster={roster}
             addToRoster={addToRoster}
+            importRosterCsv={importRosterCsv}
             removeFromRoster={removeFromRoster}
             onRequestQuote={handleRequestQuote}
             submitting={submittingQuote}
@@ -1192,12 +1290,15 @@ export default function UniformStudioPage() {
 
 function RosterTool({
   bottomLabel = "Shorts",
+  hasSocks = false,
+  sleeveOptions = [],
   contact,
   setContact,
   rosterEntry,
   setRosterEntry,
   roster,
   addToRoster,
+  importRosterCsv,
   removeFromRoster,
   onRequestQuote,
   submitting,
@@ -1206,9 +1307,50 @@ function RosterTool({
   fanJerseyAdded,
   setFanJerseyAdded,
 }) {
-  const kitsTotal = unitPrice * roster.length;
+  const unitCount = rosterUnitCount(roster);
+  const kitsTotal = unitPrice * unitCount;
   const grandTotal = kitsTotal + (fanJerseyAdded ? FAN_JERSEY_PRICE : 0);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
+  const [importMessage, setImportMessage] = useState("");
+  const rosterFileRef = useRef(null);
+
+  const handleRosterFile = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const count = importRosterCsv(await file.text());
+      setImportMessage(`${count} player${count === 1 ? "" : "s"} imported.`);
+    } catch (err) {
+      setImportMessage(err.message || "That roster could not be imported.");
+    } finally {
+      event.target.value = "";
+    }
+  };
+
+  const downloadRosterTemplate = () => {
+    const headers = [
+      "Name",
+      "Jersey Number",
+      `${bottomLabel} Number`,
+      "Shirt Size",
+      `${bottomLabel} Size`,
+      "Sock Size",
+      "Bottom Length",
+      "Sleeve Preference",
+      "Role",
+      "Quantity",
+      "Notes",
+    ];
+    const example = ["Alex James", "10", "10", "AM", "AM", "Medium", "Regular", "Short", "Player", "1", "Captain"];
+    const blob = new Blob([[headers, example].map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n")], {
+      type: "text/csv;charset=utf-8",
+    });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "connect767-team-roster-template.csv";
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
 
   return (
     <div>
@@ -1228,6 +1370,41 @@ function RosterTool({
           Size guide
         </button>
       </div>
+
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        <input
+          ref={rosterFileRef}
+          type="file"
+          accept=".csv,text/csv"
+          className="hidden"
+          onChange={handleRosterFile}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          icon="ri-file-upload-line"
+          iconPosition="left"
+          onClick={() => rosterFileRef.current?.click()}
+        >
+          Import CSV
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          icon="ri-download-line"
+          iconPosition="left"
+          onClick={downloadRosterTemplate}
+        >
+          CSV template
+        </Button>
+      </div>
+      {importMessage && (
+        <p className="text-[11px] font-label text-primary-700 mb-4" role="status">
+          {importMessage}
+        </p>
+      )}
 
       {showSizeGuide && (
         <div className="mb-4 rounded-xl border border-background-200/70 overflow-hidden">
@@ -1312,6 +1489,80 @@ function RosterTool({
             </Select>
           </div>
         </div>
+        <div className="grid grid-cols-2 gap-2">
+          {hasSocks && (
+            <div>
+              <span className="text-[11px] font-label text-foreground-500 block mb-1">Sock size</span>
+              <Select
+                value={rosterEntry.sockSize}
+                onChange={(e) => setRosterEntry((r) => ({ ...r, sockSize: e.target.value }))}
+              >
+                {sockSizeOptions.map((size) => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </Select>
+            </div>
+          )}
+          <div className={hasSocks ? "" : "col-span-2"}>
+            <span className="text-[11px] font-label text-foreground-500 block mb-1">
+              {bottomLabel} length
+            </span>
+            <Select
+              value={rosterEntry.bottomLength}
+              onChange={(e) => setRosterEntry((r) => ({ ...r, bottomLength: e.target.value }))}
+            >
+              {bottomLengthOptions.map((length) => (
+                <option key={length} value={length}>{length}</option>
+              ))}
+            </Select>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <span className="text-[11px] font-label text-foreground-500 block mb-1">Role</span>
+            <Select
+              value={rosterEntry.role}
+              onChange={(e) => setRosterEntry((r) => ({ ...r, role: e.target.value }))}
+            >
+              {playerRoleOptions.map((role) => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <span className="text-[11px] font-label text-foreground-500 block mb-1">Quantity</span>
+            <Input
+              type="number"
+              min="1"
+              max="99"
+              value={rosterEntry.quantity}
+              onChange={(e) => setRosterEntry((r) => ({ ...r, quantity: e.target.value }))}
+            />
+          </div>
+        </div>
+        {sleeveOptions?.length > 0 && (
+          <div>
+            <span className="text-[11px] font-label text-foreground-500 block mb-1">
+              Player sleeve preference
+            </span>
+            <Select
+              value={rosterEntry.sleevePreference}
+              onChange={(e) => setRosterEntry((r) => ({ ...r, sleevePreference: e.target.value }))}
+            >
+              <option value="Team selection">Team selection</option>
+              {sleeveOptions.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </Select>
+          </div>
+        )}
+        <Textarea
+          rows={2}
+          placeholder="Player notes (optional)"
+          aria-label="Player notes"
+          value={rosterEntry.notes}
+          onChange={(e) => setRosterEntry((r) => ({ ...r, notes: e.target.value }))}
+        />
       </div>
       <Button
         type="button"
@@ -1342,6 +1593,19 @@ function RosterTool({
                 <span className="text-foreground-400 font-label">
                   · shirt {entry.shirtSize} / {bottomLabel.toLowerCase()} {entry.shortSize}
                 </span>
+                {entry.quantity > 1 && (
+                  <span className="text-primary-700 font-semibold"> · qty {entry.quantity}</span>
+                )}
+                {(entry.sockSize || entry.bottomLength || entry.sleevePreference) && (
+                  <span className="block text-foreground-400 font-label mt-0.5">
+                    {hasSocks && entry.sockSize ? `socks ${entry.sockSize} · ` : ""}
+                    {entry.bottomLength || "Regular"} length
+                    {entry.sleevePreference && entry.sleevePreference !== "Team selection"
+                      ? ` · ${entry.sleevePreference} sleeve`
+                      : ""}
+                    {entry.role && entry.role !== "Player" ? ` · ${entry.role}` : ""}
+                  </span>
+                )}
               </span>
               <button
                 type="button"
@@ -1381,7 +1645,7 @@ function RosterTool({
             <span>${unitPrice.toFixed(2)}</span>
           </div>
           <div className="flex items-center justify-between text-xs text-background-50/70 font-label">
-            <span>{roster.length} kit{roster.length === 1 ? "" : "s"} on roster</span>
+            <span>{unitCount} kit{unitCount === 1 ? "" : "s"} on roster</span>
             <span>${kitsTotal.toFixed(2)}</span>
           </div>
           {fanJerseyAdded && (
