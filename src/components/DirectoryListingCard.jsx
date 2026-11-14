@@ -74,7 +74,7 @@ function RatingSignal({ listing }) {
   );
 }
 
-function ListingIdentity({ listing, compact = false }) {
+function ListingIdentity({ listing, compact = false, alignGridRows = false }) {
   const category = mainCategoryLabel(listing);
 
   return (
@@ -91,7 +91,7 @@ function ListingIdentity({ listing, compact = false }) {
               {category}
             </p>
           </div>
-          <h3 className={`${compact ? "text-xl" : "text-[1.22rem]"} mt-1.5 flex items-center gap-1.5 font-heading font-semibold leading-tight tracking-[-0.02em] text-foreground-950 transition-colors group-hover:text-primary-700`}>
+          <h3 className={`${compact ? "text-xl" : "text-[1.22rem]"} ${alignGridRows ? "min-h-[3.05rem]" : ""} mt-1.5 flex items-start gap-1.5 font-heading font-semibold leading-tight tracking-[-0.02em] text-foreground-950 transition-colors group-hover:text-primary-700`}>
             <span className="line-clamp-2">{listing.title}</span>
             {listing.verified && (
               <i
@@ -122,15 +122,15 @@ function ListingHighlights({ listing }) {
     ? String(listing.yearsExperience)
     : "Not provided";
   return (
-    <div className="mt-3 grid grid-cols-[0.7fr_1.3fr] gap-2">
-      <div className="min-w-0 rounded-xl border border-background-200 bg-background-100/75 px-3 py-2.5">
+    <div data-testid="listing-highlights" className="mt-3 grid min-h-[4.35rem] grid-cols-[0.7fr_1.3fr] items-stretch gap-2">
+      <div className="flex min-w-0 flex-col justify-between rounded-xl border border-background-200 bg-background-100/75 px-3 py-2.5">
         <span className="block text-[9px] font-semibold uppercase tracking-[0.08em] text-foreground-500">Yrs. Exp.</span>
         <span className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-foreground-800 truncate" title={experience}>
           <i className="ri-briefcase-line text-primary-700 flex-shrink-0" />
           {experience}
         </span>
       </div>
-      <div className="min-w-0 rounded-xl border border-background-200 bg-background-100/75 px-3 py-2.5">
+      <div className="flex min-w-0 flex-col justify-between rounded-xl border border-background-200 bg-background-100/75 px-3 py-2.5">
         <span className="block text-[9px] font-semibold uppercase tracking-[0.1em] text-foreground-500">Industry</span>
         <span className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-foreground-800 truncate" title={industryLabel(listing)}>
           <i className="ri-building-line text-primary-700 flex-shrink-0" />
@@ -211,11 +211,18 @@ export default function DirectoryListingCard({
       <Link to={`/listings/${listing.slug}`} className="flex h-full flex-col cursor-pointer">
         <Cover listing={listing} />
         <div className="flex min-w-0 flex-1 flex-col p-4 pt-4.5">
-          <ListingIdentity listing={listing} />
-          {description && <p className="text-xs text-foreground-600 leading-relaxed mt-3 line-clamp-2">{description}</p>}
+          <ListingIdentity listing={listing} alignGridRows />
+          <p
+            data-testid="listing-description-row"
+            className="mt-3 h-9 line-clamp-2 text-xs leading-relaxed text-foreground-600"
+          >
+            {description || "\u00a0"}
+          </p>
           <ListingHighlights listing={listing} />
-          {listing.bookingEnabled && <div className="mt-3"><BookingSignal listing={listing} /></div>}
-          <div className="mt-auto flex items-center justify-between gap-3 border-t border-background-200/70 pt-4">
+          <div data-testid="listing-booking-row" className="mt-3 flex min-h-8 items-start">
+            {listing.bookingEnabled && <BookingSignal listing={listing} />}
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-3 border-t border-background-200/70 pt-4">
             <RatingSignal listing={listing} />
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-700 px-3.5 py-2 text-xs font-semibold text-background-50 shadow-[0_8px_20px_rgba(31,112,78,0.2)] transition-colors group-hover:bg-primary-800 whitespace-nowrap">
               Profile <i className="ri-arrow-right-line" />
