@@ -8,6 +8,7 @@ import { tierOptions, priceOptions, directorySortOptions, experienceRangeOptions
 import { EDUCATION_CHOICES } from "../data/profileChoices";
 import { findCategory } from "../data/industries";
 import { listingMatchesBookingAvailability, listingMatchesSearch } from "../lib/listingSearch";
+import { sortDirectoryListings } from "../lib/listingSorting";
 
 const PAGE_SIZE = 12;
 const LEGACY_CATEGORY_ALIASES = {
@@ -149,30 +150,7 @@ export default function DirectoryPage() {
       return matchesSearch && matchesCategory && matchesIndustry && matchesTier && matchesPrice && matchesEducation && matchesExperience && matchesBooking && matchesStorefront;
     });
 
-    switch (sort) {
-      case "reviews":
-        list = [...list].sort(
-          (a, b) => Number(b.isFeatured) - Number(a.isFeatured)
-            || parseInt(b.reviews.replace(/\D/g, "")) - parseInt(a.reviews.replace(/\D/g, ""))
-        );
-        break;
-      case "price-low":
-        list = [...list].sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured)
-          || a.price.length - b.price.length);
-        break;
-      case "price-high":
-        list = [...list].sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured)
-          || b.price.length - a.price.length);
-        break;
-      case "rating":
-        list = [...list].sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured)
-          || parseFloat(b.rating) - parseFloat(a.rating));
-        break;
-      default:
-        list = [...list].sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured));
-        break;
-    }
-    return list;
+    return sortDirectoryListings(list, sort);
   }, [directoryListings, search, category, industry, tier, priceTier, educationFilter, experienceRange, bookingOnly, storefrontFilter, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
