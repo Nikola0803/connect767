@@ -806,68 +806,185 @@ export default function UniformStudioPage() {
   // were removed — /uniforms is a tool, and everything that isn't the tool
   // was competing with it for the screen.
   if (!selectedTemplate) {
+    const activeSportMeta = sports.find((sport) => sport.slug === activeSport) || sports[0];
+
     return (
-      <div className="h-[100dvh] flex flex-col bg-background-50">
-        <div className="flex items-center justify-between gap-4 px-5 md:px-8 py-4 border-b border-background-200/70 flex-shrink-0">
-          <Button to="/" variant="ghost" size="sm" icon="ri-arrow-left-line" iconPosition="left">
-            Back to site
-          </Button>
-          <span className="font-heading text-base font-medium text-foreground-950">
-            Uniform Studio
-          </span>
-          <div className="w-24" />
-        </div>
-
-        <div className="flex items-center gap-2 overflow-x-auto px-5 md:px-8 py-3 border-b border-background-200/70 flex-shrink-0">
-          {sports.map((s) => (
-            <button
-              key={s.slug}
-              type="button"
-              onClick={() => handleSportChange(s.slug)}
-              className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full border transition-colors cursor-pointer whitespace-nowrap flex-shrink-0 ${
-                activeSport === s.slug
-                  ? "bg-primary-500 text-background-50 border-primary-500"
-                  : "bg-background-50 text-foreground-700 border-background-200/70 hover:bg-background-100"
-              }`}
-            >
-              <i className={s.icon} />
-              {s.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex-1 min-h-0 overflow-y-auto px-5 md:px-8 py-6">
-          <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {visibleTemplates.map((t) => (
-              <button
-                key={t.slug}
-                type="button"
-                onClick={() => selectTemplate(t)}
-                className="text-left rounded-2xl border border-background-200/70 hover:border-primary-400 bg-background-50 p-4 transition-colors cursor-pointer"
-              >
-                <div className="w-full h-32 rounded-xl overflow-hidden mb-3 bg-background-100 p-3">
-                  <JerseyGraphic
-                    view="front"
-                    collar={t.defaultCollar}
-                    sleeve={t.defaultSleeve}
-                    colors={defaultZoneColors}
-                  />
-                </div>
-                <h3 className="font-heading text-sm font-medium text-foreground-950">{t.name}</h3>
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => selectTemplate({ slug: "blank-canvas" })}
-              className="rounded-2xl border-2 border-dashed border-background-300 hover:border-primary-400 bg-background-100/40 p-4 transition-colors cursor-pointer flex flex-col items-center justify-center text-center min-h-[180px]"
-            >
-              <i className="ri-add-circle-line text-3xl text-foreground-400 mb-2" />
-              <h3 className="font-heading text-sm font-medium text-foreground-950">
-                Design from scratch
-              </h3>
-            </button>
+      <div className="min-h-[100dvh] bg-[linear-gradient(145deg,#f8f3e9_0%,#fffdf8_48%,#eef8f1_100%)] text-foreground-950">
+        <header className="border-b border-background-200/70 bg-background-50/85 backdrop-blur-sm">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 md:px-8">
+            <Button to="/" variant="ghost" size="sm" icon="ri-arrow-left-line" iconPosition="left">
+              Back to site
+            </Button>
+            <div className="text-center">
+              <p className="font-label text-[10px] font-bold uppercase tracking-[0.22em] text-primary-700">
+                Custom uniforms
+              </p>
+              <span className="font-heading text-lg font-semibold">Uniform Studio</span>
+            </div>
+            <span className="hidden items-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-800 sm:inline-flex">
+              <i className="ri-save-3-line" /> Designs save automatically
+            </span>
           </div>
-        </div>
+        </header>
+
+        <main className="mx-auto max-w-7xl px-5 py-8 md:px-8 md:py-12">
+          <section className="mb-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+            <div className="max-w-3xl">
+              <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-100/70 px-3 py-1.5 font-label text-[11px] font-bold uppercase tracking-[0.16em] text-primary-800">
+                <i className="ri-magic-line" /> Build a complete team kit
+              </span>
+              <h1 className="font-heading text-4xl font-medium leading-[1.04] tracking-[-0.035em] sm:text-5xl lg:text-6xl">
+                Design your uniform.
+                <span className="block italic text-primary-700">Outfit the whole roster.</span>
+              </h1>
+              <p className="mt-4 max-w-2xl text-base leading-relaxed text-foreground-600 md:text-lg">
+                Choose a sport and starting point, customize every panel, then add player names,
+                sizes and uniform options before requesting production pricing.
+              </p>
+            </div>
+            <ol className="grid grid-cols-3 overflow-hidden rounded-2xl border border-background-300 bg-background-50 shadow-sm">
+              {["Choose", "Design", "Roster"].map((label, index) => (
+                <li
+                  key={label}
+                  className={`flex min-w-24 flex-col gap-1 px-4 py-3 ${
+                    index === 0 ? "bg-primary-600 text-white" : "border-l border-background-200 text-foreground-500"
+                  }`}
+                >
+                  <span className={`text-[10px] font-bold uppercase tracking-[0.16em] ${index === 0 ? "text-white/70" : "text-foreground-400"}`}>
+                    Step {index + 1}
+                  </span>
+                  <span className="text-sm font-semibold">{label}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          <section className="grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
+            <aside className="rounded-[26px] border border-background-300/80 bg-background-50/95 p-5 shadow-[0_18px_50px_rgba(69,48,30,0.07)] lg:sticky lg:top-5 lg:self-start">
+              <p className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">
+                Step 1
+              </p>
+              <h2 className="mt-1 font-heading text-2xl font-semibold">Choose your sport</h2>
+              <p className="mt-2 text-sm leading-relaxed text-foreground-500">
+                We tailor garment options and roster fields to each sport.
+              </p>
+              <div className="mt-5 grid grid-cols-2 gap-2 lg:grid-cols-1">
+                {sports.map((sport) => {
+                  const selected = activeSport === sport.slug;
+                  return (
+                    <button
+                      key={sport.slug}
+                      type="button"
+                      onClick={() => handleSportChange(sport.slug)}
+                      className={`group flex items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition duration-200 cursor-pointer ${
+                        selected
+                          ? "border-primary-500 bg-primary-600 text-white shadow-[0_10px_24px_rgba(0,116,73,0.18)]"
+                          : "border-background-200 bg-background-50 text-foreground-700 hover:-translate-y-0.5 hover:border-primary-300 hover:bg-primary-50"
+                      }`}
+                    >
+                      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${selected ? "bg-white/15" : "bg-primary-100 text-primary-800"}`}>
+                        <i className={`${sport.icon} text-lg`} />
+                      </span>
+                      <span className="text-sm font-semibold">{sport.label}</span>
+                      <i className={`ri-arrow-right-s-line ml-auto ${selected ? "text-white/80" : "text-foreground-300 group-hover:text-primary-700"}`} />
+                    </button>
+                  );
+                })}
+              </div>
+            </aside>
+
+            <div className="rounded-[26px] border border-background-300/80 bg-background-50/95 p-5 shadow-[0_18px_50px_rgba(69,48,30,0.07)] sm:p-7">
+              <div className="mb-6 flex flex-col gap-3 border-b border-background-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">
+                    Step 2 · {activeSportMeta.label}
+                  </p>
+                  <h2 className="mt-1 font-heading text-2xl font-semibold sm:text-3xl">
+                    Select a starting point
+                  </h2>
+                </div>
+                <p className="max-w-sm text-sm leading-relaxed text-foreground-500">
+                  Pick a proven cut or begin with a clean canvas. Every color, logo and detail remains editable.
+                </p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {visibleTemplates.map((uniformTemplate) => (
+                  <button
+                    key={uniformTemplate.slug}
+                    type="button"
+                    onClick={() => selectTemplate(uniformTemplate)}
+                    className="group overflow-hidden rounded-2xl border border-background-300 bg-background-50 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:border-primary-400 hover:shadow-[0_18px_38px_rgba(0,116,73,0.11)] cursor-pointer"
+                  >
+                    <div className="relative flex h-56 items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_28%,#ffffff_0%,#f5efe3_72%)] p-6">
+                      <span className="absolute left-4 top-4 rounded-full border border-background-300 bg-background-50/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-primary-800">
+                        Template
+                      </span>
+                      <div className="h-full w-full transition-transform duration-300 group-hover:scale-105">
+                        <JerseyGraphic
+                          view="front"
+                          collar={uniformTemplate.defaultCollar}
+                          sleeve={uniformTemplate.defaultSleeve}
+                          colors={defaultZoneColors}
+                        />
+                      </div>
+                    </div>
+                    <div className="p-5">
+                      <div className="flex items-center justify-between gap-3">
+                        <h3 className="font-heading text-xl font-semibold">{uniformTemplate.name}</h3>
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-800 transition group-hover:bg-primary-600 group-hover:text-white">
+                          <i className="ri-arrow-right-line" />
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm leading-relaxed text-foreground-500">
+                        {uniformTemplate.description}
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-semibold text-foreground-600">
+                        <span className="rounded-full bg-background-100 px-2.5 py-1">{uniformTemplate.defaultCollar}</span>
+                        <span className="rounded-full bg-background-100 px-2.5 py-1">{uniformTemplate.defaultSleeve} sleeve</span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={() => selectTemplate({ slug: "blank-canvas" })}
+                  className="group flex min-h-[340px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-primary-300 bg-primary-50/55 p-7 text-center transition duration-200 hover:-translate-y-1 hover:border-primary-500 hover:bg-primary-100/70 hover:shadow-[0_18px_38px_rgba(0,116,73,0.1)] cursor-pointer"
+                >
+                  <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-600 text-3xl text-white shadow-[0_12px_25px_rgba(0,116,73,0.22)] transition-transform duration-200 group-hover:rotate-3 group-hover:scale-105">
+                    <i className="ri-add-line" />
+                  </span>
+                  <h3 className="mt-5 font-heading text-2xl font-semibold">Design from scratch</h3>
+                  <p className="mt-2 max-w-xs text-sm leading-relaxed text-foreground-500">
+                    Start clean and build a completely original {activeSportMeta.label.toLowerCase()} uniform.
+                  </p>
+                  <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-primary-800">
+                    Open blank canvas <i className="ri-arrow-right-line" />
+                  </span>
+                </button>
+              </div>
+
+              <div className="mt-6 grid gap-3 border-t border-background-200 pt-5 sm:grid-cols-3">
+                {[
+                  ["ri-image-add-line", "Upload artwork", "PNG, JPG or SVG logos"],
+                  ["ri-3d-cube-sphere-line", "Preview in 3D", "Load only when you need it"],
+                  ["ri-team-line", "Build the roster", "Names, sizes and quantities"],
+                ].map(([icon, title, description]) => (
+                  <div key={title} className="flex items-start gap-3 rounded-xl bg-background-100/65 p-3.5">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-100 text-primary-800">
+                      <i className={icon} />
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold">{title}</p>
+                      <p className="mt-0.5 text-xs text-foreground-500">{description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </main>
       </div>
     );
   }
