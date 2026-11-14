@@ -60,7 +60,9 @@ function Chrome({ children }) {
   const bare = CHROMELESS_ROUTES.includes(pathname);
 
   if (bare) {
-    return <main className="w-full h-[100dvh] overflow-hidden bg-background-50">{children}</main>;
+    // Landing states can be taller than one viewport. Their editors still
+    // own fixed 100dvh canvases and manage overflow internally.
+    return <main className="min-h-[100dvh] w-full overflow-x-hidden bg-background-50">{children}</main>;
   }
 
   return (
