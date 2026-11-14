@@ -32,7 +32,7 @@ class C767_REST_Uniform_Quotes
     public static function submit(WP_REST_Request $request)
     {
         $template = sanitize_text_field((string) $request->get_param('template'));
-        $roster = (array) $request->get_param('roster');
+        $roster = self::sanitize_roster($request->get_param('roster'));
 
         if (empty($roster)) {
             return new WP_Error('c767_empty_roster', 'At least one player is required.', ['status' => 400]);
@@ -50,11 +50,12 @@ class C767_REST_Uniform_Quotes
             );
         }
 
+        $unit_count = self::roster_unit_count($roster);
         $title = sprintf(
-            '%s — %d player%s — %s',
+            '%s — %d kit%s — %s',
             $template ?: 'Custom design',
-            count($roster),
-            count($roster) === 1 ? '' : 's',
+            $unit_count,
+            $unit_count === 1 ? '' : 's',
             current_time('Y-m-d H:i')
         );
 
@@ -75,6 +76,15 @@ class C767_REST_Uniform_Quotes
             'sport' => sanitize_text_field((string) $request->get_param('sport')),
             'collar' => sanitize_text_field((string) $request->get_param('collar')),
             'sleeve' => sanitize_text_field((string) $request->get_param('sleeve')),
+            'fitType' => sanitize_text_field((string) $request->get_param('fitType')),
+            'kitType' => sanitize_text_field((string) $request->get_param('kitType')),
+            'logoApplication' => sanitize_text_field((string) $request->get_param('logoApplication')),
+            'insideCollarMessage' => rest_sanitize_boolean($request->get_param('insideCollarMessage')),
+            'insideCollarText' => sanitize_text_field((string) $request->get_param('insideCollarText')),
+            'fanJerseyAdded' => rest_sanitize_boolean($request->get_param('fanJerseyAdded')),
+            'unitPrice' => round((float) $request->get_param('unitPrice'), 2),
+            'grandTotal' => round((float) $request->get_param('grandTotal'), 2),
+            'unitCount' => $unit_count,
             'colors' => self::sanitize_shallow_array($request->get_param('colors')),
             'layers' => $request->get_param('layers'),
             // Where each piece of artwork actually sits on the garment, as
@@ -91,6 +101,7 @@ class C767_REST_Uniform_Quotes
 
         update_post_meta($post_id, 'quote_payload', wp_json_encode($payload));
         update_post_meta($post_id, 'roster_count', count($roster));
+        update_post_meta($post_id, 'unit_count', $unit_count);
 
         // Promoted out of the payload blob so wp-admin can show and search
         // them as columns, and so a reply doesn't require opening the JSON.
@@ -110,17 +121,17 @@ class C767_REST_Uniform_Quotes
         $user = get_user_by('id', get_current_user_id());
         $to = get_option('admin_email');
         $subject = sprintf(
-            '[Connect767] Uniform quote — %s — %d players',
+            '[Connect767] Uniform quote — %s — %d kits',
             $contact['club'] !== '' ? $contact['club'] : ($contact['name'] !== '' ? $contact['name'] : 'New request'),
-            count($roster)
+            $unit_count
         );
         $body = sprintf(
-            "Template: %s\nSport: %s\nPlayers: %d\n\n"
+            "Template: %s\nSport: %s\nKits: %d\n\n"
                 . "FROM\n  Name:  %s\n  Email: %s\n  Phone: %s\n  Club:  %s\n\nNotes:\n%s\n\n"
                 . "Account: %s\n\nView in wp-admin: %s",
             $template ?: 'Custom design',
             sanitize_text_field((string) $request->get_param('sport')) ?: 'n/a',
-            count($roster),
+            $unit_count,
             $contact['name'] !== '' ? $contact['name'] : '(not given)',
             $contact['email'] !== '' ? $contact['email'] : '(not given)',
             $contact['phone'] !== '' ? $contact['phone'] : '(not given)',
@@ -150,13 +161,13 @@ class C767_REST_Uniform_Quotes
                 $contact['email'],
                 'We received your Connect767 uniform quote request',
                 sprintf(
-                    "Hi %s,\n\nThanks — we've got your %s design for %d player%s.\n\n"
+                    "Hi %s,\n\nThanks — we've got your %s design for %d kit%s.\n\n"
                         . "Our team will follow up with pricing and a production proof, usually "
                         . "within one business day.\n\n— Connect767",
                     $contact['name'] !== '' ? $contact['name'] : 'there',
                     $template ?: 'custom',
-                    count($roster),
-                    count($roster) === 1 ? '' : 's'
+                    $unit_count,
+                    $unit_count === 1 ? '' : 's'
                 )
             );
         }
@@ -187,6 +198,44 @@ class C767_REST_Uniform_Quotes
             'club' => sanitize_text_field((string) ($in['club'] ?? '')),
             'notes' => sanitize_textarea_field((string) ($in['notes'] ?? '')),
         ];
+    }
+
+    /**
+     * Preserve the production fields required for a full team order while
+     * rejecting arbitrary keys from this public endpoint.
+     */
+    private static function sanitize_roster($value)
+    {
+        $out = [];
+        foreach ((array) $value as $entry) {
+            $in = (array) $entry;
+            $name = sanitize_text_field((string) ($in['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            $out[] = [
+                'id' => sanitize_text_field((string) ($in['id'] ?? '')),
+                'name' => $name,
+                'number' => sanitize_text_field((string) ($in['number'] ?? '')),
+                'shortsNumber' => sanitize_text_field((string) ($in['shortsNumber'] ?? '')),
+                'shirtSize' => sanitize_text_field((string) ($in['shirtSize'] ?? '')),
+                'shortSize' => sanitize_text_field((string) ($in['shortSize'] ?? '')),
+                'sockSize' => sanitize_text_field((string) ($in['sockSize'] ?? '')),
+                'bottomLength' => sanitize_text_field((string) ($in['bottomLength'] ?? '')),
+                'sleevePreference' => sanitize_text_field((string) ($in['sleevePreference'] ?? '')),
+                'role' => sanitize_text_field((string) ($in['role'] ?? 'Player')),
+                'quantity' => max(1, min(99, absint($in['quantity'] ?? 1))),
+                'notes' => sanitize_textarea_field((string) ($in['notes'] ?? '')),
+            ];
+        }
+        return $out;
+    }
+
+    private static function roster_unit_count($roster)
+    {
+        return array_reduce($roster, function ($total, $entry) {
+            return $total + max(1, absint($entry['quantity'] ?? 1));
+        }, 0);
     }
 
     private static function sanitize_shallow_array($value)
