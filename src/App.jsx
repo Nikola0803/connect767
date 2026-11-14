@@ -69,7 +69,10 @@ function Chrome({ children }) {
   const bare = CHROMELESS_ROUTES.includes(pathname);
 
   if (bare) {
-    return <main className="w-full h-[100dvh] overflow-hidden bg-background-50">{children}</main>;
+    // The landing state of a full-screen tool can be taller than one viewport
+    // (the uniform category grid is two rows). Let that state scroll; the
+    // editors themselves still own a fixed 100dvh canvas and hide overflow.
+    return <main className="min-h-[100dvh] w-full overflow-x-hidden bg-background-50">{children}</main>;
   }
 
   return (
