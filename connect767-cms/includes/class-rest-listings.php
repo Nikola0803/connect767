@@ -206,7 +206,7 @@ class C767_REST_Listings
                 return new WP_Error('c767_incomplete_bank_payout', 'Complete the bank payout details, including a routing number or SWIFT/BIC.', ['status' => 400]);
             }
         } else {
-            $providers = ['NBD MoBanking', 'Remitly', 'PayPal', 'Wise', 'Zelle', 'Cash App', 'Venmo', 'Other digital wallet'];
+            $providers = ['NBD MoBanking', 'Remitly', 'PayPal', 'Wise', 'Zelle', 'Cash App', 'Venmo', 'Republic Bank of Dominica', 'Dominica Cooperative Credit Union', 'Other digital wallet'];
             $provider = sanitize_text_field((string) $request->get_param('bookingPayoutDigitalProvider'));
             $details = [
                 'digitalProvider' => in_array($provider, $providers, true) ? $provider : '',

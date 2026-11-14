@@ -6,6 +6,8 @@ export const DIGITAL_PAYOUT_PROVIDERS = [
   "Zelle",
   "Cash App",
   "Venmo",
+  "Republic Bank of Dominica",
+  "Dominica Cooperative Credit Union",
   "Other digital wallet",
 ];
 
@@ -17,6 +19,14 @@ export const DIGITAL_PAYOUT_PROVIDER_HELP = {
   Remitly: {
     label: "Remitly recipient email or mobile number",
     placeholder: "payments@business.com or +1 767 555 0100",
+  },
+  "Republic Bank of Dominica": {
+    label: "Republic Bank account number or payout reference",
+    placeholder: "Account number or payout reference",
+  },
+  "Dominica Cooperative Credit Union": {
+    label: "Credit union account number or payout reference",
+    placeholder: "Account number or payout reference",
   },
 };
 

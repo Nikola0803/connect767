@@ -183,8 +183,7 @@ export default function PayoutSettingsFields({ form, onChange, forceVisible = fa
                 placeholder={providerHelp?.placeholder || "payments@business.com or @business"}
               />
             </FormField>
-            {(form.bookingPayoutDigitalProvider === "NBD MoBanking" ||
-              form.bookingPayoutDigitalProvider === "Remitly") && (
+            {providerHelp && (
               <p className="sm:col-span-2 -mt-1 text-xs leading-5 text-foreground-600 font-label">
                 Connect767 will verify this destination and process the payout after you request cash out.
                 Transfer timing and any provider requirements are confirmed before funds are released.
