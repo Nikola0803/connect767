@@ -1,9 +1,6 @@
 import { forwardRef } from "react";
-import JerseyGraphic from "./JerseyGraphic";
-import ShortsGraphic from "./ShortsGraphic";
-import SocksGraphic from "./SocksGraphic";
+import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
 import DraggableLayer from "./DraggableLayer";
-import { sportConfigFor } from "../../data/uniforms";
 
 /** Camera-viewfinder-style corner brackets instead of a full dashed
  * rectangle — reads as a precision print-safe-area guide rather than a
@@ -24,8 +21,6 @@ const JerseyStage = forwardRef(function JerseyStage(
   {
     sport,
     view,
-    collar,
-    sleeve,
     colors,
     highlightZone,
     layers,
@@ -41,8 +36,6 @@ const JerseyStage = forwardRef(function JerseyStage(
   },
   stageRef
 ) {
-  const config = sportConfigFor(sport);
-
   const handleStageDown = (e) => {
     if (!pendingLayer) {
       onBackgroundClick?.(e);
@@ -70,12 +63,10 @@ const JerseyStage = forwardRef(function JerseyStage(
           style={{ cursor: pendingLayer ? "copy" : undefined }}
           className="relative w-full max-w-md aspect-[4/5] rounded-2xl bg-gradient-to-b from-background-50 to-background-100 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.55)] ring-1 ring-white/10 overflow-hidden"
         >
-          <div className="absolute inset-8 md:inset-12">
-            <JerseyGraphic
+          <div className="absolute inset-3 md:inset-5">
+            <ApprovedUniformGraphic
               sport={sport}
               view={view}
-              collar={collar}
-              sleeve={sleeve}
               colors={colors}
               highlightZone={highlightZone}
             />
@@ -98,29 +89,19 @@ const JerseyStage = forwardRef(function JerseyStage(
         </div>
       </div>
 
-      {/* Full-kit preview strip — shirt, shorts, and socks shown together on
-          the same page, read-only, so nobody has to navigate away or guess
-          how the pieces look as a set. Matches the client's explicit
-          "everything shown fully on one window" requirement. */}
+      {/* Full-kit preview strip — the approved front and back layouts stay
+          visible together without leaving the editor. */}
       <div className="mt-6 pt-5 border-t border-background-50/10">
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-background-50/35 mb-3 text-center">
           Full kit preview
         </p>
-        <div className={`grid gap-2.5 md:gap-3 ${config.hasSocks ? "grid-cols-4" : "grid-cols-3"}`}>
-          <PreviewTile label="Front">
-            <JerseyGraphic sport={sport} view="front" collar={collar} sleeve={sleeve} colors={colors} />
+        <div className="mx-auto grid max-w-sm grid-cols-2 gap-3">
+          <PreviewTile label="Front kit">
+            <ApprovedUniformGraphic sport={sport} view="front" colors={colors} />
           </PreviewTile>
-          <PreviewTile label="Back">
-            <JerseyGraphic sport={sport} view="back" collar={collar} sleeve={sleeve} colors={colors} />
+          <PreviewTile label="Back kit">
+            <ApprovedUniformGraphic sport={sport} view="back" colors={colors} />
           </PreviewTile>
-          <PreviewTile label={config.bottomLabel}>
-            <ShortsGraphic sport={sport} colors={colors} />
-          </PreviewTile>
-          {config.hasSocks && (
-            <PreviewTile label="Socks">
-              <SocksGraphic colors={colors} />
-            </PreviewTile>
-          )}
         </div>
       </div>
     </div>
