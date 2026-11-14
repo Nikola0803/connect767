@@ -55,7 +55,6 @@ export const templates = [
     image: "/uploads/uniform-templates/soccer-classic-crew.png",
     defaultCollar: "Crew",
     defaultSleeve: "Short",
-    defaultColors: { body: "#087558", sleeve: "#f6f1e7", trim: "#ed684f", panel: "#16232d" },
   },
   {
     slug: "v-neck-pro",
@@ -65,7 +64,6 @@ export const templates = [
     image: "/uploads/uniform-templates/soccer-v-neck-pro.png",
     defaultCollar: "V-Neck",
     defaultSleeve: "Short",
-    defaultColors: { body: "#16232d", sleeve: "#16232d", trim: "#f6f1e7", panel: "#087558" },
   },
   {
     slug: "shooter-tank",
@@ -75,7 +73,6 @@ export const templates = [
     image: "/uploads/uniform-templates/basketball-shooter-tank.png",
     defaultCollar: "V-Neck",
     defaultSleeve: "Sleeveless",
-    defaultColors: { body: "#f6f1e7", sleeve: "#f6f1e7", trim: "#ed684f", panel: "#087558" },
   },
   {
     slug: "full-button",
@@ -85,7 +82,6 @@ export const templates = [
     image: "/uploads/uniform-templates/baseball-full-button.png",
     defaultCollar: "Polo",
     defaultSleeve: "Short",
-    defaultColors: { body: "#f6f1e7", sleeve: "#16232d", trim: "#087558", panel: "#ed684f" },
   },
   {
     slug: "raglan-tee",
@@ -95,7 +91,6 @@ export const templates = [
     image: "/uploads/uniform-templates/cricket-match-polo.png",
     defaultCollar: "Polo",
     defaultSleeve: "Long",
-    defaultColors: { body: "#f6f1e7", sleeve: "#f6f1e7", trim: "#16232d", panel: "#087558" },
   },
   {
     slug: "guardian-pro",
@@ -105,7 +100,6 @@ export const templates = [
     image: "/uploads/uniform-templates/goalkeeper-guardian-pro.png",
     defaultCollar: "Crew",
     defaultSleeve: "Long",
-    defaultColors: { body: "#087558", sleeve: "#087558", trim: "#f6f1e7", panel: "#16232d" },
   },
   {
     slug: "performance-polo",
@@ -115,7 +109,6 @@ export const templates = [
     image: "/uploads/uniform-templates/all-sport-performance-polo.png",
     defaultCollar: "Polo",
     defaultSleeve: "Short",
-    defaultColors: { body: "#16232d", sleeve: "#f6f1e7", trim: "#ed684f", panel: "#087558" },
   },
   {
     slug: "blank-canvas",
