@@ -41,9 +41,9 @@ export default function BlogPostCard({ post }) {
             {post.excerpt}
           </p>
         )}
-        <span className="mt-auto inline-flex items-center gap-1 whitespace-nowrap text-xs font-semibold text-primary-700 group-hover:text-primary-800">
-          Read article
-          <i className="ri-arrow-right-line" />
+        <span className="mt-auto inline-flex w-fit items-center gap-2 whitespace-nowrap rounded-full border border-primary-200 bg-background-50 px-4 py-2.5 text-sm font-semibold text-primary-800 transition group-hover:border-primary-400 group-hover:bg-primary-50">
+          Read the story
+          <i className="ri-arrow-right-line transition-transform group-hover:translate-x-1" />
         </span>
       </div>
     </Link>
