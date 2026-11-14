@@ -82,6 +82,20 @@ const tools = [
     icon: "ri-team-line",
     hint: "One row per player with sizes and numbers. The quote total updates as you add people.",
   },
+  {
+    key: "review",
+    label: "Review",
+    icon: "ri-shopping-bag-3-line",
+    hint: "Review the complete kit, roster and estimated total before submitting the team order request.",
+  },
+];
+
+const studioWorkflow = [
+  { key: "design", label: "Design", step: 3, defaultTool: "design", tools: ["design"] },
+  { key: "artwork", label: "Artwork", step: 4, defaultTool: "logo", tools: ["text", "logo", "skins", "layers"] },
+  { key: "options", label: "Kit options", step: 5, defaultTool: "options", tools: ["options"] },
+  { key: "roster", label: "Roster", step: 6, defaultTool: "roster", tools: ["roster"] },
+  { key: "review", label: "Review", step: 7, defaultTool: "review", tools: ["review"] },
 ];
 
 const Product3DStage = lazy(
@@ -148,6 +162,7 @@ export default function UniformStudioPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSport = searchParams.get("sport") || "soccer";
   const scratch = searchParams.get("mode") === "scratch";
+  const initialWorkflowStep = searchParams.get("step") || "design";
 
   const [activeSport, setActiveSport] = useState(
     sports.some((s) => s.slug === initialSport) ? initialSport : "soccer"
@@ -161,7 +176,9 @@ export default function UniformStudioPage() {
   const [view, setView] = useState("front");
   const [layers, setLayers] = useState([]);
   const [selectedLayerId, setSelectedLayerId] = useState(null);
-  const [activeTool, setActiveTool] = useState("design");
+  const [activeTool, setActiveTool] = useState(
+    studioWorkflow.find((step) => step.key === initialWorkflowStep)?.defaultTool || "design"
+  );
   const [zoom, setZoom] = useState(1);
   const [hoverZone, setHoverZone] = useState(null);
   const stageRef = useRef(null);
@@ -262,6 +279,31 @@ export default function UniformStudioPage() {
   const template = templates.find((t) => t.slug === selectedTemplate);
   const selectedLayer = layers.find((l) => l.id === selectedLayerId) || null;
   const sportConfig = sportConfigFor(activeSport);
+  const workflowIndex = Math.max(
+    0,
+    studioWorkflow.findIndex((step) => step.tools.includes(activeTool))
+  );
+  const workflowStep = studioWorkflow[workflowIndex];
+
+  const openWorkflowStep = (index) => {
+    const nextStep = studioWorkflow[Math.max(0, Math.min(studioWorkflow.length - 1, index))];
+    setPendingLayer(null);
+    setSelectedLayerId(null);
+    setActiveTool(nextStep.defaultTool);
+  };
+
+  const continueWorkflow = () => {
+    if (workflowIndex === studioWorkflow.length - 1) return;
+    openWorkflowStep(workflowIndex + 1);
+  };
+
+  const backWorkflow = () => {
+    if (workflowIndex === 0) {
+      handleExit();
+      return;
+    }
+    openWorkflowStep(workflowIndex - 1);
+  };
 
   const handleSportChange = (slug) => {
     setActiveSport(slug);
@@ -842,11 +884,11 @@ export default function UniformStudioPage() {
                 sizes and uniform options before requesting production pricing.
               </p>
             </div>
-            <ol className="grid grid-cols-3 overflow-hidden rounded-2xl border border-background-300 bg-background-50 shadow-sm">
-              {["Choose", "Design", "Roster"].map((label, index) => (
+            <ol className="grid grid-cols-4 overflow-hidden rounded-2xl border border-background-300 bg-background-50 shadow-sm sm:grid-cols-7">
+              {["Sport", "Style", "Design", "Artwork", "Options", "Roster", "Review"].map((label, index) => (
                 <li
                   key={label}
-                  className={`flex min-w-24 flex-col gap-1 px-4 py-3 ${
+                  className={`flex min-w-0 flex-col gap-1 px-3 py-3 ${
                     index === 0 ? "bg-primary-600 text-white" : "border-l border-background-200 text-foreground-500"
                   }`}
                 >
@@ -1014,6 +1056,49 @@ export default function UniformStudioPage() {
           <span className="hidden sm:inline">{exporting ? "Exporting…" : "Download"}</span>
         </button>
       </div>
+
+      <nav
+        aria-label="Uniform order progress"
+        className="flex-shrink-0 border-b border-white/[0.08] bg-[#1b1712] px-3 py-2 sm:px-5"
+      >
+        <div className="mx-auto flex max-w-5xl items-center gap-1 overflow-x-auto">
+          <div className="hidden items-center gap-1 text-background-50/35 sm:flex">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-600 text-[11px] font-bold text-white">
+              <i className="ri-check-line" />
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-wider">Sport</span>
+            <i className="ri-arrow-right-s-line mx-1" />
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-600 text-[11px] font-bold text-white">
+              <i className="ri-check-line" />
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-wider">Style</span>
+            <i className="ri-arrow-right-s-line mx-1" />
+          </div>
+          {studioWorkflow.map((step, index) => {
+            const active = index === workflowIndex;
+            const complete = index < workflowIndex;
+            return (
+              <button
+                key={step.key}
+                type="button"
+                onClick={() => openWorkflowStep(index)}
+                className={`group flex flex-shrink-0 items-center gap-2 rounded-full px-3 py-2 transition cursor-pointer ${
+                  active
+                    ? "bg-primary-600 text-white shadow-[0_8px_20px_rgba(0,116,73,0.25)]"
+                    : complete
+                      ? "text-primary-300 hover:bg-white/[0.06]"
+                      : "text-background-50/45 hover:bg-white/[0.06] hover:text-background-50/75"
+                }`}
+              >
+                <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ${active ? "bg-white/15" : complete ? "bg-primary-700 text-white" : "bg-white/[0.07]"}`}>
+                  {complete ? <i className="ri-check-line" /> : step.step}
+                </span>
+                <span className="text-xs font-semibold whitespace-nowrap">{step.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
 
       {exitPrompt && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-foreground-950/70 backdrop-blur-sm px-4">
@@ -1240,7 +1325,7 @@ export default function UniformStudioPage() {
                   </div>
 
               {/* Docked fields panel */}
-              <div className="w-full max-w-[340px] flex-shrink-0 border-l border-background-200/60 bg-background-50 p-5 overflow-y-auto hidden md:block">
+              <div className="w-full max-w-[400px] flex-shrink-0 border-l border-background-200/60 bg-background-50 p-5 overflow-y-auto hidden md:block">
                 <SelectedItemPanel
                   layer={selectedLayer}
                   placement={selectedLayerId ? placements3d[selectedLayerId] : null}
@@ -1269,6 +1354,14 @@ export default function UniformStudioPage() {
                 )}
                 {activeTool === "text" && <TextPanel onAdd={armTextPlacement} armed={pendingLayer?.type === "text"} />}
                 {activeTool === "logo" && <LogoPanel onUpload={armLogoPlacement} armed={pendingLayer?.type === "logo"} />}
+                {activeTool === "skins" && (
+                  <SkinsPanel
+                    colorA={colors.body}
+                    colorB={colors.trim}
+                    onAdd={armSkinPlacement}
+                    onUpload={armPatternUpload}
+                  />
+                )}
                 {activeTool === "layers" && (
                   <LayersPanel
                     layers={layers}
@@ -1299,20 +1392,33 @@ export default function UniformStudioPage() {
                     bottomLabel={sportConfig.bottomLabel}
                     hasSocks={sportConfig.hasSocks}
                     sleeveOptions={sportConfig.sleeveOptions}
-                    contact={contact}
-                    setContact={setContact}
                     rosterEntry={rosterEntry}
                     setRosterEntry={setRosterEntry}
                     roster={roster}
                     addToRoster={addToRoster}
                     importRosterCsv={importRosterCsv}
                     removeFromRoster={removeFromRoster}
-                    onRequestQuote={handleRequestQuote}
-                    submitting={submittingQuote}
-                    error={quoteError}
+                  />
+                )}
+                {activeTool === "review" && (
+                  <ReviewOrderTool
+                    template={template}
+                    activeSport={activeSport}
+                    collar={collar}
+                    sleeve={sleeve}
+                    kitType={kitType}
+                    logoApplication={logoApplication}
+                    layers={layers}
+                    roster={roster}
+                    contact={contact}
+                    setContact={setContact}
                     unitPrice={unitPrice}
                     fanJerseyAdded={fanJerseyAdded}
                     setFanJerseyAdded={setFanJerseyAdded}
+                    onRequestQuote={handleRequestQuote}
+                    submitting={submittingQuote}
+                    error={quoteError}
+                    onEditStep={(tool) => setActiveTool(tool)}
                   />
                 )}
               </div>
@@ -1384,21 +1490,66 @@ export default function UniformStudioPage() {
             bottomLabel={sportConfig.bottomLabel}
             hasSocks={sportConfig.hasSocks}
             sleeveOptions={sportConfig.sleeveOptions}
-            contact={contact}
-            setContact={setContact}
             rosterEntry={rosterEntry}
             setRosterEntry={setRosterEntry}
             roster={roster}
             addToRoster={addToRoster}
             importRosterCsv={importRosterCsv}
             removeFromRoster={removeFromRoster}
-            onRequestQuote={handleRequestQuote}
-            submitting={submittingQuote}
-            error={quoteError}
+          />
+        )}
+        {activeTool === "review" && (
+          <ReviewOrderTool
+            template={template}
+            activeSport={activeSport}
+            collar={collar}
+            sleeve={sleeve}
+            kitType={kitType}
+            logoApplication={logoApplication}
+            layers={layers}
+            roster={roster}
+            contact={contact}
+            setContact={setContact}
             unitPrice={unitPrice}
             fanJerseyAdded={fanJerseyAdded}
             setFanJerseyAdded={setFanJerseyAdded}
+            onRequestQuote={handleRequestQuote}
+            submitting={submittingQuote}
+            error={quoteError}
+            onEditStep={(tool) => setActiveTool(tool)}
           />
+        )}
+      </div>
+
+      <div className="flex flex-shrink-0 items-center justify-between gap-3 border-t border-white/[0.08] bg-[#1b1712] px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-6">
+        <button
+          type="button"
+          onClick={backWorkflow}
+          className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-background-50/65 transition hover:bg-white/[0.06] hover:text-background-50 cursor-pointer"
+        >
+          <i className="ri-arrow-left-line" />
+          {workflowIndex === 0 ? "Change style" : studioWorkflow[workflowIndex - 1].label}
+        </button>
+        <div className="hidden text-center md:block">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-background-50/35">
+            Step {workflowStep.step} of 7
+          </p>
+          <p className="text-xs font-semibold text-background-50/65">{workflowStep.label}</p>
+        </div>
+        {workflowIndex < studioWorkflow.length - 1 ? (
+          <button
+            type="button"
+            onClick={continueWorkflow}
+            disabled={workflowStep.key === "roster" && roster.length === 0}
+            className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,116,73,0.22)] transition hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer"
+          >
+            Continue to {studioWorkflow[workflowIndex + 1].label}
+            <i className="ri-arrow-right-line" />
+          </button>
+        ) : (
+          <span className="inline-flex items-center gap-2 rounded-xl bg-white/[0.05] px-4 py-2.5 text-xs font-semibold text-background-50/60">
+            <i className="ri-shield-check-line text-primary-400" /> Secure order request
+          </span>
         )}
       </div>
     </div>
@@ -1409,24 +1560,14 @@ function RosterTool({
   bottomLabel = "Shorts",
   hasSocks = false,
   sleeveOptions = [],
-  contact,
-  setContact,
   rosterEntry,
   setRosterEntry,
   roster,
   addToRoster,
   importRosterCsv,
   removeFromRoster,
-  onRequestQuote,
-  submitting,
-  error,
-  unitPrice,
-  fanJerseyAdded,
-  setFanJerseyAdded,
 }) {
   const unitCount = rosterUnitCount(roster);
-  const kitsTotal = unitPrice * unitCount;
-  const grandTotal = kitsTotal + (fanJerseyAdded ? FAN_JERSEY_PRICE : 0);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
   const [importMessage, setImportMessage] = useState("");
   const rosterFileRef = useRef(null);
@@ -1472,7 +1613,7 @@ function RosterTool({
   return (
     <div>
       <p className="text-xs text-foreground-500 font-label mb-4">
-        Add one row per player — the price below updates live as you add or remove people.
+        Add one row per player, or import the complete team from a CSV file.
       </p>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground-500">
@@ -1737,86 +1878,159 @@ function RosterTool({
         </div>
       )}
 
-      <label className="flex items-center gap-2.5 text-xs font-label text-foreground-700 cursor-pointer py-3 border-t border-background-200/70">
+      <div className={`rounded-xl border p-4 ${roster.length ? "border-primary-200 bg-primary-50" : "border-background-300 bg-background-100/60"}`}>
+        <div className="flex items-center gap-3">
+          <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${roster.length ? "bg-primary-600 text-white" : "bg-background-200 text-foreground-400"}`}>
+            <i className={roster.length ? "ri-check-line" : "ri-team-line"} />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-foreground-900">
+              {roster.length ? `${unitCount} kit${unitCount === 1 ? "" : "s"} ready for review` : "Add at least one player"}
+            </p>
+            <p className="text-[11px] font-label text-foreground-500">
+              {roster.length ? "Use Continue to Review below to confirm the order." : "The Review step unlocks after the first roster entry."}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReviewOrderTool({
+  template,
+  activeSport,
+  collar,
+  sleeve,
+  kitType,
+  logoApplication,
+  layers,
+  roster,
+  contact,
+  setContact,
+  unitPrice,
+  fanJerseyAdded,
+  setFanJerseyAdded,
+  onRequestQuote,
+  submitting,
+  error,
+  onEditStep,
+}) {
+  const unitCount = rosterUnitCount(roster);
+  const kitsTotal = unitPrice * unitCount;
+  const grandTotal = kitsTotal + (fanJerseyAdded ? FAN_JERSEY_PRICE : 0);
+  const sportLabel = sports.find((sport) => sport.slug === activeSport)?.label || activeSport;
+
+  return (
+    <div>
+      <div className="mb-5">
+        <p className="font-label text-[10px] font-bold uppercase tracking-[0.18em] text-primary-700">
+          Final step
+        </p>
+        <h2 className="mt-1 font-heading text-2xl font-semibold text-foreground-950">
+          Review your team order
+        </h2>
+        <p className="mt-2 text-xs leading-relaxed text-foreground-500">
+          Confirm the design and roster, then send the order for a production proof and final invoice.
+        </p>
+      </div>
+
+      <div className="space-y-2 mb-4">
+        <ReviewRow
+          icon="ri-palette-line"
+          title="Design"
+          value={`${sportLabel} · ${template?.name || "Blank Canvas"}`}
+          meta={`${collar} collar · ${sleeve} sleeve · ${layers.length} artwork layer${layers.length === 1 ? "" : "s"}`}
+          onEdit={() => onEditStep("design")}
+        />
+        <ReviewRow
+          icon="ri-settings-4-line"
+          title="Kit options"
+          value={`${kitType} kit · ${logoApplication}`}
+          meta={`Estimated unit price $${unitPrice.toFixed(2)}`}
+          onEdit={() => onEditStep("options")}
+        />
+        <ReviewRow
+          icon="ri-team-line"
+          title="Roster"
+          value={`${unitCount} kit${unitCount === 1 ? "" : "s"} · ${roster.length} player row${roster.length === 1 ? "" : "s"}`}
+          meta={roster.length ? roster.slice(0, 3).map((entry) => entry.name).join(", ") + (roster.length > 3 ? "…" : "") : "No players added"}
+          onEdit={() => onEditStep("roster")}
+        />
+      </div>
+
+      <label className="mb-4 flex cursor-pointer items-start gap-3 rounded-xl border border-background-300 bg-background-100/55 p-3.5">
         <input
           type="checkbox"
-          className="rounded border-background-300"
+          className="mt-1 rounded border-background-300"
           checked={fanJerseyAdded}
-          onChange={(e) => setFanJerseyAdded(e.target.checked)}
+          onChange={(event) => setFanJerseyAdded(event.target.checked)}
         />
-        Also add a Fan/Supporter Jersey for this design (+${FAN_JERSEY_PRICE.toFixed(2)})
+        <span>
+          <span className="block text-sm font-semibold text-foreground-900">Add a supporter jersey</span>
+          <span className="mt-0.5 block text-[11px] font-label text-foreground-500">
+            One fan jersey using this team design (+${FAN_JERSEY_PRICE.toFixed(2)})
+          </span>
+        </span>
       </label>
 
-      <div className="rounded-xl bg-primary-950 p-4 mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-[11px] font-label uppercase tracking-wide text-background-50/60">
-            Grand Total
-          </span>
-          <span className="font-heading text-3xl font-semibold text-background-50">
-            ${grandTotal.toFixed(2)}
+      <div className="mb-5 rounded-2xl bg-primary-950 p-4 text-background-50 shadow-[0_14px_30px_rgba(0,48,30,0.2)]">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-background-50/55">
+              Estimated order total
+            </p>
+            <p className="mt-1 font-heading text-3xl font-semibold">${grandTotal.toFixed(2)}</p>
+          </div>
+          <span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold text-background-50/75">
+            Final after proof
           </span>
         </div>
-        <div className="space-y-1 pt-3 border-t border-background-50/15">
-          <div className="flex items-center justify-between text-xs text-background-50/70 font-label">
-            <span>Unit price / kit</span>
-            <span>${unitPrice.toFixed(2)}</span>
-          </div>
-          <div className="flex items-center justify-between text-xs text-background-50/70 font-label">
-            <span>{unitCount} kit{unitCount === 1 ? "" : "s"} on roster</span>
-            <span>${kitsTotal.toFixed(2)}</span>
-          </div>
-          {fanJerseyAdded && (
-            <div className="flex items-center justify-between text-xs text-background-50/70 font-label">
-              <span>Fan/Supporter Jersey</span>
-              <span>${FAN_JERSEY_PRICE.toFixed(2)}</span>
-            </div>
-          )}
+        <div className="mt-3 space-y-1 border-t border-white/15 pt-3 text-xs text-background-50/70">
+          <div className="flex justify-between"><span>{unitCount} kits × ${unitPrice.toFixed(2)}</span><span>${kitsTotal.toFixed(2)}</span></div>
+          {fanJerseyAdded && <div className="flex justify-between"><span>Supporter jersey</span><span>${FAN_JERSEY_PRICE.toFixed(2)}</span></div>}
         </div>
       </div>
 
-      {/* Contact details. The quote used to go out with none of these — the
-          shop got a design and a roster and no way to reply. */}
-      <div className="pt-4 border-t border-background-200/70">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground-500 mb-1">
-          Where do we send the quote?
-        </h3>
-        <p className="text-[11px] text-foreground-500 font-label mb-3">
-          We'll reply with pricing and a production proof — usually within one business day.
+      <div className="border-t border-background-200 pt-5">
+        <h3 className="text-sm font-semibold text-foreground-900">Order contact</h3>
+        <p className="mb-3 mt-1 text-[11px] font-label text-foreground-500">
+          We send the production proof, final price and payment link here.
         </p>
         <div className="space-y-2">
           <Input
             placeholder="Your name *"
             aria-label="Your name"
             value={contact.name}
-            onChange={(e) => setContact((c) => ({ ...c, name: e.target.value }))}
+            onChange={(event) => setContact((current) => ({ ...current, name: event.target.value }))}
           />
           <Input
             type="email"
             placeholder="Email address *"
             aria-label="Email address"
             value={contact.email}
-            onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))}
+            onChange={(event) => setContact((current) => ({ ...current, email: event.target.value }))}
           />
           <div className="grid grid-cols-2 gap-2">
             <Input
               placeholder="Phone"
               aria-label="Phone number"
               value={contact.phone}
-              onChange={(e) => setContact((c) => ({ ...c, phone: e.target.value }))}
+              onChange={(event) => setContact((current) => ({ ...current, phone: event.target.value }))}
             />
             <Input
               placeholder="Club / team"
               aria-label="Club or team name"
               value={contact.club}
-              onChange={(e) => setContact((c) => ({ ...c, club: e.target.value }))}
+              onChange={(event) => setContact((current) => ({ ...current, club: event.target.value }))}
             />
           </div>
           <Textarea
             rows={2}
-            placeholder="Anything else we should know? (deadline, colours, sponsor placement…)"
-            aria-label="Additional notes"
+            placeholder="Deadline, delivery destination or production notes…"
+            aria-label="Additional order notes"
             value={contact.notes}
-            onChange={(e) => setContact((c) => ({ ...c, notes: e.target.value }))}
+            onChange={(event) => setContact((current) => ({ ...current, notes: event.target.value }))}
           />
         </div>
       </div>
@@ -1824,27 +2038,47 @@ function RosterTool({
       <div className="pt-4">
         {!isLiveApi && <DemoModeNotice className="mb-3" />}
         {error && (
-          <p className="text-xs text-accent-600 font-label mb-3 flex items-start gap-1.5">
+          <p className="mb-3 flex items-start gap-1.5 text-xs font-label text-accent-600">
             <i className="ri-error-warning-line mt-0.5 flex-shrink-0" />
             {error}
           </p>
         )}
         <Button
           type="button"
-          variant="accent"
+          variant="primary"
           disabled={roster.length === 0 || submitting}
           onClick={onRequestQuote}
           icon="ri-arrow-right-line"
           className="w-full"
         >
-          {submitting ? "Sending…" : "Request quote"}
+          {submitting ? "Submitting…" : "Submit team order request"}
         </Button>
-        {roster.length === 0 && (
-          <p className="text-[11px] text-foreground-500 font-label mt-2 text-center">
-            Add at least one player above to request a quote.
-          </p>
-        )}
+        <p className="mt-2 text-center text-[10px] font-label leading-relaxed text-foreground-400">
+          No payment is taken now. You approve the production proof and final invoice before manufacturing begins.
+        </p>
       </div>
+    </div>
+  );
+}
+
+function ReviewRow({ icon, title, value, meta, onEdit }) {
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-background-200 bg-background-50 p-3.5">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-100 text-primary-800">
+        <i className={icon} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-foreground-400">{title}</p>
+        <p className="mt-0.5 truncate text-sm font-semibold text-foreground-900">{value}</p>
+        <p className="mt-0.5 text-[11px] font-label text-foreground-500">{meta}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onEdit}
+        className="rounded-lg px-2 py-1 text-[11px] font-semibold text-primary-700 hover:bg-primary-50 cursor-pointer"
+      >
+        Edit
+      </button>
     </div>
   );
 }
