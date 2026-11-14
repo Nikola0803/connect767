@@ -59,7 +59,7 @@ describe("PayoutSettingsFields", () => {
     expect(screen.getByRole("radio", { name: /bank account/i })).toBeInTheDocument();
   });
 
-  it("includes NBD MoBanking and Remitly as digital cash-out destinations", () => {
+  it("includes the existing providers and Dominican institutions in one cash-out list", () => {
     render(
       <PayoutSettingsFields
         form={{ ...paidForm, bookingPayoutMethod: "digital" }}
@@ -69,6 +69,9 @@ describe("PayoutSettingsFields", () => {
 
     expect(screen.getByRole("option", { name: "NBD MoBanking" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Remitly" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "PayPal" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Republic Bank of Dominica" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Dominica Cooperative Credit Union" })).toBeInTheDocument();
   });
 
   it("renders protected bank fields when bank transfer is selected", () => {
@@ -80,6 +83,7 @@ describe("PayoutSettingsFields", () => {
     );
 
     expect(screen.getByLabelText(/account holder name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/bank name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/account number \/ iban/i)).toHaveAttribute("type", "password");
     expect(screen.getByText(/encrypted and never displayed/i)).toBeInTheDocument();
   });

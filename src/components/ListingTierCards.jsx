@@ -125,7 +125,12 @@ function FullTierCard({ planKey, selected, onSelect }) {
           </span>
           <span className="text-sm text-foreground-700">{plan.cadence}</span>
         </div>
-        {plan.note && <p className="mt-1.5 text-sm text-foreground-700">{plan.note}</p>}
+        <p
+          aria-hidden={!plan.note}
+          className={`mt-1.5 min-h-5 text-sm text-foreground-700 ${plan.note ? "" : "invisible"}`}
+        >
+          {plan.note || "Pricing note"}
+        </p>
       </div>
 
       <ul className="mb-6 space-y-2.5 border-t border-background-300 pt-5">
