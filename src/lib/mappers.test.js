@@ -289,6 +289,19 @@ describe("mapWcCategory", () => {
 });
 
 describe("mapListingCpt", () => {
+  it("preserves the WordPress publication date for newest sorting", () => {
+    const mapped = mapListingCpt({
+      id: 99,
+      slug: "recent-listing",
+      title: "Recent listing",
+      date: "2026-11-14T08:30:00",
+      date_gmt: "2026-11-14T14:30:00",
+      acf: {},
+    });
+
+    expect(mapped.dateCreated).toBe("2026-11-14T14:30:00");
+  });
+
   it("keeps the listing plan separate from the Featured promotion", () => {
     const classified = mapListingCpt({ id: 1, slug: "a", title: "A", acf: { tier: "Classified" } });
     expect(classified.badgeIcon).toBe("ri-vip-crown-line");

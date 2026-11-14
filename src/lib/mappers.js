@@ -489,6 +489,7 @@ export function mapListingCpt(wp) {
     bookingPriceUnit: ["appointment", "minute", "hour"].includes(acf.booking_price_unit) ? acf.booking_price_unit : "appointment",
     bookingMaxDurationMinutes: Math.max(15, Number(acf.booking_max_duration_minutes) || 120),
     rating: acf.rating || "0",
+    dateCreated: wp.date_gmt || wp.date || "",
     reviews: `(${acf.review_count ?? 0})`,
     // The cover photo IS the WordPress featured image — class-rest-listings.php
     // stores the uploaded `coverPhoto` with set_post_thumbnail(), not as a
