@@ -20,7 +20,6 @@ import {
   sportModelUrl,
 } from "../data/uniforms";
 import JerseyStage from "../components/uniform-studio/JerseyStage";
-import JerseyGraphic from "../components/uniform-studio/JerseyGraphic";
 import FloatingToolbar from "../components/uniform-studio/FloatingToolbar";
 import {
   DesignPanel,
@@ -275,7 +274,7 @@ export default function UniformStudioPage() {
   const [exporting, setExporting] = useState(false);
 
   const visibleTemplates = useMemo(
-    () => templates.filter((t) => t.sportSlug === activeSport),
+    () => templates.filter((t) => t.sportSlug === activeSport && t.slug !== "blank-canvas"),
     [activeSport]
   );
   const template = templates.find((t) => t.slug === selectedTemplate);
@@ -459,7 +458,10 @@ export default function UniformStudioPage() {
     setCollar(t.defaultCollar || sportConfig.collarOptions[0]);
     setSleeve(t.defaultSleeve || sportConfig.sleeveOptions?.[0] || "Sleeveless");
     // Pick up where they left off on this exact kit, if they were here before.
-    restoreSaved(`c767:studio:${activeSport}:${t.slug}`);
+    const restored = restoreSaved(`c767:studio:${activeSport}:${t.slug}`);
+    if (!restored) {
+      setColors({ ...defaultZoneColors, ...(t.defaultColors || {}) });
+    }
   };
 
   const TOOL_FOR_LAYER = { text: "text", skin: "skins", logo: "logo", clipart: "logo" };
@@ -960,18 +962,17 @@ export default function UniformStudioPage() {
                     onClick={() => selectTemplate(uniformTemplate)}
                     className="group overflow-hidden rounded-2xl border border-background-300 bg-background-50 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:border-primary-400 hover:shadow-[0_18px_38px_rgba(0,116,73,0.11)] cursor-pointer"
                   >
-                    <div className="relative flex h-56 items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_28%,#ffffff_0%,#f5efe3_72%)] p-6">
+                    <div className="relative flex h-56 items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_28%,#ffffff_0%,#f5efe3_72%)] p-4">
                       <span className="absolute left-4 top-4 rounded-full border border-background-300 bg-background-50/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-primary-800">
                         Template
                       </span>
-                      <div className="h-full w-full transition-transform duration-300 group-hover:scale-105">
-                        <JerseyGraphic
-                          view="front"
-                          collar={uniformTemplate.defaultCollar}
-                          sleeve={uniformTemplate.defaultSleeve}
-                          colors={defaultZoneColors}
-                        />
-                      </div>
+                      <img
+                        src={uniformTemplate.image}
+                        alt={`${uniformTemplate.name} ${activeSportMeta.label} uniform template`}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-full w-full object-contain drop-shadow-[0_18px_20px_rgba(25,40,32,0.16)] transition-transform duration-300 group-hover:scale-[1.04]"
+                      />
                     </div>
                     <div className="p-5">
                       <div className="flex items-center justify-between gap-3">
