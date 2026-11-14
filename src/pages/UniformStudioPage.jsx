@@ -191,7 +191,9 @@ export default function UniformStudioPage() {
   // layers baked on as a live texture, not a flat mockup. ----------
   // Start in the instant flat editor. The 3D mesh is mounted on demand, which
   // keeps the initial page light while retaining a production-friendly proof.
-  const [stageMode, setStageMode] = useState("edit"); // '3d' | 'edit'
+  const [stageMode, setStageMode] = useState(
+    searchParams.get("view") === "3d" ? "3d" : "edit"
+  ); // '3d' | 'edit'
 
   // When set, the next click on the garment creates this item AT the click
   // point instead of dropping it on the chest and making the user drag it
@@ -1046,15 +1048,30 @@ export default function UniformStudioPage() {
         <span className="text-xs font-label text-background-50/40 truncate">
           {template?.name || "Blank Canvas"} · {sports.find((s) => s.slug === activeSport)?.label}
         </span>
-        <button
-          type="button"
-          onClick={handleDownload}
-          disabled={exporting || stageMode !== "edit"}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer bg-white/5 text-background-50/70 hover:bg-white/10 hover:text-background-50 disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <i className="ri-download-2-line" />
-          <span className="hidden sm:inline">{exporting ? "Exporting…" : "Download"}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-pressed={stageMode === "3d"}
+            onClick={() => setStageMode((mode) => (mode === "3d" ? "edit" : "3d"))}
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+              stageMode === "3d"
+                ? "border-primary-500 bg-primary-600 text-white shadow-[0_8px_18px_rgba(0,116,73,0.28)]"
+                : "border-primary-500/45 bg-primary-950/55 text-primary-100 hover:border-primary-400 hover:bg-primary-900"
+            }`}
+          >
+            <i className={stageMode === "3d" ? "ri-edit-2-line" : "ri-3d-cube-sphere-line"} />
+            {stageMode === "3d" ? "Return to 2D" : "View in 3D"}
+          </button>
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={exporting || stageMode !== "edit"}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer bg-white/5 text-background-50/70 hover:bg-white/10 hover:text-background-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <i className="ri-download-2-line" />
+            <span className="hidden sm:inline">{exporting ? "Exporting…" : "Download"}</span>
+          </button>
+        </div>
       </div>
 
       <nav
@@ -1176,26 +1193,39 @@ export default function UniformStudioPage() {
                   {/* Canvas */}
                   <div className="flex-1 min-w-0 flex flex-col items-center gap-3 px-4 md:px-8 py-4 overflow-hidden">
                     {/* Top bar: view thumbnails + zoom/export, inline instead of a separate row above the card */}
-                    <div className="w-full flex items-center justify-end gap-2 flex-shrink-0">
+                    <div className="w-full flex items-center justify-between gap-2 flex-shrink-0">
                       {ENABLE_3D && (
-                      <Tooltip
-                        label={stageMode === "edit" ? "Switch to 3D" : "Switch to flat editor"}
-                        description={
-                          stageMode === "edit"
-                            ? "Place artwork directly on the garment — click to position, drag to move, scroll to resize."
-                            : "Lay the kit out flat for precise nudging, rotation and text editing."
-                        }
-                        placement="bottom"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setStageMode((m) => (m === "edit" ? "3d" : "edit"))}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer bg-white/5 text-background-50/70 hover:bg-white/10 hover:text-background-50"
+                        <div
+                          className="inline-flex items-center rounded-xl border border-white/10 bg-white/[0.04] p-1"
+                          aria-label="Uniform preview mode"
                         >
-                          <i className={stageMode === "edit" ? "ri-3d-cube-sphere-line" : "ri-edit-2-line"} />
-                          {stageMode === "edit" ? "3D view" : "Edit"}
-                        </button>
-                      </Tooltip>
+                          <button
+                            type="button"
+                            aria-pressed={stageMode === "edit"}
+                            onClick={() => setStageMode("edit")}
+                            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                              stageMode === "edit"
+                                ? "bg-background-50 text-foreground-950 shadow-sm"
+                                : "text-background-50/55 hover:bg-white/[0.06] hover:text-background-50"
+                            }`}
+                          >
+                            <i className="ri-edit-2-line" />
+                            2D editor
+                          </button>
+                          <button
+                            type="button"
+                            aria-pressed={stageMode === "3d"}
+                            onClick={() => setStageMode("3d")}
+                            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                              stageMode === "3d"
+                                ? "bg-primary-600 text-white shadow-[0_6px_16px_rgba(0,116,73,0.28)]"
+                                : "text-background-50/55 hover:bg-white/[0.06] hover:text-background-50"
+                            }`}
+                          >
+                            <i className="ri-3d-cube-sphere-line" />
+                            3D preview
+                          </button>
+                        </div>
                       )}
                       {stageMode === "edit" && (
                         <div className="inline-flex items-center gap-1 bg-white/5 rounded-lg px-1 py-1">
@@ -1419,6 +1449,7 @@ export default function UniformStudioPage() {
                     submitting={submittingQuote}
                     error={quoteError}
                     onEditStep={(tool) => setActiveTool(tool)}
+                    onView3d={() => setStageMode("3d")}
                   />
                 )}
               </div>
@@ -1517,6 +1548,7 @@ export default function UniformStudioPage() {
             submitting={submittingQuote}
             error={quoteError}
             onEditStep={(tool) => setActiveTool(tool)}
+            onView3d={() => setStageMode("3d")}
           />
         )}
       </div>
@@ -1915,6 +1947,7 @@ function ReviewOrderTool({
   submitting,
   error,
   onEditStep,
+  onView3d,
 }) {
   const unitCount = rosterUnitCount(roster);
   const kitsTotal = unitPrice * unitCount;
@@ -1933,6 +1966,14 @@ function ReviewOrderTool({
         <p className="mt-2 text-xs leading-relaxed text-foreground-500">
           Confirm the design and roster, then send the order for a production proof and final invoice.
         </p>
+        <button
+          type="button"
+          onClick={onView3d}
+          className="mt-3 inline-flex items-center gap-2 rounded-full border border-primary-300 bg-primary-50 px-3.5 py-2 text-xs font-semibold text-primary-800 transition hover:-translate-y-0.5 hover:border-primary-500 hover:bg-primary-100 cursor-pointer"
+        >
+          <i className="ri-3d-cube-sphere-line text-sm" />
+          View uniform design in 3D
+        </button>
       </div>
 
       <div className="space-y-2 mb-4">
