@@ -90,11 +90,11 @@ const tools = [
 ];
 
 const studioWorkflow = [
-  { key: "design", label: "Design", step: 3, defaultTool: "design", tools: ["design"] },
-  { key: "artwork", label: "Artwork", step: 4, defaultTool: "logo", tools: ["text", "logo", "skins", "layers"] },
-  { key: "options", label: "Kit options", step: 5, defaultTool: "options", tools: ["options"] },
-  { key: "roster", label: "Roster", step: 6, defaultTool: "roster", tools: ["roster"] },
-  { key: "review", label: "Review", step: 7, defaultTool: "review", tools: ["review"] },
+  { key: "design", label: "Design", step: 2, defaultTool: "design", tools: ["design"] },
+  { key: "artwork", label: "Artwork", step: 3, defaultTool: "logo", tools: ["text", "logo", "skins", "layers"] },
+  { key: "options", label: "Kit options", step: 4, defaultTool: "options", tools: ["options"] },
+  { key: "roster", label: "Roster", step: 5, defaultTool: "roster", tools: ["roster"] },
+  { key: "review", label: "Review", step: 6, defaultTool: "review", tools: ["review"] },
 ];
 
 const Product3DStage = lazy(
@@ -273,10 +273,6 @@ export default function UniformStudioPage() {
   const [previewImg, setPreviewImg] = useState(null);
   const [exporting, setExporting] = useState(false);
 
-  const visibleTemplates = useMemo(
-    () => templates.filter((t) => t.sportSlug === activeSport && t.slug !== "blank-canvas"),
-    [activeSport]
-  );
   const template = templates.find((t) => t.slug === selectedTemplate);
   const selectedLayer = layers.find((l) => l.id === selectedLayerId) || null;
   const sportConfig = sportConfigFor(activeSport);
@@ -304,16 +300,6 @@ export default function UniformStudioPage() {
       return;
     }
     openWorkflowStep(workflowIndex - 1);
-  };
-
-  const handleSportChange = (slug) => {
-    setActiveSport(slug);
-    setSelectedTemplate(null);
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.set("sport", slug);
-      return next;
-    });
   };
 
   /**
@@ -453,10 +439,17 @@ export default function UniformStudioPage() {
     else setSelectedTemplate(null);
   };
 
-  const selectTemplate = (t) => {
+  const selectTemplate = (t, sportSlug = activeSport) => {
+    const nextSportConfig = sportConfigFor(sportSlug);
+    setActiveSport(sportSlug);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("sport", sportSlug);
+      return next;
+    });
     setSelectedTemplate(t.slug);
-    setCollar(t.defaultCollar || sportConfig.collarOptions[0]);
-    setSleeve(t.defaultSleeve || sportConfig.sleeveOptions?.[0] || "Sleeveless");
+    setCollar(t.defaultCollar || nextSportConfig.collarOptions[0]);
+    setSleeve(t.defaultSleeve || nextSportConfig.sleeveOptions?.[0] || "Sleeveless");
     // A stock image demonstrates the cut only. New designs always enter on
     // clean white fabric with no artwork carried over from another template.
     setColors({ ...defaultZoneColors });
@@ -465,7 +458,7 @@ export default function UniformStudioPage() {
     setSelectedLayerId(null);
     setPendingLayer(null);
     // Pick up where they left off on this exact kit, if they were here before.
-    restoreSaved(`c767:studio:${activeSport}:${t.slug}`);
+    restoreSaved(`c767:studio:${sportSlug}:${t.slug}`);
   };
 
   const TOOL_FOR_LAYER = { text: "text", skin: "skins", logo: "logo", clipart: "logo" };
@@ -856,8 +849,6 @@ export default function UniformStudioPage() {
   // were removed — /uniforms is a tool, and everything that isn't the tool
   // was competing with it for the screen.
   if (!selectedTemplate) {
-    const activeSportMeta = sports.find((sport) => sport.slug === activeSport) || sports[0];
-
     return (
       <div className="min-h-[100dvh] bg-[linear-gradient(145deg,#f8f3e9_0%,#fffdf8_48%,#eef8f1_100%)] text-foreground-950">
         <header className="border-b border-background-200/70 bg-background-50/85 backdrop-blur-sm">
@@ -892,8 +883,8 @@ export default function UniformStudioPage() {
                 sizes and uniform options before requesting production pricing.
               </p>
             </div>
-            <ol className="grid grid-cols-4 overflow-hidden rounded-2xl border border-background-300 bg-background-50 shadow-sm sm:grid-cols-7">
-              {["Sport", "Style", "Design", "Artwork", "Options", "Roster", "Review"].map((label, index) => (
+            <ol className="grid grid-cols-3 overflow-hidden rounded-2xl border border-background-300 bg-background-50 shadow-sm sm:grid-cols-6">
+              {["Sport & style", "Design", "Artwork", "Options", "Roster", "Review"].map((label, index) => (
                 <li
                   key={label}
                   className={`flex min-w-0 flex-col gap-1 px-3 py-3 ${
@@ -909,128 +900,89 @@ export default function UniformStudioPage() {
             </ol>
           </section>
 
-          <section className="grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
-            <aside className="rounded-[26px] border border-background-300/80 bg-background-50/95 p-5 shadow-[0_18px_50px_rgba(69,48,30,0.07)] lg:sticky lg:top-5 lg:self-start">
-              <p className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">
-                Step 1
-              </p>
-              <h2 className="mt-1 font-heading text-2xl font-semibold">Choose your sport</h2>
-              <p className="mt-2 text-sm leading-relaxed text-foreground-500">
-                We tailor garment options and roster fields to each sport.
-              </p>
-              <div className="mt-5 grid grid-cols-2 gap-2 lg:grid-cols-1">
-                {sports.map((sport) => {
-                  const selected = activeSport === sport.slug;
-                  return (
-                    <button
-                      key={sport.slug}
-                      type="button"
-                      onClick={() => handleSportChange(sport.slug)}
-                      className={`group flex items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition duration-200 cursor-pointer ${
-                        selected
-                          ? "border-primary-500 bg-primary-600 text-white shadow-[0_10px_24px_rgba(0,116,73,0.18)]"
-                          : "border-background-200 bg-background-50 text-foreground-700 hover:-translate-y-0.5 hover:border-primary-300 hover:bg-primary-50"
-                      }`}
-                    >
-                      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${selected ? "bg-white/15" : "bg-primary-100 text-primary-800"}`}>
-                        <i className={`${sport.icon} text-lg`} />
-                      </span>
-                      <span className="text-sm font-semibold">{sport.label}</span>
-                      <i className={`ri-arrow-right-s-line ml-auto ${selected ? "text-white/80" : "text-foreground-300 group-hover:text-primary-700"}`} />
-                    </button>
-                  );
-                })}
-              </div>
-            </aside>
-
-            <div className="rounded-[26px] border border-background-300/80 bg-background-50/95 p-5 shadow-[0_18px_50px_rgba(69,48,30,0.07)] sm:p-7">
-              <div className="mb-6 flex flex-col gap-3 border-b border-background-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">
-                    Step 2 · {activeSportMeta.label}
-                  </p>
-                  <h2 className="mt-1 font-heading text-2xl font-semibold sm:text-3xl">
-                    Select a starting point
-                  </h2>
-                </div>
-                <p className="max-w-sm text-sm leading-relaxed text-foreground-500">
-                  Pick a proven cut or begin with a clean canvas. Every color, logo and detail remains editable.
+          <section className="rounded-[30px] border border-background-300/80 bg-background-50/95 p-5 shadow-[0_22px_60px_rgba(69,48,30,0.08)] sm:p-7 lg:p-9">
+            <div className="flex flex-col gap-3 border-b border-background-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">
+                  Step 1
                 </p>
+                <h2 className="mt-1 font-heading text-3xl font-semibold sm:text-4xl">
+                  Choose your sport and style
+                </h2>
               </div>
+              <p className="max-w-lg text-sm leading-relaxed text-foreground-500">
+                Each category includes its existing uniform template and a blank-canvas option. Choose either one to enter the studio.
+              </p>
+            </div>
 
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {visibleTemplates.map((uniformTemplate) => (
-                  <button
-                    key={uniformTemplate.slug}
-                    type="button"
-                    onClick={() => selectTemplate(uniformTemplate)}
-                    className="group overflow-hidden rounded-2xl border border-background-300 bg-background-50 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:border-primary-400 hover:shadow-[0_18px_38px_rgba(0,116,73,0.11)] cursor-pointer"
+            <div className="mt-7 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {sports.map((sport) => {
+                const uniformTemplate = templates.find(
+                  (candidate) => candidate.sportSlug === sport.slug && candidate.slug !== "blank-canvas"
+                );
+                if (!uniformTemplate) return null;
+
+                const blankTemplate = {
+                  slug: "blank-canvas",
+                  defaultCollar: uniformTemplate.defaultCollar,
+                  defaultSleeve: uniformTemplate.defaultSleeve,
+                };
+
+                return (
+                  <article
+                    key={sport.slug}
+                    className="group overflow-hidden rounded-[24px] border border-background-300 bg-background-50 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-primary-400 hover:shadow-[0_20px_42px_rgba(0,116,73,0.11)]"
                   >
-                    <div className="relative flex h-56 items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_28%,#ffffff_0%,#f5efe3_72%)] p-4">
-                      <span className="absolute left-4 top-4 rounded-full border border-background-300 bg-background-50/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-primary-800">
-                        Template
+                    <div className="relative flex h-60 items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_28%,#ffffff_0%,#f4eee3_72%)] p-5">
+                      <span className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full border border-primary-200 bg-background-50/95 px-3 py-1.5 text-xs font-bold text-primary-800 shadow-sm">
+                        <i className={`${sport.icon} text-base`} /> {sport.label}
                       </span>
                       <img
                         src={uniformTemplate.image}
-                        alt={`${uniformTemplate.name} ${activeSportMeta.label} uniform template`}
+                        alt={`${uniformTemplate.name} ${sport.label} uniform template`}
                         loading="lazy"
                         decoding="async"
-                        className="h-full w-full object-contain drop-shadow-[0_18px_20px_rgba(25,40,32,0.16)] transition-transform duration-300 group-hover:scale-[1.04]"
+                        className="h-full w-full object-contain drop-shadow-[0_18px_20px_rgba(25,40,32,0.16)] transition-transform duration-300 group-hover:scale-[1.035]"
                       />
                     </div>
+
                     <div className="p-5">
-                      <div className="flex items-center justify-between gap-3">
-                        <h3 className="font-heading text-xl font-semibold">{uniformTemplate.name}</h3>
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-800 transition group-hover:bg-primary-600 group-hover:text-white">
-                          <i className="ri-arrow-right-line" />
-                        </span>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-primary-700">
+                            Included style
+                          </p>
+                          <h3 className="mt-1 font-heading text-2xl font-semibold">{uniformTemplate.name}</h3>
+                        </div>
+                        <div className="flex flex-wrap justify-end gap-1.5 text-[10px] font-semibold text-foreground-600">
+                          <span className="rounded-full bg-background-100 px-2.5 py-1">{uniformTemplate.defaultCollar} neck</span>
+                          <span className="rounded-full bg-background-100 px-2.5 py-1">{uniformTemplate.defaultSleeve}</span>
+                        </div>
                       </div>
-                      <p className="mt-2 text-sm leading-relaxed text-foreground-500">
+                      <p className="mt-2 min-h-10 text-sm leading-relaxed text-foreground-500">
                         {uniformTemplate.description}
                       </p>
-                      <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-semibold text-foreground-600">
-                        <span className="rounded-full bg-background-100 px-2.5 py-1">{uniformTemplate.defaultCollar}</span>
-                        <span className="rounded-full bg-background-100 px-2.5 py-1">{uniformTemplate.defaultSleeve} sleeve</span>
+
+                      <div className="mt-5 grid grid-cols-2 gap-2.5 border-t border-background-200 pt-4">
+                        <button
+                          type="button"
+                          onClick={() => selectTemplate(uniformTemplate, sport.slug)}
+                          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary-600 px-3 py-2.5 text-sm font-bold text-white transition hover:bg-primary-700 cursor-pointer"
+                        >
+                          Use {uniformTemplate.defaultCollar} neck <i className="ri-arrow-right-line" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => selectTemplate(blankTemplate, sport.slug)}
+                          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-primary-300 bg-primary-50 px-3 py-2.5 text-sm font-bold text-primary-800 transition hover:border-primary-500 hover:bg-primary-100 cursor-pointer"
+                        >
+                          <i className="ri-add-line" /> Design from scratch
+                        </button>
                       </div>
                     </div>
-                  </button>
-                ))}
-
-                <button
-                  type="button"
-                  onClick={() => selectTemplate({ slug: "blank-canvas" })}
-                  className="group flex min-h-[340px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-primary-300 bg-primary-50/55 p-7 text-center transition duration-200 hover:-translate-y-1 hover:border-primary-500 hover:bg-primary-100/70 hover:shadow-[0_18px_38px_rgba(0,116,73,0.1)] cursor-pointer"
-                >
-                  <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-600 text-3xl text-white shadow-[0_12px_25px_rgba(0,116,73,0.22)] transition-transform duration-200 group-hover:rotate-3 group-hover:scale-105">
-                    <i className="ri-add-line" />
-                  </span>
-                  <h3 className="mt-5 font-heading text-2xl font-semibold">Design from scratch</h3>
-                  <p className="mt-2 max-w-xs text-sm leading-relaxed text-foreground-500">
-                    Start clean and build a completely original {activeSportMeta.label.toLowerCase()} uniform.
-                  </p>
-                  <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-primary-800">
-                    Open blank canvas <i className="ri-arrow-right-line" />
-                  </span>
-                </button>
-              </div>
-
-              <div className="mt-6 grid gap-3 border-t border-background-200 pt-5 sm:grid-cols-3">
-                {[
-                  ["ri-image-add-line", "Upload artwork", "PNG, JPG or SVG logos"],
-                  ["ri-3d-cube-sphere-line", "Preview in 3D", "Load only when you need it"],
-                  ["ri-team-line", "Build the roster", "Names, sizes and quantities"],
-                ].map(([icon, title, description]) => (
-                  <div key={title} className="flex items-start gap-3 rounded-xl bg-background-100/65 p-3.5">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-100 text-primary-800">
-                      <i className={icon} />
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold">{title}</p>
-                      <p className="mt-0.5 text-xs text-foreground-500">{description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  </article>
+                );
+              })}
             </div>
           </section>
         </main>
@@ -1088,12 +1040,7 @@ export default function UniformStudioPage() {
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-600 text-[11px] font-bold text-white">
               <i className="ri-check-line" />
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-wider">Sport</span>
-            <i className="ri-arrow-right-s-line mx-1" />
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-600 text-[11px] font-bold text-white">
-              <i className="ri-check-line" />
-            </span>
-            <span className="text-[10px] font-bold uppercase tracking-wider">Style</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider">Sport &amp; style</span>
             <i className="ri-arrow-right-s-line mx-1" />
           </div>
           {studioWorkflow.map((step, index) => {
@@ -1565,7 +1512,7 @@ export default function UniformStudioPage() {
           className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-background-50/65 transition hover:bg-white/[0.06] hover:text-background-50 cursor-pointer"
         >
           <i className="ri-arrow-left-line" />
-          {workflowIndex === 0 ? "Change style" : studioWorkflow[workflowIndex - 1].label}
+          {workflowIndex === 0 ? "Change sport or style" : studioWorkflow[workflowIndex - 1].label}
         </button>
         <div className="hidden text-center md:block">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-background-50/35">

@@ -57,15 +57,6 @@ export const templates = [
     defaultSleeve: "Short",
   },
   {
-    slug: "v-neck-pro",
-    name: "V-Neck Pro",
-    sportSlug: "soccer",
-    description: "Tapered V-neck collar with raglan sleeves for a modern club look.",
-    image: "/uploads/uniform-templates/soccer-v-neck-pro.png",
-    defaultCollar: "V-Neck",
-    defaultSleeve: "Short",
-  },
-  {
     slug: "shooter-tank",
     name: "Shooter Tank",
     sportSlug: "basketball",
