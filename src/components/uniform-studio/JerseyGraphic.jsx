@@ -19,33 +19,35 @@ function ZoneGradient({ id, hex, angle = 135 }) {
   );
 }
 
-function Sleeve({ side, length, fill, trimFill, opacity = 1 }) {
+function Sleeve({ side, length, sport, fill, trimFill, opacity = 1 }) {
   const flip = side === "right";
-  const sx = flip ? (x) => 400 - x : (x) => x;
+  const transform = flip ? "translate(400 0) scale(-1 1)" : undefined;
 
-  if (length === "Sleeveless") {
+  if (length === "Sleeveless" || sport === "basketball") {
     return (
-      <path
-        d={`M${sx(118)},146 Q${sx(96)},148 ${sx(97)},172 Q${sx(98)},192 ${sx(120)},190`}
-        fill="none"
-        stroke={trimFill}
-        strokeWidth="6"
-        strokeLinecap="round"
-        opacity={0.9 * opacity}
-      />
+      <g transform={transform} opacity={opacity}>
+        <path d="M149,62 Q116,72 105,111 Q101,139 118,162" fill="none" stroke={trimFill} strokeWidth="8" strokeLinecap="round" />
+      </g>
     );
   }
 
   if (length === "Long") {
     return (
-      <g opacity={opacity}>
+      <g transform={transform} opacity={opacity}>
         <path
-          d={`M147,58 Q97,66 86,88 Q66,190 64,298 Q90,293 112,286 Q116,290 118,282
-              Q122,160 147,58 Z`}
+          d={sport === "goalkeeper"
+            ? "M147,58 Q96,66 82,91 Q60,194 62,306 Q88,308 116,292 Q119,166 147,58 Z"
+            : "M147,58 Q97,66 86,88 Q66,190 64,298 Q90,293 112,286 Q116,290 118,282 Q122,160 147,58 Z"}
           fill={fill}
         />
+        {sport === "goalkeeper" && (
+          <>
+            <path d="M83,100 Q66,147 66,188 Q88,200 111,187 Q116,137 126,91 Z" fill={trimFill} opacity="0.72" />
+            <path d="M66,205 Q61,249 63,284 Q87,294 113,278 Q114,237 112,206 Z" fill={trimFill} opacity="0.6" />
+          </>
+        )}
         <path
-          d={`M64,294 Q90,289 112,282 Q114,296 113,308 Q88,315 63,320 Q62,306 64,294 Z`}
+          d="M64,294 Q90,289 112,282 Q114,296 113,308 Q88,315 63,320 Q62,306 64,294 Z"
           fill={trimFill}
         />
       </g>
@@ -54,9 +56,11 @@ function Sleeve({ side, length, fill, trimFill, opacity = 1 }) {
 
   // Short (default)
   return (
-    <g opacity={opacity}>
+    <g transform={transform} opacity={opacity}>
       <path
-        d={`M147,58 Q100,64 91,78 Q78,116 80,154 Q100,150 119,146 Q121,100 147,58 Z`}
+        d={sport === "baseball"
+          ? "M147,58 Q99,63 88,82 Q75,119 78,160 Q99,157 122,148 Q124,102 147,58 Z"
+          : "M147,58 Q100,64 91,78 Q78,116 80,154 Q100,150 119,146 Q121,100 147,58 Z"}
         fill={fill}
       />
       <path
@@ -65,6 +69,22 @@ function Sleeve({ side, length, fill, trimFill, opacity = 1 }) {
       />
     </g>
   );
+}
+
+function bodyPathForSport(sport) {
+  if (sport === "basketball") {
+    return "M155,58 Q200,43 245,58 Q270,77 279,118 Q289,270 294,468 Q200,482 106,468 Q111,270 121,118 Q130,77 155,58 Z";
+  }
+  if (sport === "baseball") {
+    return "M147,58 Q200,44 253,58 Q280,91 286,143 Q292,286 294,452 Q200,463 106,452 Q108,286 114,143 Q120,91 147,58 Z";
+  }
+  if (sport === "cricket" || sport === "other") {
+    return "M146,58 Q200,45 254,58 Q280,91 286,145 Q291,300 292,466 Q200,476 108,466 Q109,300 114,145 Q120,91 146,58 Z";
+  }
+  if (sport === "goalkeeper") {
+    return "M143,58 Q200,42 257,58 Q286,94 291,151 Q297,302 299,470 Q200,484 101,470 Q103,302 109,151 Q114,94 143,58 Z";
+  }
+  return "M147,58 Q200,44 253,58 Q282,92 288,146 Q297,300 301,468 Q200,480 99,468 Q103,300 112,146 Q118,92 147,58 Z";
 }
 
 function Collar({ style, trimFill }) {
@@ -113,7 +133,7 @@ function Collar({ style, trimFill }) {
  * dynamic-recolor technique real mockup tools use, built from curves and
  * gradients rather than a static photo.
  */
-export default function JerseyGraphic({ view = "front", collar, sleeve, colors, highlightZone = null }) {
+export default function JerseyGraphic({ sport = "soccer", view = "front", collar, sleeve, colors, highlightZone = null }) {
   const uid = useId();
   const gradId = (zone) => `jg-${uid}-${zone}`;
   // The collar neckline gets its own color if the customer picked one
@@ -151,6 +171,7 @@ export default function JerseyGraphic({ view = "front", collar, sleeve, colors, 
         <Sleeve
           side="left"
           length={sleeve}
+          sport={sport}
           fill={`url(#${gradId("sleeve")})`}
           trimFill={`url(#${gradId("trim")})`}
           opacity={zoneOpacity("sleeve")}
@@ -158,6 +179,7 @@ export default function JerseyGraphic({ view = "front", collar, sleeve, colors, 
         <Sleeve
           side="right"
           length={sleeve}
+          sport={sport}
           fill={`url(#${gradId("sleeve")})`}
           trimFill={`url(#${gradId("trim")})`}
           opacity={zoneOpacity("sleeve")}
@@ -165,13 +187,7 @@ export default function JerseyGraphic({ view = "front", collar, sleeve, colors, 
 
         {/* Torso — smooth curved silhouette */}
         <path
-          d="M147,58
-             Q200,44 253,58
-             Q282,92 288,146
-             Q297,300 301,468
-             Q200,480 99,468
-             Q103,300 112,146
-             Q118,92 147,58 Z"
+          d={bodyPathForSport(sport)}
           fill={`url(#${gradId("body")})`}
           opacity={zoneOpacity("body")}
         />
@@ -187,6 +203,46 @@ export default function JerseyGraphic({ view = "front", collar, sleeve, colors, 
             fill={`url(#${gradId("panel")})`}
           />
         </g>
+
+        {sport === "basketball" && (
+          <g fill={HOLE_COLOR} stroke={`url(#${gradId("trim")})`} strokeWidth="5" opacity={zoneOpacity("trim")}>
+            <path d="M149,66 Q119,80 113,119 Q111,144 126,166 Q136,139 142,112 Q148,85 149,66 Z" />
+            <path d="M251,66 Q281,80 287,119 Q289,144 274,166 Q264,139 258,112 Q252,85 251,66 Z" />
+          </g>
+        )}
+
+        {sport === "baseball" && view === "front" && (
+          <g opacity={zoneOpacity("trim")}>
+            <path d="M200,78 L200,451" stroke={`url(#${gradId("trim")})`} strokeWidth="5" />
+            {[112, 157, 202, 247, 292, 337].map((cy) => (
+              <circle key={cy} cx="200" cy={cy} r="4" fill={`url(#${gradId("trim")})`} />
+            ))}
+            <path d="M148,62 Q168,98 200,116 Q232,98 252,62" fill="none" stroke={`url(#${gradId("panel")})`} strokeWidth="6" />
+          </g>
+        )}
+
+        {sport === "cricket" && (
+          <g opacity={zoneOpacity("panel")}>
+            <path d="M143,63 Q200,90 257,63 L270,102 Q200,128 130,102 Z" fill={`url(#${gradId("panel")})`} opacity="0.78" />
+            <path d="M136,150 Q121,290 126,459" fill="none" stroke={`url(#${gradId("panel")})`} strokeWidth="8" />
+            <path d="M264,150 Q279,290 274,459" fill="none" stroke={`url(#${gradId("panel")})`} strokeWidth="8" />
+          </g>
+        )}
+
+        {sport === "goalkeeper" && (
+          <g opacity={zoneOpacity("panel")}>
+            <path d="M143,63 Q200,84 257,63 L274,113 Q200,135 126,113 Z" fill={`url(#${gradId("panel")})`} opacity="0.52" />
+            <path d="M117,168 Q139,158 155,171 L150,214 Q133,224 113,212 Z" fill={`url(#${gradId("panel")})`} opacity="0.62" />
+            <path d="M283,168 Q261,158 245,171 L250,214 Q267,224 287,212 Z" fill={`url(#${gradId("panel")})`} opacity="0.62" />
+          </g>
+        )}
+
+        {sport === "other" && (
+          <g opacity={zoneOpacity("panel")}>
+            <path d="M119,151 Q132,145 143,151 Q134,300 133,464 L108,466 Q109,300 114,145 Z" fill={`url(#${gradId("panel")})`} />
+            <path d="M281,151 Q268,145 257,151 Q266,300 267,464 L292,466 Q291,300 286,145 Z" fill={`url(#${gradId("panel")})`} />
+          </g>
+        )}
 
         {/* Hem band */}
         <path

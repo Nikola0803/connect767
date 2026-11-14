@@ -72,6 +72,7 @@ const JerseyStage = forwardRef(function JerseyStage(
         >
           <div className="absolute inset-8 md:inset-12">
             <JerseyGraphic
+              sport={sport}
               view={view}
               collar={collar}
               sleeve={sleeve}
@@ -107,13 +108,13 @@ const JerseyStage = forwardRef(function JerseyStage(
         </p>
         <div className={`grid gap-2.5 md:gap-3 ${config.hasSocks ? "grid-cols-4" : "grid-cols-3"}`}>
           <PreviewTile label="Front">
-            <JerseyGraphic view="front" collar={collar} sleeve={sleeve} colors={colors} />
+            <JerseyGraphic sport={sport} view="front" collar={collar} sleeve={sleeve} colors={colors} />
           </PreviewTile>
           <PreviewTile label="Back">
-            <JerseyGraphic view="back" collar={collar} sleeve={sleeve} colors={colors} />
+            <JerseyGraphic sport={sport} view="back" collar={collar} sleeve={sleeve} colors={colors} />
           </PreviewTile>
           <PreviewTile label={config.bottomLabel}>
-            <ShortsGraphic colors={colors} />
+            <ShortsGraphic sport={sport} colors={colors} />
           </PreviewTile>
           {config.hasSocks && (
             <PreviewTile label="Socks">
