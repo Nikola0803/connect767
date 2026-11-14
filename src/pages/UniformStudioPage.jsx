@@ -457,15 +457,11 @@ export default function UniformStudioPage() {
     setSelectedTemplate(t.slug);
     setCollar(t.defaultCollar || sportConfig.collarOptions[0]);
     setSleeve(t.defaultSleeve || sportConfig.sleeveOptions?.[0] || "Sleeveless");
-    // A stock image demonstrates the cut only. New designs always enter on
-    // clean white fabric with no artwork carried over from another template.
-    setColors({ ...defaultZoneColors });
-    setLayers([]);
-    setPlacements3d({});
-    setSelectedLayerId(null);
-    setPendingLayer(null);
     // Pick up where they left off on this exact kit, if they were here before.
-    restoreSaved(`c767:studio:${activeSport}:${t.slug}`);
+    const restored = restoreSaved(`c767:studio:${activeSport}:${t.slug}`);
+    if (!restored) {
+      setColors({ ...defaultZoneColors, ...(t.defaultColors || {}) });
+    }
   };
 
   const TOOL_FOR_LAYER = { text: "text", skin: "skins", logo: "logo", clipart: "logo" };
