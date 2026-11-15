@@ -18,7 +18,7 @@ const APPROVED_ASSETS = {
 
 const KIT_REGIONS = {
   soccer: {
-    shirtTop: 20, bottomStart: 566, socksStart: 865, kitBottom: 1358,
+    shirtTop: 20, shirtEndStart: 534, bottomStart: 580, socksStart: 865, kitBottom: 1358,
     sleeveBottom: 300, shortSleeveBottom: 300, bodyLeft: 190, bodyRight: 390, collarY: 66,
     nativeSleeve: "short",
     views: {
@@ -36,7 +36,6 @@ const KIT_REGIONS = {
           left: [[107, 240], [198, 250], [195, 274], [105, 260]],
           right: [[469, 250], [558, 240], [560, 260], [472, 274]],
         },
-        shirtEndPolygon: [[189, 540], [481, 540], [484, 566], [185, 566]],
         shortsPolygon: [[176, 555], [485, 555], [500, 840], [163, 840]],
         shortsEndPolygon: [[163, 810], [500, 810], [500, 840], [163, 840]],
       },
@@ -54,7 +53,6 @@ const KIT_REGIONS = {
           left: [[32, 240], [122, 250], [119, 274], [30, 260]],
           right: [[391, 250], [481, 240], [483, 260], [394, 274]],
         },
-        shirtEndPolygon: [[111, 540], [402, 540], [405, 566], [107, 566]],
         shortsPolygon: [[105, 555], [408, 555], [424, 840], [92, 840]],
         shortsEndPolygon: [[92, 810], [424, 810], [424, 840], [92, 840]],
       },
@@ -376,18 +374,23 @@ export default function ApprovedUniformGraphic({
           </TintLayer>
       )}
 
-        {/* The source photograph contains several stitched grey seam lines at
-            the waist. Paint one opaque, alpha-clipped shirt edge over that
-            construction detail so the editor exposes only body + shirt edge. */}
+        {/* Cover the complete photographed waist construction with one edge.
+            The full-width rectangle is clipped by the jersey alpha mask, so
+            it reaches both outer contours without leaving white end pixels. */}
         <TintLayer
           mask={jerseyMaskId}
           fill={shirtEnd}
           opacity={opacityFor("shirtStrip")}
           blendMode="normal"
         >
-          {(fill) => region.shirtEndPolygon
-            ? <path d={polygonPath(region.shirtEndPolygon)} fill={fill} />
-            : <rect x={offset} y={region.bottomStart - 18} width={halfWidth} height="18" fill={fill} />}
+          {(fill) => <rect
+            data-shirt-edge="complete"
+            x={offset}
+            y={region.shirtEndStart ?? region.bottomStart - 18}
+            width={halfWidth}
+            height={region.bottomStart - (region.shirtEndStart ?? region.bottomStart - 18)}
+            fill={fill}
+          />}
         </TintLayer>
 
         {!isSleeveless && <TintLayer mask={jerseyMaskId} fill={sleeveEnd} opacity={opacityFor("sleeveStrip")}>
