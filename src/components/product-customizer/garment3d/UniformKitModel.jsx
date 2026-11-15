@@ -22,10 +22,8 @@ function fabricNormal() {
   for (let y = 0; y < size; y += 1) {
     for (let x = 0; x < size; x += 1) {
       const index = (y * size + x) * 4;
-      const weaveX = Math.sin((x / size) * Math.PI * 24) * 8;
-      const weaveY = Math.cos((y / size) * Math.PI * 32) * 8;
-      data[index] = 128 + weaveX;
-      data[index + 1] = 128 + weaveY;
+      data[index] = 128 + Math.sin((x / size) * Math.PI * 28) * 7;
+      data[index + 1] = 128 + Math.cos((y / size) * Math.PI * 34) * 7;
       data[index + 2] = 248;
       data[index + 3] = 255;
     }
@@ -33,170 +31,147 @@ function fabricNormal() {
   fabricNormalTexture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
   fabricNormalTexture.wrapS = THREE.RepeatWrapping;
   fabricNormalTexture.wrapT = THREE.RepeatWrapping;
-  fabricNormalTexture.repeat.set(5, 7);
+  fabricNormalTexture.repeat.set(7, 9);
   fabricNormalTexture.needsUpdate = true;
   return fabricNormalTexture;
 }
 
-function FabricMaterial({ color, textureScale = 1, roughness = 0.82 }) {
+function FabricMaterial({ color, textureScale = 1, roughness = 0.8 }) {
   const normal = useMemo(() => fabricNormal(), []);
   return (
     <meshPhysicalMaterial
       color={color}
       roughness={roughness}
       metalness={0}
-      sheen={0.28}
-      sheenRoughness={0.78}
-      sheenColor={new THREE.Color(color).lerp(new THREE.Color("#ffffff"), 0.22)}
+      sheen={0.36}
+      sheenRoughness={0.72}
+      sheenColor={new THREE.Color(color).lerp(new THREE.Color("#ffffff"), 0.24)}
       normalMap={normal}
-      normalScale={new THREE.Vector2(0.16 * textureScale, 0.16 * textureScale)}
-      envMapIntensity={0.55}
+      normalScale={new THREE.Vector2(0.13 * textureScale, 0.13 * textureScale)}
+      envMapIntensity={0.72}
+      side={THREE.DoubleSide}
     />
   );
 }
 
-function Torso({ colors, dress = false }) {
-  const height = dress ? 3.05 : 2.15;
-  const topRadius = dress ? 0.68 : 0.76;
-  const bottomRadius = dress ? 1.02 : 0.64;
-  const centerY = dress ? 0.15 : 0.67;
-  const bottomY = centerY - height / 2;
+function ExtrudedPiece({ name, zone, points, color, depth = 0.48, bevel = 0.055, position = [0, 0, 0], rotation = [0, 0, 0], scale = [1, 1, 1], roughness }) {
+  const signature = points.flat().join("|");
+  const geometry = useMemo(() => {
+    const shape = new THREE.Shape();
+    shape.moveTo(points[0][0], points[0][1]);
+    points.slice(1).forEach(([x, y]) => shape.lineTo(x, y));
+    shape.closePath();
+    const result = new THREE.ExtrudeGeometry(shape, {
+      depth,
+      bevelEnabled: true,
+      bevelSegments: 5,
+      bevelSize: bevel,
+      bevelThickness: bevel,
+      curveSegments: 18,
+      steps: 2,
+    });
+    result.translate(0, 0, -depth / 2);
+    result.computeVertexNormals();
+    return result;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signature, depth, bevel]);
+
+  return (
+    <mesh name={name} geometry={geometry} position={position} rotation={rotation} scale={scale} userData={{ garmentZone: zone }} castShadow receiveShadow>
+      <FabricMaterial color={color} roughness={roughness} />
+    </mesh>
+  );
+}
+
+const JERSEY_POINTS = [
+  [-0.33, 1.72], [-0.76, 1.6], [-0.86, 1.34], [-0.73, -0.42], [-0.62, -0.55],
+  [0.62, -0.55], [0.73, -0.42], [0.86, 1.34], [0.76, 1.6], [0.33, 1.72],
+  [0.26, 1.5], [0, 1.41], [-0.26, 1.5],
+];
+
+const BASKETBALL_POINTS = [
+  [-0.29, 1.72], [-0.62, 1.57], [-0.68, 1.22], [-0.66, -0.5], [-0.56, -0.62],
+  [0.56, -0.62], [0.66, -0.5], [0.68, 1.22], [0.62, 1.57], [0.29, 1.72],
+  [0.22, 1.48], [0, 1.36], [-0.22, 1.48],
+];
+
+const NETBALL_DRESS_POINTS = [
+  [-0.28, 1.73], [-0.62, 1.55], [-0.63, 1.2], [-0.82, -1.12], [-1.02, -1.72],
+  [1.02, -1.72], [0.82, -1.12], [0.63, 1.2], [0.62, 1.55], [0.28, 1.73],
+  [0.22, 1.5], [0, 1.39], [-0.22, 1.5],
+];
+
+function Torso({ colors, sport }) {
+  const isNetball = sport === "netball";
+  const isBasketball = sport === "basketball";
+  const points = isNetball ? NETBALL_DRESS_POINTS : isBasketball ? BASKETBALL_POINTS : JERSEY_POINTS;
+  const hemY = isNetball ? -1.7 : isBasketball ? -0.6 : -0.53;
+  const hemWidth = isNetball ? 1.96 : isBasketball ? 1.1 : 1.23;
   return (
     <group>
-      <mesh
-        name="jersey_body"
-        userData={{ garmentZone: "body" }}
-        position={[0, centerY, 0]}
-        scale={[1, 1, 0.47]}
-        castShadow
-        receiveShadow
-      >
-        <cylinderGeometry args={[topRadius, bottomRadius, height, 64, 12, false]} />
-        <FabricMaterial color={colors.body} />
-      </mesh>
-      <mesh
-        name="shirt_hem"
-        userData={{ garmentZone: "shirtStrip" }}
-        position={[0, bottomY + 0.045, 0]}
-        rotation={[Math.PI / 2, 0, 0]}
-        scale={[1, dress ? 0.47 : 0.47, 1]}
-        castShadow
-      >
-        <torusGeometry args={[bottomRadius * 0.98, 0.035, 10, 72]} />
-        <FabricMaterial color={colors.shirtStrip} roughness={0.76} />
-      </mesh>
+      <ExtrudedPiece name="jersey_body" zone="body" points={points} color={colors.body} depth={isNetball ? 0.42 : 0.52} bevel={0.065} />
+      <RoundedBox name="shirt_hem" args={[hemWidth, 0.075, isNetball ? 0.43 : 0.54]} radius={0.035} smoothness={4} position={[0, hemY, 0]} userData={{ garmentZone: "shirtStrip" }} castShadow>
+        <FabricMaterial color={colors.shirtStrip} roughness={0.72} />
+      </RoundedBox>
     </group>
   );
 }
 
-function ShoulderBridge({ colors, sleeveless }) {
-  if (sleeveless) return null;
-  return (
-    <RoundedBox
-      name="shoulder_yoke"
-      args={[1.62, 0.42, 0.55]}
-      radius={0.18}
-      smoothness={5}
-      position={[0, 1.58, 0]}
-      castShadow
-      receiveShadow
-      userData={{ garmentZone: "body" }}
-    >
-      <FabricMaterial color={colors.body} />
-    </RoundedBox>
-  );
+function sleevePoints(length) {
+  if (length === "Long") {
+    return [[-0.03, 0.23], [0.55, 0.09], [0.44, -1.48], [0.12, -1.55], [-0.08, -0.12]];
+  }
+  return [[-0.03, 0.23], [0.61, 0.07], [0.55, -0.58], [0.15, -0.66], [-0.08, -0.12]];
 }
 
 function Sleeve({ side, length, colors, padded = false }) {
   if (length === "Sleeveless") return null;
   const sign = side === "left" ? -1 : 1;
   const long = length === "Long";
-  const height = long ? 1.55 : 0.72;
-  const centerY = long ? 0.87 : 1.28;
-  const rotationZ = sign * -0.24;
-  const cuffY = centerY - height / 2;
+  const cuffY = long ? -1.49 : -0.61;
+  const cuffWidth = long ? 0.34 : 0.43;
   return (
-    <group position={[sign * (long ? 0.92 : 0.98), 0, 0]} rotation={[0, 0, rotationZ]}>
-      <mesh
-        name={`sleeve_${side}`}
-        userData={{ garmentZone: "sleeve" }}
-        position={[0, centerY, 0]}
-        scale={[1, 1, 0.78]}
-        castShadow
-        receiveShadow
-      >
-        <cylinderGeometry args={[long ? 0.27 : 0.31, long ? 0.34 : 0.38, height, 40, 8, false]} />
-        <FabricMaterial color={colors.sleeve} />
-      </mesh>
+    <group position={[sign * 0.7, 1.45, 0]} scale={[sign, 1, 1]} rotation={[0, 0, sign * -0.035]}>
+      <ExtrudedPiece name={`sleeve_${side}`} zone="sleeve" points={sleevePoints(length)} color={colors.sleeve} depth={0.48} bevel={0.055} />
       {padded && (
-        <RoundedBox args={[0.58, 0.5, 0.3]} radius={0.16} position={[0, centerY - 0.12, 0.18]} castShadow>
+        <RoundedBox args={[0.34, 0.52, 0.13]} radius={0.08} smoothness={5} position={[0.31, long ? -0.72 : -0.24, 0.29]} userData={{ garmentZone: "sleeve" }} castShadow>
           <FabricMaterial color={colors.sleeve} roughness={0.9} />
         </RoundedBox>
       )}
-      <mesh
-        name={`sleeve_cuff_${side}`}
-        userData={{ garmentZone: "sleeveStrip" }}
-        position={[0, cuffY + 0.04, 0]}
-        scale={[1, 1, 0.78]}
-        castShadow
-      >
-        <cylinderGeometry args={[long ? 0.275 : 0.315, long ? 0.29 : 0.33, 0.095, 40]} />
-        <FabricMaterial color={colors.sleeveStrip} roughness={0.74} />
-      </mesh>
+      <RoundedBox name={`sleeve_cuff_${side}`} args={[cuffWidth, 0.08, 0.49]} radius={0.035} smoothness={4} position={[long ? 0.28 : 0.35, cuffY, 0]} userData={{ garmentZone: "sleeveStrip" }} castShadow>
+        <FabricMaterial color={colors.sleeveStrip} roughness={0.72} />
+      </RoundedBox>
     </group>
   );
+}
+
+function curveTube(points, radius = 0.045, closed = false) {
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, closed, "catmullrom", 0.3), 48, radius, 12, closed);
 }
 
 function CrewCollar({ colors }) {
-  return (
-    <mesh
-      name="collar_crew"
-      userData={{ garmentZone: "collar" }}
-      position={[0, 1.78, 0]}
-      rotation={[Math.PI / 2, 0, 0]}
-      scale={[1.18, 0.72, 1]}
-      castShadow
-    >
-      <torusGeometry args={[0.3, 0.065, 12, 56]} />
-      <FabricMaterial color={colors.collar} roughness={0.7} />
-    </mesh>
-  );
+  const geometry = useMemo(() => curveTube([
+    new THREE.Vector3(-0.31, 1.7, 0.31), new THREE.Vector3(-0.25, 1.52, 0.34),
+    new THREE.Vector3(0, 1.43, 0.35), new THREE.Vector3(0.25, 1.52, 0.34),
+    new THREE.Vector3(0.31, 1.7, 0.31), new THREE.Vector3(0, 1.78, 0.02),
+  ], 0.052, true), []);
+  return <mesh name="collar_crew" geometry={geometry} userData={{ garmentZone: "collar" }} castShadow><FabricMaterial color={colors.collar} roughness={0.68} /></mesh>;
 }
 
 function VNeckCollar({ colors }) {
-  const geometry = useMemo(() => {
-    const curve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-0.36, 0, 0),
-      new THREE.Vector3(0, -0.32, 0.08),
-      new THREE.Vector3(0.36, 0, 0),
-    ]);
-    return new THREE.TubeGeometry(curve, 32, 0.055, 10, false);
-  }, []);
-  return (
-    <group position={[0, 1.78, 0.22]}>
-      <mesh name="collar_vneck" geometry={geometry} userData={{ garmentZone: "collar" }} castShadow>
-        <FabricMaterial color={colors.collar} roughness={0.7} />
-      </mesh>
-      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0.015, -0.22]} scale={[1.18, 0.7, 1]}>
-        <torusGeometry args={[0.3, 0.055, 10, 48, Math.PI]} />
-        <FabricMaterial color={colors.collar} roughness={0.7} />
-      </mesh>
-    </group>
-  );
+  const geometry = useMemo(() => curveTube([
+    new THREE.Vector3(-0.32, 1.7, 0.31), new THREE.Vector3(0, 1.38, 0.35),
+    new THREE.Vector3(0.32, 1.7, 0.31), new THREE.Vector3(0, 1.79, 0.02),
+  ], 0.05, true), []);
+  return <mesh name="collar_vneck" geometry={geometry} userData={{ garmentZone: "collar" }} castShadow><FabricMaterial color={colors.collar} roughness={0.68} /></mesh>;
 }
 
 function PoloCollar({ colors }) {
   return (
-    <group name="collar_polo" position={[0, 1.76, 0.23]} userData={{ garmentZone: "collar" }}>
-      <RoundedBox args={[0.42, 0.38, 0.08]} radius={0.04} position={[-0.2, -0.05, 0]} rotation={[0, 0, -0.25]} castShadow>
-        <FabricMaterial color={colors.collar} roughness={0.72} />
-      </RoundedBox>
-      <RoundedBox args={[0.42, 0.38, 0.08]} radius={0.04} position={[0.2, -0.05, 0]} rotation={[0, 0, 0.25]} castShadow>
-        <FabricMaterial color={colors.collar} roughness={0.72} />
-      </RoundedBox>
-      <RoundedBox args={[0.13, 0.5, 0.07]} radius={0.035} position={[0, -0.34, 0]} castShadow>
-        <FabricMaterial color={colors.collar} roughness={0.72} />
-      </RoundedBox>
+    <group name="collar_polo" userData={{ garmentZone: "collar" }}>
+      <ExtrudedPiece points={[[-0.32, 1.73], [-0.04, 1.53], [-0.08, 1.32], [-0.4, 1.57]]} color={colors.collar} depth={0.08} bevel={0.018} position={[0, 0, 0.31]} />
+      <ExtrudedPiece points={[[0.32, 1.73], [0.04, 1.53], [0.08, 1.32], [0.4, 1.57]]} color={colors.collar} depth={0.08} bevel={0.018} position={[0, 0, 0.31]} />
+      <RoundedBox args={[0.12, 0.42, 0.08]} radius={0.025} position={[0, 1.25, 0.35]} castShadow><FabricMaterial color={colors.collar} roughness={0.7} /></RoundedBox>
     </group>
   );
 }
@@ -207,118 +182,64 @@ function Collar({ type, colors }) {
   return <CrewCollar colors={colors} />;
 }
 
-function Shorts({ colors, trousers = false }) {
-  const legHeight = trousers ? 2.0 : 0.82;
-  const centerY = trousers ? -1.17 : -0.83;
-  const hemY = centerY - legHeight / 2 + 0.04;
+const SHORTS_POINTS = [[-0.7, -0.56], [-0.78, -1.48], [-0.12, -1.56], [0, -1.05], [0.12, -1.56], [0.78, -1.48], [0.7, -0.56]];
+const BASKETBALL_SHORTS_POINTS = [[-0.72, -0.56], [-0.82, -1.66], [-0.13, -1.72], [0, -1.08], [0.13, -1.72], [0.82, -1.66], [0.72, -0.56]];
+const TROUSER_POINTS = [[-0.67, -0.56], [-0.54, -2.65], [-0.12, -2.67], [0, -1.04], [0.12, -2.67], [0.54, -2.65], [0.67, -0.56]];
+
+function Bottoms({ colors, sport }) {
+  const trousers = sport === "cricket";
+  const basketball = sport === "basketball";
+  const points = trousers ? TROUSER_POINTS : basketball ? BASKETBALL_SHORTS_POINTS : SHORTS_POINTS;
+  const hemY = trousers ? -2.64 : basketball ? -1.68 : -1.51;
+  const outerX = trousers ? 0.51 : basketball ? 0.78 : 0.73;
   return (
     <group>
-      <RoundedBox
-        name="shorts_waistband"
-        args={[1.38, 0.2, 0.54]}
-        radius={0.08}
-        smoothness={4}
-        position={[0, -0.42, 0]}
-        castShadow
-        userData={{ garmentZone: "shorts" }}
-      >
-        <FabricMaterial color={colors.shorts} />
-      </RoundedBox>
+      <ExtrudedPiece name={trousers ? "trousers" : "shorts"} zone="shorts" points={points} color={colors.shorts} depth={0.5} bevel={0.06} />
+      <RoundedBox name="shorts_waistband" args={[1.36, 0.13, 0.52]} radius={0.05} position={[0, -0.59, 0]} userData={{ garmentZone: "shorts" }} castShadow><FabricMaterial color={colors.shorts} /></RoundedBox>
       {[-1, 1].map((side) => (
-        <group key={side} position={[side * 0.37, 0, 0]}>
-          <RoundedBox
-            name={side < 0 ? "shorts_left" : "shorts_right"}
-            args={[0.69, legHeight, 0.5]}
-            radius={trousers ? 0.16 : 0.14}
-            smoothness={5}
-            position={[0, centerY, 0]}
-            castShadow
-            receiveShadow
-            userData={{ garmentZone: "shorts" }}
-          >
-            <FabricMaterial color={colors.shorts} />
-          </RoundedBox>
-          <RoundedBox
-            name={side < 0 ? "shorts_hem_left" : "shorts_hem_right"}
-            args={[0.67, 0.085, 0.505]}
-            radius={0.035}
-            position={[0, hemY, 0]}
-            castShadow
-            userData={{ garmentZone: "shortsStrip" }}
-          >
-            <FabricMaterial color={colors.shortsStrip} roughness={0.74} />
-          </RoundedBox>
-        </group>
+        <RoundedBox key={side} name={side < 0 ? "shorts_hem_left" : "shorts_hem_right"} args={[trousers ? 0.38 : basketball ? 0.66 : 0.6, 0.075, 0.5]} radius={0.03} position={[side * outerX * 0.52, hemY, 0]} userData={{ garmentZone: "shortsStrip" }} castShadow>
+          <FabricMaterial color={colors.shortsStrip} roughness={0.72} />
+        </RoundedBox>
       ))}
     </group>
   );
 }
+
+const SOCK_POINTS = [[-0.17, 0.66], [-0.23, 0.28], [-0.19, -0.62], [-0.12, -0.93], [-0.34, -1.13], [-0.4, -1.34], [-0.3, -1.46], [0.2, -1.46], [0.26, -1.31], [0.16, -0.91], [0.2, -0.2], [0.15, 0.66]];
 
 function Socks({ colors }) {
   return (
     <group>
       {[-1, 1].map((side) => (
-        <group key={side} position={[side * 0.38, -2.04, 0]}>
-          <mesh
-            name={side < 0 ? "sock_left" : "sock_right"}
-            userData={{ garmentZone: "socks" }}
-            scale={[1, 1, 0.78]}
-            castShadow
-            receiveShadow
-          >
-            <cylinderGeometry args={[0.22, 0.18, 1.28, 36, 8]} />
-            <FabricMaterial color={colors.socks} textureScale={1.2} roughness={0.88} />
-          </mesh>
-          <RoundedBox args={[0.42, 0.24, 0.72]} radius={0.11} position={[0, -0.64, 0.16]} castShadow>
-            <FabricMaterial color={colors.socks} textureScale={1.2} roughness={0.88} />
-          </RoundedBox>
+        <group key={side} position={[side * 0.39, -2.1, 0]} scale={[side, 1, 1]}>
+          <ExtrudedPiece name={side < 0 ? "sock_left" : "sock_right"} zone="socks" points={SOCK_POINTS} color={colors.socks} depth={0.42} bevel={0.05} roughness={0.88} />
         </group>
       ))}
     </group>
   );
 }
 
-export const UNIFORM_KIT_PARTS = [
-  "jersey_body",
-  "sleeve_left",
-  "sleeve_right",
-  "collar_crew",
-  "collar_vneck",
-  "collar_polo",
-  "shirt_hem",
-  "shorts_left",
-  "shorts_right",
-  "shorts_waistband",
-  "shorts_hem_left",
-  "shorts_hem_right",
-  "sock_left",
-  "sock_right",
-];
+export const UNIFORM_KIT_PARTS = ["jersey_body", "sleeve_left", "sleeve_right", "collar_crew", "collar_vneck", "collar_polo", "shirt_hem", "shorts", "shorts_waistband", "shorts_hem_left", "shorts_hem_right", "sock_left", "sock_right"];
 
-/**
- * Lightweight, sport-aware ghost-mannequin kit used by Uniform Studio.
- * Every customer-facing color control owns a real mesh, so the 3D preview
- * does not have to fake collars, cuffs or hems with a flat overlay. The
- * geometry is deliberately UV-ready and can be replaced by production GLBs
- * carrying the same mesh names without changing the editor state contract.
- */
+/** Connected, sport-specific ghost-garment geometry for the live configurator. */
 export default function UniformKitModel({ sport = "soccer", colors = {}, collar = "Crew", sleeve = "Short" }) {
   const c = { ...DEFAULT_COLORS, ...colors };
   const isNetball = sport === "netball";
   const isBasketball = sport === "basketball";
-  const isCricket = sport === "cricket";
   const isGoalkeeper = sport === "goalkeeper";
-  const effectiveSleeve = isNetball || isBasketball ? "Sleeveless" : isGoalkeeper ? (sleeve === "Short" ? "Short" : "Long") : sleeve;
+  const effectiveSleeve = isNetball || isBasketball ? "Sleeveless" : isGoalkeeper && sleeve === "Short" ? "Long" : sleeve;
   const showSocks = sport === "soccer" || isGoalkeeper;
-
   return (
-    <group name={`connect767_${sport}_kit`} rotation={[0, -0.08, 0]}>
-      <Torso colors={c} dress={isNetball} />
-      {!isNetball && <ShoulderBridge colors={c} sleeveless={effectiveSleeve === "Sleeveless"} />}
-      {!isNetball && <Sleeve side="left" length={effectiveSleeve} colors={c} padded={isGoalkeeper} />}
-      {!isNetball && <Sleeve side="right" length={effectiveSleeve === "Mixed" ? "Short" : effectiveSleeve} colors={c} padded={isGoalkeeper} />}
+    <group name={`connect767_${sport}_kit`} rotation={[0, -0.12, 0]}>
+      <Torso colors={c} sport={sport} />
+      {!isNetball && !isBasketball && (
+        <>
+          <Sleeve side="left" length={effectiveSleeve} colors={c} padded={isGoalkeeper} />
+          <Sleeve side="right" length={effectiveSleeve === "Mixed" ? "Short" : effectiveSleeve} colors={c} padded={isGoalkeeper} />
+        </>
+      )}
       <Collar type={collar} colors={c} />
-      {!isNetball && <Shorts colors={c} trousers={isCricket} />}
+      {!isNetball && <Bottoms colors={c} sport={sport} />}
       {showSocks && <Socks colors={c} />}
     </group>
   );
