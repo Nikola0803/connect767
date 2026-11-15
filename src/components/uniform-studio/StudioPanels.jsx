@@ -9,6 +9,11 @@ import {
   sportConfigFor,
 } from "../../data/uniforms";
 import { NO_DETECTED_SOURCE_ELEMENTS, zoneOverlapWarnings, zoneValidation } from "./uniformZoneModel";
+import {
+  DEFAULT_STUDIO_BACKGROUND,
+  STUDIO_BACKGROUND_PRESETS,
+  isStudioHex,
+} from "./studioBackgrounds";
 
 /** #rrggbb → {r,g,b}, tolerating a missing leading hash. */
 function hexToRgb(hex) {
@@ -596,9 +601,80 @@ export function OptionsPanel({
   setInsideCollarMessage,
   insideCollarText,
   setInsideCollarText,
+  studioBackground = DEFAULT_STUDIO_BACKGROUND,
+  setStudioBackground,
 }) {
   return (
     <div>
+      <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400 mb-3">
+        Studio background
+      </h3>
+      <p className="text-xs text-foreground-500 font-label mb-3">
+        Change the workspace behind the uniform for clearer editing or presentation. This never
+        recolors the garment or production artwork.
+      </p>
+      <div className="grid grid-cols-1 gap-2 mb-3">
+        {STUDIO_BACKGROUND_PRESETS.map((preset) => {
+          const selected = studioBackground.toUpperCase() === preset.color.toUpperCase();
+          return (
+            <button
+              key={preset.color}
+              type="button"
+              onClick={() => setStudioBackground?.(preset.color)}
+              className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition cursor-pointer ${
+                selected
+                  ? "border-primary-500 bg-primary-50 ring-1 ring-primary-400"
+                  : "border-background-300 bg-background-50 hover:border-primary-300"
+              }`}
+            >
+              <span
+                className="h-8 w-8 flex-none rounded-lg border border-black/10 shadow-inner"
+                style={{ backgroundColor: preset.color }}
+                aria-hidden="true"
+              />
+              <span className="min-w-0">
+                <span className="block text-xs font-semibold text-foreground-900">{preset.name}</span>
+                <span className="block text-[10px] text-foreground-500 font-label">{preset.use}</span>
+              </span>
+              {selected && <i className="ri-check-line ml-auto text-primary-600" aria-label="Selected" />}
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex items-center gap-2 mb-2">
+        <label className="relative h-10 w-12 flex-none overflow-hidden rounded-lg border border-background-300 cursor-pointer">
+          <input
+            type="color"
+            value={studioBackground}
+            onChange={(event) => setStudioBackground?.(event.target.value.toUpperCase())}
+            className="absolute -inset-2 h-14 w-16 cursor-pointer"
+            aria-label="Custom studio background color"
+          />
+        </label>
+        <input
+          key={studioBackground}
+          type="text"
+          defaultValue={studioBackground}
+          onBlur={(event) => {
+            const value = event.target.value.toUpperCase();
+            if (isStudioHex(value)) setStudioBackground?.(value);
+            else event.target.value = studioBackground;
+          }}
+          aria-label="Studio background HEX color"
+          className="min-w-0 flex-1 rounded-lg border border-background-300 bg-background-50 px-3 py-2 text-xs font-semibold uppercase text-foreground-900 focus:border-primary-400 focus:outline-none"
+        />
+        <button
+          type="button"
+          onClick={() => setStudioBackground?.(DEFAULT_STUDIO_BACKGROUND)}
+          className="rounded-lg border border-background-300 bg-background-50 px-3 py-2 text-xs font-semibold text-foreground-700 hover:bg-background-100 cursor-pointer"
+        >
+          Reset
+        </button>
+      </div>
+      <p className="mb-6 text-[10px] text-foreground-500 font-label">
+        Saved with this design and used in both 2D and 3D preview.
+      </p>
+
       <p className="text-xs text-foreground-500 font-label mb-5 -mt-1">
         These choices don't change the shirt's colors or shape, but every one that adds a cost is
         marked right on the button.

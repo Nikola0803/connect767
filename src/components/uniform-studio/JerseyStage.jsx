@@ -1,12 +1,13 @@
 import { forwardRef, useRef } from "react";
 import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
 import DraggableLayer from "./DraggableLayer";
+import { isDarkStudioBackground, studioBackgroundGradient } from "./studioBackgrounds";
 
 /** Camera-viewfinder-style corner brackets instead of a full dashed
  * rectangle — reads as a precision print-safe-area guide rather than a
  * placeholder box, the same visual language high-end configurators use. */
-function SafeAreaGuide() {
-  const corner = "absolute w-5 h-5 border-accent-500/70";
+function SafeAreaGuide({ dark = false }) {
+  const corner = `absolute w-5 h-5 ${dark ? "border-white/70" : "border-accent-500/70"}`;
   return (
     <div className="pointer-events-none absolute inset-[16%]">
       <div className={`${corner} top-0 left-0 border-t-2 border-l-2 rounded-tl`} />
@@ -43,11 +44,13 @@ const JerseyStage = forwardRef(function JerseyStage(
     // the customer to drag into position.
     pendingLayer,
     onCommitPending,
+    studioBackground,
   },
   stageRef
 ) {
   const frontStageRef = useRef(null);
   const backStageRef = useRef(null);
+  const darkBackground = isDarkStudioBackground(studioBackground);
 
   const handleStageDown = (e, side) => {
     onViewChange?.(side);
@@ -96,8 +99,11 @@ const JerseyStage = forwardRef(function JerseyStage(
                 ref={sideRef}
                 onMouseDown={(event) => handleStageDown(event, side)}
                 onTouchStart={(event) => handleStageDown(event, side)}
-                style={{ cursor: pendingLayer ? "copy" : undefined }}
-                className={`relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-gradient-to-b from-background-50 to-background-100 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.55)] transition ${
+                style={{
+                  cursor: pendingLayer ? "copy" : undefined,
+                  background: studioBackgroundGradient(studioBackground),
+                }}
+                className={`relative aspect-[4/5] w-full overflow-hidden rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.55)] transition ${
                   active ? "ring-2 ring-primary-500" : "ring-1 ring-white/10"
                 }`}
               >
@@ -124,7 +130,7 @@ const JerseyStage = forwardRef(function JerseyStage(
                   />
                 </div>
 
-                <SafeAreaGuide />
+                <SafeAreaGuide dark={darkBackground} />
 
                 {layers
                   .filter((layer) => layer.view === side)
