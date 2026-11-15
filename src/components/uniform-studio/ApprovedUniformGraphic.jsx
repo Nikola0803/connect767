@@ -66,9 +66,9 @@ const KIT_REGIONS = {
     nativeSleeve: "sleeveless",
   },
   netball: {
-    spriteWidth: 1536, spriteHeight: 1024,
-    shirtTop: 20, bottomStart: 955, kitBottom: 1024,
-    sleeveBottom: 320, shortSleeveBottom: 320, bodyLeft: 245, bodyRight: 523, collarY: 132,
+    spriteWidth: 2048, spriteHeight: 1536,
+    shirtTop: 20, bottomStart: 1420, kitBottom: 1536,
+    sleeveBottom: 470, shortSleeveBottom: 470, bodyLeft: 320, bodyRight: 704, collarY: 190,
     nativeSleeve: "sleeveless",
   },
   cricket: {
