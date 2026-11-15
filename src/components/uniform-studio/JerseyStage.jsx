@@ -22,6 +22,8 @@ const JerseyStage = forwardRef(function JerseyStage(
     sport,
     view,
     onViewChange,
+    collar,
+    sleeve,
     colors,
     highlightZone,
     layers,
@@ -96,6 +98,8 @@ const JerseyStage = forwardRef(function JerseyStage(
                   <ApprovedUniformGraphic
                     sport={sport}
                     view={side}
+                    collar={collar}
+                    sleeve={sleeve}
                     colors={colors}
                     highlightZone={highlightZone}
                   />

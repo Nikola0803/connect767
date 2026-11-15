@@ -240,15 +240,10 @@ export const fontOptions = [
   { key: "classic", label: "Classic", family: "'Fraunces', serif", weight: 600 },
 ];
 
-/**
- * `body`/`sleeve`/`trim`/`panel` are the original generic zones (kept for
- * backward compatibility with JerseyGraphic/JerseyStage's existing render
- * logic). `collar`, `shorts`, and `socks` are the additional garment parts
- * the Soccer Kit preset needs; `shirtStrip`/`sleeveStrip`/`shortsStrip` are
- * their separate contrast trim colors — see spec §4.1/§4.2. All default to
- * something sane so older code paths that only know about the original four
- * zones keep working unchanged.
- */
+/** Active editor zones. Side panels and the catch-all `trim` zone were
+ * removed because they made one color control affect several unrelated
+ * garment areas. Every stored key below now corresponds to one visible,
+ * customer-facing control in DesignPanel. */
 /**
  * Blank canvas, deliberately. This used to open on a green/black colourway,
  * which reads as "here is a design" rather than "here is your starting
@@ -259,15 +254,24 @@ export const fontOptions = [
 export const defaultZoneColors = {
   body: "#ffffff",
   sleeve: "#ffffff",
-  trim: "#e8e4da",
-  panel: "#f2efe8",
-  collar: "#e8e4da",
+  // The blank garment is white, so its collar must begin as the same fabric
+  // color. Customers can still recolor it independently in DesignPanel.
+  collar: "#ffffff",
   shorts: "#ffffff",
   socks: "#ffffff",
   shirtStrip: "#e8e4da",
   sleeveStrip: "#e8e4da",
   shortsStrip: "#e8e4da",
 };
+
+/** Discard legacy `panel`/`trim` keys when an older saved design is opened.
+ * This keeps the current editor and submitted quote payload limited to the
+ * eight garment regions customers can actually see and control. */
+export function normalizeZoneColors(saved = {}) {
+  return Object.fromEntries(
+    Object.keys(defaultZoneColors).map((key) => [key, saved[key] || defaultZoneColors[key]]),
+  );
+}
 
 export const pricingTiers = [
   {

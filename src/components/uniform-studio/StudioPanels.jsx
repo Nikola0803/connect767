@@ -371,19 +371,16 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
         </>
       )}
 
-      <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400 mb-4 pt-2 border-t border-background-200/70">
-        Strip / trim colors
-      </h3>
       <ColorRow
-        label="Trim (hem &amp; cuffs)"
-        value={colors.trim}
-        onChange={setZone("trim")}
-        zone="trim"
+        label="Shirt ends"
+        value={colors.shirtStrip}
+        onChange={setZone("shirtStrip")}
+        zone="shirtStrip"
         onHoverZone={onHoverZone}
       />
       {config.sleeveOptions && (
         <ColorRow
-          label="Sleeve strip"
+          label="Sleeve ends"
           value={colors.sleeveStrip}
           onChange={setZone("sleeveStrip")}
           zone="sleeveStrip"
@@ -391,21 +388,14 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
         />
       )}
       <ColorRow
-        label={`${config.bottomLabel} strip`}
+        label={`${config.bottomLabel} ends`}
         value={colors.shortsStrip}
         onChange={setZone("shortsStrip")}
         zone="shortsStrip"
         onHoverZone={onHoverZone}
       />
-      <ColorRow
-        label="Side panels"
-        value={colors.panel}
-        onChange={setZone("panel")}
-        zone="panel"
-        onHoverZone={onHoverZone}
-      />
       <p className="text-[11px] text-foreground-500 font-label -mt-3">
-        Every color above maps directly to the matching part of the live kit preview.
+        Each color maps to one named garment part. No hidden side-panel color is applied.
       </p>
     </div>
   );
