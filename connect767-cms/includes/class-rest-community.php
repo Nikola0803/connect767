@@ -10,7 +10,21 @@ class C767_REST_Community
     const NAMESPACE_ = 'connect767/v1';
     const MAX_IMAGE_BYTES = 5242880;
     const MAX_VIDEO_BYTES = 26214400;
-    const EMOTIONS = ['excited', 'grateful', 'celebrating', 'inspired', 'proud', 'focused'];
+    const EMOTIONS = [
+        'happy', 'loved', 'excited', 'grateful', 'celebrating', 'inspired', 'proud', 'focused',
+        'optimistic', 'supportive', 'curious', 'motivated', 'surprised', 'thoughtful',
+        'confident', 'energized',
+        'amused', 'relieved', 'hopeful', 'determined', 'calm', 'creative',
+        'accomplished', 'thankful', 'blessed', 'friendly', 'impressed', 'interested',
+        'encouraged', 'connected', 'generous', 'professional', 'busy', 'productive',
+        'concerned', 'disappointed', 'sad', 'frustrated', 'tired', 'confused',
+    ];
+    const ACTIVITIES = [
+        'working', 'hiring', 'networking', 'learning', 'traveling', 'shopping',
+        'eating', 'attending', 'hosting', 'launching', 'selling', 'volunteering',
+        'exercising', 'creating', 'planning', 'collaborating', 'meeting', 'delivering',
+        'exploring', 'celebrating-activity',
+    ];
 
     public static function init()
     {
@@ -111,6 +125,8 @@ class C767_REST_Community
         $location = $listing_id ? (string) get_post_meta($listing_id, 'location', true) : '';
         $industry = $listing_id ? (string) get_post_meta($listing_id, 'category_slug', true) : '';
         $logo = $listing_id ? (string) get_post_meta($listing_id, 'logo', true) : '';
+        $mentions = get_post_meta($post->ID, '_community_mentions', true);
+        $mentions = is_array($mentions) ? $mentions : [];
 
         return [
             'id' => (int) $post->ID,
@@ -123,6 +139,9 @@ class C767_REST_Community
             'verified' => $listing_id ? (bool) get_post_meta($listing_id, 'verified', true) : false,
             'type' => sanitize_key((string) get_post_meta($post->ID, '_community_update_type', true)) ?: 'status',
             'emotion' => sanitize_key((string) get_post_meta($post->ID, '_community_emotion', true)),
+            'activity' => sanitize_key((string) get_post_meta($post->ID, '_community_activity', true)),
+            'postLocation' => sanitize_text_field((string) get_post_meta($post->ID, '_community_post_location', true)),
+            'mentions' => array_values($mentions),
             'text' => wp_strip_all_tags($post->post_content),
             'mediaUrl' => esc_url_raw((string) get_post_meta($post->ID, '_community_media_url', true)),
             'videoUrl' => esc_url_raw((string) get_post_meta($post->ID, '_community_video_url', true)),
@@ -173,6 +192,37 @@ class C767_REST_Community
         if (!in_array($emotion, self::EMOTIONS, true)) {
             $emotion = '';
         }
+        $activity = sanitize_key((string) $request->get_param('activity'));
+        if (!in_array($activity, self::ACTIVITIES, true)) {
+            $activity = '';
+        }
+        if ($emotion !== '' && $activity !== '') {
+            $activity = '';
+        }
+        $post_location = sanitize_text_field((string) $request->get_param('postLocation'));
+        if (strlen($post_location) > 120) {
+            return new WP_Error('c767_community_location_too_long', 'Locations must be 120 characters or fewer.', ['status' => 400]);
+        }
+
+        $mentions_param = $request->get_param('mentions');
+        if (is_string($mentions_param) && $mentions_param !== '') {
+            $mentions_param = json_decode($mentions_param, true);
+        }
+        if ($mentions_param !== null && $mentions_param !== '' && !is_array($mentions_param)) {
+            return new WP_Error('c767_community_mentions_invalid', 'Business mentions are invalid.', ['status' => 400]);
+        }
+        $mentions = [];
+        foreach (array_slice((array) $mentions_param, 0, 10) as $mention) {
+            $mentioned_listing = get_post((int) ($mention['id'] ?? 0));
+            if (!$mentioned_listing || $mentioned_listing->post_type !== 'listing' || $mentioned_listing->post_status !== 'publish') {
+                continue;
+            }
+            $mentions[] = [
+                'id' => (int) $mentioned_listing->ID,
+                'slug' => sanitize_title($mentioned_listing->post_name),
+                'title' => sanitize_text_field(get_the_title($mentioned_listing)),
+            ];
+        }
 
         $attachment_check = self::validate_attachment();
         if (is_wp_error($attachment_check)) {
@@ -206,6 +256,9 @@ class C767_REST_Community
         update_post_meta($post_id, '_community_listing_id', (int) $listing->ID);
         update_post_meta($post_id, '_community_update_type', $type);
         update_post_meta($post_id, '_community_emotion', $emotion);
+        update_post_meta($post_id, '_community_activity', $activity);
+        update_post_meta($post_id, '_community_post_location', $post_location);
+        update_post_meta($post_id, '_community_mentions', $mentions);
 
         $media_url = esc_url_raw((string) $request->get_param('mediaUrl'));
         if (!empty($_FILES['image']['tmp_name'])) {

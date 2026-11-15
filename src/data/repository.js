@@ -84,6 +84,9 @@ export async function createCommunityPost(payload) {
     form.append("text", payload.text);
     form.append("type", payload.type || "status");
     if (payload.emotion) form.append("emotion", payload.emotion);
+    if (payload.activity) form.append("activity", payload.activity);
+    if (payload.postLocation) form.append("postLocation", payload.postLocation);
+    if (payload.mentions?.length) form.append("mentions", JSON.stringify(payload.mentions));
     if (payload.image) form.append("image", payload.image);
     if (payload.video) form.append("video", payload.video);
     return customClient.post("/community/posts", form);
