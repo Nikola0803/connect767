@@ -13,6 +13,8 @@ export const localCommunityPosts = [
     createdAt: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
     reactionCount: 24,
     reacted: false,
+    thumbCount: 8,
+    thumbed: false,
     comments: [
       { id: 1, name: "Island Explorer", text: "This view looks beautiful!", createdAt: new Date(Date.now() - 8 * 60 * 1000).toISOString() },
     ],
@@ -31,6 +33,8 @@ export const localCommunityPosts = [
     createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
     reactionCount: 11,
     reacted: false,
+    thumbCount: 5,
+    thumbed: false,
     comments: [],
   },
 ];

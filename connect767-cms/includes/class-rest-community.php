@@ -116,6 +116,8 @@ class C767_REST_Community
         $listing = get_post($listing_id);
         $reaction_ids = get_post_meta($post->ID, '_community_reaction_user_ids', true);
         $reaction_ids = is_array($reaction_ids) ? array_map('intval', $reaction_ids) : [];
+        $thumb_ids = get_post_meta($post->ID, '_community_thumb_user_ids', true);
+        $thumb_ids = is_array($thumb_ids) ? array_map('intval', $thumb_ids) : [];
         $comments = get_comments([
             'post_id' => $post->ID,
             'status' => 'approve',
@@ -151,6 +153,8 @@ class C767_REST_Community
             'createdAt' => mysql_to_rfc3339($post->post_date_gmt),
             'reactionCount' => count($reaction_ids),
             'reacted' => in_array(get_current_user_id(), $reaction_ids, true),
+            'thumbCount' => count($thumb_ids),
+            'thumbed' => in_array(get_current_user_id(), $thumb_ids, true),
             'comments' => array_map([__CLASS__, 'serialize_comment'], $comments),
         ];
     }
@@ -322,6 +326,7 @@ class C767_REST_Community
         update_post_meta($post_id, '_community_video_url', $video_url);
         update_post_meta($post_id, '_community_link_url', $link_url);
         update_post_meta($post_id, '_community_reaction_user_ids', []);
+        update_post_meta($post_id, '_community_thumb_user_ids', []);
 
         return new WP_REST_Response(self::serialize_post(get_post($post_id)), 201);
     }
@@ -391,14 +396,16 @@ class C767_REST_Community
             return new WP_Error('c767_community_post_not_found', 'Community update not found.', ['status' => 404]);
         }
         $user_id = get_current_user_id();
-        $ids = get_post_meta($post->ID, '_community_reaction_user_ids', true);
+        $reaction_type = sanitize_key((string) $request->get_param('type')) === 'thumb' ? 'thumb' : 'appreciate';
+        $meta_key = $reaction_type === 'thumb' ? '_community_thumb_user_ids' : '_community_reaction_user_ids';
+        $ids = get_post_meta($post->ID, $meta_key, true);
         $ids = is_array($ids) ? array_values(array_unique(array_map('intval', $ids))) : [];
         if (in_array($user_id, $ids, true)) {
             $ids = array_values(array_diff($ids, [$user_id]));
         } else {
             $ids[] = $user_id;
         }
-        update_post_meta($post->ID, '_community_reaction_user_ids', $ids);
+        update_post_meta($post->ID, $meta_key, $ids);
         return rest_ensure_response(['count' => count($ids), 'reacted' => in_array($user_id, $ids, true)]);
     }
 

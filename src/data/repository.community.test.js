@@ -12,7 +12,7 @@ vi.mock("../lib/apiClient", () => ({
   getStoredUser: vi.fn(),
 }));
 
-import { createCommunityPost } from "./repository";
+import { createCommunityPost, toggleCommunityReaction } from "./repository";
 
 describe("community post publishing", () => {
   beforeEach(() => {
@@ -112,5 +112,26 @@ describe("community post publishing", () => {
       latitude: 15.301,
       longitude: -61.388,
     });
+  });
+
+  it("keeps the selected listing profile image when an older CMS response omits it", async () => {
+    api.customClient.post.mockResolvedValueOnce({ id: 43, text: "Fresh fruit today" });
+
+    const created = await createCommunityPost({
+      listingId: 12,
+      text: "Fresh fruit today",
+      type: "status",
+      listingLogo: "https://connect767.com/uploads/james-local-fruits.webp",
+    });
+
+    expect(created.listingLogo).toBe("https://connect767.com/uploads/james-local-fruits.webp");
+  });
+
+  it("sends appreciate and thumbs-up as separate reaction types", async () => {
+    await toggleCommunityReaction(42, "appreciate");
+    await toggleCommunityReaction(42, "thumb");
+
+    expect(api.customClient.post).toHaveBeenNthCalledWith(1, "/community/posts/42/reactions", { type: "appreciate" });
+    expect(api.customClient.post).toHaveBeenNthCalledWith(2, "/community/posts/42/reactions", { type: "thumb" });
   });
 });
