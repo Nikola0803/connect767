@@ -285,14 +285,14 @@ export default function UniformStudioPage() {
   // into place. Cleared as soon as it lands, or if they change tool.
   const [pendingLayer, setPendingLayer] = useState(null);
 
-  // Two-tone garment. `enabled` off = one flat colour (the old behaviour).
-  // `softness` 0 gives a hard shirt/shorts seam, higher values a gradient —
-  // one control covering both things the client asked for.
+  // Two-colour kit shortcut. The active sports templates are built from real
+  // garment zones, so the second colour maps to the shorts/trousers zone at
+  // the physical waist seam instead of drawing an arbitrary shader line.
   const [twoTone, setTwoTone] = useState({
     enabled: false,
     colorB: "#1b1a16",
     splitAt: 0.5,
-    softness: 0.04,
+    softness: 0.005,
   });
 
   // 3D placements, keyed by layer id: { position, orientation, scale, roll }.
