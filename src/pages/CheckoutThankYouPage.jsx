@@ -4,6 +4,7 @@ import Button from "../components/ui/Button";
 export default function CheckoutThankYouPage() {
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get("order");
+  const localPayment = searchParams.get("payment") === "local-dominica";
 
   return (
     <div className="pt-16 md:pt-20 min-h-[70vh] flex items-center justify-center px-4 py-14">
@@ -12,14 +13,17 @@ export default function CheckoutThankYouPage() {
           <i className="ri-check-line text-2xl" />
         </div>
         <h1 className="font-heading text-2xl md:text-3xl font-light text-foreground-950 mb-3">
-          Order confirmed
+          {localPayment ? "Order reserved" : "Order confirmed"}
         </h1>
         <p className="text-sm text-foreground-600 mb-2">
-          Thanks for your order{orderId ? ` — #${orderId}` : ""}. A confirmation email is on its
-          way.
+          Thanks for your order{orderId ? ` — #${orderId}` : ""}. {localPayment
+            ? "Your order is awaiting local payment in Dominica."
+            : "A confirmation email is on its way."}
         </p>
         <p className="text-sm text-foreground-600 mb-8">
-          We'll let you know as soon as it ships.
+          {localPayment
+            ? "The Connect767 team will email you with the local payment location and instructions before production begins."
+            : "We'll let you know as soon as it ships."}
         </p>
         <Button to="/shop" variant="primary">
           Keep shopping

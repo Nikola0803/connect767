@@ -14,6 +14,7 @@ import {
   createPaymentIntent,
   createUniformPaymentIntent,
   createUniformPaypalOrder,
+  createUniformLocalDominicaOrder,
   quoteUniformCheckout,
 } from "./repository";
 
@@ -115,6 +116,15 @@ describe("shop checkout payloads", () => {
     fetch.mockClear();
     await createUniformPaypalOrder(order, "coach@example.com", shipping);
     expect(fetch.mock.calls[0][0]).toContain("/uniform-checkout/paypal/order");
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ order, email: "coach@example.com", shipping });
+  });
+
+  it("creates a Dominican local-payment order with the same verified order data", async () => {
+    const order = { template: "Classic Crew", roster: [{ name: "A. Miller", quantity: 1 }] };
+
+    await createUniformLocalDominicaOrder(order, "coach@example.com", shipping);
+
+    expect(fetch.mock.calls[0][0]).toContain("/uniform-checkout/local-dominica");
     expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ order, email: "coach@example.com", shipping });
   });
 });

@@ -46,6 +46,7 @@ import {
   captureUniformPaypalOrder,
   confirmUniformPayment,
   createUniformPaymentIntent,
+  createUniformLocalDominicaOrder,
   createUniformPaypalOrder,
   getCheckoutConfig,
   quoteUniformCheckout,
@@ -2347,6 +2348,7 @@ function ReviewOrderTool({
   const [checkoutError, setCheckoutError] = useState(null);
   const [cardSession, setCardSession] = useState(null);
   const [startingCard, setStartingCard] = useState(false);
+  const [placingLocalOrder, setPlacingLocalOrder] = useState(false);
   const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact.email.trim());
   const shippingComplete = Boolean(
     shipping.firstName.trim() && shipping.lastName.trim() && shipping.address1.trim() &&
@@ -2414,6 +2416,23 @@ function ReviewOrderTool({
       setCheckoutError(err.message || "Couldn't start card payment.");
     } finally {
       setStartingCard(false);
+    }
+  };
+
+  const placeLocalDominicaOrder = async () => {
+    if (!totals || !canCheckout || shipping.country !== "DM") return;
+    setPlacingLocalOrder(true);
+    setCheckoutError(null);
+    try {
+      const result = await createUniformLocalDominicaOrder(
+        await completeOrderPayload(),
+        contact.email,
+        shipping,
+      );
+      window.location.assign(`/checkout/thank-you?order=${result.orderId}&payment=local-dominica`);
+    } catch (err) {
+      setCheckoutError(err.message || "Couldn't reserve this order for local payment.");
+      setPlacingLocalOrder(false);
     }
   };
 
@@ -2591,6 +2610,20 @@ function ReviewOrderTool({
                 <p className="mt-1 text-xs font-semibold text-foreground-900">PayPal</p>
                 <p className="text-[10px] text-foreground-500">Pay with your PayPal account</p>
               </div>
+              {shipping.country === "DM" && (
+                <div className="relative col-span-2 overflow-hidden rounded-xl border border-[#159447] bg-gradient-to-r from-[#effcf4] via-white to-[#f4fff7] p-3.5 text-left shadow-[0_8px_22px_rgba(0,92,48,0.08)]">
+                  <span className="absolute inset-y-0 right-0 w-20 bg-[linear-gradient(135deg,transparent_18%,#0a6136_18%,#0a6136_40%,#f4cf18_40%,#f4cf18_50%,#111_50%,#111_60%,#fff_60%,#fff_70%,#0a6136_70%)] opacity-90" />
+                  <div className="relative flex items-center gap-3 pr-16">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#08743f] text-xl text-white shadow-sm">
+                      <i className="ri-shake-hands-line" />
+                    </span>
+                    <span>
+                      <span className="block text-sm font-bold text-[#064b2b]">Pay Locally in Dominica</span>
+                      <span className="mt-0.5 block text-[10px] leading-relaxed text-foreground-600">Complete your order now and arrange payment in person on the island.</span>
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
             {config?.stripeEnabled && !cardSession && (
               <Button type="button" variant="primary" className="w-full" disabled={!isLiveApi || startingCard} onClick={startCardPayment} icon="ri-bank-card-line">
@@ -2617,6 +2650,22 @@ function ReviewOrderTool({
               />
             )}
             {!config?.stripeEnabled && !config?.paypalEnabled && <p className="text-xs font-label text-foreground-500">Online payment is not configured yet. You can still request a quote below.</p>}
+            {shipping.country === "DM" && (
+              <>
+                <div className="my-3 flex items-center gap-2 text-[10px] text-foreground-400"><span className="h-px flex-1 bg-background-200" />or pay on island<span className="h-px flex-1 bg-background-200" /></div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full border-primary-500 bg-primary-50 text-primary-800 hover:bg-primary-100"
+                  disabled={placingLocalOrder || !canCheckout}
+                  onClick={placeLocalDominicaOrder}
+                  icon="ri-map-pin-2-line"
+                >
+                  {placingLocalOrder ? "Reserving order…" : "Place order — pay locally in Dominica"}
+                </Button>
+                <p className="mt-2 text-center text-[10px] leading-relaxed text-foreground-500">Payment instructions will be emailed after checkout. Production begins after local payment is confirmed.</p>
+              </>
+            )}
           </div>
         )}
 
