@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toPng } from "html-to-image";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import * as THREE from "three";
 import {
   sports,
@@ -38,8 +40,27 @@ import Tooltip from "../components/ui/Tooltip";
 import SelectedItemPanel from "../components/uniform-studio/SelectedItemPanel";
 import { Input, Select, Textarea } from "../components/ui/FormField";
 import DemoModeNotice from "../components/DemoModeNotice";
+import PaypalButton from "../components/PaypalButton";
 import { isLiveApi } from "../lib/config";
-import { submitUniformQuote } from "../data/repository";
+import {
+  captureUniformPaypalOrder,
+  confirmUniformPayment,
+  createUniformPaymentIntent,
+  createUniformPaypalOrder,
+  getCheckoutConfig,
+  quoteUniformCheckout,
+  submitUniformQuote,
+} from "../data/repository";
+
+const emptyUniformShipping = {
+  firstName: "", lastName: "", company: "", address1: "", address2: "",
+  city: "", state: "", postcode: "", country: "DM", phone: "",
+};
+let uniformStripePromise = null;
+const getUniformStripe = (key) => {
+  if (!uniformStripePromise) uniformStripePromise = loadStripe(key);
+  return uniformStripePromise;
+};
 
 const tools = [
   {
@@ -326,6 +347,7 @@ export default function UniformStudioPage() {
   // this — the shop received a design and a roster with no way to reply, and
   // the notification email literally said the order came from "Guest".
   const [contact, setContact] = useState({ name: "", email: "", phone: "", club: "", notes: "" });
+  const [shipping, setShipping] = useState(emptyUniformShipping);
   const [submitted, setSubmitted] = useState(false);
   const [submittingQuote, setSubmittingQuote] = useState(false);
   const [quoteError, setQuoteError] = useState(null);
@@ -333,6 +355,18 @@ export default function UniformStudioPage() {
   const [exporting, setExporting] = useState(false);
   const [manualSaveStatus, setManualSaveStatus] = useState("idle");
   const manualSaveResetRef = useRef(null);
+
+  // Local screenshot fixture only; Vite removes this branch from production.
+  useEffect(() => {
+    if (!import.meta.env.DEV || searchParams.get("preview") !== "checkout") return;
+    setRoster([
+      { ...newRosterEntry(), name: "A. Miller", number: "10", shirtSize: "AL", quantity: 4 },
+      { ...newRosterEntry(), name: "J. Carter", number: "7", shirtSize: "AM", quantity: 4 },
+      { ...newRosterEntry(), name: "D. Rivera", number: "23", shirtSize: "AXL", quantity: 4 },
+    ]);
+    setContact({ name: "Riverside FC", email: "orders@example.com", phone: "(767) 555-0100", club: "Riverside FC", notes: "" });
+    setShipping({ firstName: "Avery", lastName: "Miller", company: "Riverside FC", address1: "10 Stadium Road", address2: "", city: "Roseau", state: "Saint George", postcode: "00109", country: "DM", phone: "(767) 555-0100" });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const template = templates.find((t) => t.slug === selectedTemplate);
   const selectedLayer = layers.find((l) => l.id === selectedLayerId) || null;
@@ -448,6 +482,7 @@ export default function UniformStudioPage() {
           fanJerseyAdded,
           roster,
           contact,
+          shipping,
           savedAt: Date.now(),
         }),
       );
@@ -456,7 +491,7 @@ export default function UniformStudioPage() {
          no worse than before this existed */
     }
   }, [storageKey, layers, placements3d, colors, collar, sleeve, zoneModel, zoneStyles, twoTone,
-    fitType, kitType, logoApplication, insideCollarMessage, insideCollarText, fanJerseyAdded, roster, contact]);
+    fitType, kitType, logoApplication, insideCollarMessage, insideCollarText, fanJerseyAdded, roster, contact, shipping]);
 
   const saveProgress = () => {
     if (!storageKey) return;
@@ -480,6 +515,7 @@ export default function UniformStudioPage() {
           fanJerseyAdded,
           roster,
           contact,
+          shipping,
           savedAt: Date.now(),
         }),
       );
@@ -515,6 +551,7 @@ export default function UniformStudioPage() {
       if (typeof saved.fanJerseyAdded === "boolean") setFanJerseyAdded(saved.fanJerseyAdded);
       if (Array.isArray(saved.roster)) setRoster(saved.roster);
       if (saved.contact) setContact(saved.contact);
+      if (saved.shipping) setShipping(saved.shipping);
       return true;
     } catch {
       return false;
@@ -958,6 +995,31 @@ export default function UniformStudioPage() {
   const contactValid =
     contact.name.trim().length > 1 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact.email.trim());
 
+  const buildUniformPayload = (previewImage = null) => {
+    const unitCount = rosterUnitCount(roster);
+    return {
+      template: template?.name || "Blank Canvas",
+      sport: activeSport,
+      collar,
+      sleeve,
+      colors,
+      fitType,
+      kitType,
+      logoApplication,
+      insideCollarMessage,
+      insideCollarText,
+      fanJerseyAdded,
+      unitPrice,
+      grandTotal: unitPrice * unitCount + (fanJerseyAdded ? FAN_JERSEY_PRICE : 0),
+      layers,
+      placements3d,
+      designMode: stageMode === "3d" ? "3d" : "flat",
+      roster,
+      contact,
+      previewImage,
+    };
+  };
+
   const handleRequestQuote = async () => {
     if (!contactValid) {
       setQuoteError("Add your name and a valid email so we can send the quote back to you.");
@@ -970,34 +1032,7 @@ export default function UniformStudioPage() {
     setQuoteError(null);
     setSubmittingQuote(true);
     try {
-      const unitCount = rosterUnitCount(roster);
-      const grandTotal = unitPrice * unitCount + (fanJerseyAdded ? FAN_JERSEY_PRICE : 0);
-      await submitUniformQuote({
-        template: template?.name || "Blank Canvas",
-        sport: activeSport,
-        collar,
-        sleeve,
-        colors,
-        fitType,
-        kitType,
-        logoApplication,
-        insideCollarMessage,
-        insideCollarText,
-        fanJerseyAdded,
-        unitPrice,
-        grandTotal,
-        layers,
-        // The artwork's real position on the garment. Without this the whole
-        // 3D configurator was decorative: production received layers still
-        // carrying their default flat-editor coordinates, so a crest dragged
-        // onto the left chest arrived dead-centre.
-        placements3d,
-        // Tells production which coordinate system to trust for each layer.
-        designMode: stageMode === "3d" ? "3d" : "flat",
-        roster,
-        contact,
-        previewImage: preview,
-      });
+      await submitUniformQuote(buildUniformPayload(preview));
       setSubmitted(true);
     } catch (err) {
       setQuoteError(err.message || "Couldn't send your quote request. Please try again.");
@@ -1763,6 +1798,10 @@ export default function UniformStudioPage() {
                     roster={roster}
                     contact={contact}
                     setContact={setContact}
+                    shipping={shipping}
+                    setShipping={setShipping}
+                    orderPayload={buildUniformPayload(null)}
+                    capturePreview={capturePreview}
                     unitPrice={unitPrice}
                     fanJerseyAdded={fanJerseyAdded}
                     setFanJerseyAdded={setFanJerseyAdded}
@@ -1882,6 +1921,10 @@ export default function UniformStudioPage() {
             roster={roster}
             contact={contact}
             setContact={setContact}
+            shipping={shipping}
+            setShipping={setShipping}
+            orderPayload={buildUniformPayload(null)}
+            capturePreview={capturePreview}
             unitPrice={unitPrice}
             fanJerseyAdded={fanJerseyAdded}
             setFanJerseyAdded={setFanJerseyAdded}
@@ -2281,6 +2324,10 @@ function ReviewOrderTool({
   roster,
   contact,
   setContact,
+  shipping,
+  setShipping,
+  orderPayload,
+  capturePreview,
   unitPrice,
   fanJerseyAdded,
   setFanJerseyAdded,
@@ -2294,6 +2341,81 @@ function ReviewOrderTool({
   const kitsTotal = unitPrice * unitCount;
   const grandTotal = kitsTotal + (fanJerseyAdded ? FAN_JERSEY_PRICE : 0);
   const sportLabel = sports.find((sport) => sport.slug === activeSport)?.label || activeSport;
+  const [config, setConfig] = useState(null);
+  const [totals, setTotals] = useState(null);
+  const [calculating, setCalculating] = useState(false);
+  const [checkoutError, setCheckoutError] = useState(null);
+  const [cardSession, setCardSession] = useState(null);
+  const [startingCard, setStartingCard] = useState(false);
+  const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact.email.trim());
+  const shippingComplete = Boolean(
+    shipping.firstName.trim() && shipping.lastName.trim() && shipping.address1.trim() &&
+    shipping.city.trim() && shipping.postcode.trim() && shipping.country.trim() &&
+    (shipping.country !== "US" || shipping.state.trim())
+  );
+  const canCheckout = roster.length > 0 && emailValid && shippingComplete;
+
+  useEffect(() => {
+    getCheckoutConfig()
+      .then(setConfig)
+      .catch(() => setConfig({ stripeEnabled: false, paypalEnabled: false }));
+  }, []);
+
+  useEffect(() => {
+    setTotals(null);
+    setCardSession(null);
+  }, [fanJerseyAdded, unitCount, unitPrice]);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV || !window.location.search.includes("preview=checkout") || !canCheckout || totals) return;
+    setCalculating(true);
+    quoteUniformCheckout({ ...orderPayload, fanJerseyAdded, grandTotal }, contact.email, shipping)
+      .then(setTotals)
+      .catch((err) => setCheckoutError(err.message || "Couldn't calculate the preview total."))
+      .finally(() => setCalculating(false));
+  }, [canCheckout, totals]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const updateShipping = (field) => (event) => {
+    setShipping((current) => ({ ...current, [field]: event.target.value }));
+    setTotals(null);
+    setCardSession(null);
+  };
+
+  const completeOrderPayload = async () => ({
+    ...orderPayload,
+    fanJerseyAdded,
+    grandTotal,
+    previewImage: await capturePreview(),
+  });
+
+  const calculateTotal = async () => {
+    if (!canCheckout) {
+      setCheckoutError("Enter a valid email and complete the delivery address first.");
+      return;
+    }
+    setCalculating(true);
+    setCheckoutError(null);
+    try {
+      setTotals(await quoteUniformCheckout({ ...orderPayload, fanJerseyAdded, grandTotal }, contact.email, shipping));
+    } catch (err) {
+      setCheckoutError(err.message || "Couldn't calculate tax and shipping.");
+    } finally {
+      setCalculating(false);
+    }
+  };
+
+  const startCardPayment = async () => {
+    if (!totals || !canCheckout) return;
+    setStartingCard(true);
+    setCheckoutError(null);
+    try {
+      setCardSession(await createUniformPaymentIntent(await completeOrderPayload(), contact.email, shipping));
+    } catch (err) {
+      setCheckoutError(err.message || "Couldn't start card payment.");
+    } finally {
+      setStartingCard(false);
+    }
+  };
 
   return (
     <div>
@@ -2305,7 +2427,7 @@ function ReviewOrderTool({
           Review your team order
         </h2>
         <p className="mt-2 text-xs leading-relaxed text-foreground-500">
-          Confirm the design and roster, then send the order for a production proof and final invoice.
+          Confirm the design and roster, calculate delivery and tax, then pay securely to place the order.
         </p>
         <button
           type="button"
@@ -2360,24 +2482,30 @@ function ReviewOrderTool({
         <div className="flex items-end justify-between gap-3">
           <div>
             <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-background-50/55">
-              Estimated order total
+              Full order total
             </p>
-            <p className="mt-1 font-heading text-3xl font-semibold">${grandTotal.toFixed(2)}</p>
+            <p className="mt-1 font-heading text-3xl font-semibold">
+              {totals ? `${totals.currency} $${totals.total.toFixed(2)}` : "Calculate below"}
+            </p>
           </div>
           <span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold text-background-50/75">
-            Final after proof
+            {totals ? "Ready to pay" : "Tax + shipping pending"}
           </span>
         </div>
         <div className="mt-3 space-y-1 border-t border-white/15 pt-3 text-xs text-background-50/70">
           <div className="flex justify-between"><span>{unitCount} kits × ${unitPrice.toFixed(2)}</span><span>${kitsTotal.toFixed(2)}</span></div>
           {fanJerseyAdded && <div className="flex justify-between"><span>Supporter jersey</span><span>${FAN_JERSEY_PRICE.toFixed(2)}</span></div>}
+          <div className="flex justify-between"><span>Subtotal</span><span>${(totals?.subtotal ?? grandTotal).toFixed(2)}</span></div>
+          <div className="flex justify-between"><span>Tax</span><span>{totals ? `$${totals.tax.toFixed(2)}` : "—"}</span></div>
+          <div className="flex justify-between"><span>{totals?.shippingLabel || "Shipping"}</span><span>{totals ? `$${totals.shipping.toFixed(2)}` : "—"}</span></div>
+          {totals && <div className="mt-2 flex justify-between border-t border-white/15 pt-2 text-sm font-bold"><span>Total</span><span>${totals.total.toFixed(2)}</span></div>}
         </div>
       </div>
 
       <div className="border-t border-background-200 pt-5">
         <h3 className="text-sm font-semibold text-foreground-900">Order contact</h3>
         <p className="mb-3 mt-1 text-[11px] font-label text-foreground-500">
-          We send the production proof, final price and payment link here.
+          We send the receipt, production proof and order updates here.
         </p>
         <div className="space-y-2">
           <Input
@@ -2417,6 +2545,28 @@ function ReviewOrderTool({
         </div>
       </div>
 
+      <div className="mt-5 border-t border-background-200 pt-5">
+        <h3 className="text-sm font-semibold text-foreground-900">Delivery address</h3>
+        <p className="mb-3 mt-1 text-[11px] font-label text-foreground-500">Tax and shipping are calculated from this address before payment.</p>
+        <div className="grid grid-cols-2 gap-2">
+          <Input placeholder="First name *" aria-label="Shipping first name" autoComplete="given-name" value={shipping.firstName} onChange={updateShipping("firstName")} />
+          <Input placeholder="Last name *" aria-label="Shipping last name" autoComplete="family-name" value={shipping.lastName} onChange={updateShipping("lastName")} />
+          <Input className="col-span-2" placeholder="Company (optional)" aria-label="Shipping company" autoComplete="organization" value={shipping.company} onChange={updateShipping("company")} />
+          <Input className="col-span-2" placeholder="Street address *" aria-label="Shipping street address" autoComplete="address-line1" value={shipping.address1} onChange={updateShipping("address1")} />
+          <Input className="col-span-2" placeholder="Apartment, suite or unit" aria-label="Shipping address line two" autoComplete="address-line2" value={shipping.address2} onChange={updateShipping("address2")} />
+          <Input placeholder="City *" aria-label="Shipping city" autoComplete="address-level2" value={shipping.city} onChange={updateShipping("city")} />
+          <Input placeholder={shipping.country === "US" ? "State *" : "Region / parish"} aria-label="Shipping region" autoComplete="address-level1" value={shipping.state} onChange={updateShipping("state")} />
+          <Input placeholder="Postal code *" aria-label="Shipping postal code" autoComplete="postal-code" value={shipping.postcode} onChange={updateShipping("postcode")} />
+          <Select aria-label="Shipping country" value={shipping.country} onChange={updateShipping("country")}>
+            <option value="DM">Dominica</option>
+            <option value="US">United States</option>
+          </Select>
+        </div>
+        <Button type="button" variant="secondary" className="mt-3 w-full" onClick={calculateTotal} disabled={!canCheckout || calculating} icon="ri-calculator-line">
+          {calculating ? "Calculating…" : totals ? "Recalculate total" : "Calculate tax, shipping & total"}
+        </Button>
+      </div>
+
       <div className="pt-4">
         {!isLiveApi && <DemoModeNotice className="mb-3" />}
         {error && (
@@ -2425,21 +2575,94 @@ function ReviewOrderTool({
             {error}
           </p>
         )}
-        <Button
-          type="button"
-          variant="primary"
-          disabled={roster.length === 0 || submitting}
-          onClick={onRequestQuote}
-          icon="ri-arrow-right-line"
-          className="w-full"
-        >
-          {submitting ? "Submitting…" : "Submit team order request"}
+        {checkoutError && <p className="mb-3 text-xs font-label text-accent-600">{checkoutError}</p>}
+
+        {totals && (
+          <div className="mb-4 rounded-2xl border border-background-200 bg-background-50 p-3.5">
+            <h3 className="mb-3 text-sm font-semibold text-foreground-900">Choose payment method</h3>
+            <div className="mb-3 grid grid-cols-2 gap-2">
+              <div className="rounded-xl border border-primary-200 bg-primary-50 p-3 text-center">
+                <i className="ri-bank-card-line text-xl text-primary-700" />
+                <p className="mt-1 text-xs font-semibold text-foreground-900">Credit or debit card</p>
+                <p className="text-[10px] text-foreground-500">Secure Stripe checkout</p>
+              </div>
+              <div className="rounded-xl border border-background-200 bg-background-100/60 p-3 text-center">
+                <i className="ri-paypal-line text-xl text-[#0070ba]" />
+                <p className="mt-1 text-xs font-semibold text-foreground-900">PayPal</p>
+                <p className="text-[10px] text-foreground-500">Pay with your PayPal account</p>
+              </div>
+            </div>
+            {config?.stripeEnabled && !cardSession && (
+              <Button type="button" variant="primary" className="w-full" disabled={!isLiveApi || startingCard} onClick={startCardPayment} icon="ri-bank-card-line">
+                {startingCard ? "Opening secure payment…" : `Pay $${totals.total.toFixed(2)} by card`}
+              </Button>
+            )}
+            {cardSession && config?.stripePublishableKey && (
+              <Elements stripe={getUniformStripe(config.stripePublishableKey)} options={{ clientSecret: cardSession.clientSecret }}>
+                <UniformCardPaymentForm session={cardSession} onError={setCheckoutError} />
+              </Elements>
+            )}
+            {config?.stripeEnabled && config?.paypalEnabled && <div className="my-3 flex items-center gap-2 text-[10px] text-foreground-400"><span className="h-px flex-1 bg-background-200" />or<span className="h-px flex-1 bg-background-200" /></div>}
+            {config?.paypalEnabled && (
+              <PaypalButton
+                clientId={config.paypalClientId}
+                disabled={!isLiveApi || !canCheckout}
+                createOrder={async () => {
+                  const result = await createUniformPaypalOrder(await completeOrderPayload(), contact.email, shipping);
+                  return { orderId: result.orderId, paypalOrderId: result.paypalOrderId, accessToken: result.accessToken };
+                }}
+                captureOrder={captureUniformPaypalOrder}
+                onSuccess={(id) => window.location.assign(`/checkout/thank-you?order=${id}`)}
+                onError={setCheckoutError}
+              />
+            )}
+            {!config?.stripeEnabled && !config?.paypalEnabled && <p className="text-xs font-label text-foreground-500">Online payment is not configured yet. You can still request a quote below.</p>}
+          </div>
+        )}
+
+        <Button type="button" variant="secondary" disabled={roster.length === 0 || submitting} onClick={onRequestQuote} icon="ri-file-list-3-line" className="w-full">
+          {submitting ? "Submitting…" : "Request a quote instead"}
         </Button>
-        <p className="mt-2 text-center text-[10px] font-label leading-relaxed text-foreground-400">
-          No payment is taken now. You approve the production proof and final invoice before manufacturing begins.
-        </p>
+        <p className="mt-2 text-center text-[10px] font-label leading-relaxed text-foreground-400">Payments are processed securely by Stripe or PayPal. The production team confirms artwork before manufacturing.</p>
       </div>
     </div>
+  );
+}
+
+function UniformCardPaymentForm({ session, onError }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [paying, setPaying] = useState(false);
+
+  const submit = async (event) => {
+    event.preventDefault();
+    if (!stripe || !elements) return;
+    setPaying(true);
+    onError(null);
+    const result = await stripe.confirmPayment({ elements, redirect: "if_required" });
+    if (result.error) {
+      onError(result.error.message || "Card payment could not be completed.");
+      setPaying(false);
+      return;
+    }
+    try {
+      const confirmed = await confirmUniformPayment(session.orderId, session.accessToken);
+      if (confirmed.status === "paid") window.location.assign(`/checkout/thank-you?order=${session.orderId}`);
+      else onError("Payment is processing. Check your email for confirmation shortly.");
+    } catch (err) {
+      onError(err.message || "Payment was submitted, but confirmation is still pending.");
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-3">
+      <PaymentElement />
+      <Button type="submit" variant="primary" className="w-full" disabled={!stripe || paying} icon="ri-lock-line">
+        {paying ? "Processing…" : `Pay $${session.total.toFixed(2)} securely`}
+      </Button>
+    </form>
   );
 }
 

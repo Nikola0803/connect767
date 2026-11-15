@@ -634,7 +634,7 @@ class C767_WooCommerce
         return true;
     }
 
-    private static function sanitize_shipping_address(array $shipping)
+    public static function sanitize_shipping_address(array $shipping)
     {
         $address = [
             'first_name' => sanitize_text_field((string) ($shipping['firstName'] ?? '')),
@@ -670,7 +670,7 @@ class C767_WooCommerce
         return $address;
     }
 
-    private static function calculate_shipping_rate(WC_Order $order, array $address)
+    public static function calculate_shipping_rate(WC_Order $order, array $address)
     {
         $contents = [];
         $contents_cost = 0.0;
