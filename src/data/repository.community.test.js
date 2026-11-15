@@ -38,6 +38,8 @@ describe("community post publishing", () => {
       emotion: "proud",
       activity: "",
       postLocation: "Roseau Market",
+      latitude: 15.301,
+      longitude: -61.388,
       mentions: [{ id: 44, slug: "island-delivery", title: "Island Delivery" }],
       image,
     });
@@ -49,6 +51,8 @@ describe("community post publishing", () => {
     expect(form.get("type")).toBe("offer");
     expect(form.get("emotion")).toBe("proud");
     expect(form.get("postLocation")).toBe("Roseau Market");
+    expect(form.get("latitude")).toBe("15.301");
+    expect(form.get("longitude")).toBe("-61.388");
     expect(JSON.parse(form.get("mentions"))).toEqual([{ id: 44, slug: "island-delivery", title: "Island Delivery" }]);
     expect(form.get("image")).toBe(image);
   });

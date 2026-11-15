@@ -107,6 +107,10 @@ function linkLabel(value = "") {
   }
 }
 
+function mapUrl(latitude, longitude) {
+  return `https://www.google.com/maps?q=${encodeURIComponent(`${latitude},${longitude}`)}`;
+}
+
 function CommunityPost({ post, authenticated, onReact, onComment }) {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [comment, setComment] = useState("");
@@ -114,6 +118,7 @@ function CommunityPost({ post, authenticated, onReact, onComment }) {
   const emotion = COMMUNITY_EMOTIONS.find((item) => item.value === post.emotion);
   const activity = COMMUNITY_ACTIVITIES.find((item) => item.value === post.activity);
   const postType = POST_TYPES.find((item) => item.value === post.type) || POST_TYPES[0];
+  const hasLiveLocation = Number.isFinite(Number(post.latitude)) && Number.isFinite(Number(post.longitude));
 
   const submitComment = async (event) => {
     event.preventDefault();
@@ -144,7 +149,7 @@ function CommunityPost({ post, authenticated, onReact, onComment }) {
       </header>
 
       {(emotion || activity) && <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-accent-50 px-3 py-1.5 text-xs font-semibold text-foreground-700"><span className="text-base" aria-hidden="true">{emotion?.emoji || activity?.emoji}</span>{emotion ? `Feeling ${emotion.label.toLowerCase()}` : activity.label}</div>}
-      {post.postLocation && <div className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-primary-700"><i className="ri-map-pin-2-fill" />{post.postLocation}</div>}
+      {post.postLocation && (hasLiveLocation ? <a href={mapUrl(post.latitude, post.longitude)} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-primary-700 hover:underline"><i className="ri-map-pin-2-fill" />{post.postLocation}<i className="ri-arrow-right-up-line" /></a> : <div className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-primary-700"><i className="ri-map-pin-2-fill" />{post.postLocation}</div>)}
       <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-foreground-800">{post.text}</p>
       {post.mediaUrl && <img src={post.mediaUrl} alt={`Update from ${post.listingTitle}`} className="mt-4 max-h-[32rem] w-full rounded-2xl border border-background-200 object-cover" />}
       {post.videoUrl && <video src={post.videoUrl} controls playsInline preload="metadata" className="mt-4 max-h-[32rem] w-full rounded-2xl border border-background-200 bg-black object-contain">Your browser does not support video playback.</video>}
@@ -197,6 +202,8 @@ export default function CommunityPage() {
   const [emotionSearch, setEmotionSearch] = useState("");
   const [feelingTab, setFeelingTab] = useState("feelings");
   const [postLocation, setPostLocation] = useState("");
+  const [locationCoordinates, setLocationCoordinates] = useState(null);
+  const [locating, setLocating] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionSearch, setMentionSearch] = useState("");
@@ -298,13 +305,37 @@ export default function CommunityPage() {
       setMessage("Enter a complete website link beginning with http:// or https://.");
     }
   };
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setMessage("Live location is not supported by this browser. Enter a location manually instead.");
+      return;
+    }
+    setLocating(true);
+    setMessage("");
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const latitude = Number(coords.latitude.toFixed(6));
+        const longitude = Number(coords.longitude.toFixed(6));
+        setLocationCoordinates({ latitude, longitude });
+        setPostLocation("Current location");
+        setLocationOpen(false);
+        setLocating(false);
+      },
+      (error) => {
+        const denied = error.code === error.PERMISSION_DENIED;
+        setMessage(denied ? "Location permission was denied. Allow location access or enter a place manually." : "Your live location could not be detected. Try again or enter a place manually.");
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 },
+    );
+  };
   const submitPost = async (event) => {
     event.preventDefault();
     if (!text.trim() || !listingId) return;
     setSubmitting(true);
     setMessage("");
     try {
-      const created = await createCommunityPost({ listingId: Number(listingId), text: text.trim(), type, emotion, activity, postLocation: postLocation.trim(), mentions: mentionedBusinesses.map(({ id, slug, title }) => ({ id, slug, title })), image: attachmentType === "image" ? attachment : null, video: attachmentType === "video" ? attachment : null, linkUrl: attachmentType === "link" ? linkUrl : "", listingSlug: selectedListing?.slug, listingTitle: selectedListing?.title });
+      const created = await createCommunityPost({ listingId: Number(listingId), text: text.trim(), type, emotion, activity, postLocation: postLocation.trim(), latitude: locationCoordinates?.latitude ?? null, longitude: locationCoordinates?.longitude ?? null, mentions: mentionedBusinesses.map(({ id, slug, title }) => ({ id, slug, title })), image: attachmentType === "image" ? attachment : null, video: attachmentType === "video" ? attachment : null, linkUrl: attachmentType === "link" ? linkUrl : "", listingSlug: selectedListing?.slug, listingTitle: selectedListing?.title });
       setPosts((current) => [created, ...current]);
       setText("");
       setType("status");
@@ -313,6 +344,7 @@ export default function CommunityPage() {
       setEmotionOpen(false);
       setEmotionSearch("");
       setPostLocation("");
+      setLocationCoordinates(null);
       setLocationOpen(false);
       setMentionOpen(false);
       setMentionSearch("");
@@ -353,7 +385,7 @@ export default function CommunityPage() {
                   {attachmentType === "link" && <div className="ml-14 mt-3 flex items-center gap-3 rounded-2xl border border-primary-200 bg-primary-50/50 p-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-700 text-white"><i className="ri-links-line" /></span><span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-primary-700">Link ready to share</span><span className="mt-1 block truncate text-sm font-semibold text-foreground-900">{linkLabel(linkUrl)}</span></span><button type="button" onClick={clearAttachment} aria-label="Remove attached link" className="grid h-9 w-9 place-items-center rounded-full text-foreground-500 hover:bg-white"><i className="ri-close-line text-lg" /></button></div>}
                   {linkOpen && <div className="ml-14 mt-3 flex flex-col gap-2 rounded-2xl border border-background-200 bg-background-100 p-3 sm:flex-row"><input type="url" value={linkUrl} onChange={(event) => setLinkUrl(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); attachLink(); } }} className="h-10 min-w-0 flex-1 rounded-xl border border-background-300 bg-white px-3 text-sm outline-none focus:border-primary-500" placeholder="https://yourbusiness.com/page" aria-label="Website link" /><button type="button" onClick={attachLink} className="h-10 rounded-xl bg-primary-700 px-4 text-xs font-bold text-white">Attach link</button></div>}
                   {emotionOpen && <div className="ml-14 mt-3 rounded-2xl border border-background-200 bg-background-100 p-3" role="group" aria-label="Choose a feeling or activity"><div className="mb-3 flex items-center justify-between gap-2"><div className="inline-flex rounded-xl border border-background-300 bg-white p-1"><button type="button" onClick={() => { setFeelingTab("feelings"); setEmotionSearch(""); }} className={`rounded-lg px-3 py-1.5 text-[11px] font-bold ${feelingTab === "feelings" ? "bg-primary-700 text-white" : "text-foreground-500"}`}>Feelings</button><button type="button" onClick={() => { setFeelingTab("activities"); setEmotionSearch(""); }} className={`rounded-lg px-3 py-1.5 text-[11px] font-bold ${feelingTab === "activities" ? "bg-primary-700 text-white" : "text-foreground-500"}`}>Activities</button></div>{(emotion || activity) && <button type="button" onClick={() => { setEmotion(""); setActivity(""); setEmotionSearch(""); setEmotionOpen(false); }} className="text-[10px] font-bold text-primary-700">Clear</button>}</div><label className="mb-3 flex h-10 items-center gap-2 rounded-xl border border-background-300 bg-white px-3 text-foreground-500 focus-within:border-primary-400"><i className="ri-search-line" /><input value={emotionSearch} onChange={(event) => setEmotionSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-xs text-foreground-800 outline-none" placeholder={`Search ${feelingOptions.length} ${feelingTab}…`} aria-label={`Search ${feelingTab}`} /></label><div className="grid max-h-72 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-4">{filteredFeelings.map((item) => <button key={item.value} type="button" onClick={() => { if (feelingTab === "feelings") { setEmotion(item.value); setActivity(""); } else { setActivity(item.value); setEmotion(""); } setEmotionSearch(""); setEmotionOpen(false); }} className={`inline-flex h-10 items-center justify-start gap-2 rounded-xl border px-3 text-xs font-semibold transition ${(emotion === item.value || activity === item.value) ? "border-primary-500 bg-primary-50 text-primary-800" : "border-background-300 bg-white text-foreground-700 hover:border-primary-300 hover:bg-primary-50/40"}`}><span className="text-base" aria-hidden="true">{item.emoji}</span><span className="truncate">{item.label}</span></button>)}</div>{!filteredFeelings.length && <p className="py-6 text-center text-xs text-foreground-500">No {feelingTab} match “{emotionSearch}”.</p>}</div>}
-                  {locationOpen && <div className="ml-14 mt-3 flex flex-col gap-2 rounded-2xl border border-background-200 bg-background-100 p-3 sm:flex-row"><label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-xl border border-background-300 bg-white px-3 text-primary-700 focus-within:border-primary-400"><i className="ri-map-pin-2-line" /><input value={postLocation} onChange={(event) => setPostLocation(event.target.value.slice(0, 120))} className="min-w-0 flex-1 bg-transparent text-sm text-foreground-800 outline-none" placeholder="Add a city, venue, or place" aria-label="Post location" /></label><button type="button" onClick={() => setLocationOpen(false)} className="h-10 rounded-xl bg-primary-700 px-4 text-xs font-bold text-white">Done</button></div>}
+                  {locationOpen && <div className="ml-14 mt-3 rounded-2xl border border-background-200 bg-background-100 p-3"><button type="button" onClick={useCurrentLocation} disabled={locating} className="flex w-full items-center gap-3 rounded-xl border border-primary-200 bg-primary-50 p-3 text-left text-primary-800 transition hover:bg-primary-100 disabled:opacity-60"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-700 text-white"><i className={locating ? "ri-loader-4-line animate-spin" : "ri-crosshair-2-line"} /></span><span><span className="block text-xs font-bold">{locating ? "Finding your location…" : "Use current location"}</span><span className="mt-0.5 block text-[10px] text-foreground-500">Your browser will ask for permission</span></span></button><div className="my-3 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground-400"><span className="h-px flex-1 bg-background-300" />or enter a place<span className="h-px flex-1 bg-background-300" /></div><div className="flex flex-col gap-2 sm:flex-row"><label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-xl border border-background-300 bg-white px-3 text-primary-700 focus-within:border-primary-400"><i className="ri-map-pin-2-line" /><input value={postLocation} onChange={(event) => { setPostLocation(event.target.value.slice(0, 120)); setLocationCoordinates(null); }} className="min-w-0 flex-1 bg-transparent text-sm text-foreground-800 outline-none" placeholder="Add a city, venue, or place" aria-label="Post location" /></label><button type="button" onClick={() => setLocationOpen(false)} className="h-10 rounded-xl bg-primary-700 px-4 text-xs font-bold text-white">Done</button></div></div>}
                   {mentionOpen && <div className="ml-14 mt-3 rounded-2xl border border-background-200 bg-background-100 p-3"><label className="flex h-10 items-center gap-2 rounded-xl border border-background-300 bg-white px-3 text-primary-700 focus-within:border-primary-400"><span className="text-base font-bold">@</span><input value={mentionSearch} onChange={(event) => setMentionSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm text-foreground-800 outline-none" placeholder="Search directory businesses" aria-label="Mention a business" /></label>{mentionSearch.trim().length >= 2 && <div className="mt-2 overflow-hidden rounded-xl border border-background-200 bg-white">{mentionResults.length ? mentionResults.map((item) => <button key={item.id || item.slug} type="button" disabled={mentionedBusinesses.some((mention) => String(mention.id) === String(item.id)) || mentionedBusinesses.length >= 10} onClick={() => { setMentionedBusinesses((current) => [...current, { id: item.id, slug: item.slug, title: item.title }]); setMentionSearch(""); setMentionResults([]); }} className="flex w-full items-center gap-3 border-b border-background-100 px-3 py-2.5 text-left last:border-0 hover:bg-primary-50 disabled:opacity-40"><span className="grid h-8 w-8 place-items-center rounded-lg bg-primary-50 text-[10px] font-bold text-primary-700">{initials(item.title)}</span><span className="min-w-0"><span className="block truncate text-xs font-bold text-foreground-900">{item.title}</span><span className="block truncate text-[10px] text-foreground-500">{item.location || item.category}</span></span></button>) : <p className="px-3 py-4 text-center text-xs text-foreground-500">No businesses found.</p>}</div>}{!!mentionedBusinesses.length && <div className="mt-3 flex flex-wrap gap-2">{mentionedBusinesses.map((item) => <span key={item.id || item.slug} className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-800"><span className="font-bold">@</span>{item.title}<button type="button" onClick={() => setMentionedBusinesses((current) => current.filter((mention) => String(mention.id) !== String(item.id)))} aria-label={`Remove ${item.title}`}><i className="ri-close-line" /></button></span>)}</div>}</div>}
                   <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-background-200 pt-3">
                     <select aria-label="Business profile" value={listingId} onChange={(event) => setListingId(event.target.value)} className="h-10 max-w-52 rounded-xl border border-background-300 bg-white px-3 text-xs font-semibold">{listings.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select>
@@ -369,7 +401,7 @@ export default function CommunityPage() {
                       </div>}
                     </div>
                     <button type="button" onClick={() => { setEmotionSearch(""); setEmotionOpen((open) => !open); setLocationOpen(false); setMentionOpen(false); }} className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold ${(emotion || activity) ? "bg-accent-50 text-foreground-800" : "text-foreground-500 hover:bg-background-100"}`}><span className="text-base" aria-hidden="true">{selectedEmotion?.emoji || selectedActivity?.emoji || "😊"}</span>{selectedEmotion?.label || selectedActivity?.label || "Feeling/activity"}</button>
-                    <button type="button" onClick={() => { setLocationOpen((open) => !open); setEmotionOpen(false); setMentionOpen(false); }} className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold ${postLocation ? "bg-primary-50 text-primary-700" : "text-foreground-500 hover:bg-background-100"}`}><i className="ri-map-pin-2-line text-base" />{postLocation || "Location"}</button>
+                    <button type="button" onClick={() => { setLocationOpen((open) => !open); setEmotionOpen(false); setMentionOpen(false); }} className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold ${postLocation ? "bg-primary-50 text-primary-700" : "text-foreground-500 hover:bg-background-100"}`}><i className={`${locationCoordinates ? "ri-crosshair-2-line" : "ri-map-pin-2-line"} text-base`} /><span className="max-w-28 truncate">{postLocation || "Location"}</span></button>
                     <button type="button" onClick={() => { setMentionOpen((open) => !open); setEmotionOpen(false); setLocationOpen(false); }} className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold ${mentionedBusinesses.length ? "bg-primary-50 text-primary-700" : "text-foreground-500 hover:bg-background-100"}`}><span className="text-base font-bold">@</span>{mentionedBusinesses.length ? `${mentionedBusinesses.length} mentioned` : "Mention business"}</button>
                     <button type="submit" disabled={submitting || !text.trim()} className="ml-auto h-10 rounded-xl bg-primary-700 px-5 text-xs font-bold text-white disabled:opacity-40">{submitting ? "Posting…" : selectedPostType.action}</button>
                   </div>
