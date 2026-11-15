@@ -135,6 +135,12 @@ class C767_WooCommerce
             'permission_callback' => '__return_true',
         ]);
 
+        register_rest_route(self::NAMESPACE_, '/checkout/local-dominica', [
+            'methods' => 'POST',
+            'callback' => [__CLASS__, 'local_dominica_checkout'],
+            'permission_callback' => '__return_true',
+        ]);
+
         register_rest_route(self::NAMESPACE_, '/shop/products', [
             'methods' => 'GET',
             'callback' => [__CLASS__, 'list_products'],
@@ -523,7 +529,7 @@ class C767_WooCommerce
      * Stripe, PayPal, and the hosted WooCommerce fallback all call this method
      * so customer addresses, shipping lines, taxes, and totals stay identical.
      */
-    public static function build_pending_order(array $items, $email, array $shipping)
+    public static function build_pending_order(array $items, $email, array $shipping, $allow_local_arrangement = false)
     {
         if (empty($items)) {
             return new WP_Error('c767_empty_cart', 'Cart is empty.', ['status' => 400]);
@@ -587,16 +593,24 @@ class C767_WooCommerce
 
         $shipping_rate = self::calculate_shipping_rate($order, $address);
         if (is_wp_error($shipping_rate)) {
-            $order->delete(true);
-            return $shipping_rate;
-        }
+            if (!$allow_local_arrangement || $address['country'] !== 'DM') {
+                $order->delete(true);
+                return $shipping_rate;
+            }
 
-        $shipping_item = new WC_Order_Item_Shipping();
-        $shipping_item->set_method_title($shipping_rate->get_label());
-        $shipping_item->set_method_id($shipping_rate->get_method_id());
-        $shipping_item->set_instance_id($shipping_rate->get_instance_id());
-        $shipping_item->set_total((float) $shipping_rate->get_cost());
-        $shipping_item->set_taxes($shipping_rate->get_taxes());
+            $shipping_item = new WC_Order_Item_Shipping();
+            $shipping_item->set_method_title('Local delivery / pickup arrangement');
+            $shipping_item->set_method_id('c767_local_arrangement');
+            $shipping_item->set_total(0);
+            $shipping_item->set_taxes([]);
+        } else {
+            $shipping_item = new WC_Order_Item_Shipping();
+            $shipping_item->set_method_title($shipping_rate->get_label());
+            $shipping_item->set_method_id($shipping_rate->get_method_id());
+            $shipping_item->set_instance_id($shipping_rate->get_instance_id());
+            $shipping_item->set_total((float) $shipping_rate->get_cost());
+            $shipping_item->set_taxes($shipping_rate->get_taxes());
+        }
         $order->add_item($shipping_item);
 
         $order->calculate_totals();
@@ -649,7 +663,13 @@ class C767_WooCommerce
             'phone' => wc_sanitize_phone_number((string) ($shipping['phone'] ?? '')),
         ];
 
-        foreach (['first_name', 'last_name', 'address_1', 'city', 'postcode', 'country'] as $field) {
+        $required_fields = ['first_name', 'last_name', 'address_1', 'city', 'country'];
+        if ($address['country'] === 'US') {
+            $required_fields[] = 'state';
+            $required_fields[] = 'postcode';
+        }
+
+        foreach ($required_fields as $field) {
             if ($address[$field] === '') {
                 return new WP_Error('c767_incomplete_shipping_address', 'Complete every required shipping-address field.', ['status' => 400]);
             }
@@ -755,6 +775,60 @@ class C767_WooCommerce
             'orderId' => $order->get_id(),
             'checkoutUrl' => $order->get_checkout_payment_url(),
             'total' => $order->get_total(),
+        ]);
+    }
+
+    /**
+     * Reserve a normal Shop order for payment in person in Dominica.
+     * The country is checked again server-side so this route cannot be used
+     * to bypass online payment for orders outside Dominica.
+     */
+    public static function local_dominica_checkout(WP_REST_Request $request)
+    {
+        $limited = C767_Stripe_Checkout::check_public_rate_limit('shop-local-dominica');
+        if (is_wp_error($limited)) {
+            return $limited;
+        }
+
+        $shipping = (array) $request->get_param('shipping');
+        $order = self::build_pending_order(
+            (array) $request->get_param('items'),
+            $request->get_param('email'),
+            $shipping,
+            true
+        );
+        if (is_wp_error($order)) {
+            return $order;
+        }
+
+        if ($order->get_shipping_country() !== 'DM') {
+            $order->delete(true);
+            return new WP_Error(
+                'c767_local_payment_country',
+                'Pay Locally in Dominica is only available for delivery addresses in Dominica.',
+                ['status' => 400]
+            );
+        }
+
+        $instructions = 'Complete payment locally in Dominica. The Connect767 team will email the customer with the payment location and instructions.';
+        $order->set_payment_method('c767_local_dominica');
+        $order->set_payment_method_title('Pay Locally in Dominica');
+        $order->set_customer_note($instructions);
+        $order->update_meta_data('_c767_local_dominica_payment', 'yes');
+        $order->save();
+        $order->update_status('on-hold', $instructions, true);
+
+        do_action('c767_checkout_order_created', $order);
+
+        return rest_ensure_response([
+            'orderId' => $order->get_id(),
+            'status' => $order->get_status(),
+            'subtotal' => (float) $order->get_subtotal(),
+            'tax' => (float) $order->get_total_tax(),
+            'shipping' => (float) $order->get_shipping_total(),
+            'total' => (float) $order->get_total(),
+            'currency' => $order->get_currency(),
+            'instructions' => $instructions,
         ]);
     }
 

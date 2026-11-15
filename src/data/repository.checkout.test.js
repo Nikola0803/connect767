@@ -11,6 +11,7 @@ import {
   confirmOrder,
   confirmVendorOrder,
   createCartPaypalOrder,
+  createCartLocalDominicaOrder,
   createPaymentIntent,
   createUniformPaymentIntent,
   createUniformPaypalOrder,
@@ -71,6 +72,19 @@ describe("shop checkout payloads", () => {
       items: [{ slug: items[0].slug, qty: 2, variationId: 1280 }],
       email: "buyer@example.com",
       shipping,
+    });
+  });
+
+  it("creates a Shop order reserved for local payment in Dominica", async () => {
+    const dominicaShipping = { ...shipping, country: "DM", state: "Saint George", postcode: "" };
+
+    await createCartLocalDominicaOrder(items, "buyer@example.com", dominicaShipping);
+
+    expect(fetch.mock.calls[0][0]).toContain("/checkout/local-dominica");
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({
+      items: [{ slug: items[0].slug, qty: 2, variationId: 1280 }],
+      email: "buyer@example.com",
+      shipping: dominicaShipping,
     });
   });
 
