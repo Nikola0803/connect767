@@ -6,6 +6,7 @@ import {
   sports,
   templates,
   defaultZoneColors,
+  normalizeZoneColors,
   fontOptions,
   fitTypeOptions,
   kitTypeOptions,
@@ -43,7 +44,7 @@ const tools = [
     key: "design",
     label: "Design",
     icon: "ri-palette-line",
-    hint: "Collar, sleeve length and the colour of every panel. Hover a colour to highlight the part it changes.",
+    hint: "Collar, sleeve length and the color of each garment part. Hover a color to highlight exactly what it changes.",
   },
   {
     key: "text",
@@ -336,7 +337,7 @@ export default function UniformStudioPage() {
       if (!saved?.layers?.length && !Object.keys(saved?.placements3d || {}).length) return false;
       setLayers(saved.layers || []);
       setPlacements3d(saved.placements3d || {});
-      if (saved.colors) setColors(saved.colors);
+      if (saved.colors) setColors(normalizeZoneColors(saved.colors));
       if (saved.collar) setCollar(saved.collar);
       if (saved.sleeve) setSleeve(saved.sleeve);
       return true;
@@ -409,11 +410,9 @@ export default function UniformStudioPage() {
       body,
       sleeve: body,
       collar: trim,
-      trim,
       shirtStrip: trim,
       sleeveStrip: trim,
       shortsStrip: trim,
-      panel: accent,
       shorts: accent,
       socks: accent,
     }));
@@ -507,7 +506,7 @@ export default function UniformStudioPage() {
     setPendingLayer({
       type: "skin",
       skinKey,
-      src: skinDataUri(skinKey, colors.body, colors.trim),
+      src: skinDataUri(skinKey, colors.body, colors.shirtStrip),
     });
   };
 
@@ -618,7 +617,7 @@ export default function UniformStudioPage() {
         y: 45,
         size: 30,
         rotation: 0,
-        src: skinDataUri(skinKey, colors.body, colors.trim),
+        src: skinDataUri(skinKey, colors.body, colors.shirtStrip),
       },
     ]);
     setSelectedLayerId(id);
@@ -630,14 +629,14 @@ export default function UniformStudioPage() {
       let changed = false;
       const next = ls.map((l) => {
         if (l.type !== "skin" || !l.skinKey) return l;
-        const src = skinDataUri(l.skinKey, colors.body, colors.trim);
+        const src = skinDataUri(l.skinKey, colors.body, colors.shirtStrip);
         if (src === l.src) return l;
         changed = true;
         return { ...l, src };
       });
       return changed ? next : ls;
     });
-  }, [colors.body, colors.trim]);
+  }, [colors.body, colors.shirtStrip]);
 
   const duplicateLayer = (id) => {
     const source = layers.find((l) => l.id === id);
@@ -1409,7 +1408,7 @@ export default function UniformStudioPage() {
                 {activeTool === "skins" && (
                   <SkinsPanel
                     colorA={colors.body}
-                    colorB={colors.trim}
+                    colorB={colors.shirtStrip}
                     onAdd={armSkinPlacement}
                     onUpload={armPatternUpload}
                   />
@@ -1508,7 +1507,7 @@ export default function UniformStudioPage() {
         {activeTool === "skins" && (
           <SkinsPanel
             colorA={colors.body}
-            colorB={colors.trim}
+            colorB={colors.shirtStrip}
             onAdd={armSkinPlacement}
             onUpload={armPatternUpload}
           />
