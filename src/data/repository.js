@@ -71,9 +71,12 @@ export async function createCommunityPost(payload) {
       linkUrl: payload.linkUrl || "",
       listingSlug: payload.listingSlug || "",
       listingTitle: payload.listingTitle || "Your business",
+      listingLogo: payload.listingLogo || "",
       createdAt: new Date().toISOString(),
       reactionCount: 0,
       reacted: false,
+      thumbCount: 0,
+      thumbed: false,
       comments: [],
     };
   }
@@ -94,6 +97,7 @@ export async function createCommunityPost(payload) {
     const created = await customClient.post("/community/posts", form);
     return {
       ...created,
+      listingLogo: created?.listingLogo || payload.listingLogo || "",
       activity: created?.activity || payload.activity || "",
       postLocation: created?.postLocation || payload.postLocation || "",
       latitude: created?.latitude ?? payload.latitude ?? null,
@@ -105,6 +109,7 @@ export async function createCommunityPost(payload) {
   const created = await customClient.post("/community/posts", payload);
   return {
     ...created,
+    listingLogo: created?.listingLogo || payload.listingLogo || "",
     activity: created?.activity || payload.activity || "",
     postLocation: created?.postLocation || payload.postLocation || "",
     latitude: created?.latitude ?? payload.latitude ?? null,
@@ -113,9 +118,9 @@ export async function createCommunityPost(payload) {
   };
 }
 
-export async function toggleCommunityReaction(postId) {
+export async function toggleCommunityReaction(postId, reactionType = "appreciate") {
   if (!isLiveApi) return null;
-  return customClient.post(`/community/posts/${postId}/reactions`, {});
+  return customClient.post(`/community/posts/${postId}/reactions`, { type: reactionType });
 }
 
 export async function createCommunityComment(postId, text) {
