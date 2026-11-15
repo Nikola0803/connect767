@@ -8,7 +8,7 @@ const ASSET_BASE = import.meta.env.BASE_URL;
 const APPROVED_ASSETS = {
   soccer: `${ASSET_BASE}uploads/uniform-editor/approved-soccer-kit.png`,
   basketball: `${ASSET_BASE}uploads/uniform-editor/approved-basketball-kit.png`,
-  baseball: `${ASSET_BASE}uploads/uniform-editor/approved-baseball-kit.png`,
+  netball: `${ASSET_BASE}uploads/uniform-editor/approved-basketball-kit.png`,
   cricket: `${ASSET_BASE}uploads/uniform-editor/approved-cricket-kit.png`,
   goalkeeper: `${ASSET_BASE}uploads/uniform-editor/approved-goalkeeper-kit.png`,
   other: `${ASSET_BASE}uploads/uniform-editor/approved-other-kit.png`,
@@ -47,10 +47,10 @@ const KIT_REGIONS = {
     sleeveBottom: 390, shortSleeveBottom: 390, bodyLeft: 170, bodyRight: 410, collarY: 215,
     nativeSleeve: "sleeveless",
   },
-  baseball: {
-    shirtTop: 145, bottomStart: 520, kitBottom: 1225,
-    sleeveBottom: 405, shortSleeveBottom: 405, bodyLeft: 195, bodyRight: 385, collarY: 205,
-    nativeSleeve: "short",
+  netball: {
+    shirtTop: 155, bottomStart: 735, kitBottom: 1225,
+    sleeveBottom: 390, shortSleeveBottom: 390, bodyLeft: 170, bodyRight: 410, collarY: 215,
+    nativeSleeve: "sleeveless",
   },
   cricket: {
     shirtTop: 10, bottomStart: 565, kitBottom: 1320,

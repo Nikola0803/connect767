@@ -30,7 +30,7 @@ export const sports = [
     label: "Basketball",
     modelUrl: "/models/opt/jersey.glb",
   },
-  { slug: "baseball", icon: "ri-run-line", label: "Baseball", modelUrl: null },
+  { slug: "netball", icon: "ri-basketball-line", label: "Netball", modelUrl: null },
   { slug: "cricket", icon: "ri-trophy-line", label: "Cricket", modelUrl: null },
   // Goalkeeper kit is priced and specced separately from outfield soccer
   // (padding is a paid add-on, and long sleeve is the norm rather than an
@@ -66,13 +66,13 @@ export const templates = [
     defaultSleeve: "Sleeveless",
   },
   {
-    slug: "full-button",
-    name: "Full Button",
-    sportSlug: "baseball",
-    description: "Traditional button-front jersey with piping trim.",
-    image: "/uploads/uniform-templates/baseball-full-button.png",
-    defaultCollar: "Polo",
-    defaultSleeve: "Short",
+    slug: "court-dress",
+    name: "Court Dress",
+    sportSlug: "netball",
+    description: "Modern sleeveless netball dress with a shaped court-ready silhouette.",
+    image: "/uploads/uniform-templates/netball-court-dress.png",
+    defaultCollar: "Crew",
+    defaultSleeve: "Sleeveless",
   },
   {
     slug: "raglan-tee",
@@ -119,9 +119,9 @@ export const sleeveOptions = ["Short", "Long", "Sleeveless", "Mixed"];
  * "forms for new website.xlsx" — the reason the studio must NOT show the
  * same soccer form for every sport. Basketball jerseys have no sleeve
  * length choice (always sleeveless) and no Polo collar; only Soccer has a
- * separately-priced Socks item. Cricket/Baseball use "Pants" instead of
- * "Shorts" for the bottom garment. Everything not covered by the xlsx yet
- * (Cricket/Baseball pricing) falls back to the Soccer numbers until the
+ * separately-priced Socks item. Cricket uses "Pants" instead of "Shorts"
+ * for the bottom garment. Everything not covered by the xlsx yet
+ * (Cricket/Netball pricing) falls back to the Soccer numbers until the
  * client confirms them — see docs/uniform-configurator-spec.docx §TBD.
  */
 export const sportConfigs = {
@@ -143,11 +143,11 @@ export const sportConfigs = {
     hasSocks: false,
     bottomLabel: "Pants",
   },
-  baseball: {
-    collarOptions: ["Crew", "Polo"],
-    sleeveOptions: ["Short", "Long"],
+  netball: {
+    collarOptions: ["Crew", "V-Neck"],
+    sleeveOptions: null,
     hasSocks: false,
-    bottomLabel: "Pants",
+    bottomLabel: "Shorts",
   },
   goalkeeper: {
     collarOptions: ["Crew", "V-Neck", "Polo"],
