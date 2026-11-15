@@ -83,6 +83,7 @@ export default function ZoneCorrectionOverlay({
       {zones.map((item) => {
         const style = zoneStyles[item.id] || {};
         const solidSock = item.id.includes("sock");
+        const baseShortsZone = item.colorKey === "shorts" || item.colorKey === "waistband";
         const color = solidSock
           ? (colorValues.socks || "#f6f1e7")
           : (style.color || colorValues[item.colorKey] || "#f6f1e7");
@@ -100,7 +101,7 @@ export default function ZoneCorrectionOverlay({
           || (style.pattern && style.pattern !== "none")
           || style.texture,
         );
-        const opacity = solidSock
+        const opacity = solidSock || baseShortsZone
           ? 0
           : item.group === "Seams" && !hasExplicitSeamStyle
           ? 0
