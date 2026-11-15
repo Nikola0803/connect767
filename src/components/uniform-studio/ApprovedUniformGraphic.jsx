@@ -18,7 +18,7 @@ const APPROVED_ASSETS = {
 
 const KIT_REGIONS = {
   soccer: {
-    shirtTop: 20, bottomStart: 555, socksStart: 865, kitBottom: 1358,
+    shirtTop: 20, bottomStart: 566, socksStart: 865, kitBottom: 1358,
     sleeveBottom: 300, shortSleeveBottom: 300, bodyLeft: 190, bodyRight: 390, collarY: 66,
     nativeSleeve: "short",
     views: {
@@ -36,7 +36,7 @@ const KIT_REGIONS = {
           left: [[107, 240], [198, 250], [195, 274], [105, 260]],
           right: [[469, 250], [558, 240], [560, 260], [472, 274]],
         },
-        shirtEndPolygon: [[189, 545], [481, 545], [482, 555], [187, 555]],
+        shirtEndPolygon: [[189, 540], [481, 540], [484, 566], [185, 566]],
         shortsPolygon: [[176, 555], [485, 555], [500, 840], [163, 840]],
         shortsEndPolygon: [[163, 810], [500, 810], [500, 840], [163, 840]],
       },
@@ -54,7 +54,7 @@ const KIT_REGIONS = {
           left: [[32, 240], [122, 250], [119, 274], [30, 260]],
           right: [[391, 250], [481, 240], [483, 260], [394, 274]],
         },
-        shirtEndPolygon: [[111, 545], [402, 545], [404, 555], [109, 555]],
+        shirtEndPolygon: [[111, 540], [402, 540], [405, 566], [107, 566]],
         shortsPolygon: [[105, 555], [408, 555], [424, 840], [92, 840]],
         shortsEndPolygon: [[92, 810], [424, 810], [424, 840], [92, 840]],
       },
@@ -88,13 +88,13 @@ const KIT_REGIONS = {
   },
 };
 
-function TintLayer({ mask, fill, opacity, children }) {
+function TintLayer({ mask, fill, opacity, blendMode = "multiply", children }) {
   return (
     <g
-      data-garment-tint="fabric-multiply"
+      data-garment-tint={blendMode === "multiply" ? "fabric-multiply" : "flat-color"}
       mask={`url(#${mask})`}
       opacity={opacity}
-      style={{ mixBlendMode: "multiply" }}
+      style={{ mixBlendMode: blendMode }}
     >
       {children(fill)}
     </g>
@@ -126,6 +126,7 @@ export default function ApprovedUniformGraphic({
   const uid = useId().replaceAll(":", "");
   const maskId = `approved-kit-${uid}`;
   const jerseyMaskId = `approved-jersey-${uid}`;
+  const jerseyClipId = `approved-jersey-clip-${uid}`;
   const shortsMaskId = `approved-shorts-${uid}`;
   const shortsClipId = `approved-shorts-clip-${uid}`;
   const socksMaskId = `approved-socks-${uid}`;
@@ -219,9 +220,26 @@ export default function ApprovedUniformGraphic({
         <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width={spriteWidth} height={spriteHeight}>
           <image href={asset} x="0" y="0" width={spriteWidth} height={spriteHeight} />
         </mask>
-        <mask id={jerseyMaskId} maskUnits="userSpaceOnUse" x="0" y="0" width={spriteWidth} height={spriteHeight}>
-          <image href={asset} x="0" y="0" width={spriteWidth} height={spriteHeight} />
-          <rect x="0" y={region.bottomStart} width={spriteWidth} height={spriteHeight - region.bottomStart} fill="black" />
+        <clipPath id={jerseyClipId} clipPathUnits="userSpaceOnUse">
+          <rect x="0" y="0" width={spriteWidth} height={region.bottomStart} />
+        </clipPath>
+        <mask
+          id={jerseyMaskId}
+          maskUnits="userSpaceOnUse"
+          x="0"
+          y="0"
+          width={spriteWidth}
+          height={spriteHeight}
+          style={{ maskType: "alpha" }}
+        >
+          <image
+            href={asset}
+            x="0"
+            y="0"
+            width={spriteWidth}
+            height={spriteHeight}
+            clipPath={`url(#${jerseyClipId})`}
+          />
         </mask>
         <clipPath id={shortsClipId} clipPathUnits="userSpaceOnUse">
           <rect
@@ -358,10 +376,15 @@ export default function ApprovedUniformGraphic({
           </TintLayer>
       )}
 
-        {/* The shirt hem is clipped to the jersey-only mask. This prevents
-            its color from bleeding into the shorts waistband while the wider
-            traced polygon follows the complete curved bottom edge. */}
-        <TintLayer mask={jerseyMaskId} fill={shirtEnd} opacity={opacityFor("shirtStrip")}>
+        {/* The source photograph contains several stitched grey seam lines at
+            the waist. Paint one opaque, alpha-clipped shirt edge over that
+            construction detail so the editor exposes only body + shirt edge. */}
+        <TintLayer
+          mask={jerseyMaskId}
+          fill={shirtEnd}
+          opacity={opacityFor("shirtStrip")}
+          blendMode="normal"
+        >
           {(fill) => region.shirtEndPolygon
             ? <path d={polygonPath(region.shirtEndPolygon)} fill={fill} />
             : <rect x={offset} y={region.bottomStart - 18} width={halfWidth} height="18" fill={fill} />}
