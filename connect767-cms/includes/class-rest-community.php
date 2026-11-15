@@ -63,6 +63,25 @@ class C767_REST_Community
             ],
         ]);
 
+        register_rest_route(self::NAMESPACE_, '/community/posts/(?P<id>\d+)', [
+            [
+                'methods' => WP_REST_Server::EDITABLE,
+                'callback' => [__CLASS__, 'update_post'],
+                'permission_callback' => [__CLASS__, 'is_authenticated'],
+            ],
+            [
+                'methods' => WP_REST_Server::DELETABLE,
+                'callback' => [__CLASS__, 'delete_post'],
+                'permission_callback' => [__CLASS__, 'is_authenticated'],
+            ],
+        ]);
+
+        register_rest_route(self::NAMESPACE_, '/community/posts/(?P<id>\d+)/reports', [
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => [__CLASS__, 'report_post'],
+            'permission_callback' => [__CLASS__, 'is_authenticated'],
+        ]);
+
         register_rest_route(self::NAMESPACE_, '/community/posts/(?P<id>\d+)/reactions', [
             'methods' => WP_REST_Server::CREATABLE,
             'callback' => [__CLASS__, 'toggle_reaction'],
@@ -155,12 +174,21 @@ class C767_REST_Community
             'reacted' => in_array(get_current_user_id(), $reaction_ids, true),
             'thumbCount' => count($thumb_ids),
             'thumbed' => in_array(get_current_user_id(), $thumb_ids, true),
+            'canManage' => get_current_user_id() > 0 && ((int) $post->post_author === (int) get_current_user_id() || current_user_can('delete_post', $post->ID)),
             'comments' => array_map([__CLASS__, 'serialize_comment'], $comments),
         ];
     }
 
     public static function get_posts(WP_REST_Request $request)
     {
+        if ($request->get_header('authorization')) {
+            $user = C767_REST_Auth::user_from_request($request);
+            if (is_wp_error($user)) {
+                return $user;
+            }
+            wp_set_current_user($user->ID);
+        }
+
         $page = max(1, (int) $request->get_param('page'));
         $query = new WP_Query([
             'post_type' => 'community_update',
@@ -329,6 +357,78 @@ class C767_REST_Community
         update_post_meta($post_id, '_community_thumb_user_ids', []);
 
         return new WP_REST_Response(self::serialize_post(get_post($post_id)), 201);
+    }
+
+    public static function delete_post(WP_REST_Request $request)
+    {
+        $post_id = (int) $request->get_param('id');
+        $post = get_post($post_id);
+        if (!$post || $post->post_type !== 'community_update') {
+            return new WP_Error('c767_community_post_not_found', 'Community post not found.', ['status' => 404]);
+        }
+        if ((int) $post->post_author !== (int) get_current_user_id() && !current_user_can('delete_post', $post_id)) {
+            return new WP_Error('c767_community_post_forbidden', 'You can only delete your own community posts.', ['status' => 403]);
+        }
+        if (!wp_delete_post($post_id, true)) {
+            return new WP_Error('c767_community_post_delete_failed', 'The community post could not be deleted.', ['status' => 500]);
+        }
+        return rest_ensure_response(['deleted' => true, 'id' => $post_id]);
+    }
+
+    public static function update_post(WP_REST_Request $request)
+    {
+        $post_id = (int) $request->get_param('id');
+        $post = get_post($post_id);
+        if (!$post || $post->post_type !== 'community_update') {
+            return new WP_Error('c767_community_post_not_found', 'Community post not found.', ['status' => 404]);
+        }
+        if ((int) $post->post_author !== (int) get_current_user_id() && !current_user_can('edit_post', $post_id)) {
+            return new WP_Error('c767_community_post_forbidden', 'You can only edit your own community posts.', ['status' => 403]);
+        }
+        $text = trim(sanitize_textarea_field((string) $request->get_param('text')));
+        if ($text === '' || strlen($text) > 1200) {
+            return new WP_Error('c767_invalid_community_text', 'Updates must contain between 1 and 1,200 characters.', ['status' => 400]);
+        }
+        $updated = wp_update_post([
+            'ID' => $post_id,
+            'post_title' => wp_trim_words($text, 10, '…'),
+            'post_content' => $text,
+        ], true);
+        if (is_wp_error($updated)) {
+            return $updated;
+        }
+        return rest_ensure_response(self::serialize_post(get_post($post_id)));
+    }
+
+    public static function report_post(WP_REST_Request $request)
+    {
+        $post_id = (int) $request->get_param('id');
+        $post = get_post($post_id);
+        if (!$post || $post->post_type !== 'community_update' || $post->post_status !== 'publish') {
+            return new WP_Error('c767_community_post_not_found', 'Community post not found.', ['status' => 404]);
+        }
+
+        $reason = sanitize_key((string) $request->get_param('reason'));
+        $allowed_reasons = ['spam', 'misleading', 'harassment', 'inappropriate', 'other'];
+        if (!in_array($reason, $allowed_reasons, true)) {
+            return new WP_Error('c767_community_report_reason_invalid', 'Choose a valid reason for the report.', ['status' => 400]);
+        }
+
+        $user_id = get_current_user_id();
+        $reports = get_post_meta($post_id, '_community_reports', true);
+        $reports = is_array($reports) ? $reports : [];
+        foreach ($reports as $report) {
+            if ((int) ($report['user_id'] ?? 0) === (int) $user_id) {
+                return rest_ensure_response(['reported' => true, 'duplicate' => true, 'id' => $post_id]);
+            }
+        }
+        $reports[] = [
+            'user_id' => $user_id,
+            'reason' => $reason,
+            'created_at' => current_time('mysql', true),
+        ];
+        update_post_meta($post_id, '_community_reports', $reports);
+        return rest_ensure_response(['reported' => true, 'duplicate' => false, 'id' => $post_id]);
     }
 
     private static function validate_attachment()

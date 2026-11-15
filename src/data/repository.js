@@ -130,6 +130,21 @@ export async function createCommunityComment(postId, text) {
   return customClient.post(`/community/posts/${postId}/comments`, { text });
 }
 
+export async function deleteCommunityPost(postId) {
+  if (!isLiveApi) return { deleted: true, id: postId };
+  return customClient.del(`/community/posts/${postId}`);
+}
+
+export async function updateCommunityPost(postId, text) {
+  if (!isLiveApi) return { id: postId, text };
+  return customClient.post(`/community/posts/${postId}`, { text });
+}
+
+export async function reportCommunityPost(postId, reason) {
+  if (!isLiveApi) return { reported: true, id: postId, reason };
+  return customClient.post(`/community/posts/${postId}/reports`, { reason });
+}
+
 /**
  * Every function here returns a Promise and the same shape, whether the data
  * comes from local fixtures (today) or a live WordPress/WooCommerce REST API

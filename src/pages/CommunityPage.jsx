@@ -3,13 +3,17 @@ import { Link } from "react-router-dom";
 import ShareMenu from "../components/ShareMenu";
 import { useAuth } from "../hooks/useAuth";
 import { useAsync } from "../hooks/useAsync";
+import { isLegacyCoordinateLabel, reverseGeocodeLocation } from "../lib/reverseGeocode";
 import {
   createCommunityComment,
   createCommunityPost,
+  deleteCommunityPost,
   getCommunityPosts,
   getListings,
   getMyListings,
+  reportCommunityPost,
   toggleCommunityReaction,
+  updateCommunityPost,
 } from "../data/repository";
 
 const POST_TYPES = [
@@ -112,7 +116,135 @@ function mapUrl(latitude, longitude) {
   return `https://www.google.com/maps?q=${encodeURIComponent(`${latitude},${longitude}`)}`;
 }
 
-function CommunityPost({ post, authenticated, onReact, onComment }) {
+function readStoredIds(key) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || "[]");
+    return new Set(Array.isArray(value) ? value.map(String) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeStoredIds(key, ids) {
+  try { localStorage.setItem(key, JSON.stringify([...ids])); } catch { /* storage unavailable */ }
+}
+
+async function copyText(value) {
+  try {
+    await navigator.clipboard.writeText(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const REPORT_REASONS = [
+  ["spam", "Spam or repetitive content"],
+  ["misleading", "False or misleading information"],
+  ["harassment", "Harassment or abusive content"],
+  ["inappropriate", "Inappropriate content"],
+  ["other", "Something else"],
+];
+
+function PostOptionsMenu({ post, authenticated, canManage, onDelete, onEdit, onHide, onMute, onReport }) {
+  const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editText, setEditText] = useState(post.text || "");
+  const [reportOpen, setReportOpen] = useState(false);
+  const [saved, setSaved] = useState(() => readStoredIds("c767_saved_community_posts").has(String(post.id)));
+  const [notice, setNotice] = useState("");
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const close = (event) => { if (!menuRef.current?.contains(event.target)) setOpen(false); };
+    const escape = (event) => { if (event.key === "Escape") setOpen(false); };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [open]);
+
+  const toggleSaved = () => {
+    const ids = readStoredIds("c767_saved_community_posts");
+    const id = String(post.id);
+    if (ids.has(id)) ids.delete(id); else ids.add(id);
+    writeStoredIds("c767_saved_community_posts", ids);
+    setSaved(ids.has(id));
+    setOpen(false);
+  };
+
+  const copyLink = async () => {
+    const url = `${window.location.origin}/community#community-post-${post.id}`;
+    setNotice(await copyText(url) ? "Link copied" : "Copy the link from your browser");
+    setOpen(false);
+    setTimeout(() => setNotice(""), 2500);
+  };
+
+  const deletePost = async () => {
+    if (!window.confirm("Delete this update permanently? This cannot be undone.")) return;
+    setOpen(false);
+    try {
+      await onDelete(post.id);
+    } catch (error) {
+      setNotice(error.message || "The post could not be deleted");
+      setTimeout(() => setNotice(""), 3000);
+    }
+  };
+
+  const reportPost = async (reason) => {
+    try {
+      await onReport(post.id, reason);
+      setReportOpen(false);
+      setNotice("Report sent for review");
+      setTimeout(() => setNotice(""), 2500);
+    } catch (error) {
+      setReportOpen(false);
+      setNotice(error.message || "The report could not be sent");
+      setTimeout(() => setNotice(""), 3000);
+    }
+  };
+
+  const saveEdit = async (event) => {
+    event.preventDefault();
+    const clean = editText.trim();
+    if (!clean) return;
+    try {
+      await onEdit(post.id, clean);
+      setEditOpen(false);
+      setNotice("Post updated");
+      setTimeout(() => setNotice(""), 2500);
+    } catch (error) {
+      setNotice(error.message || "The post could not be updated");
+      setTimeout(() => setNotice(""), 3000);
+    }
+  };
+
+  const itemClass = "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-semibold text-foreground-700 transition hover:bg-background-100 hover:text-primary-700";
+
+  return (
+    <div ref={menuRef} className="relative shrink-0">
+      <button type="button" aria-label="Post options" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((value) => !value)} className="grid h-11 w-11 place-items-center rounded-full text-foreground-400 transition hover:bg-background-100 hover:text-primary-700"><i className="ri-more-2-fill text-lg" /></button>
+      {open && <div role="menu" aria-label="Post options" className="absolute right-0 top-12 z-40 w-64 rounded-2xl border border-background-200 bg-white p-1.5 shadow-[0_18px_50px_rgba(24,48,36,0.18)]">
+        <button type="button" role="menuitem" onClick={toggleSaved} className={itemClass}><i className={saved ? "ri-bookmark-fill" : "ri-bookmark-line"} />{saved ? "Remove from saved" : "Save post"}</button>
+        <button type="button" role="menuitem" onClick={copyLink} className={itemClass}><i className="ri-link" />Copy post link</button>
+        <Link role="menuitem" to={`/listings/${post.listingSlug}`} onClick={() => setOpen(false)} className={itemClass}><i className="ri-user-3-line" />View business profile</Link>
+        <div className="my-1 h-px bg-background-200" />
+        <button type="button" role="menuitem" onClick={() => { setOpen(false); onHide(post.id); }} className={itemClass}><i className="ri-eye-off-line" />Hide this post</button>
+        {!canManage && <button type="button" role="menuitem" onClick={() => { setOpen(false); onMute(post.listingId); }} className={itemClass}><i className="ri-volume-mute-line" />Mute this business</button>}
+        {!canManage && (authenticated ? <button type="button" role="menuitem" onClick={() => { setOpen(false); setReportOpen(true); }} className={itemClass}><i className="ri-flag-line" />Report post</button> : <Link role="menuitem" to="/auth/login?redirect=/community" className={itemClass}><i className="ri-flag-line" />Sign in to report</Link>)}
+        {canManage && <><div className="my-1 h-px bg-background-200" /><button type="button" role="menuitem" onClick={() => { setOpen(false); setEditText(post.text || ""); setEditOpen(true); }} className={itemClass}><i className="ri-edit-line" />Edit post</button><button type="button" role="menuitem" onClick={deletePost} className={`${itemClass} text-red-600 hover:bg-red-50 hover:text-red-700`}><i className="ri-delete-bin-6-line" />Delete post</button></>}
+      </div>}
+      {notice && <span role="status" className="absolute right-0 top-12 z-30 whitespace-nowrap rounded-lg bg-foreground-950 px-3 py-2 text-xs font-semibold text-white shadow-lg">{notice}</span>}
+      {editOpen && <div className="fixed inset-0 z-[80] grid place-items-center bg-foreground-950/45 p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setEditOpen(false); }}><form onSubmit={saveEdit} role="dialog" aria-modal="true" aria-labelledby={`edit-post-${post.id}`} className="w-full max-w-lg rounded-3xl border border-background-200 bg-white p-5 shadow-2xl"><div className="flex items-start justify-between gap-4"><div><h2 id={`edit-post-${post.id}`} className="font-heading text-2xl font-semibold text-foreground-950">Edit post</h2><p className="mt-1 text-sm text-foreground-500">Update the message shared by {post.listingTitle}.</p></div><button type="button" aria-label="Close edit dialog" onClick={() => setEditOpen(false)} className="grid h-10 w-10 place-items-center rounded-full hover:bg-background-100"><i className="ri-close-line text-lg" /></button></div><textarea value={editText} onChange={(event) => setEditText(event.target.value)} maxLength={1200} rows={6} autoFocus className="mt-4 w-full resize-y rounded-2xl border border-background-300 p-3 text-sm leading-6 outline-none focus:border-primary-500" aria-label="Post text" /><div className="mt-4 flex items-center justify-between gap-3"><span className="text-xs text-foreground-400">{editText.length}/1200</span><div className="flex gap-2"><button type="button" onClick={() => setEditOpen(false)} className="h-10 rounded-xl border border-background-300 px-4 text-xs font-bold text-foreground-700">Cancel</button><button type="submit" disabled={!editText.trim()} className="h-10 rounded-xl bg-primary-700 px-5 text-xs font-bold text-white disabled:opacity-40">Save changes</button></div></div></form></div>}
+      {reportOpen && <div className="fixed inset-0 z-[80] grid place-items-center bg-foreground-950/45 p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setReportOpen(false); }}><div role="dialog" aria-modal="true" aria-labelledby={`report-post-${post.id}`} className="w-full max-w-md rounded-3xl border border-background-200 bg-white p-5 shadow-2xl"><div className="flex items-start justify-between gap-4"><div><h2 id={`report-post-${post.id}`} className="font-heading text-2xl font-semibold text-foreground-950">Report this post</h2><p className="mt-1 text-sm text-foreground-500">Tell us why this content should be reviewed.</p></div><button type="button" aria-label="Close report dialog" onClick={() => setReportOpen(false)} className="grid h-10 w-10 place-items-center rounded-full hover:bg-background-100"><i className="ri-close-line text-lg" /></button></div><div className="mt-4 space-y-2">{REPORT_REASONS.map(([value, label]) => <button key={value} type="button" onClick={() => reportPost(value)} className="flex min-h-11 w-full items-center justify-between rounded-xl border border-background-200 px-4 py-3 text-left text-sm font-semibold text-foreground-700 transition hover:border-primary-300 hover:bg-primary-50">{label}<i className="ri-arrow-right-s-line" /></button>)}</div></div></div>}
+    </div>
+  );
+}
+
+function CommunityPost({ post, authenticated, canManage, onReact, onComment, onDelete, onEdit, onHide, onMute, onReport }) {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [comment, setComment] = useState("");
   const comments = post.comments || [];
@@ -120,7 +252,19 @@ function CommunityPost({ post, authenticated, onReact, onComment }) {
   const activity = COMMUNITY_ACTIVITIES.find((item) => item.value === post.activity);
   const postType = POST_TYPES.find((item) => item.value === post.type) || POST_TYPES[0];
   const hasLiveLocation = Number.isFinite(Number(post.latitude)) && Number.isFinite(Number(post.longitude));
+  const hasLegacyLocationLabel = hasLiveLocation && isLegacyCoordinateLabel(post.postLocation);
+  const [postLocationLabel, setPostLocationLabel] = useState(hasLegacyLocationLabel ? "Current location" : post.postLocation);
   const postShareUrl = typeof window !== "undefined" ? `${window.location.origin}/community#community-post-${post.id}` : "";
+
+  useEffect(() => {
+    setPostLocationLabel(hasLegacyLocationLabel ? "Current location" : post.postLocation);
+    if (!hasLegacyLocationLabel) return undefined;
+    let active = true;
+    reverseGeocodeLocation(post.latitude, post.longitude).then((placeName) => {
+      if (active && placeName) setPostLocationLabel(placeName);
+    });
+    return () => { active = false; };
+  }, [hasLegacyLocationLabel, post.latitude, post.longitude, post.postLocation]);
 
   const submitComment = async (event) => {
     event.preventDefault();
@@ -147,11 +291,11 @@ function CommunityPost({ post, authenticated, onReact, onComment }) {
           </div>
           <p className="mt-1 text-xs text-foreground-500">{post.location || "Connect767 community"} · {relativeTime(post.createdAt)}</p>
         </div>
-        <button type="button" aria-label="More options" className="grid h-9 w-9 place-items-center rounded-full text-foreground-400 hover:bg-background-100"><i className="ri-more-2-fill" /></button>
+        <PostOptionsMenu post={post} authenticated={authenticated} canManage={canManage} onDelete={onDelete} onEdit={onEdit} onHide={onHide} onMute={onMute} onReport={onReport} />
       </header>
 
       {(emotion || activity) && <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-accent-50 px-3 py-1.5 text-xs font-semibold text-foreground-700"><span className="text-base" aria-hidden="true">{emotion?.emoji || activity?.emoji}</span>{emotion ? `Feeling ${emotion.label.toLowerCase()}` : activity.label}</div>}
-      {post.postLocation && (hasLiveLocation ? <a href={mapUrl(post.latitude, post.longitude)} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-primary-700 hover:underline"><i className="ri-map-pin-2-fill" />{post.postLocation}<i className="ri-arrow-right-up-line" /></a> : <div className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-primary-700"><i className="ri-map-pin-2-fill" />{post.postLocation}</div>)}
+      {postLocationLabel && (hasLiveLocation ? <a href={mapUrl(post.latitude, post.longitude)} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-primary-700 hover:underline"><i className="ri-map-pin-2-fill" />{postLocationLabel}<i className="ri-arrow-right-up-line" /></a> : <div className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-primary-700"><i className="ri-map-pin-2-fill" />{postLocationLabel}</div>)}
       <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-foreground-800">{post.text}</p>
       {post.mediaUrl && <img src={post.mediaUrl} alt={`Update from ${post.listingTitle}`} className="mt-4 max-h-[32rem] w-full rounded-2xl border border-background-200 object-cover" />}
       {post.videoUrl && <video src={post.videoUrl} controls playsInline preload="metadata" className="mt-4 max-h-[32rem] w-full rounded-2xl border border-background-200 bg-black object-contain">Your browser does not support video playback.</video>}
@@ -198,6 +342,8 @@ export default function CommunityPage() {
   const { data, loading, error, reload } = useAsync(getCommunityPosts, []);
   const [posts, setPosts] = useState([]);
   const [listings, setListings] = useState([]);
+  const [hiddenPostIds, setHiddenPostIds] = useState(() => new Set());
+  const [mutedListingIds, setMutedListingIds] = useState(() => readStoredIds("c767_muted_community_listings"));
   const [listingId, setListingId] = useState("");
   const [text, setText] = useState("");
   const [type, setType] = useState("status");
@@ -258,6 +404,8 @@ export default function CommunityPage() {
   }, [mentionOpen, mentionSearch]);
 
   const selectedListing = useMemo(() => listings.find((item) => String(item.id) === listingId), [listings, listingId]);
+  const ownedListingIds = useMemo(() => new Set(listings.map((item) => String(item.id))), [listings]);
+  const visiblePosts = posts.filter((post) => !hiddenPostIds.has(String(post.id)) && !mutedListingIds.has(String(post.listingId)));
   const selectedPostType = POST_TYPES.find((item) => item.value === type) || POST_TYPES[0];
   const selectedEmotion = COMMUNITY_EMOTIONS.find((item) => item.value === emotion);
   const selectedActivity = COMMUNITY_ACTIVITIES.find((item) => item.value === activity);
@@ -318,11 +466,13 @@ export default function CommunityPage() {
     setLocating(true);
     setMessage("");
     navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
+      async ({ coords }) => {
         const latitude = Number(coords.latitude.toFixed(6));
         const longitude = Number(coords.longitude.toFixed(6));
         setLocationCoordinates({ latitude, longitude });
-        setPostLocation(`Live location · ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+        setPostLocation("Finding location name…");
+        const placeName = await reverseGeocodeLocation(latitude, longitude);
+        setPostLocation(placeName || "Current location");
         setLocationOpen(false);
         setLocating(false);
       },
@@ -374,6 +524,25 @@ export default function CommunityPage() {
     const created = await createCommunityComment(postId, value);
     setPosts((items) => items.map((post) => post.id === postId ? { ...post, comments: [...(post.comments || []), created] } : post));
   };
+  const hidePost = (postId) => setHiddenPostIds((current) => new Set([...current, String(postId)]));
+  const muteBusiness = (listingToMute) => {
+    const post = posts.find((item) => String(item.listingId) === String(listingToMute));
+    if (!window.confirm(`Mute ${post?.listingTitle || "this business"}? Its posts will no longer appear in your feed on this device.`)) return;
+    setMutedListingIds((current) => {
+      const next = new Set([...current, String(listingToMute)]);
+      writeStoredIds("c767_muted_community_listings", next);
+      return next;
+    });
+  };
+  const removePost = async (postId) => {
+    await deleteCommunityPost(postId);
+    setPosts((items) => items.filter((post) => String(post.id) !== String(postId)));
+  };
+  const editPost = async (postId, updatedText) => {
+    const updated = await updateCommunityPost(postId, updatedText);
+    setPosts((items) => items.map((post) => String(post.id) === String(postId) ? { ...post, ...updated, text: updated?.text || updatedText } : post));
+  };
+  const reportPost = (postId, reason) => reportCommunityPost(postId, reason);
 
   return (
     <div className="min-h-screen bg-background-100/45 pb-20 pt-24 md:pt-28">
@@ -404,7 +573,7 @@ export default function CommunityPage() {
                   {attachmentType === "link" && <div className="ml-14 mt-3 flex items-center gap-3 rounded-2xl border border-primary-200 bg-primary-50/50 p-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-700 text-white"><i className="ri-links-line" /></span><span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-primary-700">Link ready to share</span><span className="mt-1 block truncate text-sm font-semibold text-foreground-900">{linkLabel(linkUrl)}</span></span><button type="button" onClick={clearAttachment} aria-label="Remove attached link" className="grid h-9 w-9 place-items-center rounded-full text-foreground-500 hover:bg-white"><i className="ri-close-line text-lg" /></button></div>}
                   {linkOpen && <div className="ml-14 mt-3 flex flex-col gap-2 rounded-2xl border border-background-200 bg-background-100 p-3 sm:flex-row"><input type="url" value={linkUrl} onChange={(event) => setLinkUrl(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); attachLink(); } }} className="h-10 min-w-0 flex-1 rounded-xl border border-background-300 bg-white px-3 text-sm outline-none focus:border-primary-500" placeholder="https://yourbusiness.com/page" aria-label="Website link" /><button type="button" onClick={attachLink} className="h-10 rounded-xl bg-primary-700 px-4 text-xs font-bold text-white">Attach link</button></div>}
                   {emotionOpen && <div className="ml-14 mt-3 rounded-2xl border border-background-200 bg-background-100 p-3" role="group" aria-label="Choose a feeling or activity"><div className="mb-3 flex items-center justify-between gap-2"><div className="inline-flex rounded-xl border border-background-300 bg-white p-1"><button type="button" onClick={() => { setFeelingTab("feelings"); setEmotionSearch(""); }} className={`rounded-lg px-3 py-1.5 text-[11px] font-bold ${feelingTab === "feelings" ? "bg-primary-700 text-white" : "text-foreground-500"}`}>Feelings</button><button type="button" onClick={() => { setFeelingTab("activities"); setEmotionSearch(""); }} className={`rounded-lg px-3 py-1.5 text-[11px] font-bold ${feelingTab === "activities" ? "bg-primary-700 text-white" : "text-foreground-500"}`}>Activities</button></div>{(emotion || activity) && <button type="button" onClick={() => { setEmotion(""); setActivity(""); setEmotionSearch(""); setEmotionOpen(false); }} className="text-[10px] font-bold text-primary-700">Clear</button>}</div><label className="mb-3 flex h-10 items-center gap-2 rounded-xl border border-background-300 bg-white px-3 text-foreground-500 focus-within:border-primary-400"><i className="ri-search-line" /><input value={emotionSearch} onChange={(event) => setEmotionSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-xs text-foreground-800 outline-none" placeholder={`Search ${feelingOptions.length} ${feelingTab}…`} aria-label={`Search ${feelingTab}`} /></label><div className="grid max-h-72 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-4">{filteredFeelings.map((item) => <button key={item.value} type="button" onClick={() => { if (feelingTab === "feelings") { setEmotion(item.value); setActivity(""); } else { setActivity(item.value); setEmotion(""); } setEmotionSearch(""); setEmotionOpen(false); }} className={`inline-flex h-10 items-center justify-start gap-2 rounded-xl border px-3 text-xs font-semibold transition ${(emotion === item.value || activity === item.value) ? "border-primary-500 bg-primary-50 text-primary-800" : "border-background-300 bg-white text-foreground-700 hover:border-primary-300 hover:bg-primary-50/40"}`}><span className="text-base" aria-hidden="true">{item.emoji}</span><span className="truncate">{item.label}</span></button>)}</div>{!filteredFeelings.length && <p className="py-6 text-center text-xs text-foreground-500">No {feelingTab} match “{emotionSearch}”.</p>}</div>}
-                  {locationOpen && <div className="ml-14 mt-3 rounded-2xl border border-background-200 bg-background-100 p-3"><button type="button" onClick={useCurrentLocation} disabled={locating} className="flex w-full items-center gap-3 rounded-xl border border-primary-200 bg-primary-50 p-3 text-left text-primary-800 transition hover:bg-primary-100 disabled:opacity-60"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-700 text-white"><i className={locating ? "ri-loader-4-line animate-spin" : "ri-crosshair-2-line"} /></span><span><span className="block text-xs font-bold">{locating ? "Finding your location…" : "Use current location"}</span><span className="mt-0.5 block text-[10px] text-foreground-500">Your browser will ask for permission</span></span></button><div className="my-3 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground-400"><span className="h-px flex-1 bg-background-300" />or enter a place<span className="h-px flex-1 bg-background-300" /></div><div className="flex flex-col gap-2 sm:flex-row"><label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-xl border border-background-300 bg-white px-3 text-primary-700 focus-within:border-primary-400"><i className="ri-map-pin-2-line" /><input value={postLocation} onChange={(event) => { setPostLocation(event.target.value.slice(0, 120)); setLocationCoordinates(null); }} className="min-w-0 flex-1 bg-transparent text-sm text-foreground-800 outline-none" placeholder="Add a city, venue, or place" aria-label="Post location" /></label><button type="button" onClick={() => setLocationOpen(false)} className="h-10 rounded-xl bg-primary-700 px-4 text-xs font-bold text-white">Done</button></div></div>}
+                  {locationOpen && <div className="ml-14 mt-3 rounded-2xl border border-background-200 bg-background-100 p-3"><button type="button" onClick={useCurrentLocation} disabled={locating} className="flex w-full items-center gap-3 rounded-xl border border-primary-200 bg-primary-50 p-3 text-left text-primary-800 transition hover:bg-primary-100 disabled:opacity-60"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-700 text-white"><i className={locating ? "ri-loader-4-line animate-spin" : "ri-crosshair-2-line"} /></span><span><span className="block text-xs font-bold">{locating ? "Finding your location…" : "Use current location"}</span><span className="mt-0.5 block text-[10px] text-foreground-500">Your browser will ask for permission</span></span></button><div className="my-3 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground-400"><span className="h-px flex-1 bg-background-300" />or enter a place<span className="h-px flex-1 bg-background-300" /></div><div className="flex flex-col gap-2 sm:flex-row"><label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-xl border border-background-300 bg-white px-3 text-primary-700 focus-within:border-primary-400"><i className="ri-map-pin-2-line" /><input value={postLocation} onChange={(event) => { setPostLocation(event.target.value.slice(0, 120)); setLocationCoordinates(null); }} className="min-w-0 flex-1 bg-transparent text-sm text-foreground-800 outline-none" placeholder="Add a city, venue, or place" aria-label="Post location" /></label><button type="button" onClick={() => setLocationOpen(false)} className="h-10 rounded-xl bg-primary-700 px-4 text-xs font-bold text-white">Done</button></div><p className="mt-2 text-[10px] text-foreground-400">Location names © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="underline hover:text-primary-700">OpenStreetMap contributors</a></p></div>}
                   {mentionOpen && <div className="ml-14 mt-3 rounded-2xl border border-background-200 bg-background-100 p-3"><label className="flex h-10 items-center gap-2 rounded-xl border border-background-300 bg-white px-3 text-primary-700 focus-within:border-primary-400"><span className="text-base font-bold">@</span><input value={mentionSearch} onChange={(event) => setMentionSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm text-foreground-800 outline-none" placeholder="Search directory businesses" aria-label="Mention a business" /></label>{mentionSearch.trim().length >= 2 && <div className="mt-2 overflow-hidden rounded-xl border border-background-200 bg-white">{mentionResults.length ? mentionResults.map((item) => <button key={item.id || item.slug} type="button" disabled={mentionedBusinesses.some((mention) => String(mention.id) === String(item.id)) || mentionedBusinesses.length >= 10} onClick={() => { setMentionedBusinesses((current) => [...current, { id: item.id, slug: item.slug, title: item.title }]); setMentionSearch(""); setMentionResults([]); }} className="flex w-full items-center gap-3 border-b border-background-100 px-3 py-2.5 text-left last:border-0 hover:bg-primary-50 disabled:opacity-40"><span className="grid h-8 w-8 place-items-center rounded-lg bg-primary-50 text-[10px] font-bold text-primary-700">{initials(item.title)}</span><span className="min-w-0"><span className="block truncate text-xs font-bold text-foreground-900">{item.title}</span><span className="block truncate text-[10px] text-foreground-500">{item.location || item.category}</span></span></button>) : <p className="px-3 py-4 text-center text-xs text-foreground-500">No businesses found.</p>}</div>}{!!mentionedBusinesses.length && <div className="mt-3 flex flex-wrap gap-2">{mentionedBusinesses.map((item) => <span key={item.id || item.slug} className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-800"><span className="font-bold">@</span>{item.title}<button type="button" onClick={() => setMentionedBusinesses((current) => current.filter((mention) => String(mention.id) !== String(item.id)))} aria-label={`Remove ${item.title}`}><i className="ri-close-line" /></button></span>)}</div>}</div>}
                   <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-background-200 pt-3">
                     <div className="flex flex-wrap gap-1 rounded-xl border border-background-200 bg-background-100 p-1" role="group" aria-label="Update type">{POST_TYPES.map((option) => <button key={option.value} type="button" aria-pressed={type === option.value} title={option.description} onClick={() => { setType(option.value); setMessage(""); }} className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition ${type === option.value ? "bg-primary-700 text-white shadow-sm" : "text-foreground-600 hover:bg-white hover:text-primary-700"}`}><i className={option.icon} />{option.label}</button>)}</div>
@@ -430,7 +599,7 @@ export default function CommunityPage() {
 
             {loading && !posts.length && <div className="py-16 text-center text-sm text-foreground-500">Loading community updates…</div>}
             {error && !posts.length && <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">The community feed could not load. <button onClick={reload} className="font-bold underline">Try again</button></div>}
-            {posts.map((post) => <CommunityPost key={post.id} post={post} authenticated={isAuthenticated} onReact={react} onComment={comment} />)}
+            {visiblePosts.map((post) => <CommunityPost key={post.id} post={post} authenticated={isAuthenticated} canManage={Boolean(post.canManage) || ownedListingIds.has(String(post.listingId))} onReact={react} onComment={comment} onDelete={removePost} onEdit={editPost} onHide={hidePost} onMute={muteBusiness} onReport={reportPost} />)}
           </main>
 
           <aside className="space-y-4">

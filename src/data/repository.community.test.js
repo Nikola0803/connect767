@@ -12,7 +12,7 @@ vi.mock("../lib/apiClient", () => ({
   getStoredUser: vi.fn(),
 }));
 
-import { createCommunityPost, toggleCommunityReaction } from "./repository";
+import { createCommunityPost, deleteCommunityPost, reportCommunityPost, toggleCommunityReaction, updateCommunityPost } from "./repository";
 
 describe("community post publishing", () => {
   beforeEach(() => {
@@ -133,5 +133,17 @@ describe("community post publishing", () => {
 
     expect(api.customClient.post).toHaveBeenNthCalledWith(1, "/community/posts/42/reactions", { type: "appreciate" });
     expect(api.customClient.post).toHaveBeenNthCalledWith(2, "/community/posts/42/reactions", { type: "thumb" });
+  });
+
+  it("uses protected post-management endpoints", async () => {
+    api.customClient.del.mockResolvedValueOnce({ deleted: true, id: 42 });
+
+    await deleteCommunityPost(42);
+    await reportCommunityPost(42, "spam");
+    await updateCommunityPost(42, "Updated message");
+
+    expect(api.customClient.del).toHaveBeenCalledWith("/community/posts/42");
+    expect(api.customClient.post).toHaveBeenCalledWith("/community/posts/42/reports", { reason: "spam" });
+    expect(api.customClient.post).toHaveBeenCalledWith("/community/posts/42", { text: "Updated message" });
   });
 });
