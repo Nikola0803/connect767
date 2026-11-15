@@ -66,6 +66,7 @@ export async function createCommunityPost(payload) {
     return {
       id: `local-${Date.now()}`,
       ...payload,
+      mediaUrl: payload.image ? URL.createObjectURL(payload.image) : payload.mediaUrl || "",
       listingSlug: payload.listingSlug || "",
       listingTitle: payload.listingTitle || "Your business",
       createdAt: new Date().toISOString(),
@@ -74,6 +75,17 @@ export async function createCommunityPost(payload) {
       comments: [],
     };
   }
+
+  if (payload.image) {
+    const form = new FormData();
+    form.append("listingId", String(payload.listingId));
+    form.append("text", payload.text);
+    form.append("type", payload.type || "status");
+    if (payload.emotion) form.append("emotion", payload.emotion);
+    form.append("image", payload.image);
+    return customClient.post("/community/posts", form);
+  }
+
   return customClient.post("/community/posts", payload);
 }
 
