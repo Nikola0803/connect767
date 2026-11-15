@@ -6,6 +6,7 @@ import GarmentModel from "./GarmentModel";
 import DesignPlane from "./DesignPlane";
 import InteractiveGarment from "./InteractiveGarment";
 import { resolveAnchor } from "./zoneAnchors";
+import { studioBackgroundGradient } from "../../uniform-studio/studioBackgrounds";
 
 /**
  * The real-time 3D product preview — a genuine rotate/zoom/orbit view of
@@ -81,6 +82,7 @@ export default function Product3DStage({
   // Receives a capture function (or null on unmount) the page can call to get
   // a PNG data URL of the current 3D view.
   onCaptureReady,
+  studioBackground,
 }) {
   const controlsRef = useRef(null);
 
@@ -97,7 +99,7 @@ export default function Product3DStage({
   return (
     <div
       className={`relative w-full ${fullscreen ? "" : "rounded-2xl"} overflow-hidden`}
-      style={{ background: isUniformKit ? "radial-gradient(circle at 50% 35%, #ffffff 0%, #f3eee5 72%, #e8dfd2 100%)" : "#14110d", height: containerHeight }}
+      style={{ background: isUniformKit ? studioBackgroundGradient(studioBackground) : "#14110d", height: containerHeight }}
     >
       <Canvas
         shadows

@@ -34,6 +34,10 @@ import {
   SkinsPanel,
 } from "../components/uniform-studio/StudioPanels";
 import { cloneZoneModel, SOCCER_ZONE_MODEL } from "../components/uniform-studio/uniformZoneModel";
+import {
+  DEFAULT_STUDIO_BACKGROUND,
+  normalizeStudioBackground,
+} from "../components/uniform-studio/studioBackgrounds";
 import { skinDataUri } from "../data/skins";
 import Button from "../components/ui/Button";
 import Tooltip from "../components/ui/Tooltip";
@@ -250,6 +254,7 @@ export default function UniformStudioPage() {
   const [collar, setCollar] = useState("Crew");
   const [sleeve, setSleeve] = useState("Short");
   const [colors, setColors] = useState(defaultZoneColors);
+  const [studioBackground, setStudioBackground] = useState(DEFAULT_STUDIO_BACKGROUND);
   const [view, setView] = useState("front");
   const [layers, setLayers] = useState([]);
   const [selectedLayerId, setSelectedLayerId] = useState(null);
@@ -479,6 +484,7 @@ export default function UniformStudioPage() {
           layers,
           placements3d,
           colors,
+          studioBackground,
           collar,
           sleeve,
           zoneModel,
@@ -501,7 +507,7 @@ export default function UniformStudioPage() {
       /* private browsing / quota — the design just won't persist, which is
          no worse than before this existed */
     }
-  }, [storageKey, layers, placements3d, colors, collar, sleeve, zoneModel, zoneStyles, twoTone,
+  }, [storageKey, layers, placements3d, colors, studioBackground, collar, sleeve, zoneModel, zoneStyles, twoTone,
     fitType, kitType, logoApplication, insideCollarMessage, insideCollarText, fanJerseyAdded, supporterJerseys, roster, contact, shipping]);
 
   const saveProgress = () => {
@@ -513,6 +519,7 @@ export default function UniformStudioPage() {
           layers,
           placements3d,
           colors,
+          studioBackground,
           collar,
           sleeve,
           zoneModel,
@@ -550,6 +557,7 @@ export default function UniformStudioPage() {
       setLayers(saved.layers || []);
       setPlacements3d(saved.placements3d || {});
       if (saved.colors) setColors(normalizeZoneColors(saved.colors));
+      if (saved.studioBackground) setStudioBackground(normalizeStudioBackground(saved.studioBackground));
       if (saved.collar) setCollar(saved.collar);
       if (saved.sleeve) setSleeve(saved.sleeve);
       if (saved.zoneModel?.front && saved.zoneModel?.back) setZoneModel(saved.zoneModel);
@@ -1608,6 +1616,7 @@ export default function UniformStudioPage() {
                             collar={collar}
                             sleeve={sleeve}
                             colors={colors}
+                            studioBackground={studioBackground}
                             highlightZone={hoverZone}
                             zoneModel={activeSport === "soccer" ? zoneModel : undefined}
                             zoneStyles={zoneStyles}
@@ -1667,6 +1676,7 @@ export default function UniformStudioPage() {
                             onCaptureReady={(fn) => {
                               capture3dRef.current = fn;
                             }}
+                            studioBackground={studioBackground}
                           />
                         </Suspense>
                         <p className="text-[11px] text-background-50/40 font-label text-center mt-2 flex-shrink-0">
@@ -1788,6 +1798,8 @@ export default function UniformStudioPage() {
                     setInsideCollarMessage={setInsideCollarMessage}
                     insideCollarText={insideCollarText}
                     setInsideCollarText={setInsideCollarText}
+                    studioBackground={studioBackground}
+                    setStudioBackground={setStudioBackground}
                   />
                 )}
                 {activeTool === "roster" && (
@@ -1915,6 +1927,8 @@ export default function UniformStudioPage() {
             setInsideCollarMessage={setInsideCollarMessage}
             insideCollarText={insideCollarText}
             setInsideCollarText={setInsideCollarText}
+            studioBackground={studioBackground}
+            setStudioBackground={setStudioBackground}
           />
         )}
         {activeTool === "roster" && (

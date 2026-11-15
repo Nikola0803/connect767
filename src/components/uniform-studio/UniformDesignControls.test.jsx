@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { defaultZoneColors, normalizeZoneColors } from "../../data/uniforms";
 import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
-import { DesignPanel } from "./StudioPanels";
+import { DesignPanel, OptionsPanel } from "./StudioPanels";
 
 describe("uniform design controls", () => {
   it("starts the collar in the same color as the blank shirt fabric", () => {
@@ -100,5 +100,29 @@ describe("uniform design controls", () => {
     expect(screen.getByRole("img", { name: /soccer complete uniform front/i })).toHaveClass(
       "overflow-hidden",
     );
+  });
+
+  it("offers useful studio backgrounds without changing garment controls", () => {
+    const setStudioBackground = vi.fn();
+    render(
+      <OptionsPanel
+        fitType="Regular"
+        setFitType={vi.fn()}
+        kitType="Full kit"
+        setKitType={vi.fn()}
+        logoApplication="Sublimated"
+        setLogoApplication={vi.fn()}
+        insideCollarMessage={false}
+        setInsideCollarMessage={vi.fn()}
+        insideCollarText=""
+        setInsideCollarText={vi.fn()}
+        studioBackground="#F5F0E7"
+        setStudioBackground={setStudioBackground}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Charcoal/i }));
+    expect(setStudioBackground).toHaveBeenCalledWith("#252824");
+    expect(screen.getByText(/never recolors the garment/i)).toBeInTheDocument();
   });
 });
