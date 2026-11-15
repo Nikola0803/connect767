@@ -146,7 +146,7 @@ export const sportConfigs = {
   baseball: {
     collarOptions: ["Crew", "Polo"],
     sleeveOptions: ["Short", "Long"],
-    hasSocks: true,
+    hasSocks: false,
     bottomLabel: "Pants",
   },
   goalkeeper: {
@@ -160,7 +160,7 @@ export const sportConfigs = {
   other: {
     collarOptions: ["Crew", "V-Neck", "Polo"],
     sleeveOptions: ["Short", "Long", "Sleeveless", "Mixed"],
-    hasSocks: true,
+    hasSocks: false,
     bottomLabel: "Shorts",
   },
 };

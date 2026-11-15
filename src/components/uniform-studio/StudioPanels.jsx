@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { skinLibrary, skinGroups, skinDataUri, findSkin } from "../../data/skins";
 import {
   zoneColorPalette,
@@ -48,6 +48,12 @@ function ColorRow({ label, value, onChange, zone, onHoverZone }) {
   const [custom, setCustom] = useState(false);
   const [base, setBase] = useState(value);
   const [shade, setShade] = useState(0);
+
+  useEffect(() => {
+    if (!isHex(value)) return;
+    setBase(value);
+    setShade(0);
+  }, [value]);
 
   const applyBase = (hex) => {
     setBase(hex);
@@ -346,14 +352,22 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
           onHoverZone={onHoverZone}
         />
       )}
-      <ColorRow label={config.bottomLabel} value={colors.shorts} onChange={setZone("shorts")} />
+      <ColorRow
+        label={config.bottomLabel}
+        value={colors.shorts}
+        onChange={setZone("shorts")}
+        zone="shorts"
+        onHoverZone={onHoverZone}
+      />
       {config.hasSocks && (
         <>
-          <ColorRow label="Socks" value={colors.socks} onChange={setZone("socks")} />
-          <p className="text-[11px] text-foreground-500 font-label -mt-3 mb-5">
-            Socks color is saved with your quote and shown on the production proof — the live
-            preview shows it in the full kit strip above the canvas.
-          </p>
+          <ColorRow
+            label="Socks"
+            value={colors.socks}
+            onChange={setZone("socks")}
+            zone="socks"
+            onHoverZone={onHoverZone}
+          />
         </>
       )}
 
@@ -368,12 +382,20 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
         onHoverZone={onHoverZone}
       />
       {config.sleeveOptions && (
-        <ColorRow label="Sleeve strip" value={colors.sleeveStrip} onChange={setZone("sleeveStrip")} />
+        <ColorRow
+          label="Sleeve strip"
+          value={colors.sleeveStrip}
+          onChange={setZone("sleeveStrip")}
+          zone="sleeveStrip"
+          onHoverZone={onHoverZone}
+        />
       )}
       <ColorRow
         label={`${config.bottomLabel} strip`}
         value={colors.shortsStrip}
         onChange={setZone("shortsStrip")}
+        zone="shortsStrip"
+        onHoverZone={onHoverZone}
       />
       <ColorRow
         label="Side panels"
@@ -383,8 +405,7 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
         onHoverZone={onHoverZone}
       />
       <p className="text-[11px] text-foreground-500 font-label -mt-3">
-        Sleeve strip and {config.bottomLabel.toLowerCase()} strip are saved with your quote for the
-        production proof — they don't have a matching zone on the live shirt preview.
+        Every color above maps directly to the matching part of the live kit preview.
       </p>
     </div>
   );
