@@ -127,6 +127,7 @@ export default function ApprovedUniformGraphic({
   const maskId = `approved-kit-${uid}`;
   const jerseyMaskId = `approved-jersey-${uid}`;
   const shortsMaskId = `approved-shorts-${uid}`;
+  const shortsClipId = `approved-shorts-clip-${uid}`;
   const socksMaskId = `approved-socks-${uid}`;
   const socksClipId = `approved-socks-clip-${uid}`;
   const shapeMaskId = `approved-kit-shape-${uid}`;
@@ -222,10 +223,31 @@ export default function ApprovedUniformGraphic({
           <image href={asset} x="0" y="0" width={spriteWidth} height={spriteHeight} />
           <rect x="0" y={region.bottomStart} width={spriteWidth} height={spriteHeight - region.bottomStart} fill="black" />
         </mask>
-        <mask id={shortsMaskId} maskUnits="userSpaceOnUse" x="0" y="0" width={spriteWidth} height={spriteHeight}>
-          <image href={asset} x="0" y="0" width={spriteWidth} height={spriteHeight} />
-          <rect x="0" y="0" width={spriteWidth} height={region.bottomStart} fill="black" />
-          <rect x="0" y={bottomEnd} width={spriteWidth} height={spriteHeight - bottomEnd} fill="black" />
+        <clipPath id={shortsClipId} clipPathUnits="userSpaceOnUse">
+          <rect
+            x="0"
+            y={region.bottomStart}
+            width={spriteWidth}
+            height={Math.max(0, bottomEnd - region.bottomStart)}
+          />
+        </clipPath>
+        <mask
+          id={shortsMaskId}
+          maskUnits="userSpaceOnUse"
+          x="0"
+          y="0"
+          width={spriteWidth}
+          height={spriteHeight}
+          style={{ maskType: "alpha" }}
+        >
+          <image
+            href={asset}
+            x="0"
+            y="0"
+            width={spriteWidth}
+            height={spriteHeight}
+            clipPath={`url(#${shortsClipId})`}
+          />
         </mask>
         <clipPath id={socksClipId} clipPathUnits="userSpaceOnUse">
           <rect
@@ -310,17 +332,15 @@ export default function ApprovedUniformGraphic({
           </TintLayer>
         )}
 
-        <TintLayer mask={maskId} fill={bottom} opacity={opacityFor("shorts")}>
+        <TintLayer mask={shortsMaskId} fill={bottom} opacity={opacityFor("shorts")}>
         {(fill) => (
-          region.shortsPolygon
-            ? <path d={polygonPath(region.shortsPolygon)} fill={fill} />
-            : <rect
-                x={offset}
-                y={region.bottomStart}
-                width={halfWidth}
-                height={bottomEnd - region.bottomStart}
-                fill={fill}
-              />
+          <rect
+            x={offset}
+            y={region.bottomStart}
+            width={halfWidth}
+            height={bottomEnd - region.bottomStart}
+            fill={fill}
+          />
         )}
         </TintLayer>
 
@@ -369,7 +389,7 @@ export default function ApprovedUniformGraphic({
         )}
         </TintLayer>}
 
-        <TintLayer mask={maskId} fill={shortsEnd} opacity={opacityFor("shortsStrip")}>
+        <TintLayer mask={shortsMaskId} fill={shortsEnd} opacity={opacityFor("shortsStrip")}>
         {(fill) => (
             region.shortsEndPolygon
               ? <path d={polygonPath(region.shortsEndPolygon)} fill={fill} />
