@@ -191,6 +191,12 @@ const newRosterEntry = () => ({
   notes: "",
 });
 
+const newSupporterJersey = () => ({ size: "AM", quantity: 1 });
+const supporterJerseyCount = (rows = []) => rows.reduce(
+  (total, row) => total + Math.max(0, Math.min(99, Number.parseInt(row.quantity, 10) || 0)),
+  0,
+);
+
 const rosterUnitCount = (roster) =>
   roster.reduce((total, entry) => total + Math.max(1, Number.parseInt(entry.quantity, 10) || 1), 0);
 
@@ -335,6 +341,7 @@ export default function UniformStudioPage() {
   const [insideCollarMessage, setInsideCollarMessage] = useState(false);
   const [insideCollarText, setInsideCollarText] = useState("");
   const [fanJerseyAdded, setFanJerseyAdded] = useState(false);
+  const [supporterJerseys, setSupporterJerseys] = useState([newSupporterJersey()]);
 
   const unitPrice = useMemo(
     () => kitUnitPrice({ sleeve, collar, insideCollarMessage, logoApplication }),
@@ -367,6 +374,8 @@ export default function UniformStudioPage() {
     ]);
     setContact({ name: "Riverside FC", email: "orders@example.com", phone: "(767) 555-0100", club: "Riverside FC", notes: "" });
     setShipping({ firstName: "Avery", lastName: "Miller", company: "Riverside FC", address1: "10 Stadium Road", address2: "", city: "Roseau", state: "Saint George", postcode: "00109", country: "DM", phone: "(767) 555-0100" });
+    setFanJerseyAdded(true);
+    setSupporterJerseys([{ size: "AM", quantity: 2 }, { size: "AL", quantity: 1 }]);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const template = templates.find((t) => t.slug === selectedTemplate);
@@ -481,6 +490,7 @@ export default function UniformStudioPage() {
           insideCollarMessage,
           insideCollarText,
           fanJerseyAdded,
+          supporterJerseys,
           roster,
           contact,
           shipping,
@@ -492,7 +502,7 @@ export default function UniformStudioPage() {
          no worse than before this existed */
     }
   }, [storageKey, layers, placements3d, colors, collar, sleeve, zoneModel, zoneStyles, twoTone,
-    fitType, kitType, logoApplication, insideCollarMessage, insideCollarText, fanJerseyAdded, roster, contact, shipping]);
+    fitType, kitType, logoApplication, insideCollarMessage, insideCollarText, fanJerseyAdded, supporterJerseys, roster, contact, shipping]);
 
   const saveProgress = () => {
     if (!storageKey) return;
@@ -514,6 +524,7 @@ export default function UniformStudioPage() {
           insideCollarMessage,
           insideCollarText,
           fanJerseyAdded,
+          supporterJerseys,
           roster,
           contact,
           shipping,
@@ -550,6 +561,7 @@ export default function UniformStudioPage() {
       if (typeof saved.insideCollarMessage === "boolean") setInsideCollarMessage(saved.insideCollarMessage);
       if (typeof saved.insideCollarText === "string") setInsideCollarText(saved.insideCollarText);
       if (typeof saved.fanJerseyAdded === "boolean") setFanJerseyAdded(saved.fanJerseyAdded);
+      if (Array.isArray(saved.supporterJerseys) && saved.supporterJerseys.length) setSupporterJerseys(saved.supporterJerseys);
       if (Array.isArray(saved.roster)) setRoster(saved.roster);
       if (saved.contact) setContact(saved.contact);
       if (saved.shipping) setShipping(saved.shipping);
@@ -998,6 +1010,7 @@ export default function UniformStudioPage() {
 
   const buildUniformPayload = (previewImage = null) => {
     const unitCount = rosterUnitCount(roster);
+    const supporterCount = fanJerseyAdded ? supporterJerseyCount(supporterJerseys) : 0;
     return {
       template: template?.name || "Blank Canvas",
       sport: activeSport,
@@ -1010,8 +1023,9 @@ export default function UniformStudioPage() {
       insideCollarMessage,
       insideCollarText,
       fanJerseyAdded,
+      supporterJerseys: fanJerseyAdded ? supporterJerseys : [],
       unitPrice,
-      grandTotal: unitPrice * unitCount + (fanJerseyAdded ? FAN_JERSEY_PRICE : 0),
+      grandTotal: unitPrice * unitCount + supporterCount * FAN_JERSEY_PRICE,
       layers,
       placements3d,
       designMode: stageMode === "3d" ? "3d" : "flat",
@@ -1806,6 +1820,8 @@ export default function UniformStudioPage() {
                     unitPrice={unitPrice}
                     fanJerseyAdded={fanJerseyAdded}
                     setFanJerseyAdded={setFanJerseyAdded}
+                    supporterJerseys={supporterJerseys}
+                    setSupporterJerseys={setSupporterJerseys}
                     onRequestQuote={handleRequestQuote}
                     submitting={submittingQuote}
                     error={quoteError}
@@ -1929,6 +1945,8 @@ export default function UniformStudioPage() {
             unitPrice={unitPrice}
             fanJerseyAdded={fanJerseyAdded}
             setFanJerseyAdded={setFanJerseyAdded}
+            supporterJerseys={supporterJerseys}
+            setSupporterJerseys={setSupporterJerseys}
             onRequestQuote={handleRequestQuote}
             submitting={submittingQuote}
             error={quoteError}
@@ -2332,6 +2350,8 @@ function ReviewOrderTool({
   unitPrice,
   fanJerseyAdded,
   setFanJerseyAdded,
+  supporterJerseys,
+  setSupporterJerseys,
   onRequestQuote,
   submitting,
   error,
@@ -2340,7 +2360,9 @@ function ReviewOrderTool({
 }) {
   const unitCount = rosterUnitCount(roster);
   const kitsTotal = unitPrice * unitCount;
-  const grandTotal = kitsTotal + (fanJerseyAdded ? FAN_JERSEY_PRICE : 0);
+  const supporterCount = fanJerseyAdded ? supporterJerseyCount(supporterJerseys) : 0;
+  const supporterTotal = supporterCount * FAN_JERSEY_PRICE;
+  const grandTotal = kitsTotal + supporterTotal;
   const sportLabel = sports.find((sport) => sport.slug === activeSport)?.label || activeSport;
   const [config, setConfig] = useState(null);
   const [totals, setTotals] = useState(null);
@@ -2355,7 +2377,7 @@ function ReviewOrderTool({
     shipping.city.trim() && shipping.postcode.trim() && shipping.country.trim() &&
     (shipping.country !== "US" || shipping.state.trim())
   );
-  const canCheckout = roster.length > 0 && emailValid && shippingComplete;
+  const canCheckout = roster.length > 0 && emailValid && shippingComplete && (!fanJerseyAdded || supporterCount > 0);
 
   useEffect(() => {
     getCheckoutConfig()
@@ -2366,12 +2388,12 @@ function ReviewOrderTool({
   useEffect(() => {
     setTotals(null);
     setCardSession(null);
-  }, [fanJerseyAdded, unitCount, unitPrice]);
+  }, [fanJerseyAdded, supporterJerseys, unitCount, unitPrice]);
 
   useEffect(() => {
     if (!import.meta.env.DEV || !window.location.search.includes("preview=checkout") || !canCheckout || totals) return;
     setCalculating(true);
-    quoteUniformCheckout({ ...orderPayload, fanJerseyAdded, grandTotal }, contact.email, shipping)
+    quoteUniformCheckout({ ...orderPayload, fanJerseyAdded, supporterJerseys, grandTotal }, contact.email, shipping)
       .then(setTotals)
       .catch((err) => setCheckoutError(err.message || "Couldn't calculate the preview total."))
       .finally(() => setCalculating(false));
@@ -2386,6 +2408,7 @@ function ReviewOrderTool({
   const completeOrderPayload = async () => ({
     ...orderPayload,
     fanJerseyAdded,
+    supporterJerseys: fanJerseyAdded ? supporterJerseys : [],
     grandTotal,
     previewImage: await capturePreview(),
   });
@@ -2398,7 +2421,7 @@ function ReviewOrderTool({
     setCalculating(true);
     setCheckoutError(null);
     try {
-      setTotals(await quoteUniformCheckout({ ...orderPayload, fanJerseyAdded, grandTotal }, contact.email, shipping));
+      setTotals(await quoteUniformCheckout({ ...orderPayload, fanJerseyAdded, supporterJerseys, grandTotal }, contact.email, shipping));
     } catch (err) {
       setCheckoutError(err.message || "Couldn't calculate tax and shipping.");
     } finally {
@@ -2482,20 +2505,93 @@ function ReviewOrderTool({
         />
       </div>
 
-      <label className="mb-4 flex cursor-pointer items-start gap-3 rounded-xl border border-background-300 bg-background-100/55 p-3.5">
-        <input
-          type="checkbox"
-          className="mt-1 rounded border-background-300"
-          checked={fanJerseyAdded}
-          onChange={(event) => setFanJerseyAdded(event.target.checked)}
-        />
-        <span>
-          <span className="block text-sm font-semibold text-foreground-900">Add a supporter jersey</span>
-          <span className="mt-0.5 block text-[11px] font-label text-foreground-500">
-            One fan jersey using this team design (+${FAN_JERSEY_PRICE.toFixed(2)})
+      <div className="mb-4 rounded-xl border border-background-300 bg-background-100/55 p-3.5">
+        <label className="flex cursor-pointer items-start gap-3">
+          <input
+            type="checkbox"
+            className="mt-1 rounded border-background-300"
+            checked={fanJerseyAdded}
+            onChange={(event) => setFanJerseyAdded(event.target.checked)}
+          />
+          <span className="min-w-0 flex-1">
+            <span className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-sm font-semibold text-foreground-900">Add supporter jerseys</span>
+              <span className="rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-bold text-primary-800">
+                ${FAN_JERSEY_PRICE.toFixed(2)} each
+              </span>
+            </span>
+            <span className="mt-0.5 block text-[11px] font-label text-foreground-500">
+              Choose the required sizes and quantities.
+            </span>
           </span>
-        </span>
-      </label>
+        </label>
+
+        {fanJerseyAdded && (
+          <div className="mt-3 border-t border-background-300/80 pt-3">
+            <p className="mb-3 rounded-lg bg-primary-50 px-3 py-2 text-[11px] leading-relaxed text-primary-900">
+              Supporter/Fan jerseys will be same as team jersey but without player numbers
+            </p>
+            <div className="space-y-2">
+              {supporterJerseys.map((jersey, index) => (
+                <div key={`${jersey.size}-${index}`} className="grid grid-cols-[1fr_88px_32px] items-center gap-2">
+                  <Select
+                    aria-label={`Supporter jersey size ${index + 1}`}
+                    value={jersey.size}
+                    onChange={(event) => setSupporterJerseys((current) => current.map((row, rowIndex) => (
+                      rowIndex === index ? { ...row, size: event.target.value } : row
+                    )))}
+                  >
+                    {shirtSizeOptions.map((size) => (
+                      <option
+                        key={size}
+                        value={size}
+                        disabled={supporterJerseys.some((row, rowIndex) => rowIndex !== index && row.size === size)}
+                      >
+                        Size {size}
+                      </option>
+                    ))}
+                  </Select>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="99"
+                    aria-label={`Supporter jersey quantity ${index + 1}`}
+                    value={jersey.quantity}
+                    onChange={(event) => setSupporterJerseys((current) => current.map((row, rowIndex) => (
+                      rowIndex === index ? { ...row, quantity: event.target.value } : row
+                    )))}
+                  />
+                  <button
+                    type="button"
+                    aria-label={`Remove supporter jersey size ${jersey.size}`}
+                    disabled={supporterJerseys.length === 1}
+                    onClick={() => setSupporterJerseys((current) => current.filter((_, rowIndex) => rowIndex !== index))}
+                    className="flex h-9 w-8 items-center justify-center rounded-lg text-foreground-400 transition hover:bg-accent-50 hover:text-accent-600 disabled:cursor-not-allowed disabled:opacity-25"
+                  >
+                    <i className="ri-delete-bin-line" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            {supporterJerseys.length < shirtSizeOptions.length && (
+              <button
+                type="button"
+                onClick={() => {
+                  const nextSize = shirtSizeOptions.find((size) => !supporterJerseys.some((row) => row.size === size));
+                  setSupporterJerseys((current) => [...current, { size: nextSize || "AM", quantity: 1 }]);
+                }}
+                className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary-700 hover:text-primary-900"
+              >
+                <i className="ri-add-line" /> Add another size
+              </button>
+            )}
+            <div className="mt-3 flex items-center justify-between border-t border-background-300/80 pt-3 text-xs font-semibold text-foreground-800">
+              <span>{supporterCount} supporter jersey{supporterCount === 1 ? "" : "s"}</span>
+              <span>${supporterTotal.toFixed(2)}</span>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="mb-5 rounded-2xl bg-primary-950 p-4 text-background-50 shadow-[0_14px_30px_rgba(0,48,30,0.2)]">
         <div className="flex items-end justify-between gap-3">
@@ -2513,7 +2609,7 @@ function ReviewOrderTool({
         </div>
         <div className="mt-3 space-y-1 border-t border-white/15 pt-3 text-xs text-background-50/70">
           <div className="flex justify-between"><span>{unitCount} kits × ${unitPrice.toFixed(2)}</span><span>${kitsTotal.toFixed(2)}</span></div>
-          {fanJerseyAdded && <div className="flex justify-between"><span>Supporter jersey</span><span>${FAN_JERSEY_PRICE.toFixed(2)}</span></div>}
+          {fanJerseyAdded && <div className="flex justify-between"><span>{supporterCount} supporter jersey{supporterCount === 1 ? "" : "s"} × ${FAN_JERSEY_PRICE.toFixed(2)}</span><span>${supporterTotal.toFixed(2)}</span></div>}
           <div className="flex justify-between"><span>Subtotal</span><span>${(totals?.subtotal ?? grandTotal).toFixed(2)}</span></div>
           <div className="flex justify-between"><span>Tax</span><span>{totals ? `$${totals.tax.toFixed(2)}` : "—"}</span></div>
           <div className="flex justify-between"><span>{totals?.shippingLabel || "Shipping"}</span><span>{totals ? `$${totals.shipping.toFixed(2)}` : "—"}</span></div>

@@ -285,6 +285,15 @@ class C767_Uniform_Checkout
         $unit_price = self::authoritative_unit_price($payload);
         $kits_total = round($unit_price * $unit_count, 2);
         $fan_added = rest_sanitize_boolean($payload['fanJerseyAdded'] ?? false);
+        $supporter_jerseys = $fan_added ? self::sanitize_supporter_jerseys($payload['supporterJerseys'] ?? []) : [];
+        if ($fan_added && empty($supporter_jerseys)) {
+            // Backward compatibility for a design saved before size selection
+            // existed: the old checkbox represented one adult-medium jersey.
+            $supporter_jerseys[] = ['size' => 'AM', 'quantity' => 1];
+        }
+        $supporter_count = array_reduce($supporter_jerseys, function ($total, $row) {
+            return $total + $row['quantity'];
+        }, 0);
         $template = sanitize_text_field((string) ($payload['template'] ?? 'Custom design')) ?: 'Custom design';
         $product = self::uniform_product();
         if (is_wp_error($product)) {
@@ -307,14 +316,20 @@ class C767_Uniform_Checkout
             $kit_item->save();
         }
 
-        if ($fan_added) {
-            $fan_item_id = $order->add_product($product, 1, [
-                'subtotal' => self::FAN_JERSEY_PRICE,
-                'total' => self::FAN_JERSEY_PRICE,
+        if ($supporter_count > 0) {
+            $supporter_total = round(self::FAN_JERSEY_PRICE * $supporter_count, 2);
+            $fan_item_id = $order->add_product($product, $supporter_count, [
+                'subtotal' => $supporter_total,
+                'total' => $supporter_total,
             ]);
             $fan_item = $order->get_item($fan_item_id);
             if ($fan_item) {
                 $fan_item->set_name($template . ' supporter jersey');
+                $fan_item->add_meta_data('Unit price', wc_price(self::FAN_JERSEY_PRICE), true);
+                $fan_item->add_meta_data('Sizes', implode(', ', array_map(function ($row) {
+                    return $row['size'] . ' × ' . $row['quantity'];
+                }, $supporter_jerseys)), true);
+                $fan_item->add_meta_data('Player numbers', 'None', true);
                 $fan_item->save();
             }
         }
@@ -346,6 +361,7 @@ class C767_Uniform_Checkout
         $order->update_meta_data('_c767_uniform_order', '1');
         $order->update_meta_data('_c767_uniform_unit_count', $unit_count);
         $order->update_meta_data('_c767_uniform_unit_price', $unit_price);
+        $order->update_meta_data('_c767_uniform_supporter_count', $supporter_count);
 
         $design_payload = $payload;
         unset($design_payload['previewImage']);
@@ -359,6 +375,26 @@ class C767_Uniform_Checkout
         }
         $order->save();
         return $order;
+    }
+
+    private static function sanitize_supporter_jerseys($value)
+    {
+        $allowed_sizes = ['YS', 'YM', 'YL', 'AS', 'AM', 'AL', 'AXL', 'A2XL'];
+        $combined = [];
+
+        foreach ((array) $value as $entry) {
+            $row = (array) $entry;
+            $size = strtoupper(sanitize_text_field((string) ($row['size'] ?? '')));
+            if (!in_array($size, $allowed_sizes, true)) {
+                continue;
+            }
+            $quantity = max(1, min(99, absint($row['quantity'] ?? 1)));
+            $combined[$size] = min(99, ($combined[$size] ?? 0) + $quantity);
+        }
+
+        return array_map(function ($size, $quantity) {
+            return ['size' => $size, 'quantity' => $quantity];
+        }, array_keys($combined), array_values($combined));
     }
 
     private static function authoritative_unit_price(array $payload)
