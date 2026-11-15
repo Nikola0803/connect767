@@ -82,6 +82,7 @@ class C767_REST_Uniform_Quotes
             'insideCollarMessage' => rest_sanitize_boolean($request->get_param('insideCollarMessage')),
             'insideCollarText' => sanitize_text_field((string) $request->get_param('insideCollarText')),
             'fanJerseyAdded' => rest_sanitize_boolean($request->get_param('fanJerseyAdded')),
+            'supporterJerseys' => self::sanitize_supporter_jerseys($request->get_param('supporterJerseys')),
             'unitPrice' => round((float) $request->get_param('unitPrice'), 2),
             'grandTotal' => round((float) $request->get_param('grandTotal'), 2),
             'unitCount' => $unit_count,
@@ -236,6 +237,24 @@ class C767_REST_Uniform_Quotes
         return array_reduce($roster, function ($total, $entry) {
             return $total + max(1, absint($entry['quantity'] ?? 1));
         }, 0);
+    }
+
+    private static function sanitize_supporter_jerseys($value)
+    {
+        $allowed_sizes = ['YS', 'YM', 'YL', 'AS', 'AM', 'AL', 'AXL', 'A2XL'];
+        $combined = [];
+        foreach ((array) $value as $entry) {
+            $row = (array) $entry;
+            $size = strtoupper(sanitize_text_field((string) ($row['size'] ?? '')));
+            if (!in_array($size, $allowed_sizes, true)) {
+                continue;
+            }
+            $quantity = max(1, min(99, absint($row['quantity'] ?? 1)));
+            $combined[$size] = min(99, ($combined[$size] ?? 0) + $quantity);
+        }
+        return array_map(function ($size, $quantity) {
+            return ['size' => $size, 'quantity' => $quantity];
+        }, array_keys($combined), array_values($combined));
     }
 
     private static function sanitize_shallow_array($value)
