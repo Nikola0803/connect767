@@ -82,6 +82,7 @@ describe("ApprovedUniformGraphic trim isolation", () => {
 
     const shirtHem = container.querySelector('[data-shirt-edge="complete"]');
     const shirtBody = container.querySelector('path[d^="M275,56"]');
+    const shirtBodyCleanup = container.querySelector('[data-shirt-body-cleanup="complete"]');
     const editableShirtHem = container.querySelector('[data-zone-id="front-shirt-hem"]');
     expect(shirtHem).not.toBeNull();
     expect(shirtBody.getAttribute("d")).toContain("L481,548 L189,548");
@@ -91,6 +92,11 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     expect(shirtHem.getAttribute("y")).toBe("534");
     expect(shirtHem.getAttribute("width")).toBe("579.5");
     expect(shirtHem.getAttribute("height")).toBe("46");
+    expect(shirtBodyCleanup.getAttribute("x")).toBe("0");
+    expect(shirtBodyCleanup.getAttribute("y")).toBe("510");
+    expect(shirtBodyCleanup.getAttribute("height")).toBe("24");
+    expect(shirtBodyCleanup.getAttribute("fill")).toBe("#eeeeee");
+    expect(shirtBodyCleanup.parentElement.style.mixBlendMode).toBe("normal");
     expect(editableShirtHem.getAttribute("fill-opacity")).toBe("0");
 
     const jerseyMask = container.querySelector('mask[id^="approved-jersey-"]');

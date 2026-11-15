@@ -18,7 +18,7 @@ const APPROVED_ASSETS = {
 
 const KIT_REGIONS = {
   soccer: {
-    shirtTop: 20, shirtEndStart: 534, bottomStart: 580, socksStart: 865, kitBottom: 1358,
+    shirtTop: 20, shirtBodyCleanupStart: 510, shirtEndStart: 534, bottomStart: 580, socksStart: 865, kitBottom: 1358,
     sleeveBottom: 300, shortSleeveBottom: 300, bodyLeft: 190, bodyRight: 390, collarY: 66,
     nativeSleeve: "short",
     views: {
@@ -373,6 +373,25 @@ export default function ApprovedUniformGraphic({
           )}
           </TintLayer>
       )}
+
+        {/* The source photo has a dark upper seam immediately before the hem.
+            Repaint that narrow area as shirt body so it cannot appear as a
+            separate green/black garment zone above the selected shirt edge. */}
+        {region.shirtBodyCleanupStart != null && <TintLayer
+          mask={jerseyMaskId}
+          fill={body}
+          opacity={opacityFor("body")}
+          blendMode="normal"
+        >
+          {(fill) => <rect
+            data-shirt-body-cleanup="complete"
+            x={offset}
+            y={region.shirtBodyCleanupStart}
+            width={halfWidth}
+            height={(region.shirtEndStart ?? region.bottomStart - 18) - region.shirtBodyCleanupStart}
+            fill={fill}
+          />}
+        </TintLayer>}
 
         {/* Cover the complete photographed waist construction with one edge.
             The full-width rectangle is clipped by the jersey alpha mask, so
