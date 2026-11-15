@@ -152,11 +152,11 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     expect(leftLeg.getAttribute("fill-opacity")).toBe("0");
     expect(waistband.getAttribute("fill-opacity")).toBe("0");
     expect(editableShortsHem.getAttribute("fill-opacity")).toBe("0");
-    expect(shortsEdge.getAttribute("x")).toBe("0");
-    expect(shortsEdge.getAttribute("y")).toBe("800");
-    expect(shortsEdge.getAttribute("width")).toBe("579.5");
-    expect(shortsEdge.getAttribute("height")).toBe("65");
-    expect(shortsEdge.getAttribute("fill")).toBe("#1B1A16");
+    expect(shortsEdge.getAttribute("data-shorts-edge-width")).toBe("18");
+    expect(shortsEdge.getAttribute("transform")).toBe("translate(0 0)");
+    expect(shortsEdge.querySelectorAll("path")).toHaveLength(2);
+    expect(shortsEdge.querySelector("path").getAttribute("d")).toContain("M155,792 C200,812");
+    expect(shortsEdge.querySelector("path").getAttribute("fill")).toBe("#1B1A16");
     expect(shortsEdge.parentElement.style.mixBlendMode).toBe("normal");
   });
 });
