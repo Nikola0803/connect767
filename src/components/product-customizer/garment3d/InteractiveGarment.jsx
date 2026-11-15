@@ -48,6 +48,9 @@ export default function InteractiveGarment({
   colorB,
   splitAt,
   softness,
+  zoneColors,
+  collar,
+  sleeve,
   offsetY = 0,
   layers,
   selectedLayerId,
@@ -460,6 +463,9 @@ export default function InteractiveGarment({
           colorB={colorB}
           splitAt={splitAt}
           softness={softness}
+          zoneColors={zoneColors}
+          collar={collar}
+          sleeve={sleeve}
         />
       </group>
 

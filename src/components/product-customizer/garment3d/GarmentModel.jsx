@@ -1,6 +1,7 @@
 import { Suspense, useMemo } from "react";
 import * as THREE from "three";
 import { RoundedBox, useGLTF } from "@react-three/drei";
+import UniformKitModel from "./UniformKitModel";
 
 /**
  * Procedural stand-in geometry for each built-in product type — not final
@@ -223,8 +224,27 @@ function GltfGarment({ url, color, colorB, splitAt = 0.5, softness = 0.5 }) {
  * @param splitAt  Height of the boundary, 0 (hem) to 1 (collar). ~0.5 = waist.
  * @param softness 0 = hard seam (shirt vs shorts), 1 = full-length fade.
  */
-export default function GarmentModel({ productType, color, colorB, splitAt, softness }) {
+export default function GarmentModel({
+  productType,
+  color,
+  colorB,
+  splitAt,
+  softness,
+  zoneColors,
+  collar,
+  sleeve,
+}) {
   const slug = productType?.slug;
+  if (productType?.uniformKit) {
+    return (
+      <UniformKitModel
+        sport={slug}
+        colors={zoneColors || { body: color, shorts: colorB || color }}
+        collar={collar}
+        sleeve={sleeve}
+      />
+    );
+  }
   const url = productType?.modelUrl || MODEL_BY_SLUG[slug];
   if (url) {
     return (
