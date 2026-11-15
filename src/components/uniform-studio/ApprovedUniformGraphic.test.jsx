@@ -12,8 +12,10 @@ describe("ApprovedUniformGraphic trim isolation", () => {
       />,
     );
 
-    const shirtHem = container.querySelector('path[d^="M193,524"]');
+    const shirtHem = container.querySelector('path[d^="M189,545"]');
+    const shirtBody = container.querySelector('path[d^="M275,56"]');
     expect(shirtHem).not.toBeNull();
+    expect(shirtBody.getAttribute("d")).toContain("L481,548 L189,548");
     expect(shirtHem.parentElement.getAttribute("mask")).toContain("approved-jersey-");
   });
 
