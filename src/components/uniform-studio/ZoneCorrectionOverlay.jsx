@@ -101,8 +101,10 @@ export default function ZoneCorrectionOverlay({
           || (style.pattern && style.pattern !== "none")
           || style.texture,
         );
-        const duplicateDefaultShirtEdge = item.colorKey === "shirtStrip" && !hasExplicitSeamStyle;
-        const opacity = solidSock || baseShortsZone || duplicateDefaultShirtEdge
+        const duplicateDefaultGarmentEdge = (
+          item.colorKey === "shirtStrip" || item.colorKey === "shortsStrip"
+        ) && !hasExplicitSeamStyle;
+        const opacity = solidSock || baseShortsZone || duplicateDefaultGarmentEdge
           ? 0
           : item.group === "Seams" && !hasExplicitSeamStyle
           ? 0
