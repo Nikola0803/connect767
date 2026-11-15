@@ -1,4 +1,5 @@
 import { Suspense, useEffect, useRef } from "react";
+import * as THREE from "three";
 import { Canvas, useThree } from "@react-three/fiber";
 import { Environment, OrbitControls, ContactShadows, Html } from "@react-three/drei";
 import GarmentModel from "./GarmentModel";
@@ -56,6 +57,9 @@ export default function Product3DStage({
   colorB,
   splitAt,
   softness,
+  zoneColors,
+  collar,
+  sleeve,
   textures,
   spinning = true,
   fullscreen = false,
@@ -85,29 +89,41 @@ export default function Product3DStage({
   // Auto-rotation fights direct manipulation — you can't drag a badge onto a
   // moving target.
   const autoRotate = spinning && !interactive;
+  const isUniformKit = Boolean(productType?.uniformKit);
+  const modelOffsetY = isUniformKit ? 0 : -0.95;
 
   const containerHeight = fullscreen ? "calc(100dvh - 180px)" : "70dvh";
 
   return (
-    <div className={`relative w-full ${fullscreen ? "" : "rounded-2xl"} overflow-hidden`} style={{background:"#14110d", height: containerHeight}}>
+    <div
+      className={`relative w-full ${fullscreen ? "" : "rounded-2xl"} overflow-hidden`}
+      style={{ background: isUniformKit ? "radial-gradient(circle at 50% 35%, #ffffff 0%, #f3eee5 72%, #e8dfd2 100%)" : "#14110d", height: containerHeight }}
+    >
       <Canvas
         shadows
-        dpr={[1, 1.75]}
-        camera={{ position: [0, 0.95, 4.5], fov: 36 }}
-        gl={{ preserveDrawingBuffer: true }}
+        dpr={[1, 2]}
+        camera={{ position: isUniformKit ? [0, -0.45, 10.5] : [0, 0.95, 4.5], fov: isUniformKit ? 30 : 36 }}
+        gl={{ preserveDrawingBuffer: true, antialias: true, alpha: true, powerPreference: "high-performance" }}
+        onCreated={({ gl }) => {
+          gl.toneMapping = THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure = 1.08;
+          gl.outputColorSpace = THREE.SRGBColorSpace;
+          gl.shadowMap.type = THREE.PCFSoftShadowMap;
+        }}
       >
         <CaptureBridge onReady={onCaptureReady} />
         <Suspense fallback={<Html center className="text-xs text-foreground-500 font-label">Loading 3D preview…</Html>}>
-          <ambientLight intensity={0.65} />
+          <ambientLight intensity={isUniformKit ? 0.9 : 0.65} />
           <directionalLight
-            position={[3, 4, 4]}
-            intensity={1.1}
+            position={[3.5, 5, 5]}
+            intensity={isUniformKit ? 2.15 : 1.1}
             castShadow
-            shadow-mapSize-width={1024}
-            shadow-mapSize-height={1024}
+            shadow-mapSize-width={2048}
+            shadow-mapSize-height={2048}
           />
-          <directionalLight position={[-3, 2, -3]} intensity={0.35} />
-          <Environment preset="city" environmentIntensity={0.35} />
+          <directionalLight position={[-4, 2.5, 3]} intensity={isUniformKit ? 1.05 : 0.35} />
+          <directionalLight position={[1.5, 3, -4]} intensity={isUniformKit ? 1.35 : 0.25} />
+          <Environment preset={isUniformKit ? "studio" : "city"} environmentIntensity={isUniformKit ? 0.62 : 0.35} />
 
           {interactive ? (
             /* Deliberately NOT wrapped in the offset group. DecalGeometry
@@ -122,7 +138,10 @@ export default function Product3DStage({
               colorB={colorB}
               splitAt={splitAt}
               softness={softness}
-              offsetY={-0.95}
+              zoneColors={zoneColors}
+              collar={collar}
+              sleeve={sleeve}
+              offsetY={modelOffsetY}
               layers={layers}
               selectedLayerId={selectedLayerId}
               onSelectLayer={onSelectLayer}
@@ -135,8 +154,14 @@ export default function Product3DStage({
               onCommitPending={onCommitPending}
             />
           ) : (
-            <group position={[0, -0.95, 0]}>
-              <GarmentModel productType={productType} color={color} />
+            <group position={[0, modelOffsetY, 0]}>
+              <GarmentModel
+                productType={productType}
+                color={color}
+                zoneColors={zoneColors}
+                collar={collar}
+                sleeve={sleeve}
+              />
               {placements.map((p) => {
                 const canvas = textures?.[p.key];
                 if (!canvas) return null;
@@ -147,15 +172,22 @@ export default function Product3DStage({
             </group>
           )}
 
-          <ContactShadows position={[0, 0, 0]} opacity={0.35} scale={3} blur={2.4} far={2} />
+          <ContactShadows
+            position={[0, isUniformKit ? -2.78 : 0, 0]}
+            opacity={isUniformKit ? 0.24 : 0.35}
+            scale={isUniformKit ? 5 : 3}
+            blur={isUniformKit ? 3.2 : 2.4}
+            far={3}
+          />
         </Suspense>
 
         <OrbitControls
           ref={controlsRef}
           makeDefault
+          target={isUniformKit ? [0, -0.45, 0] : [0, 0, 0]}
           enablePan={false}
-          minDistance={2.6}
-          maxDistance={7}
+          minDistance={isUniformKit ? 7.2 : 2.6}
+          maxDistance={isUniformKit ? 14 : 7}
           minPolarAngle={Math.PI * 0.18}
           maxPolarAngle={Math.PI * 0.82}
           autoRotate={autoRotate}
@@ -170,7 +202,7 @@ export default function Product3DStage({
           instead — "drag to rotate" would actively mislead once dragging the
           garment moves a decal. */}
       {!interactive && (
-        <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] font-label text-foreground-400 bg-background-50/80 px-2.5 py-1 rounded-full border border-background-200/60">
+        <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] font-label text-foreground-500 bg-background-50/85 px-2.5 py-1 rounded-full border border-background-200/70 shadow-sm">
           Drag to rotate · scroll to zoom
         </div>
       )}

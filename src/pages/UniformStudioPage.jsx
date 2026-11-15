@@ -99,11 +99,15 @@ const tools = [
 ];
 
 const studioWorkflow = [
-  { key: "design", label: "Design", step: 2, defaultTool: "design", tools: ["design", "zones"] },
-  { key: "artwork", label: "Artwork", step: 3, defaultTool: "logo", tools: ["text", "logo", "skins", "layers"] },
-  { key: "options", label: "Kit options", step: 4, defaultTool: "options", tools: ["options"] },
-  { key: "roster", label: "Roster", step: 5, defaultTool: "roster", tools: ["roster"] },
-  { key: "review", label: "Review", step: 6, defaultTool: "review", tools: ["review"] },
+  {
+    key: "design",
+    label: "Design",
+    step: 1,
+    defaultTool: "design",
+    tools: ["design", "zones", "text", "logo", "skins", "layers", "options"],
+  },
+  { key: "roster", label: "Team roster", step: 2, defaultTool: "roster", tools: ["roster"] },
+  { key: "review", label: "Review & quote", step: 3, defaultTool: "review", tools: ["review"] },
 ];
 
 const Product3DStage = lazy(
@@ -260,6 +264,7 @@ export default function UniformStudioPage() {
     () => ({
       slug: activeSport,
       modelUrl: sportModelUrl(activeSport),
+      uniformKit: true,
       placements: jerseyPlacements,
     }),
     [activeSport, jerseyPlacements]
@@ -1197,13 +1202,6 @@ export default function UniformStudioPage() {
         className="flex-shrink-0 border-b border-white/[0.08] bg-[#1b1712] px-3 py-2 sm:px-5"
       >
         <div className="mx-auto flex max-w-5xl items-center gap-1 overflow-x-auto">
-          <div className="hidden items-center gap-1 text-background-50/35 sm:flex">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-600 text-[11px] font-bold text-white">
-              <i className="ri-check-line" />
-            </span>
-            <span className="text-[10px] font-bold uppercase tracking-wider">Sport &amp; style</span>
-            <i className="ri-arrow-right-s-line mx-1" />
-          </div>
           {studioWorkflow.map((step, index) => {
             const active = index === workflowIndex;
             const complete = index < workflowIndex;
@@ -1437,6 +1435,9 @@ export default function UniformStudioPage() {
                             colorB={twoTone.enabled ? twoTone.colorB : undefined}
                             splitAt={twoTone.splitAt}
                             softness={twoTone.softness}
+                            zoneColors={colors}
+                            collar={collar}
+                            sleeve={sleeve}
                             fullscreen
                             layers={layers}
                             selectedLayerId={selectedLayerId}
@@ -1729,7 +1730,7 @@ export default function UniformStudioPage() {
         </button>
         <div className="hidden text-center md:block">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-background-50/35">
-            Step {workflowStep.step} of 7
+            Step {workflowStep.step} of 3
           </p>
           <p className="text-xs font-semibold text-background-50/65">{workflowStep.label}</p>
         </div>
