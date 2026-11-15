@@ -26,6 +26,13 @@ const JerseyStage = forwardRef(function JerseyStage(
     sleeve,
     colors,
     highlightZone,
+    zoneModel,
+    zoneStyles,
+    selectedZoneId,
+    showZoneOutlines,
+    correctionMode,
+    onSelectZone,
+    onMoveZonePoint,
     layers,
     selectedId,
     onSelect,
@@ -102,6 +109,18 @@ const JerseyStage = forwardRef(function JerseyStage(
                     sleeve={sleeve}
                     colors={colors}
                     highlightZone={highlightZone}
+                    zones={zoneModel?.[side]}
+                    zoneStyles={zoneStyles?.[side]}
+                    selectedZoneId={selectedZoneId}
+                    showZoneOutlines={showZoneOutlines}
+                    correctionMode={correctionMode && active}
+                    onSelectZone={(zoneId) => {
+                      onViewChange?.(side);
+                      onSelectZone?.(zoneId, side);
+                    }}
+                    onMoveZonePoint={(zoneId, commandIndex, pointType, point) =>
+                      onMoveZonePoint?.(side, zoneId, commandIndex, pointType, point)
+                    }
                   />
                 </div>
 
