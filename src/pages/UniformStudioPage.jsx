@@ -100,14 +100,50 @@ const tools = [
 
 const studioWorkflow = [
   {
-    key: "design",
-    label: "Design",
+    key: "uniform",
+    label: "Uniform",
+    description: "Style, colors & zones",
+    icon: "ri-shirt-line",
     step: 1,
     defaultTool: "design",
-    tools: ["design", "zones", "text", "logo", "skins", "layers", "options"],
+    tools: ["design", "zones"],
   },
-  { key: "roster", label: "Team roster", step: 2, defaultTool: "roster", tools: ["roster"] },
-  { key: "review", label: "Review & quote", step: 3, defaultTool: "review", tools: ["review"] },
+  {
+    key: "artwork",
+    label: "Artwork",
+    description: "Text, logos & patterns",
+    icon: "ri-image-edit-line",
+    step: 2,
+    defaultTool: "text",
+    tools: ["text", "logo", "skins", "layers"],
+  },
+  {
+    key: "options",
+    label: "Kit options",
+    description: "Fit & production choices",
+    icon: "ri-settings-4-line",
+    step: 3,
+    defaultTool: "options",
+    tools: ["options"],
+  },
+  {
+    key: "roster",
+    label: "Team roster",
+    description: "Names, numbers & sizes",
+    icon: "ri-team-line",
+    step: 4,
+    defaultTool: "roster",
+    tools: ["roster"],
+  },
+  {
+    key: "review",
+    label: "Review & quote",
+    description: "Confirm and submit",
+    icon: "ri-shopping-bag-3-line",
+    step: 5,
+    defaultTool: "review",
+    tools: ["review"],
+  },
 ];
 
 const Product3DStage = lazy(
@@ -295,6 +331,8 @@ export default function UniformStudioPage() {
   const [quoteError, setQuoteError] = useState(null);
   const [previewImg, setPreviewImg] = useState(null);
   const [exporting, setExporting] = useState(false);
+  const [manualSaveStatus, setManualSaveStatus] = useState("idle");
+  const manualSaveResetRef = useRef(null);
 
   const template = templates.find((t) => t.slug === selectedTemplate);
   const selectedLayer = layers.find((l) => l.id === selectedLayerId) || null;
@@ -304,6 +342,7 @@ export default function UniformStudioPage() {
     studioWorkflow.findIndex((step) => step.tools.includes(activeTool))
   );
   const workflowStep = studioWorkflow[workflowIndex];
+  const visibleTools = tools.filter((tool) => workflowStep.tools.includes(tool.key));
 
   const openWorkflowStep = (index) => {
     const nextStep = studioWorkflow[Math.max(0, Math.min(studioWorkflow.length - 1, index))];
@@ -391,13 +430,67 @@ export default function UniformStudioPage() {
     try {
       window.localStorage.setItem(
         storageKey,
-        JSON.stringify({ layers, placements3d, colors, collar, sleeve, zoneModel, zoneStyles, savedAt: Date.now() }),
+        JSON.stringify({
+          layers,
+          placements3d,
+          colors,
+          collar,
+          sleeve,
+          zoneModel,
+          zoneStyles,
+          twoTone,
+          fitType,
+          kitType,
+          logoApplication,
+          insideCollarMessage,
+          insideCollarText,
+          fanJerseyAdded,
+          roster,
+          contact,
+          savedAt: Date.now(),
+        }),
       );
     } catch {
       /* private browsing / quota — the design just won't persist, which is
          no worse than before this existed */
     }
-  }, [storageKey, layers, placements3d, colors, collar, sleeve, zoneModel, zoneStyles]);
+  }, [storageKey, layers, placements3d, colors, collar, sleeve, zoneModel, zoneStyles, twoTone,
+    fitType, kitType, logoApplication, insideCollarMessage, insideCollarText, fanJerseyAdded, roster, contact]);
+
+  const saveProgress = () => {
+    if (!storageKey) return;
+    try {
+      window.localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          layers,
+          placements3d,
+          colors,
+          collar,
+          sleeve,
+          zoneModel,
+          zoneStyles,
+          twoTone,
+          fitType,
+          kitType,
+          logoApplication,
+          insideCollarMessage,
+          insideCollarText,
+          fanJerseyAdded,
+          roster,
+          contact,
+          savedAt: Date.now(),
+        }),
+      );
+      setManualSaveStatus("saved");
+    } catch {
+      setManualSaveStatus("error");
+    }
+    window.clearTimeout(manualSaveResetRef.current);
+    manualSaveResetRef.current = window.setTimeout(() => setManualSaveStatus("idle"), 2400);
+  };
+
+  useEffect(() => () => window.clearTimeout(manualSaveResetRef.current), []);
 
   const restoreSaved = (key) => {
     try {
@@ -412,6 +505,15 @@ export default function UniformStudioPage() {
       if (saved.sleeve) setSleeve(saved.sleeve);
       if (saved.zoneModel?.front && saved.zoneModel?.back) setZoneModel(saved.zoneModel);
       if (saved.zoneStyles) setZoneStyles(saved.zoneStyles);
+      if (saved.twoTone) setTwoTone(saved.twoTone);
+      if (saved.fitType) setFitType(saved.fitType);
+      if (saved.kitType) setKitType(saved.kitType);
+      if (saved.logoApplication) setLogoApplication(saved.logoApplication);
+      if (typeof saved.insideCollarMessage === "boolean") setInsideCollarMessage(saved.insideCollarMessage);
+      if (typeof saved.insideCollarText === "string") setInsideCollarText(saved.insideCollarText);
+      if (typeof saved.fanJerseyAdded === "boolean") setFanJerseyAdded(saved.fanJerseyAdded);
+      if (Array.isArray(saved.roster)) setRoster(saved.roster);
+      if (saved.contact) setContact(saved.contact);
       return true;
     } catch {
       return false;
@@ -1160,10 +1262,32 @@ export default function UniformStudioPage() {
           <i className="ri-arrow-left-line" />
           Back
         </button>
-        <span className="text-xs font-label text-background-50/40 truncate">
-          {template?.name || "Blank Canvas"} · {sports.find((s) => s.slug === activeSport)?.label}
-        </span>
+        <div className="hidden min-w-0 items-center gap-3 sm:flex">
+          <span className="truncate text-xs font-semibold text-background-50/55">
+            {template?.name || "Blank Canvas"} · {sports.find((s) => s.slug === activeSport)?.label}
+          </span>
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-primary-500/25 bg-primary-950/45 px-2.5 py-1 text-[10px] font-semibold text-primary-200">
+            <i className="ri-checkbox-circle-line" /> Saved automatically
+          </span>
+        </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={saveProgress}
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+              manualSaveStatus === "saved"
+                ? "border-primary-400/55 bg-primary-700 text-white"
+                : manualSaveStatus === "error"
+                  ? "border-red-400/55 bg-red-950/50 text-red-200"
+                  : "border-white/[0.12] bg-white/[0.06] text-background-50/80 hover:border-primary-500/55 hover:bg-primary-950/55 hover:text-primary-100"
+            }`}
+            aria-live="polite"
+          >
+            <i className={manualSaveStatus === "saved" ? "ri-check-line" : "ri-save-3-line"} />
+            <span className="hidden sm:inline">
+              {manualSaveStatus === "saved" ? "Progress saved" : manualSaveStatus === "error" ? "Save failed" : "Save progress"}
+            </span>
+          </button>
           <button
             type="button"
             aria-pressed={stageMode === "3d"}
@@ -1199,30 +1323,62 @@ export default function UniformStudioPage() {
 
       <nav
         aria-label="Uniform order progress"
-        className="flex-shrink-0 border-b border-white/[0.08] bg-[#1b1712] px-3 py-2 sm:px-5"
+        className="flex-shrink-0 border-b border-white/[0.08] bg-[#1b1712] px-3 py-3 sm:px-5"
       >
-        <div className="mx-auto flex max-w-5xl items-center gap-1 overflow-x-auto">
+        <div className="mx-auto flex max-w-7xl items-stretch gap-2 overflow-x-auto pb-1">
           {studioWorkflow.map((step, index) => {
             const active = index === workflowIndex;
             const complete = index < workflowIndex;
+            const locked = step.key === "review" && roster.length === 0;
             return (
-              <button
-                key={step.key}
-                type="button"
-                onClick={() => openWorkflowStep(index)}
-                className={`group flex flex-shrink-0 items-center gap-2 rounded-full px-3 py-2 transition cursor-pointer ${
-                  active
-                    ? "bg-primary-600 text-white shadow-[0_8px_20px_rgba(0,116,73,0.25)]"
-                    : complete
-                      ? "text-primary-300 hover:bg-white/[0.06]"
-                      : "text-background-50/45 hover:bg-white/[0.06] hover:text-background-50/75"
-                }`}
-              >
-                <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ${active ? "bg-white/15" : complete ? "bg-primary-700 text-white" : "bg-white/[0.07]"}`}>
-                  {complete ? <i className="ri-check-line" /> : step.step}
-                </span>
-                <span className="text-xs font-semibold whitespace-nowrap">{step.label}</span>
-              </button>
+              <div key={step.key} className="flex min-w-0 flex-1 items-center gap-2">
+                <button
+                  type="button"
+                  aria-current={active ? "step" : undefined}
+                  disabled={locked}
+                  onClick={() => openWorkflowStep(index)}
+                  className={`group flex min-w-[190px] flex-1 items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left transition ${
+                    active
+                      ? "cursor-pointer border-primary-400/55 bg-primary-600 text-white shadow-[0_10px_24px_rgba(0,116,73,0.24)]"
+                      : complete
+                        ? "cursor-pointer border-primary-700/35 bg-primary-950/35 text-primary-100 hover:bg-primary-950/55"
+                        : locked
+                          ? "cursor-not-allowed border-white/[0.04] bg-white/[0.02] text-background-50/25"
+                          : "cursor-pointer border-white/[0.07] bg-white/[0.025] text-background-50/55 hover:border-white/[0.14] hover:bg-white/[0.06] hover:text-background-50/80"
+                  }`}
+                >
+                  <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-bold ${
+                    active
+                      ? "border-white/20 bg-white/15"
+                      : complete
+                        ? "border-primary-500/35 bg-primary-700 text-white"
+                        : "border-white/[0.08] bg-white/[0.05]"
+                  }`}>
+                    {complete ? <i className="ri-check-line" /> : locked ? <i className="ri-lock-line" /> : step.step}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-1.5 whitespace-nowrap text-xs font-bold">
+                      <i className={`${step.icon} text-sm opacity-75`} />
+                      {step.label}
+                    </span>
+                    <span className={`mt-0.5 block whitespace-nowrap text-[10px] ${active ? "text-white/70" : "text-current opacity-65"}`}>
+                      {step.description}
+                    </span>
+                  </span>
+                </button>
+                {index < studioWorkflow.length - 1 && (
+                  <span
+                    aria-hidden="true"
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-base transition ${
+                      complete
+                        ? "border-primary-500/35 bg-primary-950/50 text-primary-300"
+                        : "border-white/[0.07] bg-white/[0.025] text-background-50/30"
+                    }`}
+                  >
+                    <i className="ri-arrow-right-line" />
+                  </span>
+                )}
+              </div>
             );
           })}
         </div>
@@ -1280,7 +1436,7 @@ export default function UniformStudioPage() {
       <div className="flex-1 min-h-0 flex">
                   {/* Icon rail — desktop only; mobile gets the pill row below the canvas */}
                   <div className="hidden lg:flex flex-col items-center gap-1 py-4 px-2 border-r border-white/[0.06] flex-shrink-0 overflow-y-auto">
-                    {tools.map((t) => (
+                    {visibleTools.map((t) => (
                       <Tooltip key={t.key} label={t.label} description={t.hint} placement="right">
                         <button
                           type="button"
@@ -1464,7 +1620,7 @@ export default function UniformStudioPage() {
 
                     {/* Mobile tool tabs — the icon rail is hidden below lg */}
                     <div className="lg:hidden w-full flex items-center gap-2 overflow-x-auto pb-1">
-                      {tools.map((t) => (
+                      {visibleTools.map((t) => (
                         <button
                           key={t.key}
                           type="button"
@@ -1730,7 +1886,7 @@ export default function UniformStudioPage() {
         </button>
         <div className="hidden text-center md:block">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-background-50/35">
-            Step {workflowStep.step} of 3
+            Step {workflowStep.step} of {studioWorkflow.length}
           </p>
           <p className="text-xs font-semibold text-background-50/65">{workflowStep.label}</p>
         </div>
