@@ -11,10 +11,10 @@ import {
 } from "../data/repository";
 
 const POST_TYPES = [
-  { value: "status", label: "Update", icon: "ri-chat-3-line" },
-  { value: "offer", label: "Offer", icon: "ri-coupon-3-line" },
-  { value: "event", label: "Event", icon: "ri-calendar-event-line" },
-  { value: "opportunity", label: "Opportunity", icon: "ri-briefcase-4-line" },
+  { value: "status", label: "Update", icon: "ri-chat-3-line", description: "Share business news, progress, or a quick announcement.", placeholder: "Share a business update…", action: "Post update" },
+  { value: "offer", label: "Offer", icon: "ri-coupon-3-line", description: "Promote a special price, service, product, or limited-time deal.", placeholder: "Describe your offer, price, and how customers can claim it…", action: "Post offer" },
+  { value: "event", label: "Event", icon: "ri-calendar-event-line", description: "Announce an upcoming activity and include the date, time, and location.", placeholder: "Share the event date, time, location, and attendance details…", action: "Post event" },
+  { value: "opportunity", label: "Opportunity", icon: "ri-briefcase-4-line", description: "Share a job, partnership, contract, or collaboration opportunity.", placeholder: "Describe the opportunity, requirements, and how to respond…", action: "Post opportunity" },
 ];
 
 export const COMMUNITY_EMOTIONS = [
@@ -54,6 +54,7 @@ function CommunityPost({ post, authenticated, onReact, onComment }) {
   const [comment, setComment] = useState("");
   const comments = post.comments || [];
   const emotion = COMMUNITY_EMOTIONS.find((item) => item.value === post.emotion);
+  const postType = POST_TYPES.find((item) => item.value === post.type) || POST_TYPES[0];
 
   const submitComment = async (event) => {
     event.preventDefault();
@@ -90,8 +91,8 @@ function CommunityPost({ post, authenticated, onReact, onComment }) {
       {post.linkUrl && <a href={post.linkUrl} target="_blank" rel="noreferrer" className="mt-4 flex items-center gap-3 rounded-2xl border border-background-200 bg-background-100 p-4 transition hover:border-primary-300 hover:bg-primary-50/40"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary-700 text-white"><i className="ri-links-line text-lg" /></span><span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-primary-700">Shared link</span><span className="mt-1 block truncate text-sm font-semibold text-foreground-900">{linkLabel(post.linkUrl)}</span><span className="mt-0.5 block truncate text-xs text-foreground-500">{post.linkUrl}</span></span><i className="ri-arrow-right-up-line text-foreground-400" /></a>}
       {post.type !== "status" && (
         <div className="mt-4 flex items-center gap-3 rounded-2xl border border-accent-200 bg-accent-50/60 p-3">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent-500 text-white"><i className={POST_TYPES.find((type) => type.value === post.type)?.icon || "ri-megaphone-line"} /></span>
-          <div><p className="text-sm font-bold text-foreground-900">{POST_TYPES.find((type) => type.value === post.type)?.label}</p><p className="text-xs text-foreground-500">Open the business profile for details.</p></div>
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent-500 text-white"><i className={postType.icon} /></span>
+          <div><p className="text-sm font-bold text-foreground-900">{postType.label}</p><p className="text-xs text-foreground-500">{postType.description}</p></div>
           <Link to={`/listings/${post.listingSlug}`} className="ml-auto text-xs font-bold text-primary-700">View profile <i className="ri-arrow-right-up-line" /></Link>
         </div>
       )}
@@ -161,6 +162,7 @@ export default function CommunityPage() {
   }, [isAuthenticated]);
 
   const selectedListing = useMemo(() => listings.find((item) => String(item.id) === listingId), [listings, listingId]);
+  const selectedPostType = POST_TYPES.find((item) => item.value === type) || POST_TYPES[0];
   const selectedEmotion = COMMUNITY_EMOTIONS.find((item) => item.value === emotion);
   const clearAttachment = () => {
     setAttachment(null);
@@ -249,21 +251,21 @@ export default function CommunityPage() {
             <section className="rounded-[1.5rem] border border-background-200/80 bg-background-50 p-5 shadow-[0_14px_45px_rgba(24,48,36,0.06)]">
               {isAuthenticated && listings.length ? (
                 <form onSubmit={submitPost}>
-                  <div className="flex gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary-700 text-xs font-bold text-white">{initials(selectedListing?.title)}</span><textarea value={text} onChange={(event) => setText(event.target.value)} maxLength={1200} rows={3} className="min-h-24 flex-1 resize-none rounded-2xl border border-background-300 bg-white p-3 text-sm outline-none focus:border-primary-500" placeholder={`Share an update from ${selectedListing?.title || "your business"}…`} /></div>
+                  <div className="flex gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary-700 text-xs font-bold text-white">{initials(selectedListing?.title)}</span><div className="min-w-0 flex-1"><textarea value={text} onChange={(event) => setText(event.target.value)} maxLength={1200} rows={3} className="min-h-24 w-full resize-none rounded-2xl border border-background-300 bg-white p-3 text-sm outline-none focus:border-primary-500" placeholder={`${selectedPostType.placeholder.replace(/…$/, "")} from ${selectedListing?.title || "your business"}…`} /><div className="mt-2 flex items-center gap-2 rounded-xl border border-primary-200 bg-primary-50/70 px-3 py-2 text-xs text-foreground-600" role="status" aria-live="polite"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-primary-700 text-white"><i className={selectedPostType.icon} /></span><span><strong className="text-primary-800">{selectedPostType.label} selected.</strong> {selectedPostType.description}</span></div></div></div>
                   {attachmentPreview && <div className="relative ml-14 mt-3 overflow-hidden rounded-2xl border border-background-200 bg-background-100">{attachmentType === "image" ? <img src={attachmentPreview} alt="Attachment preview" className="max-h-72 w-full object-cover" /> : <video src={attachmentPreview} controls playsInline preload="metadata" className="max-h-72 w-full bg-black object-contain" />}<button type="button" onClick={clearAttachment} aria-label="Remove attachment" className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-black/70 text-white shadow-lg"><i className="ri-close-line text-lg" /></button><div className="absolute inset-x-0 bottom-0 pointer-events-none bg-gradient-to-t from-black/70 to-transparent px-4 pb-3 pt-10 text-xs font-semibold text-white"><i className={`${attachmentType === "video" ? "ri-video-line" : "ri-image-line"} mr-1.5`} />{attachment.name}</div></div>}
                   {attachmentType === "link" && <div className="ml-14 mt-3 flex items-center gap-3 rounded-2xl border border-primary-200 bg-primary-50/50 p-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-700 text-white"><i className="ri-links-line" /></span><span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-primary-700">Link ready to share</span><span className="mt-1 block truncate text-sm font-semibold text-foreground-900">{linkLabel(linkUrl)}</span></span><button type="button" onClick={clearAttachment} aria-label="Remove attached link" className="grid h-9 w-9 place-items-center rounded-full text-foreground-500 hover:bg-white"><i className="ri-close-line text-lg" /></button></div>}
                   {linkOpen && <div className="ml-14 mt-3 flex flex-col gap-2 rounded-2xl border border-background-200 bg-background-100 p-3 sm:flex-row"><input type="url" value={linkUrl} onChange={(event) => setLinkUrl(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); attachLink(); } }} className="h-10 min-w-0 flex-1 rounded-xl border border-background-300 bg-white px-3 text-sm outline-none focus:border-primary-500" placeholder="https://yourbusiness.com/page" aria-label="Website link" /><button type="button" onClick={attachLink} className="h-10 rounded-xl bg-primary-700 px-4 text-xs font-bold text-white">Attach link</button></div>}
                   {emotionOpen && <div className="ml-14 mt-3 flex flex-wrap gap-2 rounded-2xl border border-background-200 bg-background-100 p-3" role="group" aria-label="Choose an emotion">{COMMUNITY_EMOTIONS.map((item) => <button key={item.value} type="button" onClick={() => { setEmotion(item.value); setEmotionOpen(false); }} className={`inline-flex h-10 items-center gap-2 rounded-full border px-3 text-xs font-semibold transition ${emotion === item.value ? "border-primary-500 bg-primary-50 text-primary-800" : "border-background-300 bg-white text-foreground-700 hover:border-primary-300"}`}><span className="text-base" aria-hidden="true">{item.emoji}</span>{item.label}</button>)}</div>}
                   <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-background-200 pt-3">
                     <select aria-label="Business profile" value={listingId} onChange={(event) => setListingId(event.target.value)} className="h-10 max-w-52 rounded-xl border border-background-300 bg-white px-3 text-xs font-semibold">{listings.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select>
-                    {POST_TYPES.map((option) => <button key={option.value} type="button" onClick={() => setType(option.value)} className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold ${type === option.value ? "bg-primary-50 text-primary-700" : "text-foreground-500 hover:bg-background-100"}`}><i className={option.icon} />{option.label}</button>)}
+                    <div className="flex flex-wrap gap-1 rounded-xl border border-background-200 bg-background-100 p-1" role="group" aria-label="Update type">{POST_TYPES.map((option) => <button key={option.value} type="button" aria-pressed={type === option.value} title={option.description} onClick={() => { setType(option.value); setMessage(""); }} className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition ${type === option.value ? "bg-primary-700 text-white shadow-sm" : "text-foreground-600 hover:bg-white hover:text-primary-700"}`}><i className={option.icon} />{option.label}</button>)}</div>
                     <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => selectMedia(event, "image")} className="sr-only" />
                     <input ref={videoInputRef} type="file" accept="video/mp4,video/webm,video/quicktime" onChange={(event) => selectMedia(event, "video")} className="sr-only" />
                     <button type="button" onClick={() => imageInputRef.current?.click()} className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold ${attachmentType === "image" ? "bg-primary-50 text-primary-700" : "text-foreground-500 hover:bg-background-100"}`}><i className="ri-image-add-line" />Photo</button>
                     <button type="button" onClick={() => videoInputRef.current?.click()} className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold ${attachmentType === "video" ? "bg-primary-50 text-primary-700" : "text-foreground-500 hover:bg-background-100"}`}><i className="ri-video-add-line" />Video</button>
                     <button type="button" onClick={() => { setAttachment(null); setAttachmentType(""); setLinkOpen((open) => !open); setMessage(""); }} className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold ${attachmentType === "link" || linkOpen ? "bg-primary-50 text-primary-700" : "text-foreground-500 hover:bg-background-100"}`}><i className="ri-links-line" />Link</button>
                     <button type="button" onClick={() => setEmotionOpen((open) => !open)} className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold ${emotion ? "bg-accent-50 text-foreground-800" : "text-foreground-500 hover:bg-background-100"}`}><span className="text-base" aria-hidden="true">{selectedEmotion?.emoji || "😊"}</span>{selectedEmotion?.label || "Emotion"}</button>
-                    <button type="submit" disabled={submitting || !text.trim()} className="ml-auto h-10 rounded-xl bg-primary-700 px-5 text-xs font-bold text-white disabled:opacity-40">{submitting ? "Posting…" : "Post update"}</button>
+                    <button type="submit" disabled={submitting || !text.trim()} className="ml-auto h-10 rounded-xl bg-primary-700 px-5 text-xs font-bold text-white disabled:opacity-40">{submitting ? "Posting…" : selectedPostType.action}</button>
                   </div>
                   {message && <p role="alert" className="mt-3 text-xs text-red-600">{message}</p>}
                 </form>
