@@ -1,4 +1,6 @@
 import { useId } from "react";
+import ZoneCorrectionOverlay from "./ZoneCorrectionOverlay";
+import { SOCCER_ZONE_MODEL } from "./uniformZoneModel";
 
 const SPRITE_WIDTH = 1159;
 const SPRITE_HEIGHT = 1358;
@@ -107,9 +109,19 @@ export default function ApprovedUniformGraphic({
   sleeve: sleeveStyle = "Short",
   colors = {},
   highlightZone = null,
+  zones,
+  zoneStyles = {},
+  selectedZoneId = null,
+  showZoneOutlines = false,
+  correctionMode = false,
+  onSelectZone,
+  onMoveZonePoint,
 }) {
   const uid = useId().replaceAll(":", "");
   const maskId = `approved-kit-${uid}`;
+  const jerseyMaskId = `approved-jersey-${uid}`;
+  const shortsMaskId = `approved-shorts-${uid}`;
+  const socksMaskId = `approved-socks-${uid}`;
   const shapeMaskId = `approved-kit-shape-${uid}`;
   const sleeveGradientId = `approved-kit-sleeve-${uid}`;
   const asset = APPROVED_ASSETS[sport] || APPROVED_ASSETS.other;
@@ -136,6 +148,7 @@ export default function ApprovedUniformGraphic({
     ? region.sleeveBottom
     : Math.max(shortSleeveBottom + 90, region.bottomStart - 26);
   const baseSleeveBottom = nativeLongSleeve ? region.sleeveBottom : shortSleeveBottom;
+  const editableZones = zones || (sport === "soccer" ? SOCCER_ZONE_MODEL[view] : []);
 
   const longSleevePath = (side) => {
     const left = side === "left";
@@ -183,6 +196,7 @@ export default function ApprovedUniformGraphic({
 
   return (
     <svg
+      data-uniform-view={view}
       viewBox={`${offset} 0 ${HALF_WIDTH} ${SPRITE_HEIGHT}`}
       preserveAspectRatio="xMidYMid meet"
       className="h-full w-full overflow-hidden"
@@ -192,6 +206,19 @@ export default function ApprovedUniformGraphic({
       <defs>
         <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width={SPRITE_WIDTH} height={SPRITE_HEIGHT}>
           <image href={asset} x="0" y="0" width={SPRITE_WIDTH} height={SPRITE_HEIGHT} />
+        </mask>
+        <mask id={jerseyMaskId} maskUnits="userSpaceOnUse" x="0" y="0" width={SPRITE_WIDTH} height={SPRITE_HEIGHT}>
+          <image href={asset} x="0" y="0" width={SPRITE_WIDTH} height={SPRITE_HEIGHT} />
+          <rect x="0" y={region.bottomStart} width={SPRITE_WIDTH} height={SPRITE_HEIGHT - region.bottomStart} fill="black" />
+        </mask>
+        <mask id={shortsMaskId} maskUnits="userSpaceOnUse" x="0" y="0" width={SPRITE_WIDTH} height={SPRITE_HEIGHT}>
+          <image href={asset} x="0" y="0" width={SPRITE_WIDTH} height={SPRITE_HEIGHT} />
+          <rect x="0" y="0" width={SPRITE_WIDTH} height={region.bottomStart} fill="black" />
+          <rect x="0" y={bottomEnd} width={SPRITE_WIDTH} height={SPRITE_HEIGHT - bottomEnd} fill="black" />
+        </mask>
+        <mask id={socksMaskId} maskUnits="userSpaceOnUse" x="0" y="0" width={SPRITE_WIDTH} height={SPRITE_HEIGHT}>
+          <image href={asset} x="0" y="0" width={SPRITE_WIDTH} height={SPRITE_HEIGHT} />
+          <rect x="0" y="0" width={SPRITE_WIDTH} height={region.socksStart || SPRITE_HEIGHT} fill="black" />
         </mask>
         <mask id={shapeMaskId} maskUnits="userSpaceOnUse" x={offset} y="0" width={HALF_WIDTH} height={SPRITE_HEIGHT}>
           <rect x={offset} y="0" width={HALF_WIDTH} height={SPRITE_HEIGHT} fill="white" />
@@ -213,6 +240,11 @@ export default function ApprovedUniformGraphic({
           <stop offset="0.5" stopColor={sleeve} />
           <stop offset="1" stopColor={sleeve} stopOpacity="0.72" />
         </linearGradient>
+        <filter id="zone-mesh" x="-5%" y="-5%" width="110%" height="110%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.45" numOctaves="2" seed="7" result="noise" />
+          <feComposite in="noise" in2="SourceGraphic" operator="in" result="texture" />
+          <feBlend in="SourceGraphic" in2="texture" mode="multiply" />
+        </filter>
       </defs>
 
       {!isSleeveless && !nativeLongSleeve && (
@@ -309,6 +341,28 @@ export default function ApprovedUniformGraphic({
         )}
         </TintLayer>
       </g>
+
+      {editableZones.length > 0 && (
+        <g>
+          <ZoneCorrectionOverlay
+            zones={editableZones}
+            offsetX={offset}
+            selectedZoneId={selectedZoneId}
+            showOutlines={showZoneOutlines}
+            correctionMode={correctionMode}
+            zoneStyles={zoneStyles}
+            colorValues={{
+              ...colors,
+              armhole: colors.armhole || colors.sleeveStrip || colors.collar,
+              waistband: colors.waistband || colors.shirtStrip || colors.collar,
+              sockTrim: colors.sockTrim || colors.sleeveStrip || colors.collar,
+            }}
+            onSelectZone={onSelectZone}
+            onMovePoint={onMoveZonePoint}
+            maskIds={{ garment: maskId, jersey: jerseyMaskId, shorts: shortsMaskId, socks: socksMaskId }}
+          />
+        </g>
+      )}
 
       {/* Collar controls need to change the visible cut, not only a stored
           option. These clean vector overlays sit over the photographed collar

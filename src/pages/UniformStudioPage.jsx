@@ -24,12 +24,14 @@ import JerseyStage from "../components/uniform-studio/JerseyStage";
 import FloatingToolbar from "../components/uniform-studio/FloatingToolbar";
 import {
   DesignPanel,
+  ZoneEditorPanel,
   TextPanel,
   LogoPanel,
   LayersPanel,
   OptionsPanel,
   SkinsPanel,
 } from "../components/uniform-studio/StudioPanels";
+import { cloneZoneModel, SOCCER_ZONE_MODEL } from "../components/uniform-studio/uniformZoneModel";
 import { skinDataUri } from "../data/skins";
 import Button from "../components/ui/Button";
 import Tooltip from "../components/ui/Tooltip";
@@ -45,6 +47,12 @@ const tools = [
     label: "Design",
     icon: "ri-palette-line",
     hint: "Collar, sleeve length and the color of each garment part. Hover a color to highlight exactly what it changes.",
+  },
+  {
+    key: "zones",
+    label: "Zones",
+    icon: "ri-node-tree",
+    hint: "Verify every traced garment region, edit its appearance, and manually correct Bézier boundaries.",
   },
   {
     key: "text",
@@ -91,7 +99,7 @@ const tools = [
 ];
 
 const studioWorkflow = [
-  { key: "design", label: "Design", step: 2, defaultTool: "design", tools: ["design"] },
+  { key: "design", label: "Design", step: 2, defaultTool: "design", tools: ["design", "zones"] },
   { key: "artwork", label: "Artwork", step: 3, defaultTool: "logo", tools: ["text", "logo", "skins", "layers"] },
   { key: "options", label: "Kit options", step: 4, defaultTool: "options", tools: ["options"] },
   { key: "roster", label: "Roster", step: 5, defaultTool: "roster", tools: ["roster"] },
@@ -178,10 +186,18 @@ export default function UniformStudioPage() {
   const [layers, setLayers] = useState([]);
   const [selectedLayerId, setSelectedLayerId] = useState(null);
   const [activeTool, setActiveTool] = useState(
-    studioWorkflow.find((step) => step.key === initialWorkflowStep)?.defaultTool || "design"
+    tools.some((tool) => tool.key === initialWorkflowStep)
+      ? initialWorkflowStep
+      : studioWorkflow.find((step) => step.key === initialWorkflowStep)?.defaultTool || "design"
   );
   const [zoom, setZoom] = useState(1);
   const [hoverZone, setHoverZone] = useState(null);
+  const [zoneModel, setZoneModel] = useState(() => cloneZoneModel());
+  const [zoneStyles, setZoneStyles] = useState({ front: {}, back: {} });
+  const [selectedZoneId, setSelectedZoneId] = useState("front-body");
+  const [showZoneOutlines, setShowZoneOutlines] = useState(false);
+  const [correctionMode, setCorrectionMode] = useState(false);
+  const [zoneHistory, setZoneHistory] = useState([]);
   const stageRef = useRef(null);
   // Set by Product3DStage's CaptureBridge while the 3D view is mounted.
   const capture3dRef = useRef(null);
@@ -314,32 +330,83 @@ export default function UniformStudioPage() {
    */
   const storageKey = selectedTemplate ? `c767:studio:${activeSport}:${selectedTemplate}` : null;
 
+  const moveZonePoint = (side, zoneId, commandIndex, pointType, point) => {
+    setZoneModel((current) => {
+      setZoneHistory((history) => [...history.slice(-39), current]);
+      const next = cloneZoneModel(current);
+      const zone = next[side]?.find((item) => item.id === zoneId);
+      const command = zone?.commands?.[commandIndex];
+      if (!command) return current;
+      if (pointType === "anchor") {
+        command.x = point.x;
+        command.y = point.y;
+      } else if (pointType === "c1" && command.type === "C") {
+        command.c1x = point.x;
+        command.c1y = point.y;
+      } else if (pointType === "c2" && command.type === "C") {
+        command.c2x = point.x;
+        command.c2y = point.y;
+      }
+      return next;
+    });
+  };
+
+  const updateZoneStyle = (side, zoneId, patch) => setZoneStyles((current) => ({
+    ...current,
+    [side]: { ...current[side], [zoneId]: { ...(current[side]?.[zoneId] || {}), ...patch } },
+  }));
+
+  const resetZone = (side, zoneId) => {
+    const original = SOCCER_ZONE_MODEL[side].find((item) => item.id === zoneId);
+    if (!original) return;
+    setZoneHistory((history) => [...history.slice(-39), zoneModel]);
+    setZoneModel((current) => ({
+      ...current,
+      [side]: current[side].map((item) => item.id === zoneId
+        ? { ...original, commands: original.commands.map((command) => ({ ...command })) }
+        : item),
+    }));
+    setZoneStyles((current) => ({ ...current, [side]: { ...current[side], [zoneId]: undefined } }));
+  };
+
+  const resetAllZones = () => {
+    setZoneHistory((history) => [...history.slice(-39), zoneModel]);
+    setZoneModel(cloneZoneModel());
+    setZoneStyles({ front: {}, back: {} });
+  };
+
+  const undoZoneCorrection = () => setZoneHistory((history) => {
+    if (!history.length) return history;
+    setZoneModel(history[history.length - 1]);
+    return history.slice(0, -1);
+  });
+
   useEffect(() => {
     if (!storageKey) return;
-    // Nothing designed yet — don't write an empty record over a real saved one.
-    if (!layers.length && !Object.keys(placements3d).length) return;
     try {
       window.localStorage.setItem(
         storageKey,
-        JSON.stringify({ layers, placements3d, colors, collar, sleeve, savedAt: Date.now() }),
+        JSON.stringify({ layers, placements3d, colors, collar, sleeve, zoneModel, zoneStyles, savedAt: Date.now() }),
       );
     } catch {
       /* private browsing / quota — the design just won't persist, which is
          no worse than before this existed */
     }
-  }, [storageKey, layers, placements3d, colors, collar, sleeve]);
+  }, [storageKey, layers, placements3d, colors, collar, sleeve, zoneModel, zoneStyles]);
 
   const restoreSaved = (key) => {
     try {
       const raw = window.localStorage.getItem(key);
       if (!raw) return false;
       const saved = JSON.parse(raw);
-      if (!saved?.layers?.length && !Object.keys(saved?.placements3d || {}).length) return false;
+      if (!saved?.layers?.length && !Object.keys(saved?.placements3d || {}).length && !saved?.zoneModel) return false;
       setLayers(saved.layers || []);
       setPlacements3d(saved.placements3d || {});
       if (saved.colors) setColors(normalizeZoneColors(saved.colors));
       if (saved.collar) setCollar(saved.collar);
       if (saved.sleeve) setSleeve(saved.sleeve);
+      if (saved.zoneModel?.front && saved.zoneModel?.back) setZoneModel(saved.zoneModel);
+      if (saved.zoneStyles) setZoneStyles(saved.zoneStyles);
       return true;
     } catch {
       return false;
@@ -739,6 +806,24 @@ export default function UniformStudioPage() {
     }
   };
 
+  const handleDownloadSvg = () => {
+    const svgs = stageRef.current?.querySelectorAll("svg[data-uniform-view]");
+    if (!svgs?.length) return;
+    svgs.forEach((svg) => {
+      const copy = svg.cloneNode(true);
+      copy.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      copy.setAttribute("width", "1200");
+      copy.setAttribute("height", "1500");
+      const blob = new Blob([new XMLSerializer().serializeToString(copy)], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${template?.name || "uniform"}-${svg.dataset.uniformView}.svg`;
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+  };
+
   /**
    * Capture whichever surface the customer actually designed on.
    *
@@ -1089,6 +1174,14 @@ export default function UniformStudioPage() {
           </button>
           <button
             type="button"
+            onClick={handleDownloadSvg}
+            disabled={stageMode !== "edit"}
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer bg-white/5 text-background-50/70 hover:bg-white/10 hover:text-background-50 disabled:opacity-40"
+          >
+            <i className="ri-file-code-line" /> SVG
+          </button>
+          <button
+            type="button"
             onClick={handleDownload}
             disabled={exporting || stageMode !== "edit"}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer bg-white/5 text-background-50/70 hover:bg-white/10 hover:text-background-50 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -1303,6 +1396,16 @@ export default function UniformStudioPage() {
                             sleeve={sleeve}
                             colors={colors}
                             highlightZone={hoverZone}
+                            zoneModel={activeSport === "soccer" ? zoneModel : undefined}
+                            zoneStyles={zoneStyles}
+                            selectedZoneId={activeTool === "zones" ? selectedZoneId : null}
+                            showZoneOutlines={activeTool === "zones" && showZoneOutlines}
+                            correctionMode={activeTool === "zones" && correctionMode}
+                            onSelectZone={(zoneId, side) => {
+                              setSelectedZoneId(zoneId);
+                              setView(side);
+                            }}
+                            onMoveZonePoint={moveZonePoint}
                             layers={layers}
                             selectedId={selectedLayerId}
                             onSelect={selectLayer}
@@ -1406,6 +1509,25 @@ export default function UniformStudioPage() {
                     setTwoTone={setTwoTone}
                   />
                 )}
+                {activeTool === "zones" && (
+                  <ZoneEditorPanel
+                    view={view}
+                    onViewChange={setView}
+                    zoneModel={zoneModel}
+                    selectedZoneId={selectedZoneId}
+                    onSelectZone={(zoneId, side) => { setSelectedZoneId(zoneId); setView(side); }}
+                    zoneStyles={zoneStyles}
+                    onUpdateZoneStyle={updateZoneStyle}
+                    showOutlines={showZoneOutlines}
+                    onToggleOutlines={() => setShowZoneOutlines((value) => !value)}
+                    correctionMode={correctionMode}
+                    onToggleCorrection={() => { setCorrectionMode((value) => !value); setShowZoneOutlines(true); }}
+                    onUndo={undoZoneCorrection}
+                    canUndo={zoneHistory.length > 0}
+                    onResetZone={resetZone}
+                    onResetAll={resetAllZones}
+                  />
+                )}
                 {activeTool === "text" && <TextPanel onAdd={armTextPlacement} armed={pendingLayer?.type === "text"} />}
                 {activeTool === "logo" && <LogoPanel onUpload={armLogoPlacement} armed={pendingLayer?.type === "logo"} />}
                 {activeTool === "skins" && (
@@ -1503,6 +1625,25 @@ export default function UniformStudioPage() {
             onHoverZone={setHoverZone}
             twoTone={twoTone}
             setTwoTone={setTwoTone}
+          />
+        )}
+        {activeTool === "zones" && (
+          <ZoneEditorPanel
+            view={view}
+            onViewChange={setView}
+            zoneModel={zoneModel}
+            selectedZoneId={selectedZoneId}
+            onSelectZone={(zoneId, side) => { setSelectedZoneId(zoneId); setView(side); }}
+            zoneStyles={zoneStyles}
+            onUpdateZoneStyle={updateZoneStyle}
+            showOutlines={showZoneOutlines}
+            onToggleOutlines={() => setShowZoneOutlines((value) => !value)}
+            correctionMode={correctionMode}
+            onToggleCorrection={() => { setCorrectionMode((value) => !value); setShowZoneOutlines(true); }}
+            onUndo={undoZoneCorrection}
+            canUndo={zoneHistory.length > 0}
+            onResetZone={resetZone}
+            onResetAll={resetAllZones}
           />
         )}
         {activeTool === "text" && <TextPanel onAdd={armTextPlacement} armed={pendingLayer?.type === "text"} />}

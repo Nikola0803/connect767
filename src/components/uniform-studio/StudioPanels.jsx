@@ -8,6 +8,7 @@ import {
   ADD_ON_PRICES,
   sportConfigFor,
 } from "../../data/uniforms";
+import { NO_DETECTED_SOURCE_ELEMENTS, zoneOverlapWarnings, zoneValidation } from "./uniformZoneModel";
 
 /** #rrggbb → {r,g,b}, tolerating a missing leading hash. */
 function hexToRgb(hex) {
@@ -397,6 +398,190 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
       <p className="text-[11px] text-foreground-500 font-label -mt-3">
         Each color maps to one named garment part. No hidden side-panel color is applied.
       </p>
+    </div>
+  );
+}
+
+export function ZoneEditorPanel({
+  view,
+  onViewChange,
+  zoneModel,
+  selectedZoneId,
+  onSelectZone,
+  zoneStyles,
+  onUpdateZoneStyle,
+  showOutlines,
+  onToggleOutlines,
+  correctionMode,
+  onToggleCorrection,
+  onUndo,
+  canUndo,
+  onResetZone,
+  onResetAll,
+}) {
+  const [selectedParent, setSelectedParent] = useState(null);
+  useEffect(() => {
+    if (selectedZoneId) setSelectedParent(null);
+  }, [selectedZoneId]);
+  const zones = zoneModel?.[view] || [];
+  const garmentFor = (item) => item.id.includes("sock")
+    ? "socks"
+    : item.id.includes("shorts") || item.id.includes("waistband")
+      ? "shorts"
+      : "jersey";
+  const parentZones = selectedParent ? zones.filter((item) => garmentFor(item) === selectedParent) : [];
+  const selected = selectedParent
+    ? { id: `parent-${selectedParent}`, name: `Full ${selectedParent} mask` }
+    : zones.find((item) => item.id === selectedZoneId) || zones[0];
+  const solidSocks = selectedParent === "socks" || selected?.id?.includes("sock");
+  const styleSource = selectedParent ? parentZones[0] : selected;
+  const style = styleSource ? (zoneStyles?.[view]?.[styleSource.id] || {}) : {};
+  const validation = zoneValidation(zones);
+  const overlaps = zoneOverlapWarnings(zones);
+  const groups = [...new Set(zones.map((item) => item.group))];
+  const update = (patch) => {
+    if (solidSocks) {
+      const solidPatch = {
+        gradientEnabled: false,
+        pattern: "none",
+        borderColor: null,
+        texture: "fabric",
+        ...patch,
+      };
+      zones.filter((item) => garmentFor(item) === "socks").forEach((item) => onUpdateZoneStyle?.(view, item.id, solidPatch));
+    } else if (selectedParent) parentZones.forEach((item) => onUpdateZoneStyle?.(view, item.id, patch));
+    else if (selected) onUpdateZoneStyle?.(view, selected.id, patch);
+  };
+
+  return (
+    <div>
+      <div className="rounded-2xl border border-primary-200 bg-primary-50/50 p-3.5 mb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary-700">Zone verification</p>
+            <p className="mt-1 text-xs text-foreground-700 font-label">Inspect outlines first, then drag the orange anchors and blue Bézier handles to correct the selected boundary.</p>
+          </div>
+          <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${validation.length ? "bg-amber-100 text-amber-800" : "bg-primary-100 text-primary-800"}`}>
+            {validation.length || overlaps.length ? `${validation.length + overlaps.length} issue${validation.length + overlaps.length === 1 ? "" : "s"}` : "Paths valid · no overlaps"}
+          </span>
+        </div>
+      </div>
+      {overlaps.length > 0 && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-900">
+          <strong>Review overlap:</strong> {overlaps.map((item) => item.ids.join(" / ")).join(", ")}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        {["front", "back"].map((side) => (
+          <button key={side} type="button" onClick={() => onViewChange?.(side)} className={`rounded-lg border px-3 py-2 text-xs font-bold capitalize cursor-pointer ${view === side ? "border-primary-600 bg-primary-600 text-white" : "border-background-300 bg-white text-foreground-700"}`}>
+            {side} zones
+          </button>
+        ))}
+      </div>
+
+      <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.16em] text-foreground-400">Level 1 · Full garment masks</p>
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        {["jersey", "shorts", "socks"].map((parent) => (
+          <button
+            key={parent}
+            type="button"
+            onClick={() => { setSelectedParent(parent); onSelectZone?.(null, view); }}
+            className={`rounded-lg border px-2 py-2 text-[10px] font-bold capitalize cursor-pointer ${selectedParent === parent ? "border-primary-600 bg-primary-600 text-white" : "border-background-300 bg-white text-foreground-700"}`}
+          >
+            Full {parent}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex gap-2 mb-4">
+        <button type="button" onClick={onToggleOutlines} className={`flex-1 rounded-lg border px-2.5 py-2 text-[11px] font-bold cursor-pointer ${showOutlines ? "border-primary-500 bg-primary-50 text-primary-800" : "border-background-300 bg-white text-foreground-700"}`}>
+          <i className="ri-focus-3-line mr-1" /> {showOutlines ? "Hide outlines" : "Show all outlines"}
+        </button>
+        <button type="button" onClick={onToggleCorrection} className={`flex-1 rounded-lg border px-2.5 py-2 text-[11px] font-bold cursor-pointer ${correctionMode ? "border-accent-500 bg-accent-50 text-accent-800" : "border-background-300 bg-white text-foreground-700"}`}>
+          <i className="ri-node-tree mr-1" /> {correctionMode ? "Finish correction" : "Correct boundary"}
+        </button>
+      </div>
+
+      <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.16em] text-foreground-400">Level 2 · Individual zone masks</p>
+      <div className="max-h-60 overflow-y-auto rounded-xl border border-background-200 bg-white p-2 mb-5">
+        {groups.map((group) => (
+          <div key={group} className="mb-2 last:mb-0">
+            <p className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.15em] text-foreground-400">{group}</p>
+            {zones.filter((item) => item.group === group).map((item) => (
+              <button key={item.id} type="button" onClick={() => { setSelectedParent(null); onSelectZone?.(item.id, view); }} className={`w-full rounded-lg px-2 py-2 text-left transition cursor-pointer ${selected?.id === item.id ? "bg-primary-600 text-white" : "hover:bg-background-100 text-foreground-700"}`}>
+                <span className="block text-[11px] font-bold">{item.name}</span>
+                <span className={`block font-mono text-[9px] ${selected?.id === item.id ? "text-white/70" : "text-foreground-400"}`}>{item.id}</span>
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {selected && (
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-bold text-foreground-800">Solid color</label>
+            <div className="flex gap-2">
+              <input type="color" value={style.color || "#f6f1e7"} onChange={(event) => update({ color: event.target.value })} className="h-10 w-12 rounded-lg border border-background-300 p-1 cursor-pointer" />
+              <input type="text" value={style.color || "#f6f1e7"} onChange={(event) => isHex(event.target.value) && update({ color: event.target.value })} className="min-w-0 flex-1 rounded-lg border border-background-300 px-3 py-2 text-xs font-mono uppercase" aria-label="Selected zone HEX color" />
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-1 flex justify-between text-[11px] font-bold"><span>Opacity</span><span>{Math.round((style.opacity ?? 0.88) * 100)}%</span></div>
+            <input type="range" min="0" max="1" step="0.01" value={style.opacity ?? 0.88} onChange={(event) => update({ opacity: Number(event.target.value) })} className="w-full accent-primary-600" />
+          </div>
+
+          {solidSocks && (
+            <p className="rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-[11px] font-semibold text-primary-800">
+              Socks use one solid color. This selection updates both socks and their cuffs together.
+            </p>
+          )}
+
+          {!solidSocks && <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer">
+            <input type="checkbox" checked={Boolean(style.gradientEnabled)} onChange={(event) => update({ gradientEnabled: event.target.checked })} /> Gradient color
+          </label>}
+          {!solidSocks && style.gradientEnabled && (
+            <div className="flex gap-2">
+              <input type="color" value={style.gradientColor || "#ffffff"} onChange={(event) => update({ gradientColor: event.target.value })} className="h-9 w-12 rounded-lg border border-background-300 p-1" />
+              <select value={style.gradientDirection || "diagonal"} onChange={(event) => update({ gradientDirection: event.target.value })} className="flex-1 rounded-lg border border-background-300 px-2 text-xs">
+                <option value="diagonal">Diagonal</option><option value="vertical">Vertical</option>
+              </select>
+            </div>
+          )}
+
+          {!solidSocks && <div className="grid grid-cols-2 gap-2">
+            <label className="text-[11px] font-bold">Pattern
+              <select value={style.pattern || "none"} onChange={(event) => update({ pattern: event.target.value })} className="mt-1 w-full rounded-lg border border-background-300 px-2 py-2 text-xs font-normal">
+                <option value="none">None</option><option value="diagonal">Diagonal stripe</option><option value="checks">Checks</option><option value="dots">Dots</option>
+              </select>
+            </label>
+            <label className="text-[11px] font-bold">Pattern color
+              <input type="color" value={style.patternColor || "#ffffff"} onChange={(event) => update({ patternColor: event.target.value })} className="mt-1 h-9 w-full rounded-lg border border-background-300 p-1" />
+            </label>
+            <label className="text-[11px] font-bold">Border / trim
+              <input type="color" value={style.borderColor || "#008c59"} onChange={(event) => update({ borderColor: event.target.value })} className="mt-1 h-9 w-full rounded-lg border border-background-300 p-1" />
+            </label>
+            <label className="text-[11px] font-bold">Texture
+              <select value={style.texture || "fabric"} onChange={(event) => update({ texture: event.target.value })} className="mt-1 w-full rounded-lg border border-background-300 px-2 py-2 text-xs font-normal">
+                <option value="fabric">Original fabric</option><option value="mesh">Mesh overlay</option><option value="none">None</option>
+              </select>
+            </label>
+          </div>}
+
+          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-background-200">
+            <button type="button" disabled={!canUndo} onClick={onUndo} className="rounded-lg border border-background-300 px-2 py-2 text-[10px] font-bold disabled:opacity-40 cursor-pointer"><i className="ri-arrow-go-back-line" /> Undo</button>
+            <button type="button" onClick={() => selectedParent ? parentZones.forEach((item) => onResetZone?.(view, item.id)) : onResetZone?.(view, selected.id)} className="rounded-lg border border-background-300 px-2 py-2 text-[10px] font-bold cursor-pointer">Reset {selectedParent ? "garment" : "zone"}</button>
+            <button type="button" onClick={onResetAll} className="rounded-lg border border-accent-300 px-2 py-2 text-[10px] font-bold text-accent-700 cursor-pointer">Reset all</button>
+          </div>
+        </div>
+      )}
+
+      <details className="mt-5 rounded-xl bg-background-100 p-3 text-[11px] text-foreground-600">
+        <summary className="font-bold cursor-pointer">Source elements not present</summary>
+        <ul className="mt-2 list-disc pl-4 space-y-1">{NO_DETECTED_SOURCE_ELEMENTS.map((label) => <li key={label}>{label}</li>)}</ul>
+      </details>
     </div>
   );
 }
