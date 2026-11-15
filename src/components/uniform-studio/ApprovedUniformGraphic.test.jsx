@@ -36,11 +36,21 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     const leftCuff = container.querySelector('[data-zone-id="front-left-sock-cuff"]');
     const shirtHem = container.querySelector('path[d^="M189,545"]');
 
-    expect(leftSock.getAttribute("fill")).toBe("#086B44");
-    expect(rightSock.getAttribute("fill")).toBe("#086B44");
+    const sockTint = [...container.querySelectorAll('[data-garment-tint="fabric-multiply"]')]
+      .find((node) => node.getAttribute("mask")?.includes("approved-socks-"));
+
+    expect(sockTint.querySelector('rect[fill="#086B44"]')).not.toBeNull();
+    expect(leftSock.getAttribute("fill-opacity")).toBe("0");
+    expect(rightSock.getAttribute("fill-opacity")).toBe("0");
     expect(leftSock.getAttribute("mask")).toContain("approved-socks-");
     expect(leftCuff.getAttribute("fill-opacity")).toBe("0");
     expect(shirtHem.getAttribute("fill")).toBe("#E4553D");
+
+    const socksMask = container.querySelector('mask[id^="approved-socks-"]');
+    const socksClip = container.querySelector('clipPath[id^="approved-socks-clip-"]');
+    expect(socksMask.style.maskType).toBe("alpha");
+    expect(socksMask.querySelector("image").getAttribute("clip-path")).toContain("approved-socks-clip-");
+    expect(socksClip.querySelector("rect").getAttribute("y")).toBe("865");
   });
 
   it("clips non-correctable sock templates to the dedicated socks-only mask", () => {

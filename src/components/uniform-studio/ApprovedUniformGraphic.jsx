@@ -128,6 +128,7 @@ export default function ApprovedUniformGraphic({
   const jerseyMaskId = `approved-jersey-${uid}`;
   const shortsMaskId = `approved-shorts-${uid}`;
   const socksMaskId = `approved-socks-${uid}`;
+  const socksClipId = `approved-socks-clip-${uid}`;
   const shapeMaskId = `approved-kit-shape-${uid}`;
   const sleeveGradientId = `approved-kit-sleeve-${uid}`;
   const asset = APPROVED_ASSETS[sport] || APPROVED_ASSETS.other;
@@ -159,7 +160,6 @@ export default function ApprovedUniformGraphic({
     : Math.max(shortSleeveBottom + 90, region.bottomStart - 26);
   const baseSleeveBottom = nativeLongSleeve ? region.sleeveBottom : shortSleeveBottom;
   const editableZones = zones || (sport === "soccer" ? SOCCER_ZONE_MODEL[view] : []);
-  const hasEditableSockZones = editableZones.some((item) => item.id.includes("sock"));
 
   const longSleevePath = (side) => {
     const left = side === "left";
@@ -227,9 +227,31 @@ export default function ApprovedUniformGraphic({
           <rect x="0" y="0" width={spriteWidth} height={region.bottomStart} fill="black" />
           <rect x="0" y={bottomEnd} width={spriteWidth} height={spriteHeight - bottomEnd} fill="black" />
         </mask>
-        <mask id={socksMaskId} maskUnits="userSpaceOnUse" x="0" y="0" width={spriteWidth} height={spriteHeight}>
-          <image href={asset} x="0" y="0" width={spriteWidth} height={spriteHeight} />
-          <rect x="0" y="0" width={spriteWidth} height={region.socksStart || spriteHeight} fill="black" />
+        <clipPath id={socksClipId} clipPathUnits="userSpaceOnUse">
+          <rect
+            x="0"
+            y={region.socksStart || spriteHeight}
+            width={spriteWidth}
+            height={Math.max(0, spriteHeight - (region.socksStart || spriteHeight))}
+          />
+        </clipPath>
+        <mask
+          id={socksMaskId}
+          maskUnits="userSpaceOnUse"
+          x="0"
+          y="0"
+          width={spriteWidth}
+          height={spriteHeight}
+          style={{ maskType: "alpha" }}
+        >
+          <image
+            href={asset}
+            x="0"
+            y="0"
+            width={spriteWidth}
+            height={spriteHeight}
+            clipPath={`url(#${socksClipId})`}
+          />
         </mask>
         <mask id={shapeMaskId} maskUnits="userSpaceOnUse" x={offset} y="0" width={halfWidth} height={spriteHeight}>
           <rect x={offset} y="0" width={halfWidth} height={spriteHeight} fill="white" />
@@ -302,7 +324,7 @@ export default function ApprovedUniformGraphic({
         )}
         </TintLayer>
 
-      {region.socksStart && !hasEditableSockZones && (
+      {region.socksStart && (
           <TintLayer mask={socksMaskId} fill={socks} opacity={opacityFor("socks")}>
           {(fill) => (
             <rect
