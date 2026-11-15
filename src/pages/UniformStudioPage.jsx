@@ -343,6 +343,7 @@ export default function UniformStudioPage() {
   );
   const workflowStep = studioWorkflow[workflowIndex];
   const visibleTools = tools.filter((tool) => workflowStep.tools.includes(tool.key));
+  const activeToolConfig = tools.find((tool) => tool.key === activeTool) || visibleTools[0];
 
   const openWorkflowStep = (index) => {
     const nextStep = studioWorkflow[Math.max(0, Math.min(studioWorkflow.length - 1, index))];
@@ -1252,34 +1253,38 @@ export default function UniformStudioPage() {
 
   // ---------- The studio itself: one full viewport, nothing else ----------
   return (
-    <div className="h-[100dvh] flex flex-col bg-[#14110d] overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-3 sm:px-4 md:px-6 py-3 pt-[max(.75rem,env(safe-area-inset-top))] border-b border-white/[0.06] flex-shrink-0">
+    <div className="h-[100dvh] flex flex-col overflow-hidden bg-[#10110f] text-background-50">
+      <div className="flex min-h-14 flex-shrink-0 items-center justify-between gap-3 border-b border-white/[0.07] bg-[#0c0d0b]/95 px-3 py-2.5 pt-[max(.625rem,env(safe-area-inset-top))] sm:px-4 md:px-5">
         <button
           type="button"
           onClick={handleExit}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-background-50/70 hover:text-background-50 cursor-pointer"
+          className="inline-flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-background-50/60 transition hover:bg-white/[0.06] hover:text-background-50"
         >
           <i className="ri-arrow-left-line" />
           Back
         </button>
-        <div className="hidden min-w-0 items-center gap-3 sm:flex">
-          <span className="truncate text-xs font-semibold text-background-50/55">
-            {template?.name || "Blank Canvas"} · {sports.find((s) => s.slug === activeSport)?.label}
+        <div className="hidden min-w-0 items-center gap-2 sm:flex">
+          <span className="truncate text-sm font-semibold text-background-50/85">
+            {template?.name || "Blank Canvas"}
           </span>
-          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-primary-500/25 bg-primary-950/45 px-2.5 py-1 text-[10px] font-semibold text-primary-200">
-            <i className="ri-checkbox-circle-line" /> Saved automatically
+          <span className="text-background-50/20">/</span>
+          <span className="truncate text-xs font-medium text-background-50/45">
+            {sports.find((s) => s.slug === activeSport)?.label}
+          </span>
+          <span className="ml-2 inline-flex shrink-0 items-center gap-1.5 rounded-full border border-primary-500/20 bg-primary-950/35 px-2.5 py-1 text-[10px] font-semibold text-primary-200/90">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary-400" /> Auto-saved
           </span>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={saveProgress}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
               manualSaveStatus === "saved"
                 ? "border-primary-400/55 bg-primary-700 text-white"
                 : manualSaveStatus === "error"
                   ? "border-red-400/55 bg-red-950/50 text-red-200"
-                  : "border-white/[0.12] bg-white/[0.06] text-background-50/80 hover:border-primary-500/55 hover:bg-primary-950/55 hover:text-primary-100"
+                  : "border-white/[0.1] bg-white/[0.045] text-background-50/75 hover:border-primary-500/45 hover:bg-primary-950/45 hover:text-primary-100"
             }`}
             aria-live="polite"
           >
@@ -1292,7 +1297,7 @@ export default function UniformStudioPage() {
             type="button"
             aria-pressed={stageMode === "3d"}
             onClick={() => setStageMode((mode) => (mode === "3d" ? "edit" : "3d"))}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
               stageMode === "3d"
                 ? "border-primary-500 bg-primary-600 text-white shadow-[0_8px_18px_rgba(0,116,73,0.28)]"
                 : "border-primary-500/45 bg-primary-950/55 text-primary-100 hover:border-primary-400 hover:bg-primary-900"
@@ -1323,23 +1328,23 @@ export default function UniformStudioPage() {
 
       <nav
         aria-label="Uniform order progress"
-        className="flex-shrink-0 border-b border-white/[0.08] bg-[#1b1712] px-3 py-3 sm:px-5"
+        className="flex-shrink-0 border-b border-white/[0.06] bg-[#12130f] px-3 py-2.5 sm:px-5"
       >
-        <div className="mx-auto flex max-w-7xl items-stretch gap-2 overflow-x-auto pb-1">
+        <div className="mx-auto flex max-w-6xl items-center gap-1.5 overflow-x-auto py-0.5">
           {studioWorkflow.map((step, index) => {
             const active = index === workflowIndex;
             const complete = index < workflowIndex;
             const locked = step.key === "review" && roster.length === 0;
             return (
-              <div key={step.key} className="flex min-w-0 flex-1 items-center gap-2">
+              <div key={step.key} className="flex min-w-0 flex-1 items-center gap-1.5">
                 <button
                   type="button"
                   aria-current={active ? "step" : undefined}
                   disabled={locked}
                   onClick={() => openWorkflowStep(index)}
-                  className={`group flex min-w-[190px] flex-1 items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left transition ${
+                  className={`group flex min-w-[156px] flex-1 items-center gap-2.5 rounded-xl border px-3 py-2 text-left transition ${
                     active
-                      ? "cursor-pointer border-primary-400/55 bg-primary-600 text-white shadow-[0_10px_24px_rgba(0,116,73,0.24)]"
+                      ? "cursor-pointer border-primary-400/45 bg-primary-700 text-white shadow-[0_8px_22px_rgba(0,116,73,0.2)]"
                       : complete
                         ? "cursor-pointer border-primary-700/35 bg-primary-950/35 text-primary-100 hover:bg-primary-950/55"
                         : locked
@@ -1347,7 +1352,7 @@ export default function UniformStudioPage() {
                           : "cursor-pointer border-white/[0.07] bg-white/[0.025] text-background-50/55 hover:border-white/[0.14] hover:bg-white/[0.06] hover:text-background-50/80"
                   }`}
                 >
-                  <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-bold ${
+                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${
                     active
                       ? "border-white/20 bg-white/15"
                       : complete
@@ -1357,11 +1362,11 @@ export default function UniformStudioPage() {
                     {complete ? <i className="ri-check-line" /> : locked ? <i className="ri-lock-line" /> : step.step}
                   </span>
                   <span className="min-w-0">
-                    <span className="flex items-center gap-1.5 whitespace-nowrap text-xs font-bold">
-                      <i className={`${step.icon} text-sm opacity-75`} />
+                    <span className="flex items-center gap-1.5 whitespace-nowrap text-[11px] font-bold">
+                      <i className={`${step.icon} text-xs opacity-70`} />
                       {step.label}
                     </span>
-                    <span className={`mt-0.5 block whitespace-nowrap text-[10px] ${active ? "text-white/70" : "text-current opacity-65"}`}>
+                    <span className={`mt-0.5 hidden whitespace-nowrap text-[9px] xl:block ${active ? "text-white/65" : "text-current opacity-55"}`}>
                       {step.description}
                     </span>
                   </span>
@@ -1369,7 +1374,7 @@ export default function UniformStudioPage() {
                 {index < studioWorkflow.length - 1 && (
                   <span
                     aria-hidden="true"
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-base transition ${
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-sm transition ${
                       complete
                         ? "border-primary-500/35 bg-primary-950/50 text-primary-300"
                         : "border-white/[0.07] bg-white/[0.025] text-background-50/30"
@@ -1433,19 +1438,19 @@ export default function UniformStudioPage() {
         </div>
       )}
 
-      <div className="flex-1 min-h-0 flex">
+      <div className="flex min-h-0 flex-1 bg-[radial-gradient(circle_at_48%_42%,rgba(36,45,36,0.32),transparent_38%),linear-gradient(135deg,#10110f_0%,#151610_52%,#10110f_100%)]">
                   {/* Icon rail — desktop only; mobile gets the pill row below the canvas */}
-                  <div className="hidden lg:flex flex-col items-center gap-1 py-4 px-2 border-r border-white/[0.06] flex-shrink-0 overflow-y-auto">
+                  <div className="hidden w-[76px] flex-shrink-0 flex-col items-center gap-2 overflow-y-auto border-r border-white/[0.055] bg-black/10 px-2 py-4 lg:flex">
                     {visibleTools.map((t) => (
                       <Tooltip key={t.key} label={t.label} description={t.hint} placement="right">
                         <button
                           type="button"
                           aria-label={t.label}
                           onClick={() => setActiveTool(t.key)}
-                          className={`w-14 flex flex-col items-center gap-1 py-2.5 rounded-xl cursor-pointer transition-colors flex-shrink-0 ${
+                          className={`flex w-14 flex-shrink-0 cursor-pointer flex-col items-center gap-1 rounded-xl border py-2.5 transition-all ${
                             activeTool === t.key
-                              ? "bg-accent-500 text-background-50"
-                              : "text-background-50/45 hover:bg-white/5 hover:text-background-50/85"
+                              ? "border-accent-400/50 bg-accent-500 text-background-50 shadow-[0_8px_22px_rgba(239,84,53,0.2)]"
+                              : "border-transparent text-background-50/40 hover:border-white/[0.06] hover:bg-white/[0.045] hover:text-background-50/85"
                           }`}
                         >
                           <i className={`${t.icon} text-lg`} />
@@ -1458,13 +1463,17 @@ export default function UniformStudioPage() {
                   </div>
 
                   {/* Canvas */}
-                  <div className="flex-1 min-w-0 flex flex-col items-center gap-3 px-4 md:px-8 py-4 overflow-hidden">
+                  <div className="flex min-w-0 flex-1 flex-col items-center gap-3 overflow-hidden px-4 py-3 md:px-6 xl:px-10">
                     {/* Top bar: view thumbnails + zoom/export, inline instead of a separate row above the card */}
-                    <div className="w-full flex items-center justify-between gap-2 flex-shrink-0">
+                    <div className="flex w-full max-w-6xl flex-shrink-0 items-center justify-between gap-2">
                       <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
+                        <div className="hidden min-w-0 md:block">
+                          <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-background-50/30">Workspace</p>
+                          <p className="truncate text-xs font-semibold text-background-50/65">{activeToolConfig?.label || workflowStep.label}</p>
+                        </div>
                         {ENABLE_3D && (
                           <div
-                            className="inline-flex shrink-0 items-center rounded-xl border border-white/10 bg-white/[0.04] p-1"
+                            className="ml-2 inline-flex shrink-0 items-center rounded-xl border border-white/[0.08] bg-black/15 p-1"
                             aria-label="Uniform preview mode"
                           >
                             <button
@@ -1498,7 +1507,7 @@ export default function UniformStudioPage() {
 
                       </div>
                       {stageMode === "edit" && (
-                        <div className="inline-flex items-center gap-1 bg-white/5 rounded-lg px-1 py-1">
+                        <div className="inline-flex items-center gap-1 rounded-xl border border-white/[0.07] bg-black/15 px-1 py-1">
                           <button
                             type="button"
                             aria-label="Zoom out"
@@ -1538,7 +1547,7 @@ export default function UniformStudioPage() {
                     {stageMode === "edit" ? (
                       <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center gap-2">
                         <div
-                          className="w-full max-w-3xl transition-transform"
+                          className="w-full max-w-[800px] transition-transform"
                           style={{ transform: `scale(${zoom})` }}
                         >
                           <JerseyStage
@@ -1639,8 +1648,17 @@ export default function UniformStudioPage() {
                   </div>
 
               {/* Docked fields panel */}
-              <div className="w-full max-w-[400px] flex-shrink-0 border-l border-background-200/60 bg-background-50 p-5 overflow-y-auto hidden md:block">
-                <SelectedItemPanel
+              <aside className="hidden w-full max-w-[420px] flex-shrink-0 overflow-y-auto border-l border-black/10 bg-[#f7f5ef] md:block">
+                <div className="sticky top-0 z-10 border-b border-black/[0.07] bg-[#f7f5ef]/95 px-5 py-4 backdrop-blur-xl">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary-700">Step {workflowStep.step} · {workflowStep.label}</p>
+                  <div className="mt-1 flex items-center justify-between gap-3">
+                    <h2 className="font-heading text-xl font-medium text-foreground-950">{activeToolConfig?.label || workflowStep.label}</h2>
+                    <span className="rounded-full border border-background-300 bg-white px-2.5 py-1 text-[10px] font-semibold text-foreground-500">Live preview</span>
+                  </div>
+                  <p className="mt-1 text-xs text-foreground-500">{activeToolConfig?.hint || workflowStep.description}</p>
+                </div>
+                <div className="p-5">
+                {selectedLayer && <SelectedItemPanel
                   layer={selectedLayer}
                   placement={selectedLayerId ? placements3d[selectedLayerId] : null}
                   onTextChange={(id, text) => updateLayer(id, { text })}
@@ -1650,7 +1668,7 @@ export default function UniformStudioPage() {
                   onScaleChange={stageMode === "3d" ? setLayerScale : setLayerSize2d}
                   onRotateChange={stageMode === "3d" ? rotateLayer : rotateLayer2d}
                   onDelete={removeLayer}
-                />
+                />}
 
                 {activeTool === "design" && (
                   <DesignPanel
@@ -1755,7 +1773,8 @@ export default function UniformStudioPage() {
                     onView3d={() => setStageMode("3d")}
                   />
                 )}
-              </div>
+                </div>
+              </aside>
       </div>
 
       {/* Mobile: the fields panel docks to the bottom instead of the side */}
@@ -1875,7 +1894,7 @@ export default function UniformStudioPage() {
         )}
       </div>
 
-      <div className="flex flex-shrink-0 items-center justify-between gap-3 border-t border-white/[0.08] bg-[#1b1712] px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-6">
+      <div className="flex flex-shrink-0 items-center justify-between gap-3 border-t border-white/[0.07] bg-[#0c0d0b]/95 px-4 py-2.5 pb-[max(.625rem,env(safe-area-inset-bottom))] sm:px-6">
         <button
           type="button"
           onClick={backWorkflow}
