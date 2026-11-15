@@ -19,11 +19,16 @@ const APPROVED_ASSETS = {
 const KIT_REGIONS = {
   soccer: {
     shirtTop: 20, shirtBodyCleanupStart: 510, shirtEndStart: 534, bottomStart: 580,
-    shortsEndStart: 800, socksStart: 865, kitBottom: 1358,
+    socksStart: 865, kitBottom: 1358,
+    shortsEndPaths: [
+      "M155,792 C200,812 255,815 306,790 L306,850 C258,870 205,868 155,850 Z",
+      "M357,790 C408,815 463,812 505,792 L505,850 C458,868 405,870 357,850 Z",
+    ],
     sleeveBottom: 300, shortSleeveBottom: 300, bodyLeft: 190, bodyRight: 390, collarY: 66,
     nativeSleeve: "short",
     views: {
       front: {
+        shortsEndShiftX: 0,
         centerX: 333,
         collarY: 78,
         bodyLeft: 202,
@@ -41,6 +46,7 @@ const KIT_REGIONS = {
         shortsEndPolygon: [[163, 810], [500, 810], [500, 840], [163, 840]],
       },
       back: {
+        shortsEndShiftX: -76,
         centerX: 257,
         collarY: 62,
         bodyLeft: 127,
@@ -444,14 +450,24 @@ export default function ApprovedUniformGraphic({
           opacity={opacityFor("shortsStrip")}
           blendMode="normal"
         >
-        {(fill) => <rect
-          data-shorts-edge="complete"
-          x={offset}
-          y={region.shortsEndStart ?? bottomEnd - 22}
-          width={halfWidth}
-          height={bottomEnd - (region.shortsEndStart ?? bottomEnd - 22)}
-          fill={fill}
-        />}
+        {(fill) => region.shortsEndPaths ? (
+          <g
+            data-shorts-edge="complete"
+            data-shorts-edge-width="18"
+            transform={`translate(${offset + (region.shortsEndShiftX || 0)} 0)`}
+          >
+            {region.shortsEndPaths.map((path) => <path key={path} d={path} fill={fill} />)}
+          </g>
+        ) : (
+          <rect
+            data-shorts-edge="complete"
+            x={offset}
+            y={bottomEnd - 22}
+            width={halfWidth}
+            height="22"
+            fill={fill}
+          />
+        )}
         </TintLayer>
       </g>
 
