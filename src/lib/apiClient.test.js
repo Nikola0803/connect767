@@ -138,10 +138,26 @@ describe("wpClient/customClient request building", () => {
   it("clears a stale local session when an authenticated request returns 401", async () => {
     setStoredToken("expired-token");
     setStoredUser({ id: 1, email: "owner@example.com" });
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ message: "Token expired." }, false, 401)));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({
+      code: "c767_expired_token",
+      message: "Token expired.",
+    }, false, 401)));
 
     await expect(customClient.get("/listings/mine")).rejects.toBeInstanceOf(ApiError);
     expect(getStoredToken()).toBeNull();
     expect(getStoredUser()).toBeNull();
+  });
+
+  it("keeps the session when a route returns a non-authentication 401", async () => {
+    setStoredToken("still-valid-token");
+    setStoredUser({ id: 1, email: "owner@example.com" });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({
+      code: "rest_forbidden",
+      message: "Sorry, you are not allowed to do that.",
+    }, false, 401)));
+
+    await expect(customClient.post("/community/posts", { text: "Update" })).rejects.toBeInstanceOf(ApiError);
+    expect(getStoredToken()).toBe("still-valid-token");
+    expect(getStoredUser()).toEqual({ id: 1, email: "owner@example.com" });
   });
 });

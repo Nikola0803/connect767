@@ -9,6 +9,15 @@ class ApiError extends Error {
   }
 }
 
+const INVALID_SESSION_CODES = new Set([
+  "c767_no_token",
+  "c767_bad_token",
+  "c767_bad_signature",
+  "c767_bad_payload",
+  "c767_expired_token",
+  "c767_user_not_found",
+]);
+
 async function request(url, options = {}) {
   const token = getStoredToken();
   const isFormData = options.body instanceof FormData;
@@ -38,7 +47,7 @@ async function request(url, options = {}) {
     // An expired/revoked JWT must not leave the interface looking signed in.
     // Only clear an existing session; expected 401s from a failed login have
     // no stored token and therefore do not emit a misleading logout event.
-    if (res.status === 401 && token) {
+    if (res.status === 401 && token && INVALID_SESSION_CODES.has(payload?.code)) {
       setStoredUser(null);
       setStoredToken(null);
     }
