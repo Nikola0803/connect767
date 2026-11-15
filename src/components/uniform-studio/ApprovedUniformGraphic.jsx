@@ -159,6 +159,7 @@ export default function ApprovedUniformGraphic({
     : Math.max(shortSleeveBottom + 90, region.bottomStart - 26);
   const baseSleeveBottom = nativeLongSleeve ? region.sleeveBottom : shortSleeveBottom;
   const editableZones = zones || (sport === "soccer" ? SOCCER_ZONE_MODEL[view] : []);
+  const hasEditableSockZones = editableZones.some((item) => item.id.includes("sock"));
 
   const longSleevePath = (side) => {
     const left = side === "left";
@@ -301,8 +302,8 @@ export default function ApprovedUniformGraphic({
         )}
         </TintLayer>
 
-      {region.socksStart && (
-          <TintLayer mask={maskId} fill={socks} opacity={opacityFor("socks")}>
+      {region.socksStart && !hasEditableSockZones && (
+          <TintLayer mask={socksMaskId} fill={socks} opacity={opacityFor("socks")}>
           {(fill) => (
             <rect
               x={offset}
@@ -368,7 +369,7 @@ export default function ApprovedUniformGraphic({
               ...colors,
               armhole: colors.armhole || colors.sleeve || colors.body,
               waistband: colors.waistband || colors.shorts || colors.body,
-              sockTrim: colors.sockTrim || colors.socks || colors.body,
+              sockTrim: colors.socks || colors.body,
             }}
             onSelectZone={onSelectZone}
             onMovePoint={onMoveZonePoint}

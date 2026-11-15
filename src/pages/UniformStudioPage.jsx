@@ -1751,6 +1751,8 @@ export default function UniformStudioPage() {
                     canUndo={zoneHistory.length > 0}
                     onResetZone={resetZone}
                     onResetAll={resetAllZones}
+                    sockColor={colors.socks}
+                    onSockColorChange={(color) => setColors((current) => ({ ...current, socks: color }))}
                   />
                 )}
                 {activeTool === "text" && <TextPanel onAdd={armTextPlacement} armed={pendingLayer?.type === "text"} />}
@@ -1876,6 +1878,8 @@ export default function UniformStudioPage() {
             canUndo={zoneHistory.length > 0}
             onResetZone={resetZone}
             onResetAll={resetAllZones}
+            sockColor={colors.socks}
+            onSockColorChange={(color) => setColors((current) => ({ ...current, socks: color }))}
           />
         )}
         {activeTool === "text" && <TextPanel onAdd={armTextPlacement} armed={pendingLayer?.type === "text"} />}

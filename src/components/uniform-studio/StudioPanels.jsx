@@ -405,6 +405,8 @@ export function ZoneEditorPanel({
   canUndo,
   onResetZone,
   onResetAll,
+  sockColor = "#f6f1e7",
+  onSockColorChange,
 }) {
   const [selectedParent, setSelectedParent] = useState(null);
   useEffect(() => {
@@ -428,7 +430,10 @@ export function ZoneEditorPanel({
   const groups = [...new Set(zones.map((item) => item.group))];
   const update = (patch) => {
     if (solidSocks) {
+      if (patch.color) onSockColorChange?.(patch.color);
       const solidPatch = {
+        color: patch.color || sockColor,
+        opacity: 1,
         gradientEnabled: false,
         pattern: "none",
         borderColor: null,
@@ -510,19 +515,19 @@ export function ZoneEditorPanel({
           <div>
             <label className="mb-1.5 block text-xs font-bold text-foreground-800">Solid color</label>
             <div className="flex gap-2">
-              <input type="color" value={style.color || "#f6f1e7"} onChange={(event) => update({ color: event.target.value })} className="h-10 w-12 rounded-lg border border-background-300 p-1 cursor-pointer" />
-              <input type="text" value={style.color || "#f6f1e7"} onChange={(event) => isHex(event.target.value) && update({ color: event.target.value })} className="min-w-0 flex-1 rounded-lg border border-background-300 px-3 py-2 text-xs font-mono uppercase" aria-label="Selected zone HEX color" />
+              <input type="color" value={solidSocks ? sockColor : (style.color || "#f6f1e7")} onChange={(event) => update({ color: event.target.value })} className="h-10 w-12 rounded-lg border border-background-300 p-1 cursor-pointer" />
+              <input type="text" value={solidSocks ? sockColor : (style.color || "#f6f1e7")} onChange={(event) => isHex(event.target.value) && update({ color: event.target.value })} className="min-w-0 flex-1 rounded-lg border border-background-300 px-3 py-2 text-xs font-mono uppercase" aria-label="Selected zone HEX color" />
             </div>
           </div>
 
-          <div>
+          {!solidSocks && <div>
             <div className="mb-1 flex justify-between text-[11px] font-bold"><span>Opacity</span><span>{Math.round((style.opacity ?? 1) * 100)}%</span></div>
             <input type="range" min="0" max="1" step="0.01" value={style.opacity ?? 1} onChange={(event) => update({ opacity: Number(event.target.value) })} className="w-full accent-primary-600" />
-          </div>
+          </div>}
 
           {solidSocks && (
             <p className="rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-[11px] font-semibold text-primary-800">
-              Socks use one solid color. This selection updates both socks and their cuffs together.
+              Socks use one solid color at full opacity. This selection updates the front, back and cuffs together.
             </p>
           )}
 

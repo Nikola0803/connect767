@@ -58,9 +58,12 @@ export default function ZoneCorrectionOverlay({
       <defs>
         {zones.map((item) => {
           const style = zoneStyles[item.id] || {};
+          const solidSock = item.id.includes("sock");
           const safe = item.id.replace(/[^a-z0-9-]/gi, "");
-          const primary = style.color || colorValues[item.colorKey] || "#f6f1e7";
-          const secondary = style.gradientColor || primary;
+          const primary = solidSock
+            ? (colorValues.socks || "#f6f1e7")
+            : (style.color || colorValues[item.colorKey] || "#f6f1e7");
+          const secondary = solidSock ? primary : (style.gradientColor || primary);
           return (
             <Fragment key={`defs-${item.id}`}>
               <linearGradient id={`zone-gradient-${safe}`} x1="0" y1="0" x2={style.gradientDirection === "vertical" ? "0" : "1"} y2={style.gradientDirection === "vertical" ? "1" : "1"}>
@@ -79,9 +82,15 @@ export default function ZoneCorrectionOverlay({
       </defs>
       {zones.map((item) => {
         const style = zoneStyles[item.id] || {};
-        const color = style.color || colorValues[item.colorKey] || "#f6f1e7";
+        const solidSock = item.id.includes("sock");
+        const sockCuff = solidSock && item.id.includes("cuff");
+        const color = solidSock
+          ? (colorValues.socks || "#f6f1e7")
+          : (style.color || colorValues[item.colorKey] || "#f6f1e7");
         const safe = item.id.replace(/[^a-z0-9-]/gi, "");
-        const fill = style.pattern && style.pattern !== "none"
+        const fill = solidSock
+          ? color
+          : style.pattern && style.pattern !== "none"
           ? `url(#zone-pattern-${safe})`
           : style.gradientEnabled
             ? `url(#zone-gradient-${safe})`
@@ -92,7 +101,11 @@ export default function ZoneCorrectionOverlay({
           || (style.pattern && style.pattern !== "none")
           || style.texture,
         );
-        const opacity = item.group === "Seams" && !hasExplicitSeamStyle
+        const opacity = sockCuff
+          ? 0
+          : solidSock
+            ? 1
+            : item.group === "Seams" && !hasExplicitSeamStyle
           ? 0
           : (Number.isFinite(style.opacity) ? style.opacity : 1);
         return (
@@ -101,8 +114,8 @@ export default function ZoneCorrectionOverlay({
             d={commandsToPath(item.commands, offsetX)}
             fill={fill}
             fillOpacity={opacity}
-            stroke={style.borderColor || "none"}
-            strokeOpacity={style.borderColor ? 0.95 : 0}
+            stroke={solidSock ? "none" : (style.borderColor || "none")}
+            strokeOpacity={!solidSock && style.borderColor ? 0.95 : 0}
             strokeWidth={style.borderWidth || 2}
             vectorEffect="non-scaling-stroke"
             mask={parentMask(item) ? `url(#${parentMask(item)})` : undefined}
@@ -113,8 +126,10 @@ export default function ZoneCorrectionOverlay({
               // luminance and made deep HEX values appear pastel.
               mixBlendMode: style.blendMode || "multiply",
               cursor: correctionMode ? "crosshair" : "pointer",
-              filter: style.texture === "mesh" ? "url(#zone-mesh)" : undefined,
+              filter: !solidSock && style.texture === "mesh" ? "url(#zone-mesh)" : undefined,
+              pointerEvents: "all",
             }}
+            data-solid-sock-zone={solidSock ? "true" : undefined}
             data-zone-id={item.id}
             data-zone-name={item.name}
             onPointerDown={(event) => {
