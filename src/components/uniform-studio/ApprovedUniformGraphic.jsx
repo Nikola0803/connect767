@@ -90,7 +90,12 @@ const KIT_REGIONS = {
 
 function TintLayer({ mask, fill, opacity, children }) {
   return (
-    <g mask={`url(#${mask})`} opacity={opacity} style={{ mixBlendMode: "color" }}>
+    <g
+      data-garment-tint="fabric-multiply"
+      mask={`url(#${mask})`}
+      opacity={opacity}
+      style={{ mixBlendMode: "multiply" }}
+    >
       {children(fill)}
     </g>
   );

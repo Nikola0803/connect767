@@ -3,6 +3,25 @@ import { describe, expect, it } from "vitest";
 import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
 
 describe("ApprovedUniformGraphic trim isolation", () => {
+  it("uses the selected colors as deep base tones while retaining fabric shading", () => {
+    const { container } = render(
+      <ApprovedUniformGraphic
+        sport="soccer"
+        view="front"
+        colors={{ body: "#1B1A16", shorts: "#086B44" }}
+      />,
+    );
+
+    const shirtBody = container.querySelector('path[d^="M275,56"]');
+    const shorts = container.querySelector('path[d^="M176,555"]');
+
+    expect(shirtBody.getAttribute("fill")).toBe("#1B1A16");
+    expect(shorts.getAttribute("fill")).toBe("#086B44");
+    expect(shirtBody.parentElement.style.mixBlendMode).toBe("multiply");
+    expect(shorts.parentElement.style.mixBlendMode).toBe("multiply");
+    expect(shirtBody.parentElement.getAttribute("opacity")).toBe("1");
+  });
+
   it("clips the full-width shirt hem to the jersey instead of the shorts", () => {
     const { container } = render(
       <ApprovedUniformGraphic
