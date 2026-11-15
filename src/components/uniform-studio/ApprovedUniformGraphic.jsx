@@ -10,7 +10,7 @@ const ASSET_BASE = import.meta.env.BASE_URL;
 const APPROVED_ASSETS = {
   soccer: `${ASSET_BASE}uploads/uniform-editor/approved-soccer-kit.png`,
   basketball: `${ASSET_BASE}uploads/uniform-editor/approved-basketball-kit.png`,
-  netball: `${ASSET_BASE}uploads/uniform-editor/approved-basketball-kit.png`,
+  netball: `${ASSET_BASE}uploads/uniform-editor/approved-netball-kit.png`,
   cricket: `${ASSET_BASE}uploads/uniform-editor/approved-cricket-kit.png`,
   goalkeeper: `${ASSET_BASE}uploads/uniform-editor/approved-goalkeeper-kit.png`,
   other: `${ASSET_BASE}uploads/uniform-editor/approved-other-kit.png`,
@@ -66,8 +66,9 @@ const KIT_REGIONS = {
     nativeSleeve: "sleeveless",
   },
   netball: {
-    shirtTop: 155, bottomStart: 735, kitBottom: 1225,
-    sleeveBottom: 390, shortSleeveBottom: 390, bodyLeft: 170, bodyRight: 410, collarY: 215,
+    spriteWidth: 1536, spriteHeight: 1024,
+    shirtTop: 20, bottomStart: 955, kitBottom: 1024,
+    sleeveBottom: 320, shortSleeveBottom: 320, bodyLeft: 245, bodyRight: 523, collarY: 132,
     nativeSleeve: "sleeveless",
   },
   cricket: {
@@ -125,10 +126,13 @@ export default function ApprovedUniformGraphic({
   const shapeMaskId = `approved-kit-shape-${uid}`;
   const sleeveGradientId = `approved-kit-sleeve-${uid}`;
   const asset = APPROVED_ASSETS[sport] || APPROVED_ASSETS.other;
-  const offset = view === "back" ? HALF_WIDTH : 0;
   const baseRegion = KIT_REGIONS[sport] || KIT_REGIONS.other;
+  const spriteWidth = baseRegion.spriteWidth || SPRITE_WIDTH;
+  const spriteHeight = baseRegion.spriteHeight || SPRITE_HEIGHT;
+  const halfWidth = spriteWidth / 2;
+  const offset = view === "back" ? halfWidth : 0;
   const region = { ...baseRegion, ...(baseRegion.views?.[view] || {}) };
-  const collarCenterX = offset + (region.centerX ?? HALF_WIDTH / 2);
+  const collarCenterX = offset + (region.centerX ?? halfWidth / 2);
   const opacityFor = (zone, base = 1) => (highlightZone && highlightZone !== zone ? base * 0.22 : base);
   const body = colors.body || "#f6f1e7";
   const sleeve = colors.sleeve || body;
@@ -143,6 +147,7 @@ export default function ApprovedUniformGraphic({
   const hasLeftLongSleeve = sleeveStyle === "Long" || sleeveStyle === "Mixed";
   const hasRightLongSleeve = sleeveStyle === "Long";
   const nativeLongSleeve = region.nativeSleeve === "long";
+  const nativeSleeveless = region.nativeSleeve === "sleeveless";
   const shortSleeveBottom = region.shortSleeveBottom || region.sleeveBottom;
   const longSleeveBottom = nativeLongSleeve
     ? region.sleeveBottom
@@ -182,7 +187,7 @@ export default function ApprovedUniformGraphic({
     if (left) {
       return `M${offset},${shortSleeveBottom} H${offset + region.bodyLeft + 8} L${offset + region.bodyLeft + 5},${region.sleeveBottom} H${offset} Z`;
     }
-    return `M${offset + HALF_WIDTH},${shortSleeveBottom} H${offset + region.bodyRight - 8} L${offset + region.bodyRight - 5},${region.sleeveBottom} H${offset + HALF_WIDTH} Z`;
+    return `M${offset + halfWidth},${shortSleeveBottom} H${offset + region.bodyRight - 8} L${offset + region.bodyRight - 5},${region.sleeveBottom} H${offset + halfWidth} Z`;
   };
   const longCuffPath = (side) => {
     const left = side === "left";
@@ -197,32 +202,32 @@ export default function ApprovedUniformGraphic({
   return (
     <svg
       data-uniform-view={view}
-      viewBox={`${offset} 0 ${HALF_WIDTH} ${SPRITE_HEIGHT}`}
+      viewBox={`${offset} 0 ${halfWidth} ${spriteHeight}`}
       preserveAspectRatio="xMidYMid meet"
       className="h-full w-full overflow-hidden"
       role="img"
       aria-label={`${sport} complete uniform ${view}`}
     >
       <defs>
-        <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width={SPRITE_WIDTH} height={SPRITE_HEIGHT}>
-          <image href={asset} x="0" y="0" width={SPRITE_WIDTH} height={SPRITE_HEIGHT} />
+        <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width={spriteWidth} height={spriteHeight}>
+          <image href={asset} x="0" y="0" width={spriteWidth} height={spriteHeight} />
         </mask>
-        <mask id={jerseyMaskId} maskUnits="userSpaceOnUse" x="0" y="0" width={SPRITE_WIDTH} height={SPRITE_HEIGHT}>
-          <image href={asset} x="0" y="0" width={SPRITE_WIDTH} height={SPRITE_HEIGHT} />
-          <rect x="0" y={region.bottomStart} width={SPRITE_WIDTH} height={SPRITE_HEIGHT - region.bottomStart} fill="black" />
+        <mask id={jerseyMaskId} maskUnits="userSpaceOnUse" x="0" y="0" width={spriteWidth} height={spriteHeight}>
+          <image href={asset} x="0" y="0" width={spriteWidth} height={spriteHeight} />
+          <rect x="0" y={region.bottomStart} width={spriteWidth} height={spriteHeight - region.bottomStart} fill="black" />
         </mask>
-        <mask id={shortsMaskId} maskUnits="userSpaceOnUse" x="0" y="0" width={SPRITE_WIDTH} height={SPRITE_HEIGHT}>
-          <image href={asset} x="0" y="0" width={SPRITE_WIDTH} height={SPRITE_HEIGHT} />
-          <rect x="0" y="0" width={SPRITE_WIDTH} height={region.bottomStart} fill="black" />
-          <rect x="0" y={bottomEnd} width={SPRITE_WIDTH} height={SPRITE_HEIGHT - bottomEnd} fill="black" />
+        <mask id={shortsMaskId} maskUnits="userSpaceOnUse" x="0" y="0" width={spriteWidth} height={spriteHeight}>
+          <image href={asset} x="0" y="0" width={spriteWidth} height={spriteHeight} />
+          <rect x="0" y="0" width={spriteWidth} height={region.bottomStart} fill="black" />
+          <rect x="0" y={bottomEnd} width={spriteWidth} height={spriteHeight - bottomEnd} fill="black" />
         </mask>
-        <mask id={socksMaskId} maskUnits="userSpaceOnUse" x="0" y="0" width={SPRITE_WIDTH} height={SPRITE_HEIGHT}>
-          <image href={asset} x="0" y="0" width={SPRITE_WIDTH} height={SPRITE_HEIGHT} />
-          <rect x="0" y="0" width={SPRITE_WIDTH} height={region.socksStart || SPRITE_HEIGHT} fill="black" />
+        <mask id={socksMaskId} maskUnits="userSpaceOnUse" x="0" y="0" width={spriteWidth} height={spriteHeight}>
+          <image href={asset} x="0" y="0" width={spriteWidth} height={spriteHeight} />
+          <rect x="0" y="0" width={spriteWidth} height={region.socksStart || spriteHeight} fill="black" />
         </mask>
-        <mask id={shapeMaskId} maskUnits="userSpaceOnUse" x={offset} y="0" width={HALF_WIDTH} height={SPRITE_HEIGHT}>
-          <rect x={offset} y="0" width={HALF_WIDTH} height={SPRITE_HEIGHT} fill="white" />
-          {isSleeveless && (
+        <mask id={shapeMaskId} maskUnits="userSpaceOnUse" x={offset} y="0" width={halfWidth} height={spriteHeight}>
+          <rect x={offset} y="0" width={halfWidth} height={spriteHeight} fill="white" />
+          {isSleeveless && !nativeSleeveless && (
             <>
               <path d={baseSleevePath("left", false, region.sleeveBottom)} fill="black" />
               <path d={baseSleevePath("right", false, region.sleeveBottom)} fill="black" />
@@ -255,7 +260,7 @@ export default function ApprovedUniformGraphic({
       )}
 
       <g mask={`url(#${shapeMaskId})`}>
-        <image href={asset} x="0" y="0" width={SPRITE_WIDTH} height={SPRITE_HEIGHT} />
+        <image href={asset} x="0" y="0" width={spriteWidth} height={spriteHeight} />
 
         {/* Start with one shirt/body color across the complete torso, then let
             the sleeve layer replace only the sleeves. There is deliberately no
@@ -263,7 +268,7 @@ export default function ApprovedUniformGraphic({
         <TintLayer mask={maskId} fill={body} opacity={opacityFor("body")}>
           {(fill) => region.bodyPolygon
             ? <path d={polygonPath(region.bodyPolygon)} fill={fill} />
-            : <rect x={offset} y={region.shirtTop} width={HALF_WIDTH} height={region.bottomStart - region.shirtTop} fill={fill} />}
+            : <rect x={offset} y={region.shirtTop} width={halfWidth} height={region.bottomStart - region.shirtTop} fill={fill} />}
         </TintLayer>
 
         {!isSleeveless && (
@@ -284,7 +289,7 @@ export default function ApprovedUniformGraphic({
             : <rect
                 x={offset}
                 y={region.bottomStart}
-                width={HALF_WIDTH}
+                width={halfWidth}
                 height={bottomEnd - region.bottomStart}
                 fill={fill}
               />
@@ -297,7 +302,7 @@ export default function ApprovedUniformGraphic({
             <rect
               x={offset}
               y={region.socksStart}
-              width={HALF_WIDTH}
+              width={halfWidth}
               height={region.kitBottom - region.socksStart}
               fill={fill}
             />
@@ -308,7 +313,7 @@ export default function ApprovedUniformGraphic({
         <TintLayer mask={maskId} fill={shirtEnd} opacity={opacityFor("shirtStrip")}>
           {(fill) => region.shirtEndPolygon
             ? <path d={polygonPath(region.shirtEndPolygon)} fill={fill} />
-            : <rect x={offset} y={region.bottomStart - 18} width={HALF_WIDTH} height="18" fill={fill} />}
+            : <rect x={offset} y={region.bottomStart - 18} width={halfWidth} height="18" fill={fill} />}
         </TintLayer>
 
         {!isSleeveless && <TintLayer mask={maskId} fill={sleeveEnd} opacity={opacityFor("sleeveStrip")}>
@@ -337,7 +342,7 @@ export default function ApprovedUniformGraphic({
         {(fill) => (
             region.shortsEndPolygon
               ? <path d={polygonPath(region.shortsEndPolygon)} fill={fill} />
-              : <rect x={offset} y={bottomEnd - 22} width={HALF_WIDTH} height="22" fill={fill} />
+              : <rect x={offset} y={bottomEnd - 22} width={halfWidth} height="22" fill={fill} />
         )}
         </TintLayer>
       </g>
@@ -367,7 +372,7 @@ export default function ApprovedUniformGraphic({
       {/* Collar controls need to change the visible cut, not only a stored
           option. These clean vector overlays sit over the photographed collar
           and deliberately differ enough to be obvious at editor scale. */}
-      <g
+      {!(sport === "netball" && collar === "Crew") && <g
         opacity={opacityFor("collar")}
         data-collar-shape={collar}
         data-collar-color={collarColor}
@@ -407,7 +412,7 @@ export default function ApprovedUniformGraphic({
             <circle cx={collarCenterX} cy={region.collarY + 57} r="3" fill={body} />
           </>
         )}
-      </g>
+      </g>}
 
       {!isSleeveless && !nativeLongSleeve && (
         <g opacity={opacityFor("sleeveStrip")}>
