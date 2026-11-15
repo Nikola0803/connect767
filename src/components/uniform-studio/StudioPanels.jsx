@@ -516,8 +516,8 @@ export function ZoneEditorPanel({
           </div>
 
           <div>
-            <div className="mb-1 flex justify-between text-[11px] font-bold"><span>Opacity</span><span>{Math.round((style.opacity ?? 0.88) * 100)}%</span></div>
-            <input type="range" min="0" max="1" step="0.01" value={style.opacity ?? 0.88} onChange={(event) => update({ opacity: Number(event.target.value) })} className="w-full accent-primary-600" />
+            <div className="mb-1 flex justify-between text-[11px] font-bold"><span>Opacity</span><span>{Math.round((style.opacity ?? 1) * 100)}%</span></div>
+            <input type="range" min="0" max="1" step="0.01" value={style.opacity ?? 1} onChange={(event) => update({ opacity: Number(event.target.value) })} className="w-full accent-primary-600" />
           </div>
 
           {solidSocks && (

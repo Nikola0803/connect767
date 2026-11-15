@@ -78,7 +78,6 @@ export default function ZoneCorrectionOverlay({
         })}
       </defs>
       {zones.map((item) => {
-        const active = item.id === selectedZoneId;
         const style = zoneStyles[item.id] || {};
         const color = style.color || colorValues[item.colorKey] || "#f6f1e7";
         const safe = item.id.replace(/[^a-z0-9-]/gi, "");
@@ -95,7 +94,7 @@ export default function ZoneCorrectionOverlay({
         );
         const opacity = item.group === "Seams" && !hasExplicitSeamStyle
           ? 0
-          : (Number.isFinite(style.opacity) ? style.opacity : 0.88);
+          : (Number.isFinite(style.opacity) ? style.opacity : 1);
         return (
           <path
             key={item.id}
@@ -108,7 +107,11 @@ export default function ZoneCorrectionOverlay({
             vectorEffect="non-scaling-stroke"
             mask={parentMask(item) ? `url(#${parentMask(item)})` : undefined}
             style={{
-              mixBlendMode: style.blendMode || "color",
+              // Multiply uses the chosen swatch as the garment's real base
+              // tone while retaining the photographed folds and highlights.
+              // The previous `color` blend preserved the white template's
+              // luminance and made deep HEX values appear pastel.
+              mixBlendMode: style.blendMode || "multiply",
               cursor: correctionMode ? "crosshair" : "pointer",
               filter: style.texture === "mesh" ? "url(#zone-mesh)" : undefined,
             }}
