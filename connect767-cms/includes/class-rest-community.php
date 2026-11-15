@@ -141,6 +141,8 @@ class C767_REST_Community
             'emotion' => sanitize_key((string) get_post_meta($post->ID, '_community_emotion', true)),
             'activity' => sanitize_key((string) get_post_meta($post->ID, '_community_activity', true)),
             'postLocation' => sanitize_text_field((string) get_post_meta($post->ID, '_community_post_location', true)),
+            'latitude' => get_post_meta($post->ID, '_community_latitude', true) !== '' ? (float) get_post_meta($post->ID, '_community_latitude', true) : null,
+            'longitude' => get_post_meta($post->ID, '_community_longitude', true) !== '' ? (float) get_post_meta($post->ID, '_community_longitude', true) : null,
             'mentions' => array_values($mentions),
             'text' => wp_strip_all_tags($post->post_content),
             'mediaUrl' => esc_url_raw((string) get_post_meta($post->ID, '_community_media_url', true)),
@@ -203,6 +205,28 @@ class C767_REST_Community
         if (strlen($post_location) > 120) {
             return new WP_Error('c767_community_location_too_long', 'Locations must be 120 characters or fewer.', ['status' => 400]);
         }
+        $latitude_param = $request->get_param('latitude');
+        $longitude_param = $request->get_param('longitude');
+        $has_latitude = $latitude_param !== null && $latitude_param !== '';
+        $has_longitude = $longitude_param !== null && $longitude_param !== '';
+        if ($has_latitude !== $has_longitude) {
+            return new WP_Error('c767_community_location_incomplete', 'Live location coordinates are incomplete.', ['status' => 400]);
+        }
+        $latitude = null;
+        $longitude = null;
+        if ($has_latitude && $has_longitude) {
+            if (!is_numeric($latitude_param) || !is_numeric($longitude_param)) {
+                return new WP_Error('c767_community_location_invalid', 'Live location coordinates are invalid.', ['status' => 400]);
+            }
+            $latitude = (float) $latitude_param;
+            $longitude = (float) $longitude_param;
+            if ($latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
+                return new WP_Error('c767_community_location_invalid', 'Live location coordinates are outside the valid range.', ['status' => 400]);
+            }
+            if ($post_location === '') {
+                $post_location = 'Current location';
+            }
+        }
 
         $mentions_param = $request->get_param('mentions');
         if (is_string($mentions_param) && $mentions_param !== '') {
@@ -258,6 +282,8 @@ class C767_REST_Community
         update_post_meta($post_id, '_community_emotion', $emotion);
         update_post_meta($post_id, '_community_activity', $activity);
         update_post_meta($post_id, '_community_post_location', $post_location);
+        update_post_meta($post_id, '_community_latitude', $latitude === null ? '' : $latitude);
+        update_post_meta($post_id, '_community_longitude', $longitude === null ? '' : $longitude);
         update_post_meta($post_id, '_community_mentions', $mentions);
 
         $media_url = esc_url_raw((string) $request->get_param('mediaUrl'));

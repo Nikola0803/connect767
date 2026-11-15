@@ -86,6 +86,8 @@ export async function createCommunityPost(payload) {
     if (payload.emotion) form.append("emotion", payload.emotion);
     if (payload.activity) form.append("activity", payload.activity);
     if (payload.postLocation) form.append("postLocation", payload.postLocation);
+    if (Number.isFinite(payload.latitude)) form.append("latitude", String(payload.latitude));
+    if (Number.isFinite(payload.longitude)) form.append("longitude", String(payload.longitude));
     if (payload.mentions?.length) form.append("mentions", JSON.stringify(payload.mentions));
     if (payload.image) form.append("image", payload.image);
     if (payload.video) form.append("video", payload.video);
