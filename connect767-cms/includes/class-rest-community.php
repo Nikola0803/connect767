@@ -59,9 +59,20 @@ class C767_REST_Community
         ]);
     }
 
-    public static function is_authenticated()
+    public static function is_authenticated(WP_REST_Request $request)
     {
-        return get_current_user_id() > 0;
+        // The public frontend authenticates with the plugin's Bearer token,
+        // not a WordPress login cookie. Resolve that token here and establish
+        // the current user before create_post(), toggle_reaction(), or
+        // create_comment() reads get_current_user_id(). Returning the
+        // WP_Error also preserves the precise expired/invalid-token response.
+        $user = C767_REST_Auth::user_from_request($request);
+        if (is_wp_error($user)) {
+            return $user;
+        }
+
+        wp_set_current_user($user->ID);
+        return true;
     }
 
     private static function owned_listing($listing_id, $user_id)
