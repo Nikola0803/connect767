@@ -52,6 +52,42 @@ import { listingDetails as localListingDetails } from "./listingDetails";
 import { productTypes as localProductTypes } from "./customizer";
 import { categories as localHomeCategories } from "./content";
 import { blogPosts as localBlogPosts, blogCategories as localBlogCategories, getRelatedPosts } from "./blog";
+import { localCommunityPosts } from "./community";
+
+// ---------- Business community feed ----------
+
+export async function getCommunityPosts() {
+  if (!isLiveApi) return { posts: localCommunityPosts, page: 1, totalPages: 1 };
+  return customClient.get("/community/posts");
+}
+
+export async function createCommunityPost(payload) {
+  if (!isLiveApi) {
+    return {
+      id: `local-${Date.now()}`,
+      ...payload,
+      listingSlug: payload.listingSlug || "",
+      listingTitle: payload.listingTitle || "Your business",
+      createdAt: new Date().toISOString(),
+      reactionCount: 0,
+      reacted: false,
+      comments: [],
+    };
+  }
+  return customClient.post("/community/posts", payload);
+}
+
+export async function toggleCommunityReaction(postId) {
+  if (!isLiveApi) return null;
+  return customClient.post(`/community/posts/${postId}/reactions`, {});
+}
+
+export async function createCommunityComment(postId, text) {
+  if (!isLiveApi) {
+    return { id: `local-comment-${Date.now()}`, name: "You", text, createdAt: new Date().toISOString() };
+  }
+  return customClient.post(`/community/posts/${postId}/comments`, { text });
+}
 
 /**
  * Every function here returns a Promise and the same shape, whether the data

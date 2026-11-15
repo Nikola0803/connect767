@@ -18,6 +18,7 @@ const ProductDetailPage = lazy(() => import("./pages/ProductDetailPage"));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 const CheckoutThankYouPage = lazy(() => import("./pages/CheckoutThankYouPage"));
 const DirectoryPage = lazy(() => import("./pages/DirectoryPage"));
+const CommunityPage = lazy(() => import("./pages/CommunityPage"));
 const ListingDetailPage = lazy(() => import("./pages/ListingDetailPage"));
 const AddListingPage = lazy(() => import("./pages/AddListingPage"));
 const MatchPage = lazy(() => import("./pages/MatchPage"));
@@ -92,6 +93,7 @@ function App() {
                   <Route path="/checkout" element={<CheckoutPage />} />
                   <Route path="/checkout/thank-you" element={<CheckoutThankYouPage />} />
                   <Route path="/listings" element={<DirectoryPage />} />
+                  <Route path="/community" element={<CommunityPage />} />
                   <Route path="/listings/submit" element={<AddListingPage />} />
                   <Route path="/listings/:slug/edit" element={<AddListingPage />} />
                   <Route path="/listings/:slug/shop" element={<ListingStorefrontPage />} />
