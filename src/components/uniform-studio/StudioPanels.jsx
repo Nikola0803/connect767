@@ -179,7 +179,33 @@ function ColorRow({ label, value, onChange, zone, onHoverZone }) {
 }
 
 export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, colors, setColors, onHoverZone, twoTone, setTwoTone }) {
-  const setZone = (zone) => (color) => setColors((c) => ({ ...c, [zone]: color }));
+  const setZone = (zone) => (color) => {
+    setColors((current) => ({
+      ...current,
+      [zone]: color,
+      ...(zone === "body" && twoTone && !twoTone.enabled ? { shorts: color } : {}),
+    }));
+    if (zone === "shorts" && twoTone) {
+      setTwoTone((current) => ({
+        ...current,
+        enabled: color.toLowerCase() !== colors.body.toLowerCase(),
+        colorB: color,
+        splitAt: 0.5,
+        softness: 0.005,
+      }));
+    }
+  };
+  const toggleTwoTone = (enabled) => {
+    setTwoTone((current) => ({ ...current, enabled, splitAt: 0.5, softness: 0.005 }));
+    setColors((current) => ({
+      ...current,
+      shorts: enabled ? twoTone.colorB : current.body,
+    }));
+  };
+  const setLowerColour = (color) => {
+    setTwoTone((current) => ({ ...current, enabled: true, colorB: color, splitAt: 0.5, softness: 0.005 }));
+    setColors((current) => ({ ...current, shorts: color }));
+  };
   const config = sportConfigFor(sport);
 
   return (
@@ -253,26 +279,26 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
               type="checkbox"
               className="mt-0.5 rounded border-background-300 cursor-pointer"
               checked={twoTone.enabled}
-              onChange={(e) => setTwoTone((t) => ({ ...t, enabled: e.target.checked }))}
+              onChange={(e) => toggleTwoTone(e.target.checked)}
             />
             <span className="text-xs text-foreground-700 font-label">
-              Split the kit into two colours — a hard seam for shirt vs shorts, or a soft fade for
-              a gradient.
+              Use a separate lower colour for the shorts or trousers. The split follows the actual
+              waist seam in both the 2D editor and 3D preview.
             </span>
           </label>
 
           {twoTone.enabled && (
             <div className="mb-6 pl-1">
               <span className="block text-xs font-semibold text-foreground-800 mb-2">
-                Lower colour
+                Shorts / lower colour
               </span>
               <div className="flex flex-wrap gap-2 mb-4">
                 {zoneColorPalette.map((c) => (
                   <button
                     key={c}
                     type="button"
-                    aria-label={`Lower colour ${c}`}
-                    onClick={() => setTwoTone((t) => ({ ...t, colorB: c }))}
+                    aria-label={`Shorts or lower colour ${c}`}
+                    onClick={() => setLowerColour(c)}
                     className={`relative w-7 h-7 rounded-full cursor-pointer shadow-sm ring-1 ring-black/5 transition-transform hover:scale-110 ${
                       twoTone.colorB === c ? "ring-2 ring-offset-2 ring-primary-500" : ""
                     }`}
@@ -280,48 +306,9 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
                   />
                 ))}
               </div>
-
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-foreground-800" htmlFor="tt-split">
-                  Split height
-                </label>
-                <span className="text-[11px] text-foreground-500 font-label">
-                  {Math.round(twoTone.splitAt * 100)}%
-                </span>
-              </div>
-              <input
-                id="tt-split"
-                type="range"
-                min="0.1"
-                max="0.9"
-                step="0.01"
-                value={twoTone.splitAt}
-                onChange={(e) =>
-                  setTwoTone((t) => ({ ...t, splitAt: Number(e.target.value) }))
-                }
-                className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-background-200 accent-primary-500 mb-4"
-              />
-
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-foreground-800" htmlFor="tt-soft">
-                  Blend
-                </label>
-                <span className="text-[11px] text-foreground-500 font-label">
-                  {twoTone.softness <= 0.05 ? "Hard seam" : "Gradient"}
-                </span>
-              </div>
-              <input
-                id="tt-soft"
-                type="range"
-                min="0.005"
-                max="0.5"
-                step="0.005"
-                value={twoTone.softness}
-                onChange={(e) =>
-                  setTwoTone((t) => ({ ...t, softness: Number(e.target.value) }))
-                }
-                className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-background-200 accent-primary-500"
-              />
+              <p className="rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-[11px] leading-relaxed text-primary-900">
+                Shirt: <strong>{colors.body.toUpperCase()}</strong> · {config.bottomLabel}: <strong>{colors.shorts.toUpperCase()}</strong>
+              </p>
             </div>
           )}
         </>

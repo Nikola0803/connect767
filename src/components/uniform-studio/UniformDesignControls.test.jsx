@@ -37,6 +37,33 @@ describe("uniform design controls", () => {
     expect(screen.queryByText(/Trim \(hem/i)).not.toBeInTheDocument();
   });
 
+  it("maps the two-colour shortcut to the real shorts zone", () => {
+    const setColors = vi.fn();
+    const setTwoTone = vi.fn();
+    render(
+      <DesignPanel
+        sport="soccer"
+        collar="Crew"
+        setCollar={vi.fn()}
+        sleeve="Short"
+        setSleeve={vi.fn()}
+        colors={defaultZoneColors}
+        setColors={setColors}
+        onHoverZone={vi.fn()}
+        twoTone={{ enabled: false, colorB: "#1b1a16", splitAt: 0.5, softness: 0.005 }}
+        setTwoTone={setTwoTone}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("checkbox"));
+    const colorUpdater = setColors.mock.calls[0][0];
+    const toneUpdater = setTwoTone.mock.calls[0][0];
+    expect(colorUpdater(defaultZoneColors).shorts).toBe("#1b1a16");
+    expect(toneUpdater({ enabled: false }).enabled).toBe(true);
+    expect(screen.queryByText("Split height")).not.toBeInTheDocument();
+    expect(screen.queryByText("Blend")).not.toBeInTheDocument();
+  });
+
   it("applies collar and sleeve selections and renders their shapes", () => {
     const setCollar = vi.fn();
     const setSleeve = vi.fn();
