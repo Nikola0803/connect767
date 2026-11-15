@@ -36,7 +36,7 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     const leftSock = container.querySelector('[data-zone-id="front-left-sock"]');
     const rightSock = container.querySelector('[data-zone-id="front-right-sock"]');
     const leftCuff = container.querySelector('[data-zone-id="front-left-sock-cuff"]');
-    const shirtHem = container.querySelector('path[d^="M189,545"]');
+    const shirtHem = container.querySelector('path[d^="M189,540"]');
 
     const sockTint = [...container.querySelectorAll('[data-garment-tint="fabric-multiply"]')]
       .find((node) => node.getAttribute("mask")?.includes("approved-socks-"));
@@ -80,11 +80,19 @@ describe("ApprovedUniformGraphic trim isolation", () => {
       />,
     );
 
-    const shirtHem = container.querySelector('path[d^="M189,545"]');
+    const shirtHem = container.querySelector('path[d^="M189,540"]');
     const shirtBody = container.querySelector('path[d^="M275,56"]');
+    const editableShirtHem = container.querySelector('[data-zone-id="front-shirt-hem"]');
     expect(shirtHem).not.toBeNull();
     expect(shirtBody.getAttribute("d")).toContain("L481,548 L189,548");
     expect(shirtHem.parentElement.getAttribute("mask")).toContain("approved-jersey-");
+    expect(shirtHem.parentElement.style.mixBlendMode).toBe("normal");
+    expect(editableShirtHem.getAttribute("fill-opacity")).toBe("0");
+
+    const jerseyMask = container.querySelector('mask[id^="approved-jersey-"]');
+    const jerseyClip = container.querySelector('clipPath[id^="approved-jersey-clip-"]');
+    expect(jerseyMask.style.maskType).toBe("alpha");
+    expect(jerseyClip.querySelector("rect").getAttribute("height")).toBe("566");
   });
 
   it("does not reuse sleeve-end color for shoulder seams or shirt-end color for the waistband", () => {
@@ -127,8 +135,8 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     expect(shortsTint.querySelector('rect[fill="#1B1A16"]')).not.toBeNull();
     expect(shortsMask.style.maskType).toBe("alpha");
     expect(shortsMask.querySelector("image").getAttribute("clip-path")).toContain("approved-shorts-clip-");
-    expect(shortsClip.querySelector("rect").getAttribute("y")).toBe("555");
-    expect(shortsClip.querySelector("rect").getAttribute("height")).toBe("310");
+    expect(shortsClip.querySelector("rect").getAttribute("y")).toBe("566");
+    expect(shortsClip.querySelector("rect").getAttribute("height")).toBe("299");
     expect(leftLeg.getAttribute("fill-opacity")).toBe("0");
     expect(waistband.getAttribute("fill-opacity")).toBe("0");
   });
