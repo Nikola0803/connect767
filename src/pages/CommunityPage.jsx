@@ -137,6 +137,7 @@ export default function CommunityPage() {
   const [attachmentPreview, setAttachmentPreview] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [linkOpen, setLinkOpen] = useState(false);
+  const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const imageInputRef = useRef(null);
@@ -169,6 +170,7 @@ export default function CommunityPage() {
     setAttachmentType("");
     setLinkUrl("");
     setLinkOpen(false);
+    setAttachmentMenuOpen(false);
     if (imageInputRef.current) imageInputRef.current.value = "";
     if (videoInputRef.current) videoInputRef.current.value = "";
   };
@@ -190,6 +192,7 @@ export default function CommunityPage() {
     }
     setMessage("");
     setLinkOpen(false);
+    setAttachmentMenuOpen(false);
     setLinkUrl("");
     setAttachment(file);
     setAttachmentType(kind);
@@ -203,6 +206,7 @@ export default function CommunityPage() {
       setAttachmentType("link");
       setLinkUrl(parsed.toString());
       setLinkOpen(false);
+      setAttachmentMenuOpen(false);
       setMessage("");
     } catch {
       setMessage("Enter a complete website link beginning with http:// or https://.");
@@ -261,9 +265,14 @@ export default function CommunityPage() {
                     <div className="flex flex-wrap gap-1 rounded-xl border border-background-200 bg-background-100 p-1" role="group" aria-label="Update type">{POST_TYPES.map((option) => <button key={option.value} type="button" aria-pressed={type === option.value} title={option.description} onClick={() => { setType(option.value); setMessage(""); }} className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition ${type === option.value ? "bg-primary-700 text-white shadow-sm" : "text-foreground-600 hover:bg-white hover:text-primary-700"}`}><i className={option.icon} />{option.label}</button>)}</div>
                     <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => selectMedia(event, "image")} className="sr-only" />
                     <input ref={videoInputRef} type="file" accept="video/mp4,video/webm,video/quicktime" onChange={(event) => selectMedia(event, "video")} className="sr-only" />
-                    <button type="button" onClick={() => imageInputRef.current?.click()} className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold ${attachmentType === "image" ? "bg-primary-50 text-primary-700" : "text-foreground-500 hover:bg-background-100"}`}><i className="ri-image-add-line" />Photo</button>
-                    <button type="button" onClick={() => videoInputRef.current?.click()} className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold ${attachmentType === "video" ? "bg-primary-50 text-primary-700" : "text-foreground-500 hover:bg-background-100"}`}><i className="ri-video-add-line" />Video</button>
-                    <button type="button" onClick={() => { setAttachment(null); setAttachmentType(""); setLinkOpen((open) => !open); setMessage(""); }} className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold ${attachmentType === "link" || linkOpen ? "bg-primary-50 text-primary-700" : "text-foreground-500 hover:bg-background-100"}`}><i className="ri-links-line" />Link</button>
+                    <div className="relative">
+                      <button type="button" aria-haspopup="menu" aria-expanded={attachmentMenuOpen} onClick={() => setAttachmentMenuOpen((open) => !open)} className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition ${attachmentType || attachmentMenuOpen || linkOpen ? "bg-primary-50 text-primary-700" : "text-foreground-500 hover:bg-background-100"}`}><i className="ri-attachment-2" />{attachmentType ? `${attachmentType === "image" ? "Photo" : attachmentType === "video" ? "Video" : "Link"} added` : "Attach"}<i className={`ri-arrow-${attachmentMenuOpen ? "up" : "down"}-s-line text-sm`} /></button>
+                      {attachmentMenuOpen && <div role="menu" aria-label="Attach to update" className="absolute bottom-12 left-0 z-30 w-52 overflow-hidden rounded-2xl border border-background-200 bg-white p-1.5 shadow-[0_16px_45px_rgba(24,48,36,0.18)]">
+                        <button type="button" role="menuitem" onClick={() => { setAttachmentMenuOpen(false); imageInputRef.current?.click(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50"><span className="grid h-9 w-9 place-items-center rounded-xl bg-primary-50 text-primary-700"><i className="ri-image-add-line" /></span><span><span className="block text-xs font-bold text-foreground-900">Photo</span><span className="block text-[10px] text-foreground-500">JPG, PNG, WebP or GIF</span></span></button>
+                        <button type="button" role="menuitem" onClick={() => { setAttachmentMenuOpen(false); videoInputRef.current?.click(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50"><span className="grid h-9 w-9 place-items-center rounded-xl bg-primary-50 text-primary-700"><i className="ri-video-add-line" /></span><span><span className="block text-xs font-bold text-foreground-900">Video</span><span className="block text-[10px] text-foreground-500">MP4, WebM or MOV</span></span></button>
+                        <button type="button" role="menuitem" onClick={() => { setAttachment(null); setAttachmentType(""); setLinkOpen(true); setAttachmentMenuOpen(false); setMessage(""); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50"><span className="grid h-9 w-9 place-items-center rounded-xl bg-primary-50 text-primary-700"><i className="ri-links-line" /></span><span><span className="block text-xs font-bold text-foreground-900">Website link</span><span className="block text-[10px] text-foreground-500">Share a secure URL</span></span></button>
+                      </div>}
+                    </div>
                     <button type="button" onClick={() => setEmotionOpen((open) => !open)} className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold ${emotion ? "bg-accent-50 text-foreground-800" : "text-foreground-500 hover:bg-background-100"}`}><span className="text-base" aria-hidden="true">{selectedEmotion?.emoji || "😊"}</span>{selectedEmotion?.label || "Emotion"}</button>
                     <button type="submit" disabled={submitting || !text.trim()} className="ml-auto h-10 rounded-xl bg-primary-700 px-5 text-xs font-bold text-white disabled:opacity-40">{submitting ? "Posting…" : selectedPostType.action}</button>
                   </div>
