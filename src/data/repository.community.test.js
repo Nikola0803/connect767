@@ -87,4 +87,30 @@ describe("community post publishing", () => {
 
     expect(api.customClient.post).toHaveBeenCalledWith("/community/posts", payload);
   });
+
+  it("keeps live location visible when an older CMS response omits it", async () => {
+    api.customClient.post.mockResolvedValueOnce({
+      id: 42,
+      text: "Fresh fruit today",
+      type: "status",
+    });
+    const payload = {
+      listingId: 12,
+      text: "Fresh fruit today",
+      type: "status",
+      postLocation: "Live location · 15.3010, -61.3880",
+      latitude: 15.301,
+      longitude: -61.388,
+      mentions: [],
+    };
+
+    const created = await createCommunityPost(payload);
+
+    expect(created).toMatchObject({
+      id: 42,
+      postLocation: "Live location · 15.3010, -61.3880",
+      latitude: 15.301,
+      longitude: -61.388,
+    });
+  });
 });
