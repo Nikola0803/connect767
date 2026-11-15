@@ -36,6 +36,9 @@ describe("community post publishing", () => {
       text: "Fresh fruit today",
       type: "offer",
       emotion: "proud",
+      activity: "",
+      postLocation: "Roseau Market",
+      mentions: [{ id: 44, slug: "island-delivery", title: "Island Delivery" }],
       image,
     });
 
@@ -45,6 +48,8 @@ describe("community post publishing", () => {
     expect(form.get("text")).toBe("Fresh fruit today");
     expect(form.get("type")).toBe("offer");
     expect(form.get("emotion")).toBe("proud");
+    expect(form.get("postLocation")).toBe("Roseau Market");
+    expect(JSON.parse(form.get("mentions"))).toEqual([{ id: 44, slug: "island-delivery", title: "Island Delivery" }]);
     expect(form.get("image")).toBe(image);
   });
 
