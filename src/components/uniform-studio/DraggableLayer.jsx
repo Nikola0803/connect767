@@ -43,10 +43,12 @@ export default function DraggableLayer({ layer, stageRef, selected, onSelect, on
           touchAction: "none",
         }}
         onMouseDown={(e) => {
+          e.stopPropagation();
           onSelect(layer.id);
           handleMoveStart(e);
         }}
         onTouchStart={(e) => {
+          e.stopPropagation();
           onSelect(layer.id);
           handleMoveStart(e);
         }}

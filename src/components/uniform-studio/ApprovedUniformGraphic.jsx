@@ -14,17 +14,35 @@ const APPROVED_ASSETS = {
 };
 
 const KIT_REGIONS = {
-  soccer: { bottomStart: 555, socksStart: 865 },
-  basketball: { bottomStart: 735 },
-  baseball: { bottomStart: 520 },
-  cricket: { bottomStart: 565 },
-  goalkeeper: { bottomStart: 465, socksStart: 710 },
-  other: { bottomStart: 735 },
+  soccer: {
+    shirtTop: 20, bottomStart: 555, socksStart: 865, kitBottom: 1358,
+    sleeveBottom: 300, bodyLeft: 125, bodyRight: 455, collarY: 66,
+  },
+  basketball: {
+    shirtTop: 155, bottomStart: 735, kitBottom: 1225,
+    sleeveBottom: 390, bodyLeft: 150, bodyRight: 430, collarY: 215,
+  },
+  baseball: {
+    shirtTop: 145, bottomStart: 520, kitBottom: 1225,
+    sleeveBottom: 405, bodyLeft: 145, bodyRight: 435, collarY: 205,
+  },
+  cricket: {
+    shirtTop: 10, bottomStart: 565, kitBottom: 1320,
+    sleeveBottom: 545, bodyLeft: 135, bodyRight: 445, collarY: 72,
+  },
+  goalkeeper: {
+    shirtTop: 0, bottomStart: 465, socksStart: 710, kitBottom: 1085,
+    sleeveBottom: 460, bodyLeft: 130, bodyRight: 450, collarY: 48,
+  },
+  other: {
+    shirtTop: 225, bottomStart: 735, kitBottom: 1135,
+    sleeveBottom: 535, bodyLeft: 145, bodyRight: 435, collarY: 292,
+  },
 };
 
 function TintLayer({ mask, fill, opacity, children }) {
   return (
-    <g mask={`url(#${mask})`} opacity={opacity} style={{ mixBlendMode: "multiply" }}>
+    <g mask={`url(#${mask})`} opacity={opacity} style={{ mixBlendMode: "color" }}>
       {children(fill)}
     </g>
   );
@@ -48,12 +66,19 @@ export default function ApprovedUniformGraphic({
   const asset = APPROVED_ASSETS[sport] || APPROVED_ASSETS.other;
   const region = KIT_REGIONS[sport] || KIT_REGIONS.other;
   const offset = view === "back" ? HALF_WIDTH : 0;
-  const opacityFor = (zone, base) => (highlightZone && highlightZone !== zone ? base * 0.28 : base);
+  const opacityFor = (zone, base = 1) => (highlightZone && highlightZone !== zone ? base * 0.22 : base);
   const body = colors.body || "#f6f1e7";
   const sleeve = colors.sleeve || body;
   const panel = colors.panel || body;
   const bottom = colors.shorts || panel;
   const socks = colors.socks || colors.trim || body;
+  const collar = colors.collar || colors.trim || body;
+  const trim = colors.trim || collar;
+  const sleeveStrip = colors.sleeveStrip || trim;
+  const shortsStrip = colors.shortsStrip || trim;
+  const sleeveWidth = Math.max(105, region.bodyLeft + 38);
+  const rightSleeveX = HALF_WIDTH - sleeveWidth;
+  const bottomEnd = region.socksStart || region.kitBottom;
 
   return (
     <svg
@@ -71,53 +96,100 @@ export default function ApprovedUniformGraphic({
 
       <image href={asset} x="0" y="0" width={SPRITE_WIDTH} height={SPRITE_HEIGHT} />
 
-      <TintLayer mask={maskId} fill={body} opacity={opacityFor("body", 0.72)}>
-        {(fill) => <rect x={offset} y="0" width={HALF_WIDTH} height={SPRITE_HEIGHT} fill={fill} />}
+      {/* Each control owns a distinct garment region. The old implementation
+          tinted the complete sprite with the body color first, then multiplied
+          every later color over it. Red shorts on a green body therefore became
+          brown and sleeve controls appeared to recolor the torso. Color blend
+          layers preserve the photographed folds while the later, precise zone
+          masks replace hue instead of mixing two garment selections together. */}
+      <TintLayer mask={maskId} fill={body} opacity={opacityFor("body")}>
+        {(fill) => (
+          <rect
+            x={offset + region.bodyLeft}
+            y={region.shirtTop}
+            width={region.bodyRight - region.bodyLeft}
+            height={region.bottomStart - region.shirtTop}
+            fill={fill}
+          />
+        )}
       </TintLayer>
 
-      <TintLayer mask={maskId} fill={sleeve} opacity={opacityFor("sleeve", 0.78)}>
+      <TintLayer mask={maskId} fill={sleeve} opacity={opacityFor("sleeve")}>
         {(fill) => (
           <>
-            <path d={`M${offset + 18},40 H${offset + 212} L${offset + 188},500 H${offset + 5} Z`} fill={fill} />
-            <path d={`M${offset + 562},40 H${offset + 368} L${offset + 392},500 H${offset + 574} Z`} fill={fill} />
+            <rect x={offset} y={region.shirtTop} width={sleeveWidth} height={region.sleeveBottom - region.shirtTop} fill={fill} />
+            <rect x={offset + rightSleeveX} y={region.shirtTop} width={sleeveWidth} height={region.sleeveBottom - region.shirtTop} fill={fill} />
           </>
         )}
       </TintLayer>
 
-      <TintLayer mask={maskId} fill={panel} opacity={opacityFor("panel", 0.58)}>
+      <TintLayer mask={maskId} fill={panel} opacity={opacityFor("panel")}>
         {(fill) => (
           <>
-            <path d={`M${offset + 58},170 H${offset + 170} L${offset + 192},${region.bottomStart} H${offset + 72} Z`} fill={fill} />
-            <path d={`M${offset + 522},170 H${offset + 410} L${offset + 388},${region.bottomStart} H${offset + 508} Z`} fill={fill} />
+            <path d={`M${offset + region.bodyLeft},${region.shirtTop + 100} H${offset + region.bodyLeft + 54} L${offset + region.bodyLeft + 68},${region.bottomStart} H${offset + region.bodyLeft} Z`} fill={fill} />
+            <path d={`M${offset + region.bodyRight},${region.shirtTop + 100} H${offset + region.bodyRight - 54} L${offset + region.bodyRight - 68},${region.bottomStart} H${offset + region.bodyRight} Z`} fill={fill} />
           </>
         )}
       </TintLayer>
 
-      <TintLayer mask={maskId} fill={bottom} opacity={opacityFor("shorts", 0.76)}>
+      <TintLayer mask={maskId} fill={bottom} opacity={opacityFor("shorts")}>
         {(fill) => (
           <rect
             x={offset}
             y={region.bottomStart}
             width={HALF_WIDTH}
-            height={(region.socksStart || SPRITE_HEIGHT) - region.bottomStart}
+            height={bottomEnd - region.bottomStart}
             fill={fill}
           />
         )}
       </TintLayer>
 
       {region.socksStart && (
-        <TintLayer mask={maskId} fill={socks} opacity={opacityFor("socks", 0.78)}>
+        <TintLayer mask={maskId} fill={socks} opacity={opacityFor("socks")}>
           {(fill) => (
             <rect
               x={offset}
               y={region.socksStart}
               width={HALF_WIDTH}
-              height={SPRITE_HEIGHT - region.socksStart}
+              height={region.kitBottom - region.socksStart}
               fill={fill}
             />
           )}
         </TintLayer>
       )}
+
+      <TintLayer mask={maskId} fill={collar} opacity={opacityFor("collar")}>
+        {(fill) => <ellipse cx={offset + HALF_WIDTH / 2} cy={region.collarY} rx="64" ry="38" fill={fill} />}
+      </TintLayer>
+
+      <TintLayer mask={maskId} fill={trim} opacity={opacityFor("trim")}>
+        {(fill) => (
+          <>
+            <rect x={offset} y={region.sleeveBottom - 24} width={sleeveWidth} height="24" fill={fill} />
+            <rect x={offset + rightSleeveX} y={region.sleeveBottom - 24} width={sleeveWidth} height="24" fill={fill} />
+            <rect x={offset + region.bodyLeft} y={region.bottomStart - 18} width={region.bodyRight - region.bodyLeft} height="18" fill={fill} />
+          </>
+        )}
+      </TintLayer>
+
+      <TintLayer mask={maskId} fill={sleeveStrip} opacity={opacityFor("sleeveStrip")}>
+        {(fill) => (
+          <>
+            <rect x={offset} y={region.sleeveBottom - 48} width={sleeveWidth} height="14" fill={fill} />
+            <rect x={offset + rightSleeveX} y={region.sleeveBottom - 48} width={sleeveWidth} height="14" fill={fill} />
+          </>
+        )}
+      </TintLayer>
+
+      <TintLayer mask={maskId} fill={shortsStrip} opacity={opacityFor("shortsStrip")}>
+        {(fill) => (
+          <>
+            <rect x={offset} y={bottomEnd - 22} width={HALF_WIDTH} height="22" fill={fill} />
+            <rect x={offset + region.bodyLeft - 14} y={region.bottomStart} width="16" height={bottomEnd - region.bottomStart} fill={fill} />
+            <rect x={offset + region.bodyRight - 2} y={region.bottomStart} width="16" height={bottomEnd - region.bottomStart} fill={fill} />
+          </>
+        )}
+      </TintLayer>
     </svg>
   );
 }

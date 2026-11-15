@@ -523,7 +523,7 @@ export default function UniformStudioPage() {
     const is2d = placement && placement.x !== undefined;
     const base = {
       id,
-      view,
+      view: placement?.view || view,
       x: is2d ? placement.x : 50,
       y: is2d ? placement.y : 45,
       rotation: 0,
@@ -729,7 +729,7 @@ export default function UniformStudioPage() {
     try {
       const dataUrl = await toPng(stageRef.current, { pixelRatio: 2, skipFonts: true });
       const link = document.createElement("a");
-      link.download = `${template?.name || "jersey"}-${view}.png`;
+      link.download = `${template?.name || "jersey"}-front-back.png`;
       link.href = dataUrl;
       link.click();
     } catch {
@@ -1212,39 +1212,42 @@ export default function UniformStudioPage() {
                   <div className="flex-1 min-w-0 flex flex-col items-center gap-3 px-4 md:px-8 py-4 overflow-hidden">
                     {/* Top bar: view thumbnails + zoom/export, inline instead of a separate row above the card */}
                     <div className="w-full flex items-center justify-between gap-2 flex-shrink-0">
-                      {ENABLE_3D && (
-                        <div
-                          className="inline-flex items-center rounded-xl border border-white/10 bg-white/[0.04] p-1"
-                          aria-label="Uniform preview mode"
-                        >
-                          <button
-                            type="button"
-                            aria-pressed={stageMode === "edit"}
-                            onClick={() => setStageMode("edit")}
-                            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
-                              stageMode === "edit"
-                                ? "bg-background-50 text-foreground-950 shadow-sm"
-                                : "text-background-50/55 hover:bg-white/[0.06] hover:text-background-50"
-                            }`}
+                      <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
+                        {ENABLE_3D && (
+                          <div
+                            className="inline-flex shrink-0 items-center rounded-xl border border-white/10 bg-white/[0.04] p-1"
+                            aria-label="Uniform preview mode"
                           >
-                            <i className="ri-edit-2-line" />
-                            2D editor
-                          </button>
-                          <button
-                            type="button"
-                            aria-pressed={stageMode === "3d"}
-                            onClick={() => setStageMode("3d")}
-                            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
-                              stageMode === "3d"
-                                ? "bg-primary-600 text-white shadow-[0_6px_16px_rgba(0,116,73,0.28)]"
-                                : "text-background-50/55 hover:bg-white/[0.06] hover:text-background-50"
-                            }`}
-                          >
-                            <i className="ri-3d-cube-sphere-line" />
-                            3D preview
-                          </button>
-                        </div>
-                      )}
+                            <button
+                              type="button"
+                              aria-pressed={stageMode === "edit"}
+                              onClick={() => setStageMode("edit")}
+                              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                                stageMode === "edit"
+                                  ? "bg-background-50 text-foreground-950 shadow-sm"
+                                  : "text-background-50/55 hover:bg-white/[0.06] hover:text-background-50"
+                              }`}
+                            >
+                              <i className="ri-edit-2-line" />
+                              2D editor
+                            </button>
+                            <button
+                              type="button"
+                              aria-pressed={stageMode === "3d"}
+                              onClick={() => setStageMode("3d")}
+                              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                                stageMode === "3d"
+                                  ? "bg-primary-600 text-white shadow-[0_6px_16px_rgba(0,116,73,0.28)]"
+                                  : "text-background-50/55 hover:bg-white/[0.06] hover:text-background-50"
+                              }`}
+                            >
+                              <i className="ri-3d-cube-sphere-line" />
+                              3D preview
+                            </button>
+                          </div>
+                        )}
+
+                      </div>
                       {stageMode === "edit" && (
                         <div className="inline-flex items-center gap-1 bg-white/5 rounded-lg px-1 py-1">
                           <button
@@ -1286,13 +1289,14 @@ export default function UniformStudioPage() {
                     {stageMode === "edit" ? (
                       <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center gap-2">
                         <div
-                          className="w-full max-w-sm transition-transform"
+                          className="w-full max-w-3xl transition-transform"
                           style={{ transform: `scale(${zoom})` }}
                         >
                           <JerseyStage
                             ref={stageRef}
                             sport={activeSport}
                             view={view}
+                            onViewChange={setView}
                             collar={collar}
                             sleeve={sleeve}
                             colors={colors}

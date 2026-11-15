@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef, useRef } from "react";
 import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
 import DraggableLayer from "./DraggableLayer";
 
@@ -21,6 +21,7 @@ const JerseyStage = forwardRef(function JerseyStage(
   {
     sport,
     view,
+    onViewChange,
     colors,
     highlightZone,
     layers,
@@ -36,7 +37,11 @@ const JerseyStage = forwardRef(function JerseyStage(
   },
   stageRef
 ) {
-  const handleStageDown = (e) => {
+  const frontStageRef = useRef(null);
+  const backStageRef = useRef(null);
+
+  const handleStageDown = (e, side) => {
+    onViewChange?.(side);
     if (!pendingLayer) {
       onBackgroundClick?.(e);
       return;
@@ -49,76 +54,77 @@ const JerseyStage = forwardRef(function JerseyStage(
     onCommitPending?.({
       x: Math.max(4, Math.min(96, x)),
       y: Math.max(4, Math.min(96, y)),
+      view: side,
     });
   };
 
   return (
-    <div className="w-full">
-      {/* Editing canvas — the piece currently being customized (drag logos/text here) */}
-      <div className="w-full flex items-center justify-center py-2">
-        <div
-          ref={stageRef}
-          onMouseDown={handleStageDown}
-          onTouchStart={handleStageDown}
-          style={{ cursor: pendingLayer ? "copy" : undefined }}
-          className="relative w-full max-w-md aspect-[4/5] rounded-2xl bg-gradient-to-b from-background-50 to-background-100 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.55)] ring-1 ring-white/10 overflow-hidden"
-        >
-          <div className="absolute inset-3 md:inset-5">
-            <ApprovedUniformGraphic
-              sport={sport}
-              view={view}
-              colors={colors}
-              highlightZone={highlightZone}
-            />
-          </div>
+    <div ref={stageRef} className="w-full py-2">
+      {/* Front and back stay visible together. Each side remains its own
+          editing surface so artwork coordinates and drag bounds never leak
+          from one face of the garment onto the other. */}
+      <div className="grid w-full grid-cols-2 gap-3 md:gap-4">
+        {["front", "back"].map((side) => {
+          const sideRef = side === "front" ? frontStageRef : backStageRef;
+          const active = view === side;
+          return (
+            <div key={side} className="min-w-0">
+              <button
+                type="button"
+                onClick={() => {
+                  onViewChange?.(side);
+                  onBackgroundClick?.();
+                }}
+                className={`mb-2 w-full rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] transition cursor-pointer ${
+                  active
+                    ? "bg-primary-600 text-white"
+                    : "bg-white/[0.06] text-background-50/50 hover:bg-white/10 hover:text-background-50"
+                }`}
+              >
+                {side}
+              </button>
+              <div
+                ref={sideRef}
+                onMouseDown={(event) => handleStageDown(event, side)}
+                onTouchStart={(event) => handleStageDown(event, side)}
+                style={{ cursor: pendingLayer ? "copy" : undefined }}
+                className={`relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-gradient-to-b from-background-50 to-background-100 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.55)] transition ${
+                  active ? "ring-2 ring-primary-500" : "ring-1 ring-white/10"
+                }`}
+              >
+                <div className="absolute inset-2 sm:inset-3 md:inset-4">
+                  <ApprovedUniformGraphic
+                    sport={sport}
+                    view={side}
+                    colors={colors}
+                    highlightZone={highlightZone}
+                  />
+                </div>
 
-          <SafeAreaGuide />
+                <SafeAreaGuide />
 
-          {layers
-            .filter((l) => l.view === view)
-            .map((layer) => (
-              <DraggableLayer
-                key={layer.id}
-                layer={layer}
-                stageRef={stageRef}
-                selected={layer.id === selectedId}
-                onSelect={onSelect}
-                onChange={onLayerChange}
-              />
-            ))}
-        </div>
-      </div>
-
-      {/* Full-kit preview strip — the approved front and back layouts stay
-          visible together without leaving the editor. */}
-      <div className="mt-6 pt-5 border-t border-background-50/10">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-background-50/35 mb-3 text-center">
-          Full kit preview
-        </p>
-        <div className="mx-auto grid max-w-sm grid-cols-2 gap-3">
-          <PreviewTile label="Front kit">
-            <ApprovedUniformGraphic sport={sport} view="front" colors={colors} />
-          </PreviewTile>
-          <PreviewTile label="Back kit">
-            <ApprovedUniformGraphic sport={sport} view="back" colors={colors} />
-          </PreviewTile>
-        </div>
+                {layers
+                  .filter((layer) => layer.view === side)
+                  .map((layer) => (
+                    <DraggableLayer
+                      key={layer.id}
+                      layer={layer}
+                      stageRef={sideRef}
+                      selected={layer.id === selectedId}
+                      onSelect={(id) => {
+                        onViewChange?.(side);
+                        onSelect(id);
+                      }}
+                      onChange={onLayerChange}
+                    />
+                  ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 });
-
-function PreviewTile({ label, children }) {
-  return (
-    <div className="flex flex-col items-center gap-2 group">
-      <div className="w-full aspect-square rounded-xl bg-background-50 ring-1 ring-white/5 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.4)] p-2.5 md:p-3 transition-transform duration-200 group-hover:-translate-y-0.5">
-        {children}
-      </div>
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-background-50/45">
-        {label}
-      </span>
-    </div>
-  );
-}
 
 export default JerseyStage;
