@@ -141,6 +141,8 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     const shortsClip = container.querySelector('clipPath[id^="approved-shorts-clip-"]');
     const leftLeg = container.querySelector('[data-zone-id="front-left-shorts"]');
     const waistband = container.querySelector('[data-zone-id="front-waistband"]');
+    const editableShortsHem = container.querySelector('[data-zone-id="front-left-shorts-hem"]');
+    const shortsEdge = container.querySelector('[data-shorts-edge="complete"]');
 
     expect(shortsTint.querySelector('rect[fill="#1B1A16"]')).not.toBeNull();
     expect(shortsMask.style.maskType).toBe("alpha");
@@ -149,5 +151,12 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     expect(shortsClip.querySelector("rect").getAttribute("height")).toBe("285");
     expect(leftLeg.getAttribute("fill-opacity")).toBe("0");
     expect(waistband.getAttribute("fill-opacity")).toBe("0");
+    expect(editableShortsHem.getAttribute("fill-opacity")).toBe("0");
+    expect(shortsEdge.getAttribute("x")).toBe("0");
+    expect(shortsEdge.getAttribute("y")).toBe("800");
+    expect(shortsEdge.getAttribute("width")).toBe("579.5");
+    expect(shortsEdge.getAttribute("height")).toBe("65");
+    expect(shortsEdge.getAttribute("fill")).toBe("#1B1A16");
+    expect(shortsEdge.parentElement.style.mixBlendMode).toBe("normal");
   });
 });

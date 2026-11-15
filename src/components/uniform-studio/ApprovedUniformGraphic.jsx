@@ -18,7 +18,8 @@ const APPROVED_ASSETS = {
 
 const KIT_REGIONS = {
   soccer: {
-    shirtTop: 20, shirtBodyCleanupStart: 510, shirtEndStart: 534, bottomStart: 580, socksStart: 865, kitBottom: 1358,
+    shirtTop: 20, shirtBodyCleanupStart: 510, shirtEndStart: 534, bottomStart: 580,
+    shortsEndStart: 800, socksStart: 865, kitBottom: 1358,
     sleeveBottom: 300, shortSleeveBottom: 300, bodyLeft: 190, bodyRight: 390, collarY: 66,
     nativeSleeve: "short",
     views: {
@@ -434,12 +435,23 @@ export default function ApprovedUniformGraphic({
         )}
         </TintLayer>}
 
-        <TintLayer mask={shortsMaskId} fill={shortsEnd} opacity={opacityFor("shortsStrip")}>
-        {(fill) => (
-            region.shortsEndPolygon
-              ? <path d={polygonPath(region.shortsEndPolygon)} fill={fill} />
-              : <rect x={offset} y={bottomEnd - 22} width={halfWidth} height="22" fill={fill} />
-        )}
+        {/* Apply the shorts end exactly once. A flat alpha-clipped band covers
+            the photographed dark underside and reaches both outer leg edges
+            without stacking a second editable-zone color over it. */}
+        <TintLayer
+          mask={shortsMaskId}
+          fill={shortsEnd}
+          opacity={opacityFor("shortsStrip")}
+          blendMode="normal"
+        >
+        {(fill) => <rect
+          data-shorts-edge="complete"
+          x={offset}
+          y={region.shortsEndStart ?? bottomEnd - 22}
+          width={halfWidth}
+          height={bottomEnd - (region.shortsEndStart ?? bottomEnd - 22)}
+          fill={fill}
+        />}
         </TintLayer>
       </g>
 
