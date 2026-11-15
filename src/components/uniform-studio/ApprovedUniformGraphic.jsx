@@ -25,20 +25,36 @@ const KIT_REGIONS = {
         collarY: 78,
         bodyLeft: 202,
         bodyRight: 466,
+        bodyPolygon: [[275, 56], [391, 56], [455, 135], [472, 270], [463, 548], [199, 548], [195, 270], [210, 135]],
         sleevePolygons: {
-          left: [[159, 103], [126, 135], [107, 257], [196, 257], [211, 151], [185, 112]],
-          right: [[477, 103], [514, 135], [558, 257], [472, 257], [456, 151], [450, 112]],
+          left: [[275, 40], [0, 40], [0, 300], [195, 300], [210, 135]],
+          right: [[391, 40], [HALF_WIDTH, 40], [HALF_WIDTH, 300], [472, 300], [455, 135]],
         },
+        sleeveEndPolygons: {
+          left: [[107, 240], [198, 250], [195, 274], [105, 260]],
+          right: [[469, 250], [558, 240], [560, 260], [472, 274]],
+        },
+        shirtEndPolygon: [[199, 525], [463, 525], [463, 557], [199, 557]],
+        shortsPolygon: [[176, 555], [485, 555], [500, 840], [163, 840]],
+        shortsEndPolygon: [[163, 810], [500, 810], [500, 840], [163, 840]],
       },
       back: {
         centerX: 257,
         collarY: 62,
         bodyLeft: 127,
         bodyRight: 390,
+        bodyPolygon: [[196, 52], [315, 52], [379, 135], [394, 270], [385, 548], [128, 548], [119, 270], [135, 135]],
         sleevePolygons: {
-          left: [[84, 103], [50, 135], [32, 257], [119, 257], [135, 151], [109, 112]],
-          right: [[402, 103], [439, 135], [481, 257], [394, 257], [379, 151], [375, 112]],
+          left: [[196, 36], [0, 36], [0, 300], [119, 300], [135, 135]],
+          right: [[315, 36], [HALF_WIDTH, 36], [HALF_WIDTH, 300], [394, 300], [379, 135]],
         },
+        sleeveEndPolygons: {
+          left: [[32, 240], [122, 250], [119, 274], [30, 260]],
+          right: [[391, 250], [481, 240], [483, 260], [394, 274]],
+        },
+        shirtEndPolygon: [[128, 525], [385, 525], [385, 557], [128, 557]],
+        shortsPolygon: [[105, 555], [408, 555], [424, 840], [92, 840]],
+        shortsEndPolygon: [[92, 810], [424, 810], [424, 840], [92, 840]],
       },
     },
   },
@@ -161,6 +177,9 @@ export default function ApprovedUniformGraphic({
     const inner = left ? region.bodyLeft - 5 : region.bodyRight + 5;
     return `M${offset + outer},${longSleeveBottom} L${offset + inner},${longSleeveBottom}`;
   };
+  const polygonPath = (points) => points
+    .map(([x, y], index) => `${index === 0 ? "M" : "L"}${offset + x},${y}`)
+    .join(" ") + " Z";
 
   return (
     <svg
@@ -210,7 +229,9 @@ export default function ApprovedUniformGraphic({
             the sleeve layer replace only the sleeves. There is deliberately no
             side-panel zone: every shirt pixel belongs to body or sleeve. */}
         <TintLayer mask={maskId} fill={body} opacity={opacityFor("body")}>
-          {(fill) => <rect x={offset} y={region.shirtTop} width={HALF_WIDTH} height={region.bottomStart - region.shirtTop} fill={fill} />}
+          {(fill) => region.bodyPolygon
+            ? <path d={polygonPath(region.bodyPolygon)} fill={fill} />
+            : <rect x={offset} y={region.shirtTop} width={HALF_WIDTH} height={region.bottomStart - region.shirtTop} fill={fill} />}
         </TintLayer>
 
         {!isSleeveless && (
@@ -226,13 +247,15 @@ export default function ApprovedUniformGraphic({
 
         <TintLayer mask={maskId} fill={bottom} opacity={opacityFor("shorts")}>
         {(fill) => (
-          <rect
-            x={offset}
-            y={region.bottomStart}
-            width={HALF_WIDTH}
-            height={bottomEnd - region.bottomStart}
-            fill={fill}
-          />
+          region.shortsPolygon
+            ? <path d={polygonPath(region.shortsPolygon)} fill={fill} />
+            : <rect
+                x={offset}
+                y={region.bottomStart}
+                width={HALF_WIDTH}
+                height={bottomEnd - region.bottomStart}
+                fill={fill}
+              />
         )}
         </TintLayer>
 
@@ -251,17 +274,28 @@ export default function ApprovedUniformGraphic({
       )}
 
         <TintLayer mask={maskId} fill={shirtEnd} opacity={opacityFor("shirtStrip")}>
-          {(fill) => <rect x={offset} y={region.bottomStart - 18} width={HALF_WIDTH} height="18" fill={fill} />}
+          {(fill) => region.shirtEndPolygon
+            ? <path d={polygonPath(region.shirtEndPolygon)} fill={fill} />
+            : <rect x={offset} y={region.bottomStart - 18} width={HALF_WIDTH} height="18" fill={fill} />}
         </TintLayer>
 
         {!isSleeveless && <TintLayer mask={maskId} fill={sleeveEnd} opacity={opacityFor("sleeveStrip")}>
         {(fill) => (
           <>
-              {(!hasLeftLongSleeve || nativeLongSleeve) && (
-                <path d={baseSleevePath("left", true, hasLeftLongSleeve ? longSleeveBottom : shortSleeveBottom)} fill={fill} />
-              )}
-              {(!hasRightLongSleeve || nativeLongSleeve) && (
-                <path d={baseSleevePath("right", true, hasRightLongSleeve ? longSleeveBottom : shortSleeveBottom)} fill={fill} />
+              {region.sleeveEndPolygons ? (
+                <>
+                  <path d={polygonPath(region.sleeveEndPolygons.left)} fill={fill} />
+                  <path d={polygonPath(region.sleeveEndPolygons.right)} fill={fill} />
+                </>
+              ) : (
+                <>
+                  {(!hasLeftLongSleeve || nativeLongSleeve) && (
+                    <path d={baseSleevePath("left", true, hasLeftLongSleeve ? longSleeveBottom : shortSleeveBottom)} fill={fill} />
+                  )}
+                  {(!hasRightLongSleeve || nativeLongSleeve) && (
+                    <path d={baseSleevePath("right", true, hasRightLongSleeve ? longSleeveBottom : shortSleeveBottom)} fill={fill} />
+                  )}
+                </>
               )}
           </>
         )}
@@ -269,7 +303,9 @@ export default function ApprovedUniformGraphic({
 
         <TintLayer mask={maskId} fill={shortsEnd} opacity={opacityFor("shortsStrip")}>
         {(fill) => (
-            <rect x={offset} y={bottomEnd - 22} width={HALF_WIDTH} height="22" fill={fill} />
+            region.shortsEndPolygon
+              ? <path d={polygonPath(region.shortsEndPolygon)} fill={fill} />
+              : <rect x={offset} y={bottomEnd - 22} width={HALF_WIDTH} height="22" fill={fill} />
         )}
         </TintLayer>
       </g>
