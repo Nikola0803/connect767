@@ -47,4 +47,35 @@ describe("community post publishing", () => {
     expect(form.get("emotion")).toBe("proud");
     expect(form.get("image")).toBe(image);
   });
+
+  it("uses multipart form data when a video is attached", async () => {
+    const video = new File(["video-bytes"], "shop-tour.mp4", { type: "video/mp4" });
+
+    await createCommunityPost({
+      listingId: 12,
+      text: "Take a quick look inside our shop",
+      type: "status",
+      video,
+    });
+
+    const [, form] = api.customClient.post.mock.calls[0];
+    expect(form).toBeInstanceOf(FormData);
+    expect(form.get("listingId")).toBe("12");
+    expect(form.get("text")).toBe("Take a quick look inside our shop");
+    expect(form.get("video")).toBe(video);
+    expect(form.get("image")).toBeNull();
+  });
+
+  it("keeps link updates as JSON payloads", async () => {
+    const payload = {
+      listingId: 12,
+      text: "See our updated menu",
+      type: "offer",
+      linkUrl: "https://example.com/menu",
+    };
+
+    await createCommunityPost(payload);
+
+    expect(api.customClient.post).toHaveBeenCalledWith("/community/posts", payload);
+  });
 });
