@@ -9,6 +9,10 @@
     "description": "Search Connect767’s trusted directory for Dominican businesses, professionals, services, products, rentals and opportunities at home and worldwide.",
     "label": "Directory"
   },
+  "/community": {
+    "title": "Business Community | Connect767",
+    "description": "Share business updates, offers, events and conversations with the Connect767 community."
+  },
   "/shop": {
     "title": "Shop Dominican Products & Apparel | Connect767",
     "description": "Shop Connect767 apparel and products from Dominican brands and creators, including clothing, activewear and accessories, with secure online checkout.",
