@@ -2692,6 +2692,40 @@ function ReviewOrderTool({
         )}
         {checkoutError && <p className="mb-3 text-xs font-label text-accent-600">{checkoutError}</p>}
 
+        {!totals && (
+          <div className="mb-4 rounded-2xl border border-background-200 bg-background-50 p-3.5">
+            <h3 className="text-sm font-semibold text-foreground-900">Payment options</h3>
+            <p className="mb-3 mt-1 text-[10px] leading-relaxed text-foreground-500">
+              Complete the required contact and delivery fields, then calculate the final total to continue with payment.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-xl border border-primary-200 bg-primary-50 p-3 text-center">
+                <i className="ri-bank-card-line text-xl text-primary-700" />
+                <p className="mt-1 text-xs font-semibold text-foreground-900">Credit or debit card</p>
+                <p className="text-[10px] text-foreground-500">Secure Stripe checkout</p>
+              </div>
+              <div className="rounded-xl border border-background-200 bg-background-100/60 p-3 text-center">
+                <i className="ri-paypal-line text-xl text-[#0070ba]" />
+                <p className="mt-1 text-xs font-semibold text-foreground-900">PayPal</p>
+                <p className="text-[10px] text-foreground-500">Pay with your PayPal account</p>
+              </div>
+              {shipping.country === "DM" && (
+                <div className="col-span-2 rounded-xl border border-[#159447] bg-[#effcf4] p-3 text-left">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#08743f] text-lg text-white">
+                      <i className="ri-shake-hands-line" />
+                    </span>
+                    <span>
+                      <span className="block text-xs font-bold text-[#064b2b]">Pay Locally in Dominica</span>
+                      <span className="mt-0.5 block text-[10px] leading-relaxed text-foreground-600">Arrange payment in person after checkout.</span>
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {totals && (
           <div className="mb-4 rounded-2xl border border-background-200 bg-background-50 p-3.5">
             <h3 className="mb-3 text-sm font-semibold text-foreground-900">Choose payment method</h3>
