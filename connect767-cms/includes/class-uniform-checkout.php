@@ -35,6 +35,7 @@ class C767_Uniform_Checkout
             '/uniform-checkout/confirm' => 'confirm_payment',
             '/uniform-checkout/paypal/order' => 'create_paypal_order',
             '/uniform-checkout/paypal/capture' => 'capture_paypal_order',
+            '/uniform-checkout/local-dominica' => 'create_local_dominica_order',
         ];
 
         foreach ($routes as $route => $callback) {
@@ -205,6 +206,45 @@ class C767_Uniform_Checkout
         }
 
         return rest_ensure_response(['status' => strtolower(sanitize_key($capture['status'] ?? 'processing')), 'orderId' => $order->get_id()]);
+    }
+
+    public static function create_local_dominica_order(WP_REST_Request $request)
+    {
+        $limited = C767_Stripe_Checkout::check_public_rate_limit('uniform-local-dominica', 10, 600);
+        if (is_wp_error($limited)) {
+            return $limited;
+        }
+
+        $shipping = C767_WooCommerce::sanitize_shipping_address((array) $request->get_param('shipping'));
+        if (is_wp_error($shipping)) {
+            return $shipping;
+        }
+        if (strtoupper((string) ($shipping['country'] ?? '')) !== 'DM') {
+            return new WP_Error(
+                'c767_local_payment_country',
+                'Pay Locally in Dominica is only available for delivery addresses in Dominica.',
+                ['status' => 400]
+            );
+        }
+
+        $order = self::build_order($request);
+        if (is_wp_error($order)) {
+            return $order;
+        }
+
+        $instructions = 'Your order is reserved for local payment in Dominica. The Connect767 team will contact you by email with the payment location and instructions before production begins.';
+        $order->set_payment_method('c767_local_dominica');
+        $order->set_payment_method_title('Pay Locally in Dominica');
+        $order->set_customer_note($instructions);
+        $order->update_meta_data('_c767_local_dominica_payment', '1');
+        $order->update_status('on-hold', $instructions, true);
+        $order->save();
+
+        return rest_ensure_response(array_merge(self::format_totals($order), [
+            'status' => 'on-hold',
+            'orderId' => $order->get_id(),
+            'instructions' => $instructions,
+        ]));
     }
 
     private static function verified_order(WP_REST_Request $request)

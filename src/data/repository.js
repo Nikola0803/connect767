@@ -1229,6 +1229,14 @@ export async function captureUniformPaypalOrder(orderId, accessToken) {
   return customClient.post("/uniform-checkout/paypal/capture", { orderId, accessToken });
 }
 
+export async function createUniformLocalDominicaOrder(order, email, shipping) {
+  if (!isLiveApi) {
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    return { orderId: "local-preview", status: "on-hold" };
+  }
+  return customClient.post("/uniform-checkout/local-dominica", { order, email, shipping });
+}
+
 /**
  * The Product Customizer's per-product config — what products exist, what
  * each one costs, its optional 3D model, and (most importantly) its
