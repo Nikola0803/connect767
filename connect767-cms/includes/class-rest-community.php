@@ -9,6 +9,7 @@ class C767_REST_Community
 {
     const NAMESPACE_ = 'connect767/v1';
     const MAX_IMAGE_BYTES = 5242880;
+    const MAX_VIDEO_BYTES = 26214400;
     const EMOTIONS = ['excited', 'grateful', 'celebrating', 'inspired', 'proud', 'focused'];
 
     public static function init()
@@ -124,6 +125,8 @@ class C767_REST_Community
             'emotion' => sanitize_key((string) get_post_meta($post->ID, '_community_emotion', true)),
             'text' => wp_strip_all_tags($post->post_content),
             'mediaUrl' => esc_url_raw((string) get_post_meta($post->ID, '_community_media_url', true)),
+            'videoUrl' => esc_url_raw((string) get_post_meta($post->ID, '_community_video_url', true)),
+            'linkUrl' => esc_url_raw((string) get_post_meta($post->ID, '_community_link_url', true)),
             'createdAt' => mysql_to_rfc3339($post->post_date_gmt),
             'reactionCount' => count($reaction_ids),
             'reacted' => in_array(get_current_user_id(), $reaction_ids, true),
@@ -171,9 +174,21 @@ class C767_REST_Community
             $emotion = '';
         }
 
-        $image_check = self::validate_image_upload();
-        if (is_wp_error($image_check)) {
-            return $image_check;
+        $attachment_check = self::validate_attachment();
+        if (is_wp_error($attachment_check)) {
+            return $attachment_check;
+        }
+
+        $link_url = trim((string) $request->get_param('linkUrl'));
+        if ($link_url !== '') {
+            $has_file = !empty($_FILES['image']['tmp_name']) || !empty($_FILES['video']['tmp_name']);
+            if ($has_file) {
+                return new WP_Error('c767_community_attachment_limit', 'Attach one photo, video, or link per update.', ['status' => 400]);
+            }
+            $link_url = esc_url_raw($link_url, ['http', 'https']);
+            if (!$link_url || !wp_http_validate_url($link_url)) {
+                return new WP_Error('c767_community_link_invalid', 'Enter a valid public website link.', ['status' => 400]);
+            }
         }
 
         $post_id = wp_insert_post([
@@ -209,34 +224,67 @@ class C767_REST_Community
             $media_url = wp_get_attachment_url($attachment_id);
         }
         update_post_meta($post_id, '_community_media_url', $media_url);
+        $video_url = '';
+        if (!empty($_FILES['video']['tmp_name'])) {
+            require_once ABSPATH . 'wp-admin/includes/image.php';
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            require_once ABSPATH . 'wp-admin/includes/media.php';
+            $attachment_id = media_handle_upload('video', $post_id);
+            if (is_wp_error($attachment_id)) {
+                wp_delete_post($post_id, true);
+                return new WP_Error(
+                    'c767_community_video_failed',
+                    'The video could not be uploaded. Try a different MP4, WebM, or MOV file.',
+                    ['status' => 400]
+                );
+            }
+            $video_url = wp_get_attachment_url($attachment_id);
+        }
+        update_post_meta($post_id, '_community_video_url', $video_url);
+        update_post_meta($post_id, '_community_link_url', $link_url);
         update_post_meta($post_id, '_community_reaction_user_ids', []);
 
         return new WP_REST_Response(self::serialize_post(get_post($post_id)), 201);
     }
 
-    private static function validate_image_upload()
+    private static function validate_attachment()
     {
-        if (!isset($_FILES['image'])) {
-            return true;
+        $has_image = isset($_FILES['image']) && (int) ($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+        $has_video = isset($_FILES['video']) && (int) ($_FILES['video']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+        if ($has_image && $has_video) {
+            return new WP_Error('c767_community_attachment_limit', 'Attach one photo, video, or link per update.', ['status' => 400]);
         }
 
-        $file = $_FILES['image'];
+        if ($has_video) {
+            return self::validate_upload('video', self::MAX_VIDEO_BYTES, ['video/mp4', 'video/webm', 'video/quicktime']);
+        }
+        if ($has_image) {
+            return self::validate_upload('image', self::MAX_IMAGE_BYTES, ['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+        }
+        return true;
+    }
+
+    private static function validate_upload($field, $max_bytes, $allowed_types)
+    {
+        $file = $_FILES[$field];
+        $label = $field === 'video' ? 'video' : 'image';
+
         $error = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
         if ($error === UPLOAD_ERR_NO_FILE) {
             return true;
         }
         if (in_array($error, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)
-            || (int) ($file['size'] ?? 0) > self::MAX_IMAGE_BYTES) {
+            || (int) ($file['size'] ?? 0) > $max_bytes) {
             return new WP_Error(
-                'c767_community_image_too_large',
-                'Community images must be 5 MB or smaller.',
+                'c767_community_' . $label . '_too_large',
+                $label === 'video' ? 'Community videos must be 25 MB or smaller.' : 'Community images must be 5 MB or smaller.',
                 ['status' => 413]
             );
         }
         if ($error !== UPLOAD_ERR_OK) {
             return new WP_Error(
-                'c767_community_image_failed',
-                'The image could not be uploaded. Please try again.',
+                'c767_community_' . $label . '_failed',
+                'The ' . $label . ' could not be uploaded. Please try again.',
                 ['status' => 400]
             );
         }
@@ -246,11 +294,10 @@ class C767_REST_Community
             (string) ($file['tmp_name'] ?? ''),
             sanitize_file_name((string) ($file['name'] ?? ''))
         );
-        $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-        if (empty($checked['type']) || !in_array($checked['type'], $allowed, true)) {
+        if (empty($checked['type']) || !in_array($checked['type'], $allowed_types, true)) {
             return new WP_Error(
-                'c767_community_image_type',
-                'Choose a valid JPG, PNG, WebP, or GIF image.',
+                'c767_community_' . $label . '_type',
+                $label === 'video' ? 'Choose a valid MP4, WebM, or MOV video.' : 'Choose a valid JPG, PNG, WebP, or GIF image.',
                 ['status' => 400]
             );
         }

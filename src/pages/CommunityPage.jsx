@@ -41,6 +41,14 @@ function relativeTime(value) {
   return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
+function linkLabel(value = "") {
+  try {
+    return new URL(value).hostname.replace(/^www\./, "");
+  } catch {
+    return value;
+  }
+}
+
 function CommunityPost({ post, authenticated, onReact, onComment }) {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [comment, setComment] = useState("");
@@ -78,6 +86,8 @@ function CommunityPost({ post, authenticated, onReact, onComment }) {
       {emotion && <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-accent-50 px-3 py-1.5 text-xs font-semibold text-foreground-700"><span className="text-base" aria-hidden="true">{emotion.emoji}</span>Feeling {emotion.label.toLowerCase()}</div>}
       <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-foreground-800">{post.text}</p>
       {post.mediaUrl && <img src={post.mediaUrl} alt={`Update from ${post.listingTitle}`} className="mt-4 max-h-[32rem] w-full rounded-2xl border border-background-200 object-cover" />}
+      {post.videoUrl && <video src={post.videoUrl} controls playsInline preload="metadata" className="mt-4 max-h-[32rem] w-full rounded-2xl border border-background-200 bg-black object-contain">Your browser does not support video playback.</video>}
+      {post.linkUrl && <a href={post.linkUrl} target="_blank" rel="noreferrer" className="mt-4 flex items-center gap-3 rounded-2xl border border-background-200 bg-background-100 p-4 transition hover:border-primary-300 hover:bg-primary-50/40"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary-700 text-white"><i className="ri-links-line text-lg" /></span><span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-primary-700">Shared link</span><span className="mt-1 block truncate text-sm font-semibold text-foreground-900">{linkLabel(post.linkUrl)}</span><span className="mt-0.5 block truncate text-xs text-foreground-500">{post.linkUrl}</span></span><i className="ri-arrow-right-up-line text-foreground-400" /></a>}
       {post.type !== "status" && (
         <div className="mt-4 flex items-center gap-3 rounded-2xl border border-accent-200 bg-accent-50/60 p-3">
           <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent-500 text-white"><i className={POST_TYPES.find((type) => type.value === post.type)?.icon || "ri-megaphone-line"} /></span>
@@ -121,22 +131,26 @@ export default function CommunityPage() {
   const [type, setType] = useState("status");
   const [emotion, setEmotion] = useState("");
   const [emotionOpen, setEmotionOpen] = useState(false);
-  const [image, setImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState("");
+  const [attachment, setAttachment] = useState(null);
+  const [attachmentType, setAttachmentType] = useState("");
+  const [attachmentPreview, setAttachmentPreview] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkOpen, setLinkOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
-  const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
+  const videoInputRef = useRef(null);
 
   useEffect(() => { if (data?.posts) setPosts(data.posts); }, [data]);
   useEffect(() => {
-    if (!image) {
-      setImagePreview("");
+    if (!attachment) {
+      setAttachmentPreview("");
       return undefined;
     }
-    const preview = URL.createObjectURL(image);
-    setImagePreview(preview);
+    const preview = URL.createObjectURL(attachment);
+    setAttachmentPreview(preview);
     return () => URL.revokeObjectURL(preview);
-  }, [image]);
+  }, [attachment]);
   useEffect(() => {
     if (!isAuthenticated) return;
     getMyListings().then((items) => {
@@ -148,25 +162,49 @@ export default function CommunityPage() {
 
   const selectedListing = useMemo(() => listings.find((item) => String(item.id) === listingId), [listings, listingId]);
   const selectedEmotion = COMMUNITY_EMOTIONS.find((item) => item.value === emotion);
-  const selectImage = (event) => {
-    const nextImage = event.target.files?.[0];
-    if (!nextImage) return;
-    if (!nextImage.type.startsWith("image/")) {
-      setMessage("Choose a JPG, PNG, WebP, or GIF image.");
+  const clearAttachment = () => {
+    setAttachment(null);
+    setAttachmentType("");
+    setLinkUrl("");
+    setLinkOpen(false);
+    if (imageInputRef.current) imageInputRef.current.value = "";
+    if (videoInputRef.current) videoInputRef.current.value = "";
+  };
+  const selectMedia = (event, kind) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const isImage = kind === "image";
+    const validVideoTypes = ["video/mp4", "video/webm", "video/quicktime"];
+    if ((isImage && !file.type.startsWith("image/")) || (!isImage && !validVideoTypes.includes(file.type))) {
+      setMessage(isImage ? "Choose a JPG, PNG, WebP, or GIF image." : "Choose an MP4, WebM, or MOV video.");
       event.target.value = "";
       return;
     }
-    if (nextImage.size > 5 * 1024 * 1024) {
-      setMessage("Community images must be 5 MB or smaller.");
+    const sizeLimit = (isImage ? 5 : 25) * 1024 * 1024;
+    if (file.size > sizeLimit) {
+      setMessage(isImage ? "Community images must be 5 MB or smaller." : "Community videos must be 25 MB or smaller.");
       event.target.value = "";
       return;
     }
     setMessage("");
-    setImage(nextImage);
+    setLinkOpen(false);
+    setLinkUrl("");
+    setAttachment(file);
+    setAttachmentType(kind);
   };
-  const removeImage = () => {
-    setImage(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  const attachLink = () => {
+    const value = linkUrl.trim();
+    try {
+      const parsed = new URL(value);
+      if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error();
+      setAttachment(null);
+      setAttachmentType("link");
+      setLinkUrl(parsed.toString());
+      setLinkOpen(false);
+      setMessage("");
+    } catch {
+      setMessage("Enter a complete website link beginning with http:// or https://.");
+    }
   };
   const submitPost = async (event) => {
     event.preventDefault();
@@ -174,13 +212,13 @@ export default function CommunityPage() {
     setSubmitting(true);
     setMessage("");
     try {
-      const created = await createCommunityPost({ listingId: Number(listingId), text: text.trim(), type, emotion, image, listingSlug: selectedListing?.slug, listingTitle: selectedListing?.title });
+      const created = await createCommunityPost({ listingId: Number(listingId), text: text.trim(), type, emotion, image: attachmentType === "image" ? attachment : null, video: attachmentType === "video" ? attachment : null, linkUrl: attachmentType === "link" ? linkUrl : "", listingSlug: selectedListing?.slug, listingTitle: selectedListing?.title });
       setPosts((current) => [created, ...current]);
       setText("");
       setType("status");
       setEmotion("");
       setEmotionOpen(false);
-      removeImage();
+      clearAttachment();
     } catch (postError) {
       setMessage(postError.message || "Your update could not be published.");
     } finally { setSubmitting(false); }
@@ -212,13 +250,18 @@ export default function CommunityPage() {
               {isAuthenticated && listings.length ? (
                 <form onSubmit={submitPost}>
                   <div className="flex gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary-700 text-xs font-bold text-white">{initials(selectedListing?.title)}</span><textarea value={text} onChange={(event) => setText(event.target.value)} maxLength={1200} rows={3} className="min-h-24 flex-1 resize-none rounded-2xl border border-background-300 bg-white p-3 text-sm outline-none focus:border-primary-500" placeholder={`Share an update from ${selectedListing?.title || "your business"}…`} /></div>
-                  {imagePreview && <div className="relative ml-14 mt-3 overflow-hidden rounded-2xl border border-background-200 bg-background-100"><img src={imagePreview} alt="Attachment preview" className="max-h-72 w-full object-cover" /><button type="button" onClick={removeImage} aria-label="Remove attached image" className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-black/70 text-white shadow-lg"><i className="ri-close-line text-lg" /></button><div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 pb-3 pt-10 text-xs font-semibold text-white"><i className="ri-image-line mr-1.5" />{image.name}</div></div>}
+                  {attachmentPreview && <div className="relative ml-14 mt-3 overflow-hidden rounded-2xl border border-background-200 bg-background-100">{attachmentType === "image" ? <img src={attachmentPreview} alt="Attachment preview" className="max-h-72 w-full object-cover" /> : <video src={attachmentPreview} controls playsInline preload="metadata" className="max-h-72 w-full bg-black object-contain" />}<button type="button" onClick={clearAttachment} aria-label="Remove attachment" className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-black/70 text-white shadow-lg"><i className="ri-close-line text-lg" /></button><div className="absolute inset-x-0 bottom-0 pointer-events-none bg-gradient-to-t from-black/70 to-transparent px-4 pb-3 pt-10 text-xs font-semibold text-white"><i className={`${attachmentType === "video" ? "ri-video-line" : "ri-image-line"} mr-1.5`} />{attachment.name}</div></div>}
+                  {attachmentType === "link" && <div className="ml-14 mt-3 flex items-center gap-3 rounded-2xl border border-primary-200 bg-primary-50/50 p-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-700 text-white"><i className="ri-links-line" /></span><span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-primary-700">Link ready to share</span><span className="mt-1 block truncate text-sm font-semibold text-foreground-900">{linkLabel(linkUrl)}</span></span><button type="button" onClick={clearAttachment} aria-label="Remove attached link" className="grid h-9 w-9 place-items-center rounded-full text-foreground-500 hover:bg-white"><i className="ri-close-line text-lg" /></button></div>}
+                  {linkOpen && <div className="ml-14 mt-3 flex flex-col gap-2 rounded-2xl border border-background-200 bg-background-100 p-3 sm:flex-row"><input type="url" value={linkUrl} onChange={(event) => setLinkUrl(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); attachLink(); } }} className="h-10 min-w-0 flex-1 rounded-xl border border-background-300 bg-white px-3 text-sm outline-none focus:border-primary-500" placeholder="https://yourbusiness.com/page" aria-label="Website link" /><button type="button" onClick={attachLink} className="h-10 rounded-xl bg-primary-700 px-4 text-xs font-bold text-white">Attach link</button></div>}
                   {emotionOpen && <div className="ml-14 mt-3 flex flex-wrap gap-2 rounded-2xl border border-background-200 bg-background-100 p-3" role="group" aria-label="Choose an emotion">{COMMUNITY_EMOTIONS.map((item) => <button key={item.value} type="button" onClick={() => { setEmotion(item.value); setEmotionOpen(false); }} className={`inline-flex h-10 items-center gap-2 rounded-full border px-3 text-xs font-semibold transition ${emotion === item.value ? "border-primary-500 bg-primary-50 text-primary-800" : "border-background-300 bg-white text-foreground-700 hover:border-primary-300"}`}><span className="text-base" aria-hidden="true">{item.emoji}</span>{item.label}</button>)}</div>}
                   <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-background-200 pt-3">
                     <select aria-label="Business profile" value={listingId} onChange={(event) => setListingId(event.target.value)} className="h-10 max-w-52 rounded-xl border border-background-300 bg-white px-3 text-xs font-semibold">{listings.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select>
                     {POST_TYPES.map((option) => <button key={option.value} type="button" onClick={() => setType(option.value)} className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold ${type === option.value ? "bg-primary-50 text-primary-700" : "text-foreground-500 hover:bg-background-100"}`}><i className={option.icon} />{option.label}</button>)}
-                    <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={selectImage} className="sr-only" />
-                    <button type="button" onClick={() => fileInputRef.current?.click()} className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold ${image ? "bg-primary-50 text-primary-700" : "text-foreground-500 hover:bg-background-100"}`}><i className="ri-image-add-line" />{image ? "Photo added" : "Photo"}</button>
+                    <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => selectMedia(event, "image")} className="sr-only" />
+                    <input ref={videoInputRef} type="file" accept="video/mp4,video/webm,video/quicktime" onChange={(event) => selectMedia(event, "video")} className="sr-only" />
+                    <button type="button" onClick={() => imageInputRef.current?.click()} className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold ${attachmentType === "image" ? "bg-primary-50 text-primary-700" : "text-foreground-500 hover:bg-background-100"}`}><i className="ri-image-add-line" />Photo</button>
+                    <button type="button" onClick={() => videoInputRef.current?.click()} className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold ${attachmentType === "video" ? "bg-primary-50 text-primary-700" : "text-foreground-500 hover:bg-background-100"}`}><i className="ri-video-add-line" />Video</button>
+                    <button type="button" onClick={() => { setAttachment(null); setAttachmentType(""); setLinkOpen((open) => !open); setMessage(""); }} className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold ${attachmentType === "link" || linkOpen ? "bg-primary-50 text-primary-700" : "text-foreground-500 hover:bg-background-100"}`}><i className="ri-links-line" />Link</button>
                     <button type="button" onClick={() => setEmotionOpen((open) => !open)} className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold ${emotion ? "bg-accent-50 text-foreground-800" : "text-foreground-500 hover:bg-background-100"}`}><span className="text-base" aria-hidden="true">{selectedEmotion?.emoji || "😊"}</span>{selectedEmotion?.label || "Emotion"}</button>
                     <button type="submit" disabled={submitting || !text.trim()} className="ml-auto h-10 rounded-xl bg-primary-700 px-5 text-xs font-bold text-white disabled:opacity-40">{submitting ? "Posting…" : "Post update"}</button>
                   </div>
