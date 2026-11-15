@@ -8,6 +8,8 @@ if (!defined('ABSPATH')) {
 class C767_REST_Community
 {
     const NAMESPACE_ = 'connect767/v1';
+    const MAX_IMAGE_BYTES = 5242880;
+    const EMOTIONS = ['excited', 'grateful', 'celebrating', 'inspired', 'proud', 'focused'];
 
     public static function init()
     {
@@ -119,6 +121,7 @@ class C767_REST_Community
             'industry' => sanitize_text_field($industry),
             'verified' => $listing_id ? (bool) get_post_meta($listing_id, 'verified', true) : false,
             'type' => sanitize_key((string) get_post_meta($post->ID, '_community_update_type', true)) ?: 'status',
+            'emotion' => sanitize_key((string) get_post_meta($post->ID, '_community_emotion', true)),
             'text' => wp_strip_all_tags($post->post_content),
             'mediaUrl' => esc_url_raw((string) get_post_meta($post->ID, '_community_media_url', true)),
             'createdAt' => mysql_to_rfc3339($post->post_date_gmt),
@@ -163,6 +166,15 @@ class C767_REST_Community
         if (!in_array($type, ['status', 'offer', 'event', 'opportunity'], true)) {
             $type = 'status';
         }
+        $emotion = sanitize_key((string) $request->get_param('emotion'));
+        if (!in_array($emotion, self::EMOTIONS, true)) {
+            $emotion = '';
+        }
+
+        $image_check = self::validate_image_upload();
+        if (is_wp_error($image_check)) {
+            return $image_check;
+        }
 
         $post_id = wp_insert_post([
             'post_type' => 'community_update',
@@ -178,10 +190,72 @@ class C767_REST_Community
 
         update_post_meta($post_id, '_community_listing_id', (int) $listing->ID);
         update_post_meta($post_id, '_community_update_type', $type);
-        update_post_meta($post_id, '_community_media_url', esc_url_raw((string) $request->get_param('mediaUrl')));
+        update_post_meta($post_id, '_community_emotion', $emotion);
+
+        $media_url = esc_url_raw((string) $request->get_param('mediaUrl'));
+        if (!empty($_FILES['image']['tmp_name'])) {
+            require_once ABSPATH . 'wp-admin/includes/image.php';
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            require_once ABSPATH . 'wp-admin/includes/media.php';
+            $attachment_id = media_handle_upload('image', $post_id);
+            if (is_wp_error($attachment_id)) {
+                wp_delete_post($post_id, true);
+                return new WP_Error(
+                    'c767_community_image_failed',
+                    'The image could not be uploaded. Try a different JPG, PNG, WebP, or GIF file.',
+                    ['status' => 400]
+                );
+            }
+            $media_url = wp_get_attachment_url($attachment_id);
+        }
+        update_post_meta($post_id, '_community_media_url', $media_url);
         update_post_meta($post_id, '_community_reaction_user_ids', []);
 
         return new WP_REST_Response(self::serialize_post(get_post($post_id)), 201);
+    }
+
+    private static function validate_image_upload()
+    {
+        if (!isset($_FILES['image'])) {
+            return true;
+        }
+
+        $file = $_FILES['image'];
+        $error = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($error === UPLOAD_ERR_NO_FILE) {
+            return true;
+        }
+        if (in_array($error, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)
+            || (int) ($file['size'] ?? 0) > self::MAX_IMAGE_BYTES) {
+            return new WP_Error(
+                'c767_community_image_too_large',
+                'Community images must be 5 MB or smaller.',
+                ['status' => 413]
+            );
+        }
+        if ($error !== UPLOAD_ERR_OK) {
+            return new WP_Error(
+                'c767_community_image_failed',
+                'The image could not be uploaded. Please try again.',
+                ['status' => 400]
+            );
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        $checked = wp_check_filetype_and_ext(
+            (string) ($file['tmp_name'] ?? ''),
+            sanitize_file_name((string) ($file['name'] ?? ''))
+        );
+        $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        if (empty($checked['type']) || !in_array($checked['type'], $allowed, true)) {
+            return new WP_Error(
+                'c767_community_image_type',
+                'Choose a valid JPG, PNG, WebP, or GIF image.',
+                ['status' => 400]
+            );
+        }
+
+        return true;
     }
 
     public static function toggle_reaction(WP_REST_Request $request)
