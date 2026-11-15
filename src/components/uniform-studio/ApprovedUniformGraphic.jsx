@@ -106,11 +106,16 @@ export default function ApprovedUniformGraphic({
   };
   const baseSleevePath = (side, endOnly = false, end = baseSleeveBottom) => {
     const left = side === "left";
-    const top = endOnly ? end - 26 : region.shirtTop;
-    if (left) {
-      return `M${offset},${top} H${offset + region.bodyLeft + (endOnly ? 8 : 34)} L${offset + region.bodyLeft + 5},${end} H${offset} Z`;
+    if (endOnly) {
+      if (left) {
+        return `M${offset + region.bodyLeft - 98},${end - 28} L${offset + region.bodyLeft + 9},${end - 28} L${offset + region.bodyLeft + 5},${end} L${offset + region.bodyLeft - 104},${end - 16} Z`;
+      }
+      return `M${offset + region.bodyRight + 98},${end - 28} L${offset + region.bodyRight - 9},${end - 28} L${offset + region.bodyRight - 5},${end} L${offset + region.bodyRight + 104},${end - 16} Z`;
     }
-    return `M${offset + HALF_WIDTH},${top} H${offset + region.bodyRight - (endOnly ? 8 : 34)} L${offset + region.bodyRight - 5},${end} H${offset + HALF_WIDTH} Z`;
+    if (left) {
+      return `M${offset + region.bodyLeft - 110},${region.shirtTop + 102} Q${offset + region.bodyLeft - 48},${region.shirtTop + 78} ${offset + region.bodyLeft + 7},${region.shirtTop + 122} L${offset + region.bodyLeft + 5},${end} L${offset + region.bodyLeft - 110},${end - 25} Z`;
+    }
+    return `M${offset + region.bodyRight + 110},${region.shirtTop + 102} Q${offset + region.bodyRight + 48},${region.shirtTop + 78} ${offset + region.bodyRight - 7},${region.shirtTop + 122} L${offset + region.bodyRight - 5},${end} L${offset + region.bodyRight + 110},${end - 25} Z`;
   };
   const cutLowerSleevePath = (side) => {
     const left = side === "left";
@@ -142,8 +147,8 @@ export default function ApprovedUniformGraphic({
           <rect x={offset} y="0" width={HALF_WIDTH} height={SPRITE_HEIGHT} fill="white" />
           {isSleeveless && (
             <>
-              <path d={`M${offset},${region.shirtTop} H${offset + region.bodyLeft + 30} L${offset + region.bodyLeft},${region.sleeveBottom} H${offset} Z`} fill="black" />
-              <path d={`M${offset + HALF_WIDTH},${region.shirtTop} H${offset + region.bodyRight - 30} L${offset + region.bodyRight},${region.sleeveBottom} H${offset + HALF_WIDTH} Z`} fill="black" />
+              <path d={baseSleevePath("left", false, region.sleeveBottom)} fill="black" />
+              <path d={baseSleevePath("right", false, region.sleeveBottom)} fill="black" />
             </>
           )}
           {!isSleeveless && nativeLongSleeve && sleeveStyle !== "Long" && (
@@ -252,33 +257,37 @@ export default function ApprovedUniformGraphic({
             live garment appear to use a different color than the control. */}
         <ellipse
           cx={offset + HALF_WIDTH / 2}
-          cy={region.collarY + 10}
-          rx="86"
-          ry="58"
+          cy={region.collarY + 8}
+          rx="64"
+          ry="42"
           fill={body}
         />
         {collar === "V-Neck" && (
           <>
             <path
-              d={`M${offset + HALF_WIDTH / 2 - 72},${region.collarY - 24} L${offset + HALF_WIDTH / 2},${region.collarY + 68} L${offset + HALF_WIDTH / 2 + 72},${region.collarY - 24} L${offset + HALF_WIDTH / 2 + 51},${region.collarY - 31} L${offset + HALF_WIDTH / 2},${region.collarY + 38} L${offset + HALF_WIDTH / 2 - 51},${region.collarY - 31} Z`}
+              d={`M${offset + HALF_WIDTH / 2 - 55},${region.collarY - 16} L${offset + HALF_WIDTH / 2},${region.collarY + 50} L${offset + HALF_WIDTH / 2 + 55},${region.collarY - 16} L${offset + HALF_WIDTH / 2 + 40},${region.collarY - 22} L${offset + HALF_WIDTH / 2},${region.collarY + 29} L${offset + HALF_WIDTH / 2 - 40},${region.collarY - 22} Z`}
               fill={collarColor}
             />
-            <path d={`M${offset + HALF_WIDTH / 2 - 42},${region.collarY - 15} L${offset + HALF_WIDTH / 2},${region.collarY + 38} L${offset + HALF_WIDTH / 2 + 42},${region.collarY - 15}`} fill="none" stroke="#171512" strokeOpacity="0.72" strokeWidth="7" strokeLinejoin="round" />
+            <path d={`M${offset + HALF_WIDTH / 2 - 35},${region.collarY - 12} L${offset + HALF_WIDTH / 2},${region.collarY + 29} L${offset + HALF_WIDTH / 2 + 35},${region.collarY - 12}`} fill="none" stroke="#171512" strokeOpacity="0.72" strokeWidth="5" strokeLinejoin="round" />
           </>
         )}
         {collar === "Crew" && (
           <>
-            <ellipse cx={offset + HALF_WIDTH / 2} cy={region.collarY} rx="70" ry="41" fill={collarColor} />
-            <ellipse cx={offset + HALF_WIDTH / 2} cy={region.collarY - 2} rx="49" ry="24" fill="#171512" fillOpacity="0.72" />
+            <ellipse cx={offset + HALF_WIDTH / 2} cy={region.collarY} rx="54" ry="29" fill={collarColor} />
+            <ellipse cx={offset + HALF_WIDTH / 2} cy={region.collarY - 2} rx="40" ry="18" fill="#171512" fillOpacity="0.72" />
           </>
         )}
         {collar === "Polo" && (
           <>
-            <path d={`M${offset + HALF_WIDTH / 2 - 76},${region.collarY - 22} L${offset + HALF_WIDTH / 2 - 8},${region.collarY + 34} L${offset + HALF_WIDTH / 2 - 55},${region.collarY + 50} Z`} fill={collarColor} />
-            <path d={`M${offset + HALF_WIDTH / 2 + 76},${region.collarY - 22} L${offset + HALF_WIDTH / 2 + 8},${region.collarY + 34} L${offset + HALF_WIDTH / 2 + 55},${region.collarY + 50} Z`} fill={collarColor} />
-            <rect x={offset + HALF_WIDTH / 2 - 11} y={region.collarY + 20} width="22" height="82" rx="5" fill={collarColor} />
-            <circle cx={offset + HALF_WIDTH / 2} cy={region.collarY + 48} r="4" fill={body} />
-            <circle cx={offset + HALF_WIDTH / 2} cy={region.collarY + 72} r="4" fill={body} />
+            <path d={`M${offset + HALF_WIDTH / 2 - 58},${region.collarY - 17} L${offset + HALF_WIDTH / 2 - 7},${region.collarY + 25} L${offset + HALF_WIDTH / 2 - 41},${region.collarY + 38} Z`} fill={collarColor} />
+            <path d={`M${offset + HALF_WIDTH / 2 + 58},${region.collarY - 17} L${offset + HALF_WIDTH / 2 + 7},${region.collarY + 25} L${offset + HALF_WIDTH / 2 + 41},${region.collarY + 38} Z`} fill={collarColor} />
+            {view === "front" && (
+              <>
+                <rect x={offset + HALF_WIDTH / 2 - 8} y={region.collarY + 15} width="16" height="63" rx="4" fill={collarColor} />
+                <circle cx={offset + HALF_WIDTH / 2} cy={region.collarY + 37} r="3" fill={body} />
+                <circle cx={offset + HALF_WIDTH / 2} cy={region.collarY + 57} r="3" fill={body} />
+              </>
+            )}
           </>
         )}
       </g>
