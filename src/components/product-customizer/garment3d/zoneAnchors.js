@@ -51,7 +51,7 @@ const ANCHORS = {
 // `jersey`, so they share its anchor table — without this they'd fall
 // through to `tshirt`, whose anchors are ~2x the scale and would float the
 // design a metre off the chest.
-for (const sport of ["soccer", "basketball", "baseball", "cricket"]) {
+for (const sport of ["soccer", "basketball", "netball", "cricket"]) {
   ANCHORS[sport] = ANCHORS.jersey;
 }
 

@@ -238,7 +238,7 @@ export default function UniformStudioPage() {
   }, [layers]);
   const jerseyPlacements = useMemo(() => [{ key: "front", label: "Front" }, { key: "back", label: "Back" }], []);
   // Was hardcoded to slug "jersey", so every sport — soccer, basketball,
-  // baseball, cricket — rendered the same GLB. Keyed off the active sport
+  // netball, cricket — rendered the same GLB. Keyed off the active sport
   // now, so switching the sport tab actually switches the garment.
   const studioProductType = useMemo(
     () => ({
@@ -930,9 +930,12 @@ export default function UniformStudioPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedCategory(null)}
-                  className="inline-flex items-center gap-2 self-start rounded-full border border-background-300 bg-background-50 px-4 py-2 text-sm font-bold text-foreground-700 transition hover:border-primary-400 hover:text-primary-800 sm:self-auto cursor-pointer"
+                  className="group inline-flex min-h-12 items-center gap-3 self-start rounded-full border border-primary-700 bg-primary-600 px-5 py-3 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(0,116,73,0.22)] transition duration-200 hover:-translate-y-0.5 hover:bg-primary-700 hover:shadow-[0_14px_30px_rgba(0,116,73,0.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 sm:self-auto cursor-pointer"
                 >
-                  <i className="ri-arrow-left-line" /> All sports
+                  <span className="grid size-7 place-items-center rounded-full bg-white/15 transition group-hover:bg-white/20">
+                    <i className="ri-arrow-left-line text-base" aria-hidden="true" />
+                  </span>
+                  <span>All Sports</span>
                 </button>
               ) : (
                 <p className="max-w-lg text-sm leading-relaxed text-foreground-500">
