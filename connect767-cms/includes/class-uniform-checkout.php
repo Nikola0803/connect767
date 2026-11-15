@@ -1,0 +1,384 @@
+<?php
+/**
+ * Server-authoritative checkout for Uniform Studio team orders.
+ *
+ * The browser sends the design and roster, but never controls the amount
+ * charged. Pricing is rebuilt here from the approved uniform rules, then
+ * WooCommerce calculates destination tax and shipping. Stripe and PayPal
+ * both charge the resulting WooCommerce order total.
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+class C767_Uniform_Checkout
+{
+    const NAMESPACE_ = 'connect767/v1';
+    const BASE_KIT_PRICE = 25.00;
+    const FAN_JERSEY_PRICE = 34.00;
+
+    public static function init()
+    {
+        add_action('rest_api_init', [__CLASS__, 'register_routes']);
+    }
+
+    public static function register_routes()
+    {
+        if (!class_exists('WooCommerce')) {
+            return;
+        }
+
+        $routes = [
+            '/uniform-checkout/quote' => 'quote',
+            '/uniform-checkout/intent' => 'create_intent',
+            '/uniform-checkout/confirm' => 'confirm_payment',
+            '/uniform-checkout/paypal/order' => 'create_paypal_order',
+            '/uniform-checkout/paypal/capture' => 'capture_paypal_order',
+        ];
+
+        foreach ($routes as $route => $callback) {
+            register_rest_route(self::NAMESPACE_, $route, [
+                'methods' => 'POST',
+                'callback' => [__CLASS__, $callback],
+                'permission_callback' => '__return_true',
+            ]);
+        }
+    }
+
+    public static function quote(WP_REST_Request $request)
+    {
+        $limited = C767_Stripe_Checkout::check_public_rate_limit('uniform-quote-total', 30, 600);
+        if (is_wp_error($limited)) {
+            return $limited;
+        }
+
+        $order = self::build_order($request, true);
+        if (is_wp_error($order)) {
+            return $order;
+        }
+
+        $totals = self::format_totals($order);
+        $order->delete(true);
+        return rest_ensure_response($totals);
+    }
+
+    public static function create_intent(WP_REST_Request $request)
+    {
+        $limited = C767_Stripe_Checkout::check_public_rate_limit('uniform-stripe');
+        if (is_wp_error($limited)) {
+            return $limited;
+        }
+
+        $order = self::build_order($request);
+        if (is_wp_error($order)) {
+            return $order;
+        }
+
+        $amount_cents = (int) round((float) $order->get_total() * 100);
+        $intent = C767_Stripe_Checkout::stripe_request('/payment_intents', [
+            'amount' => $amount_cents,
+            'currency' => strtolower($order->get_currency()),
+            'metadata' => ['order_id' => $order->get_id(), 'order_type' => 'uniform'],
+            'receipt_email' => $order->get_billing_email(),
+            'payment_method_types' => ['card'],
+        ]);
+
+        if (is_wp_error($intent)) {
+            $order->delete(true);
+            return $intent;
+        }
+
+        $order->update_meta_data('_c767_stripe_payment_intent', $intent['id']);
+        $access_token = C767_Stripe_Checkout::ensure_order_access_token($order);
+        $order->save();
+
+        return rest_ensure_response(array_merge(self::format_totals($order), [
+            'orderId' => $order->get_id(),
+            'clientSecret' => $intent['client_secret'],
+            'accessToken' => $access_token,
+        ]));
+    }
+
+    public static function confirm_payment(WP_REST_Request $request)
+    {
+        $order = self::verified_order($request);
+        if (is_wp_error($order)) {
+            return $order;
+        }
+
+        $intent_id = (string) $order->get_meta('_c767_stripe_payment_intent');
+        if ($intent_id === '') {
+            return new WP_Error('c767_no_payment_intent', 'This order has no associated card payment.', ['status' => 400]);
+        }
+
+        $intent = C767_Stripe_Checkout::stripe_get('/payment_intents/' . rawurlencode($intent_id));
+        if (is_wp_error($intent)) {
+            return $intent;
+        }
+
+        if (($intent['status'] ?? '') === 'succeeded') {
+            $order->payment_complete($intent_id);
+            do_action('c767_uniform_order_paid', $order->get_id());
+            return rest_ensure_response(['status' => 'paid', 'orderId' => $order->get_id()]);
+        }
+
+        return rest_ensure_response(['status' => sanitize_key($intent['status'] ?? 'processing'), 'orderId' => $order->get_id()]);
+    }
+
+    public static function create_paypal_order(WP_REST_Request $request)
+    {
+        $limited = C767_Stripe_Checkout::check_public_rate_limit('uniform-paypal');
+        if (is_wp_error($limited)) {
+            return $limited;
+        }
+
+        $order = self::build_order($request);
+        if (is_wp_error($order)) {
+            return $order;
+        }
+
+        $token = C767_PayPal_Checkout::access_token();
+        if (is_wp_error($token)) {
+            $order->delete(true);
+            return $token;
+        }
+
+        $paypal_order = C767_PayPal_Checkout::paypal_request('POST', '/v2/checkout/orders', $token, [
+            'intent' => 'CAPTURE',
+            'purchase_units' => [[
+                'reference_id' => (string) $order->get_id(),
+                'amount' => [
+                    'currency_code' => strtoupper($order->get_currency()),
+                    'value' => number_format((float) $order->get_total(), 2, '.', ''),
+                    'breakdown' => [
+                        'item_total' => ['currency_code' => strtoupper($order->get_currency()), 'value' => number_format((float) $order->get_subtotal(), 2, '.', '')],
+                        'shipping' => ['currency_code' => strtoupper($order->get_currency()), 'value' => number_format((float) $order->get_shipping_total(), 2, '.', '')],
+                        'tax_total' => ['currency_code' => strtoupper($order->get_currency()), 'value' => number_format((float) $order->get_total_tax(), 2, '.', '')],
+                    ],
+                ],
+            ]],
+        ]);
+
+        if (is_wp_error($paypal_order)) {
+            $order->delete(true);
+            return $paypal_order;
+        }
+
+        $order->update_meta_data('_c767_paypal_order_id', $paypal_order['id']);
+        $access_token = C767_Stripe_Checkout::ensure_order_access_token($order);
+        $order->save();
+
+        return rest_ensure_response(array_merge(self::format_totals($order), [
+            'orderId' => $order->get_id(),
+            'paypalOrderId' => $paypal_order['id'],
+            'accessToken' => $access_token,
+        ]));
+    }
+
+    public static function capture_paypal_order(WP_REST_Request $request)
+    {
+        $order = self::verified_order($request);
+        if (is_wp_error($order)) {
+            return $order;
+        }
+
+        $paypal_order_id = (string) $order->get_meta('_c767_paypal_order_id');
+        if ($paypal_order_id === '') {
+            return new WP_Error('c767_no_paypal_order', 'This order has no associated PayPal payment.', ['status' => 400]);
+        }
+
+        $token = C767_PayPal_Checkout::access_token();
+        if (is_wp_error($token)) {
+            return $token;
+        }
+
+        $capture = C767_PayPal_Checkout::paypal_request('POST', '/v2/checkout/orders/' . rawurlencode($paypal_order_id) . '/capture', $token);
+        if (is_wp_error($capture)) {
+            return $capture;
+        }
+
+        if (($capture['status'] ?? '') === 'COMPLETED') {
+            $order->payment_complete($paypal_order_id);
+            do_action('c767_uniform_order_paid', $order->get_id());
+            return rest_ensure_response(['status' => 'paid', 'orderId' => $order->get_id()]);
+        }
+
+        return rest_ensure_response(['status' => strtolower(sanitize_key($capture['status'] ?? 'processing')), 'orderId' => $order->get_id()]);
+    }
+
+    private static function verified_order(WP_REST_Request $request)
+    {
+        $order = wc_get_order(absint($request->get_param('orderId')));
+        if (!$order || !$order->get_meta('_c767_uniform_order')) {
+            return new WP_Error('c767_uniform_order_not_found', 'Uniform order not found.', ['status' => 404]);
+        }
+        $access = C767_Stripe_Checkout::verify_order_access($order, $request->get_param('accessToken'));
+        return is_wp_error($access) ? $access : $order;
+    }
+
+    private static function build_order(WP_REST_Request $request, $temporary = false)
+    {
+        $payload = (array) $request->get_param('order');
+        $roster = (array) ($payload['roster'] ?? []);
+        $unit_count = 0;
+        foreach ($roster as $entry) {
+            $entry = (array) $entry;
+            if (sanitize_text_field((string) ($entry['name'] ?? '')) !== '') {
+                $unit_count += max(1, min(99, absint($entry['quantity'] ?? 1)));
+            }
+        }
+        if ($unit_count < 1) {
+            return new WP_Error('c767_empty_roster', 'Add at least one player before checkout.', ['status' => 400]);
+        }
+
+        $email = sanitize_email((string) $request->get_param('email'));
+        if (!is_email($email)) {
+            return new WP_Error('c767_invalid_email', 'A valid email address is required.', ['status' => 400]);
+        }
+
+        $shipping = C767_WooCommerce::sanitize_shipping_address((array) $request->get_param('shipping'));
+        if (is_wp_error($shipping)) {
+            return $shipping;
+        }
+
+        $unit_price = self::authoritative_unit_price($payload);
+        $kits_total = round($unit_price * $unit_count, 2);
+        $fan_added = rest_sanitize_boolean($payload['fanJerseyAdded'] ?? false);
+        $template = sanitize_text_field((string) ($payload['template'] ?? 'Custom design')) ?: 'Custom design';
+        $product = self::uniform_product();
+        if (is_wp_error($product)) {
+            return $product;
+        }
+
+        $order = wc_create_order(['status' => $temporary ? 'checkout-draft' : 'pending']);
+        if (is_wp_error($order)) {
+            return new WP_Error('c767_uniform_order_failed', $order->get_error_message(), ['status' => 400]);
+        }
+
+        $kit_item_id = $order->add_product($product, $unit_count, [
+            'subtotal' => $kits_total,
+            'total' => $kits_total,
+        ]);
+        $kit_item = $order->get_item($kit_item_id);
+        if ($kit_item) {
+            $kit_item->set_name($template . ' team kit');
+            $kit_item->add_meta_data('Unit price', wc_price($unit_price), true);
+            $kit_item->save();
+        }
+
+        if ($fan_added) {
+            $fan_item_id = $order->add_product($product, 1, [
+                'subtotal' => self::FAN_JERSEY_PRICE,
+                'total' => self::FAN_JERSEY_PRICE,
+            ]);
+            $fan_item = $order->get_item($fan_item_id);
+            if ($fan_item) {
+                $fan_item->set_name($template . ' supporter jersey');
+                $fan_item->save();
+            }
+        }
+
+        $billing = $shipping;
+        $billing['email'] = $email;
+        $order->set_address($billing, 'billing');
+        $order->set_address($shipping, 'shipping');
+        $order->calculate_totals(false);
+
+        $shipping_rate = C767_WooCommerce::calculate_shipping_rate($order, $shipping);
+        if (is_wp_error($shipping_rate)) {
+            $order->delete(true);
+            return $shipping_rate;
+        }
+
+        $shipping_item = new WC_Order_Item_Shipping();
+        $shipping_item->set_method_title($shipping_rate->get_label());
+        $shipping_item->set_method_id($shipping_rate->get_method_id());
+        $shipping_item->set_instance_id($shipping_rate->get_instance_id());
+        $shipping_item->set_total((float) $shipping_rate->get_cost());
+        $shipping_item->set_taxes($shipping_rate->get_taxes());
+        $order->add_item($shipping_item);
+        $order->calculate_taxes($shipping);
+        $order->calculate_totals(false);
+        if (!$temporary) {
+            $order->set_status('pending');
+        }
+        $order->update_meta_data('_c767_uniform_order', '1');
+        $order->update_meta_data('_c767_uniform_unit_count', $unit_count);
+        $order->update_meta_data('_c767_uniform_unit_price', $unit_price);
+
+        $design_payload = $payload;
+        unset($design_payload['previewImage']);
+        $encoded = wp_json_encode($design_payload);
+        if ($encoded && strlen($encoded) <= 524288) {
+            $order->update_meta_data('_c767_uniform_design', $encoded);
+        }
+        $preview = (string) ($payload['previewImage'] ?? '');
+        if (strpos($preview, 'data:image/') === 0 && strlen($preview) <= 5242880) {
+            $order->update_meta_data('_c767_uniform_preview', $preview);
+        }
+        $order->save();
+        return $order;
+    }
+
+    private static function authoritative_unit_price(array $payload)
+    {
+        $price = self::BASE_KIT_PRICE;
+        $sleeve = sanitize_text_field((string) ($payload['sleeve'] ?? ''));
+        $collar = sanitize_text_field((string) ($payload['collar'] ?? ''));
+        if ($sleeve === 'Long' || $sleeve === 'Mixed') {
+            $price += 3.00;
+        }
+        if ($collar === 'Polo') {
+            $price += 2.00;
+        }
+        if (rest_sanitize_boolean($payload['insideCollarMessage'] ?? false)) {
+            $price += 1.00;
+        }
+        if (sanitize_text_field((string) ($payload['logoApplication'] ?? '')) === 'Embroidery') {
+            $price += 1.50;
+        }
+        return round($price, 2);
+    }
+
+    private static function uniform_product()
+    {
+        $product_id = absint(get_option('c767_uniform_checkout_product_id'));
+        $product = $product_id ? wc_get_product($product_id) : null;
+        if ($product) {
+            return $product;
+        }
+
+        $product = new WC_Product_Simple();
+        $product->set_name('Custom Team Uniform');
+        $product->set_slug('connect767-custom-team-uniform');
+        $product->set_status('private');
+        $product->set_catalog_visibility('hidden');
+        $product->set_regular_price((string) self::BASE_KIT_PRICE);
+        $product->set_price((string) self::BASE_KIT_PRICE);
+        $product->set_tax_status('taxable');
+        $product->set_virtual(false);
+        $product->set_manage_stock(false);
+        $product->set_weight('0.35');
+        $product_id = $product->save();
+        if (!$product_id) {
+            return new WP_Error('c767_uniform_product_failed', 'Could not prepare the uniform checkout item.', ['status' => 500]);
+        }
+        update_option('c767_uniform_checkout_product_id', $product_id, false);
+        return $product;
+    }
+
+    private static function format_totals(WC_Order $order)
+    {
+        $shipping_items = $order->get_items('shipping');
+        $shipping_item = $shipping_items ? reset($shipping_items) : null;
+        return [
+            'subtotal' => round((float) $order->get_subtotal(), 2),
+            'tax' => round((float) $order->get_total_tax(), 2),
+            'shipping' => round((float) $order->get_shipping_total(), 2),
+            'shippingLabel' => $shipping_item ? $shipping_item->get_method_title() : 'Shipping',
+            'total' => round((float) $order->get_total(), 2),
+            'currency' => $order->get_currency(),
+        ];
+    }
+}

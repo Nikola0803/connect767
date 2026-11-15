@@ -3,7 +3,7 @@
  * Plugin Name: Connect767 CMS
  * Plugin URI: https://connect767.com
  * Description: Content management, REST API, auth, and WooCommerce checkout bridge for the Connect767 headless React frontend. Registers the Listing and Uniform Template custom post types, exposes the connect767/v1 REST namespace (auth, AI matching, listing submissions, uniform quotes, headless checkout), and includes a one-click sample content importer matching the frontend's local fixture data.
- * Version: 1.7.6
+ * Version: 1.7.7
  * Author: Connect767
  * Text Domain: connect767-cms
  * Requires PHP: 7.4
@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
     exit; // No direct access.
 }
 
-define('C767_VERSION', '1.7.6');
+define('C767_VERSION', '1.7.7');
 define('C767_PLUGIN_FILE', __FILE__);
 define('C767_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('C767_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -112,6 +112,7 @@ function c767_require_includes()
         'includes/class-checkout-branding.php',
         'includes/class-stripe-checkout.php',
         'includes/class-paypal-checkout.php',
+        'includes/class-uniform-checkout.php',
         'includes/class-stripe-listing-checkout.php',
         'includes/class-rest-vendor-products.php',
         'includes/class-admin-dashboard.php',
@@ -152,6 +153,7 @@ function c767_init_plugin()
     C767_Checkout_Branding::init();
     C767_Stripe_Checkout::init();
     C767_PayPal_Checkout::init();
+    C767_Uniform_Checkout::init();
     C767_Stripe_Listing_Checkout::init();
     C767_Rest_Vendor_Products::init();
     C767_Admin_Dashboard::init();

@@ -1193,6 +1193,42 @@ export async function submitUniformQuote(payload) {
   return customClient.post("/uniform-quotes", payload);
 }
 
+/** Uniform Studio checkout totals, calculated by WooCommerce for the delivery address. */
+export async function quoteUniformCheckout(order, email, shipping) {
+  if (!isLiveApi) {
+    const subtotal = Number(order?.grandTotal || 0);
+    const shippingCost = subtotal > 0 ? 12 : 0;
+    return {
+      subtotal,
+      tax: 0,
+      shipping: shippingCost,
+      shippingLabel: "Standard shipping (preview)",
+      total: subtotal + shippingCost,
+      currency: "USD",
+      demo: true,
+    };
+  }
+  return customClient.post("/uniform-checkout/quote", { order, email, shipping });
+}
+
+export async function createUniformPaymentIntent(order, email, shipping) {
+  if (!isLiveApi) throw new Error("Payment requires the live WooCommerce backend.");
+  return customClient.post("/uniform-checkout/intent", { order, email, shipping });
+}
+
+export async function confirmUniformPayment(orderId, accessToken) {
+  return customClient.post("/uniform-checkout/confirm", { orderId, accessToken });
+}
+
+export async function createUniformPaypalOrder(order, email, shipping) {
+  if (!isLiveApi) throw new Error("Payment requires the live WooCommerce backend.");
+  return customClient.post("/uniform-checkout/paypal/order", { order, email, shipping });
+}
+
+export async function captureUniformPaypalOrder(orderId, accessToken) {
+  return customClient.post("/uniform-checkout/paypal/capture", { orderId, accessToken });
+}
+
 /**
  * The Product Customizer's per-product config — what products exist, what
  * each one costs, its optional 3D model, and (most importantly) its

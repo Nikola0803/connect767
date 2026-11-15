@@ -12,6 +12,9 @@ import {
   confirmVendorOrder,
   createCartPaypalOrder,
   createPaymentIntent,
+  createUniformPaymentIntent,
+  createUniformPaypalOrder,
+  quoteUniformCheckout,
 } from "./repository";
 
 const items = [
@@ -86,5 +89,32 @@ describe("shop checkout payloads", () => {
     fetch.mockClear();
     await captureVendorProductPaypalOrder(44, "vendor-token");
     expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ accessToken: "vendor-token" });
+  });
+
+  it("sends the full uniform design, roster and shipment to the totals endpoint", async () => {
+    const order = {
+      template: "Classic Crew",
+      sport: "soccer",
+      roster: [{ name: "A. Miller", quantity: 2, shirtSize: "L" }],
+      grandTotal: 50,
+    };
+
+    await quoteUniformCheckout(order, "coach@example.com", shipping);
+
+    expect(fetch.mock.calls[0][0]).toContain("/uniform-checkout/quote");
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ order, email: "coach@example.com", shipping });
+  });
+
+  it("uses the same server-authoritative uniform payload for Stripe and PayPal", async () => {
+    const order = { template: "Classic Crew", roster: [{ name: "A. Miller", quantity: 1 }] };
+
+    await createUniformPaymentIntent(order, "coach@example.com", shipping);
+    expect(fetch.mock.calls[0][0]).toContain("/uniform-checkout/intent");
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ order, email: "coach@example.com", shipping });
+
+    fetch.mockClear();
+    await createUniformPaypalOrder(order, "coach@example.com", shipping);
+    expect(fetch.mock.calls[0][0]).toContain("/uniform-checkout/paypal/order");
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ order, email: "coach@example.com", shipping });
   });
 });
