@@ -53,4 +53,16 @@ describe("ShareMenu", () => {
     fireEvent.click(closeButtons[1]);
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
+
+  it("can keep the Share label visible in compact feed actions", () => {
+    render(
+      <ShareMenu
+        title="James Local Fruits"
+        url="https://connect767.com/community#community-post-42"
+        showLabelOnMobile
+      />,
+    );
+
+    expect(screen.getByText("Share")).toHaveClass("inline");
+  });
 });

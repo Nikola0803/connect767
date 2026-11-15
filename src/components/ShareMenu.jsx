@@ -47,6 +47,7 @@ export default function ShareMenu({
   className = "",
   buttonClassName = "",
   iconOnly = false,
+  showLabelOnMobile = false,
   placement = "bottom",
 }) {
   const [open, setOpen] = useState(false);
@@ -178,7 +179,7 @@ export default function ShareMenu({
           : `inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg border border-background-300 text-foreground-700 hover:bg-background-100 cursor-pointer whitespace-nowrap transition-colors ${buttonClassName}`}
       >
         <i className="ri-share-forward-line" />
-        {!iconOnly && <span className="hidden sm:inline">Share</span>}
+        {!iconOnly && <span className={showLabelOnMobile ? "inline" : "hidden sm:inline"}>Share</span>}
       </button>
 
       {open && (

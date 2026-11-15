@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import ShareMenu from "../components/ShareMenu";
 import { useAuth } from "../hooks/useAuth";
 import { useAsync } from "../hooks/useAsync";
 import {
@@ -119,6 +120,7 @@ function CommunityPost({ post, authenticated, onReact, onComment }) {
   const activity = COMMUNITY_ACTIVITIES.find((item) => item.value === post.activity);
   const postType = POST_TYPES.find((item) => item.value === post.type) || POST_TYPES[0];
   const hasLiveLocation = Number.isFinite(Number(post.latitude)) && Number.isFinite(Number(post.longitude));
+  const postShareUrl = typeof window !== "undefined" ? `${window.location.origin}/community#community-post-${post.id}` : "";
 
   const submitComment = async (event) => {
     event.preventDefault();
@@ -130,7 +132,7 @@ function CommunityPost({ post, authenticated, onReact, onComment }) {
   };
 
   return (
-    <article className="rounded-[1.5rem] border border-background-200/80 bg-background-50 p-5 shadow-[0_14px_45px_rgba(24,48,36,0.06)] sm:p-6">
+    <article id={`community-post-${post.id}`} className="scroll-mt-24 rounded-[1.5rem] border border-background-200/80 bg-background-50 p-5 shadow-[0_14px_45px_rgba(24,48,36,0.06)] sm:p-6">
       <header className="flex items-start gap-3">
         {post.listingLogo ? (
           <img src={post.listingLogo} alt="" className="h-12 w-12 rounded-2xl border border-background-200 object-cover" />
@@ -168,9 +170,9 @@ function CommunityPost({ post, authenticated, onReact, onComment }) {
         <button type="button" onClick={() => setCommentsOpen((open) => !open)}>{comments.length} comment{comments.length === 1 ? "" : "s"}</button>
       </div>
       <div className="flex items-center gap-1 pt-2">
-        <button type="button" disabled={!authenticated} onClick={() => onReact(post.id)} className={`inline-flex h-10 items-center gap-2 rounded-full px-3 text-xs font-semibold ${post.reacted ? "bg-primary-50 text-primary-700" : "text-foreground-600 hover:bg-background-100"}`}><i className={post.reacted ? "ri-heart-3-fill" : "ri-heart-3-line"} />Appreciate</button>
+        <button type="button" disabled={!authenticated} onClick={() => onReact(post.id)} className={`inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-xs font-semibold ${post.reacted ? "bg-primary-50 text-primary-700" : "text-foreground-600 hover:bg-background-100"}`}><span className="inline-flex items-center gap-1" aria-hidden="true"><i className={post.reacted ? "ri-heart-3-fill" : "ri-heart-3-line"} /><i className={post.reacted ? "ri-thumb-up-fill" : "ri-thumb-up-line"} /></span>Appreciate</button>
         <button type="button" onClick={() => setCommentsOpen((open) => !open)} className="inline-flex h-10 items-center gap-2 rounded-full px-3 text-xs font-semibold text-foreground-600 hover:bg-background-100"><i className="ri-chat-3-line" />Comment</button>
-        <button type="button" onClick={() => navigator.share?.({ title: post.listingTitle, url: `${window.location.origin}/listings/${post.listingSlug}` })} className="inline-flex h-10 items-center gap-2 rounded-full px-3 text-xs font-semibold text-foreground-600 hover:bg-background-100"><i className="ri-share-forward-line" />Share</button>
+        <ShareMenu title={`${post.listingTitle} on Connect767`} url={postShareUrl} placement="top" showLabelOnMobile buttonClassName="!h-10 !rounded-full !border-0 !px-3 !py-0 !text-xs !font-semibold !text-foreground-600 hover:!bg-background-100" />
         <Link to={`/listings/${post.listingSlug}`} className="ml-auto hidden text-xs font-bold text-primary-700 sm:inline-flex">View profile <i className="ri-arrow-right-up-line ml-1" /></Link>
       </div>
 
@@ -317,7 +319,7 @@ export default function CommunityPage() {
         const latitude = Number(coords.latitude.toFixed(6));
         const longitude = Number(coords.longitude.toFixed(6));
         setLocationCoordinates({ latitude, longitude });
-        setPostLocation("Current location");
+        setPostLocation(`Live location · ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
         setLocationOpen(false);
         setLocating(false);
       },

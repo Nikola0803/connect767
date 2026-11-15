@@ -91,10 +91,26 @@ export async function createCommunityPost(payload) {
     if (payload.mentions?.length) form.append("mentions", JSON.stringify(payload.mentions));
     if (payload.image) form.append("image", payload.image);
     if (payload.video) form.append("video", payload.video);
-    return customClient.post("/community/posts", form);
+    const created = await customClient.post("/community/posts", form);
+    return {
+      ...created,
+      activity: created?.activity || payload.activity || "",
+      postLocation: created?.postLocation || payload.postLocation || "",
+      latitude: created?.latitude ?? payload.latitude ?? null,
+      longitude: created?.longitude ?? payload.longitude ?? null,
+      mentions: created?.mentions?.length ? created.mentions : payload.mentions || [],
+    };
   }
 
-  return customClient.post("/community/posts", payload);
+  const created = await customClient.post("/community/posts", payload);
+  return {
+    ...created,
+    activity: created?.activity || payload.activity || "",
+    postLocation: created?.postLocation || payload.postLocation || "",
+    latitude: created?.latitude ?? payload.latitude ?? null,
+    longitude: created?.longitude ?? payload.longitude ?? null,
+    mentions: created?.mentions?.length ? created.mentions : payload.mentions || [],
+  };
 }
 
 export async function toggleCommunityReaction(postId) {
