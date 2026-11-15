@@ -36,7 +36,7 @@ const KIT_REGIONS = {
           left: [[107, 240], [198, 250], [195, 274], [105, 260]],
           right: [[469, 250], [558, 240], [560, 260], [472, 274]],
         },
-        shirtEndPolygon: [[199, 525], [463, 525], [463, 557], [199, 557]],
+        shirtEndPolygon: [[193, 524], [477, 524], [483, 557], [186, 557]],
         shortsPolygon: [[176, 555], [485, 555], [500, 840], [163, 840]],
         shortsEndPolygon: [[163, 810], [500, 810], [500, 840], [163, 840]],
       },
@@ -54,7 +54,7 @@ const KIT_REGIONS = {
           left: [[32, 240], [122, 250], [119, 274], [30, 260]],
           right: [[391, 250], [481, 240], [483, 260], [394, 274]],
         },
-        shirtEndPolygon: [[128, 525], [385, 525], [385, 557], [128, 557]],
+        shirtEndPolygon: [[115, 524], [398, 524], [404, 557], [108, 557]],
         shortsPolygon: [[105, 555], [408, 555], [424, 840], [92, 840]],
         shortsEndPolygon: [[92, 810], [424, 810], [424, 840], [92, 840]],
       },
@@ -310,13 +310,16 @@ export default function ApprovedUniformGraphic({
           </TintLayer>
       )}
 
-        <TintLayer mask={maskId} fill={shirtEnd} opacity={opacityFor("shirtStrip")}>
+        {/* The shirt hem is clipped to the jersey-only mask. This prevents
+            its color from bleeding into the shorts waistband while the wider
+            traced polygon follows the complete curved bottom edge. */}
+        <TintLayer mask={jerseyMaskId} fill={shirtEnd} opacity={opacityFor("shirtStrip")}>
           {(fill) => region.shirtEndPolygon
             ? <path d={polygonPath(region.shirtEndPolygon)} fill={fill} />
             : <rect x={offset} y={region.bottomStart - 18} width={halfWidth} height="18" fill={fill} />}
         </TintLayer>
 
-        {!isSleeveless && <TintLayer mask={maskId} fill={sleeveEnd} opacity={opacityFor("sleeveStrip")}>
+        {!isSleeveless && <TintLayer mask={jerseyMaskId} fill={sleeveEnd} opacity={opacityFor("sleeveStrip")}>
         {(fill) => (
           <>
               {region.sleeveEndPolygons ? (
@@ -358,9 +361,9 @@ export default function ApprovedUniformGraphic({
             zoneStyles={zoneStyles}
             colorValues={{
               ...colors,
-              armhole: colors.armhole || colors.sleeveStrip || colors.collar,
-              waistband: colors.waistband || colors.shirtStrip || colors.collar,
-              sockTrim: colors.sockTrim || colors.sleeveStrip || colors.collar,
+              armhole: colors.armhole || colors.sleeve || colors.body,
+              waistband: colors.waistband || colors.shorts || colors.body,
+              sockTrim: colors.sockTrim || colors.socks || colors.body,
             }}
             onSelectZone={onSelectZone}
             onMovePoint={onMoveZonePoint}

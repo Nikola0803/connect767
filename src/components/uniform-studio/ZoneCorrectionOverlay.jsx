@@ -87,7 +87,15 @@ export default function ZoneCorrectionOverlay({
           : style.gradientEnabled
             ? `url(#zone-gradient-${safe})`
             : color;
-        const opacity = Number.isFinite(style.opacity) ? style.opacity : 0.88;
+        const hasExplicitSeamStyle = Boolean(
+          style.color
+          || style.gradientEnabled
+          || (style.pattern && style.pattern !== "none")
+          || style.texture,
+        );
+        const opacity = item.group === "Seams" && !hasExplicitSeamStyle
+          ? 0
+          : (Number.isFinite(style.opacity) ? style.opacity : 0.88);
         return (
           <path
             key={item.id}
