@@ -65,4 +65,18 @@ describe("ShareMenu", () => {
 
     expect(screen.getByText("Share")).toHaveClass("inline");
   });
+
+  it("keeps an icon-only share action accessible without visible text", () => {
+    render(
+      <ShareMenu
+        title="James Local Fruits"
+        url="https://connect767.com/community#community-post-42"
+        iconOnly
+      />,
+    );
+
+    const shareButton = screen.getByRole("button", { name: "Share" });
+    expect(shareButton).toHaveAttribute("title", "Share");
+    expect(shareButton).not.toHaveTextContent("Share");
+  });
 });

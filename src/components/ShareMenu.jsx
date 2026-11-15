@@ -173,7 +173,8 @@ export default function ShareMenu({
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={iconOnly ? "Share listing" : undefined}
+        aria-label={iconOnly ? "Share" : undefined}
+        title={iconOnly ? "Share" : undefined}
         className={iconOnly
           ? `flex h-9 w-9 items-center justify-center rounded-full bg-background-50/95 text-foreground-700 shadow-sm backdrop-blur transition-colors hover:text-primary-700 cursor-pointer ${buttonClassName}`
           : `inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg border border-background-300 text-foreground-700 hover:bg-background-100 cursor-pointer whitespace-nowrap transition-colors ${buttonClassName}`}
