@@ -207,6 +207,14 @@ export async function captureCartPaypalOrder(orderId, accessToken) {
   return customClient.post("/checkout/paypal/capture", { orderId, accessToken });
 }
 
+export async function createCartLocalDominicaOrder(items, email, shipping) {
+  return customClient.post("/checkout/local-dominica", {
+    items: items.map((item) => ({ slug: item.slug, qty: item.qty, variationId: item.variationId })),
+    email,
+    shipping,
+  });
+}
+
 // ---------- Directory (WordPress `listing` CPT) ----------
 
 export async function getListings({ search = "" } = {}) {

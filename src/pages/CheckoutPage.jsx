@@ -10,10 +10,11 @@ import {
   checkout,
   createCartPaypalOrder,
   captureCartPaypalOrder,
+  createCartLocalDominicaOrder,
 } from "../data/repository";
 import { isLiveApi } from "../lib/config";
 import Button from "../components/ui/Button";
-import { FormField, Input } from "../components/ui/FormField";
+import { FormField, Input, Select } from "../components/ui/FormField";
 import { Spinner } from "../components/ui/States";
 import PaypalButton from "../components/PaypalButton";
 
@@ -48,6 +49,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [fallingBack, setFallingBack] = useState(false);
+  const [placingLocalOrder, setPlacingLocalOrder] = useState(false);
 
   const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
   const shippingComplete = Boolean(
@@ -56,8 +58,7 @@ export default function CheckoutPage() {
       shipping.lastName.trim() &&
       shipping.address1.trim() &&
       shipping.city.trim() &&
-      shipping.state.trim() &&
-      shipping.postcode.trim()
+      (shipping.country !== "US" || (shipping.state.trim() && shipping.postcode.trim()))
   );
 
   const updateShipping = (field) => (event) => {
@@ -101,6 +102,20 @@ export default function CheckoutPage() {
     } catch (err) {
       setError(err.message || "Couldn't start checkout. Please try again.");
       setFallingBack(false);
+    }
+  };
+
+  const placeLocalDominicaOrder = async () => {
+    if (!requireShipping() || shipping.country !== "DM") return;
+    setPlacingLocalOrder(true);
+    setError(null);
+    try {
+      const result = await createCartLocalDominicaOrder(items, email, shipping);
+      clearCart();
+      navigate(`/checkout/thank-you?order=${result.orderId}&payment=local-dominica`);
+    } catch (err) {
+      setError(err.message || "Couldn't reserve this order for local payment.");
+      setPlacingLocalOrder(false);
     }
   };
 
@@ -189,15 +204,23 @@ export default function CheckoutPage() {
                 <FormField label="City" htmlFor="shipping-city" required>
                   <Input id="shipping-city" autoComplete="address-level2" value={shipping.city} onChange={updateShipping("city")} />
                 </FormField>
-                <FormField label="State" htmlFor="shipping-state" hint="Two-letter code, e.g. TX" required>
-                  <Input id="shipping-state" autoComplete="address-level1" maxLength={2} value={shipping.state} onChange={updateShipping("state")} />
+                <FormField label={shipping.country === "US" ? "State" : "Region / parish"} htmlFor="shipping-state" hint={shipping.country === "US" ? "Two-letter code, e.g. TX" : "Optional"} required={shipping.country === "US"}>
+                  <Input id="shipping-state" autoComplete="address-level1" maxLength={shipping.country === "US" ? 2 : undefined} value={shipping.state} onChange={updateShipping("state")} />
                 </FormField>
-                <FormField label="ZIP code" htmlFor="shipping-postcode" required>
+                <FormField label={shipping.country === "US" ? "ZIP code" : "Postal code"} htmlFor="shipping-postcode" hint={shipping.country === "DM" ? "Optional" : undefined} required={shipping.country === "US"}>
                   <Input id="shipping-postcode" autoComplete="postal-code" value={shipping.postcode} onChange={updateShipping("postcode")} />
                 </FormField>
                 <FormField label="Phone" htmlFor="shipping-phone" hint="Optional">
                   <Input id="shipping-phone" type="tel" autoComplete="tel" value={shipping.phone} onChange={updateShipping("phone")} />
                 </FormField>
+                <div className="sm:col-span-2">
+                  <FormField label="Country" htmlFor="shipping-country" required>
+                    <Select id="shipping-country" autoComplete="country" value={shipping.country} onChange={updateShipping("country")}>
+                      <option value="US">United States</option>
+                      <option value="DM">Dominica</option>
+                    </Select>
+                  </FormField>
+                </div>
                 <div className="sm:col-span-2">
                   <FormField label="Email" htmlFor="checkout-email" required>
                     <Input
@@ -212,7 +235,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
               <p className="mt-4 text-xs text-foreground-500 font-label">
-                Shipping is currently available to U.S. addresses. Carrier labels are created from the completed order in WooCommerce.
+                Shipping is available to U.S. and Dominican addresses. Carrier labels are created from the completed order in WooCommerce.
               </p>
             </div>
 
@@ -250,6 +273,34 @@ export default function CheckoutPage() {
                 }}
                 onError={(message) => setError(message)}
               />
+            )}
+
+            {shipping.country === "DM" && (
+              <div className="mt-4">
+                <div className="relative mb-3 overflow-hidden rounded-xl border border-[#159447] bg-gradient-to-r from-[#effcf4] via-white to-[#f4fff7] p-4 shadow-[0_8px_22px_rgba(0,92,48,0.08)]">
+                  <span className="absolute inset-y-0 right-0 w-24 bg-[linear-gradient(135deg,transparent_18%,#0a6136_18%,#0a6136_40%,#f4cf18_40%,#f4cf18_50%,#111_50%,#111_60%,#fff_60%,#fff_70%,#0a6136_70%)] opacity-90" />
+                  <div className="relative flex items-center gap-3 pr-20">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#08743f] text-xl text-white shadow-sm">
+                      <i className="ri-shake-hands-line" />
+                    </span>
+                    <span>
+                      <span className="block text-base font-bold text-[#064b2b]">Pay Locally in Dominica</span>
+                      <span className="mt-0.5 block text-xs leading-relaxed text-foreground-600">Complete your order now and arrange payment in person on the island.</span>
+                    </span>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="lg"
+                  className="w-full border-primary-500 bg-primary-50 text-primary-800 hover:bg-primary-100"
+                  onClick={placeLocalDominicaOrder}
+                  disabled={!isLiveApi || placingLocalOrder || !shippingComplete}
+                >
+                  {placingLocalOrder ? "Reserving order…" : "Place order — pay locally in Dominica"}
+                </Button>
+                <p className="mt-2 text-center text-xs text-foreground-500 font-label">Payment instructions will be emailed after checkout. The order remains on hold until local payment is confirmed.</p>
+              </div>
             )}
 
             {!config?.stripeEnabled && !config?.paypalEnabled && (
