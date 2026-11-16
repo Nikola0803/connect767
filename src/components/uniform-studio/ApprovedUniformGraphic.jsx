@@ -119,6 +119,7 @@ export default function ApprovedUniformGraphic({
   collar = "Crew",
   sleeve: sleeveStyle = "Short",
   colors = {},
+  garmentPattern,
   highlightZone = null,
   zones,
   zoneStyles = {},
@@ -132,6 +133,8 @@ export default function ApprovedUniformGraphic({
   const maskId = `approved-kit-${uid}`;
   const jerseyMaskId = `approved-jersey-${uid}`;
   const jerseyClipId = `approved-jersey-clip-${uid}`;
+  const bodyClipId = `approved-body-clip-${uid}`;
+  const patternFadeId = `approved-pattern-fade-${uid}`;
   const shortsMaskId = `approved-shorts-${uid}`;
   const shortsClipId = `approved-shorts-clip-${uid}`;
   const socksMaskId = `approved-socks-${uid}`;
@@ -167,6 +170,11 @@ export default function ApprovedUniformGraphic({
     : Math.max(shortSleeveBottom + 90, region.bottomStart - 26);
   const baseSleeveBottom = nativeLongSleeve ? region.sleeveBottom : shortSleeveBottom;
   const editableZones = zones || (sport === "soccer" ? SOCCER_ZONE_MODEL[view] : []);
+  const patternApplies = Boolean(
+    garmentPattern?.enabled
+    && garmentPattern.key !== "none"
+    && (garmentPattern.view === "both" || !garmentPattern.view || garmentPattern.view === view),
+  );
 
   const longSleevePath = (side) => {
     const left = side === "left";
@@ -227,6 +235,11 @@ export default function ApprovedUniformGraphic({
         </mask>
         <clipPath id={jerseyClipId} clipPathUnits="userSpaceOnUse">
           <rect x="0" y="0" width={spriteWidth} height={region.bottomStart} />
+        </clipPath>
+        <clipPath id={bodyClipId} clipPathUnits="userSpaceOnUse">
+          {region.bodyPolygon
+            ? <path d={polygonPath(region.bodyPolygon)} />
+            : <rect x={offset + region.bodyLeft - 18} y={region.shirtTop} width={region.bodyRight - region.bodyLeft + 36} height={region.bottomStart - region.shirtTop} />}
         </clipPath>
         <mask
           id={jerseyMaskId}
@@ -318,6 +331,10 @@ export default function ApprovedUniformGraphic({
           <stop offset="0.5" stopColor={sleeve} />
           <stop offset="1" stopColor={sleeve} stopOpacity="0.72" />
         </linearGradient>
+        <linearGradient id={patternFadeId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={shirtEnd} stopOpacity="0.9" />
+          <stop offset="1" stopColor={shirtEnd} stopOpacity="0" />
+        </linearGradient>
         <filter id="zone-mesh" x="-5%" y="-5%" width="110%" height="110%">
           <feTurbulence type="fractalNoise" baseFrequency="0.45" numOctaves="2" seed="7" result="noise" />
           <feComposite in="noise" in2="SourceGraphic" operator="in" result="texture" />
@@ -343,6 +360,72 @@ export default function ApprovedUniformGraphic({
             ? <path d={polygonPath(region.bodyPolygon)} fill={fill} />
             : <rect x={offset} y={region.shirtTop} width={halfWidth} height={region.bottomStart - region.shirtTop} fill={fill} />}
         </TintLayer>
+
+        {patternApplies && (
+          <g
+            data-ai-garment-pattern={garmentPattern.key}
+            clipPath={`url(#${bodyClipId})`}
+            mask={`url(#${maskId})`}
+            opacity="0.86"
+          >
+            {garmentPattern.key === "bands-h" && (
+              <>
+                <rect x={offset} y={region.shirtTop + 150} width={halfWidth} height="42" fill={shirtEnd} />
+                <rect x={offset} y={region.shirtTop + 220} width={halfWidth} height="18" fill={shirtEnd} opacity="0.72" />
+              </>
+            )}
+            {garmentPattern.key === "bands-v" && (
+              <>
+                <rect x={collarCenterX - 52} y={region.shirtTop} width="54" height={region.bottomStart - region.shirtTop} fill={shirtEnd} />
+                <rect x={collarCenterX + 18} y={region.shirtTop} width="20" height={region.bottomStart - region.shirtTop} fill={shirtEnd} opacity="0.7" />
+              </>
+            )}
+            {(garmentPattern.key === "diagonal" || garmentPattern.key === "sash") && (
+              <path
+                d={`M${offset - 40},${region.shirtTop + 360} L${offset + halfWidth + 40},${region.shirtTop + 85} L${offset + halfWidth + 40},${region.shirtTop + 185} L${offset - 40},${region.shirtTop + 460} Z`}
+                fill={shirtEnd}
+              />
+            )}
+            {garmentPattern.key === "chevron" && (
+              <path d={`M${offset + 70},${region.shirtTop + 175} L${collarCenterX},${region.shirtTop + 310} L${offset + halfWidth - 70},${region.shirtTop + 175}`} fill="none" stroke={shirtEnd} strokeWidth="42" strokeLinejoin="round" />
+            )}
+            {garmentPattern.key === "halves" && (
+              <rect x={collarCenterX} y={region.shirtTop} width={halfWidth / 2} height={region.bottomStart - region.shirtTop} fill={shirtEnd} />
+            )}
+            {garmentPattern.key === "quarters" && (
+              <>
+                <rect x={collarCenterX} y={region.shirtTop} width={halfWidth / 2} height={(region.bottomStart - region.shirtTop) / 2} fill={shirtEnd} />
+                <rect x={offset} y={(region.shirtTop + region.bottomStart) / 2} width={halfWidth / 2} height={(region.bottomStart - region.shirtTop) / 2} fill={shirtEnd} />
+              </>
+            )}
+            {garmentPattern.key === "cross" && (
+              <>
+                <rect x={collarCenterX - 28} y={region.shirtTop} width="56" height={region.bottomStart - region.shirtTop} fill={shirtEnd} />
+                <rect x={offset} y={region.shirtTop + 205} width={halfWidth} height="56" fill={shirtEnd} />
+              </>
+            )}
+            {garmentPattern.key === "tricolour" && (
+              <>
+                <rect x={offset} y={region.shirtTop + 165} width={halfWidth} height="34" fill={shirtEnd} />
+                <rect x={offset} y={region.shirtTop + 199} width={halfWidth} height="34" fill="#FFFFFF" opacity="0.82" />
+                <rect x={offset} y={region.shirtTop + 233} width={halfWidth} height="34" fill={collarColor} />
+              </>
+            )}
+            {garmentPattern.key === "fade" && (
+              <rect x={offset} y={region.shirtTop} width={halfWidth} height={region.bottomStart - region.shirtTop} fill={`url(#${patternFadeId})`} />
+            )}
+            {(garmentPattern.key === "camo" || garmentPattern.key === "splash") && (
+              <>
+                <circle cx={collarCenterX - 85} cy={region.shirtTop + 160} r="74" fill={shirtEnd} />
+                <circle cx={collarCenterX + 78} cy={region.shirtTop + 270} r="96" fill={shirtEnd} opacity="0.72" />
+                <circle cx={collarCenterX - 55} cy={region.shirtTop + 390} r="58" fill={shirtEnd} opacity="0.58" />
+              </>
+            )}
+            {(garmentPattern.key === "shield" || garmentPattern.key === "star") && (
+              <path d={`M${collarCenterX},${region.shirtTop + 95} L${collarCenterX + 105},${region.shirtTop + 155} L${collarCenterX + 72},${region.shirtTop + 345} L${collarCenterX},${region.shirtTop + 410} L${collarCenterX - 72},${region.shirtTop + 345} L${collarCenterX - 105},${region.shirtTop + 155} Z`} fill={shirtEnd} />
+            )}
+          </g>
+        )}
 
         {!isSleeveless && (
           <TintLayer mask={maskId} fill={sleeve} opacity={opacityFor("sleeve")}>

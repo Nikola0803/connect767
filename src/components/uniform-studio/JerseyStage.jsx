@@ -26,6 +26,7 @@ const JerseyStage = forwardRef(function JerseyStage(
     collar,
     sleeve,
     colors,
+    garmentPattern,
     highlightZone,
     zoneModel,
     zoneStyles,
@@ -114,6 +115,7 @@ const JerseyStage = forwardRef(function JerseyStage(
                     collar={collar}
                     sleeve={sleeve}
                     colors={colors}
+                    garmentPattern={garmentPattern}
                     highlightZone={highlightZone}
                     zones={zoneModel?.[side]}
                     zoneStyles={zoneStyles?.[side]}
@@ -133,7 +135,7 @@ const JerseyStage = forwardRef(function JerseyStage(
                 <SafeAreaGuide dark={darkBackground} />
 
                 {layers
-                  .filter((layer) => layer.view === side)
+                  .filter((layer) => layer.view === side && layer.source !== "ai-uniform-pattern" && layer.source !== "ai-concept-preview")
                   .map((layer) => (
                     <DraggableLayer
                       key={layer.id}
