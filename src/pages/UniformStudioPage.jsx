@@ -315,6 +315,9 @@ export default function UniformStudioPage() {
   // 3D transform into the layer would invalidate the flat editor's geometry.
   const [placements3d, setPlacements3d] = useState({});
   const [aiUndoSnapshot, setAiUndoSnapshot] = useState(null);
+  const [aiUniformPlan, setAiUniformPlan] = useState(null);
+  const [aiDesignerMode, setAiDesignerMode] = useState("uniform");
+  const [aiCanvasMode, setAiCanvasMode] = useState("preview");
   // Shown when leaving the studio with unsaved work — see confirmExit below.
   const [exitPrompt, setExitPrompt] = useState(false);
   const placeLayer3d = (layerId, placement) =>
@@ -884,6 +887,39 @@ export default function UniformStudioPage() {
     [layers],
   );
 
+  const handleAIUniformPlanChange = (plan) => {
+    setAiUniformPlan(plan || null);
+    if (plan) {
+      setAiCanvasMode("preview");
+      setStageMode("edit");
+      setView("front");
+      setSelectedLayerId(null);
+    }
+  };
+
+  const showingAIUniformPreview = Boolean(
+    activeTool === "ai" && aiDesignerMode === "uniform" && aiUniformPlan && aiCanvasMode === "preview",
+  );
+  const aiPreviewColors = useMemo(
+    () => aiUniformPlan?.colors ? normalizeZoneColors(aiUniformPlan.colors) : colors,
+    [aiUniformPlan, colors],
+  );
+  const appliedAiPattern = useMemo(() => {
+    const patternLayers = layers.filter((layer) => layer.source === "ai-uniform-pattern");
+    if (!patternLayers.length) return { enabled: false, key: "none", view: "both" };
+    const patternViews = new Set(patternLayers.map((layer) => layer.view));
+    return {
+      enabled: true,
+      key: patternLayers[0].skinKey,
+      view: patternViews.has("front") && patternViews.has("back") ? "both" : patternLayers[0].view,
+    };
+  }, [layers]);
+  const stageColors = showingAIUniformPreview ? aiPreviewColors : colors;
+  const stageCollar = showingAIUniformPreview ? aiUniformPlan.collar : collar;
+  const stageSleeve = showingAIUniformPreview ? aiUniformPlan.sleeve : sleeve;
+  const stageLayers = layers;
+  const stageGarmentPattern = showingAIUniformPreview ? aiUniformPlan.pattern : appliedAiPattern;
+
   const applyAIUniformDesign = (plan) => {
     if (!plan?.colors) return;
     setAiUndoSnapshot({
@@ -934,6 +970,8 @@ export default function UniformStudioPage() {
     setSelectedLayerId(null);
     setPendingLayer(null);
     setView("front");
+    setAiUniformPlan(null);
+    setAiCanvasMode("preview");
   };
 
   const undoAIUniformDesign = () => {
@@ -947,6 +985,7 @@ export default function UniformStudioPage() {
     setView(aiUndoSnapshot.view);
     setSelectedLayerId(null);
     setAiUndoSnapshot(null);
+    setAiUniformPlan(null);
   };
 
   const updateLayer = (id, patch) =>
@@ -1722,6 +1761,55 @@ export default function UniformStudioPage() {
                       )}
                     </div>
 
+                    {activeTool === "ai" && aiDesignerMode === "uniform" && aiUniformPlan && (
+                      <div className="w-full max-w-[980px] flex-shrink-0 overflow-hidden rounded-2xl border border-primary-400/35 bg-[linear-gradient(105deg,rgba(0,116,73,.28),rgba(17,19,16,.92)_48%,rgba(239,84,53,.12))] shadow-[0_18px_50px_rgba(0,0,0,.25)]">
+                        <div className="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-500/20 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.14em] text-primary-200">
+                                <i className="ri-sparkling-2-fill" /> Full uniform design
+                              </span>
+                              <span className="text-[10px] text-background-50/40">Preview before applying</span>
+                            </div>
+                            <h3 className="mt-1.5 truncate font-heading text-lg font-semibold text-white">{aiUniformPlan.name}</h3>
+                            <p className="mt-0.5 line-clamp-1 text-[10px] text-background-50/55">{aiUniformPlan.summary}</p>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className="inline-flex rounded-lg border border-white/10 bg-black/20 p-1">
+                              <button
+                                type="button"
+                                onClick={() => setAiCanvasMode("current")}
+                                className={`cursor-pointer rounded-md px-3 py-1.5 text-[10px] font-bold transition ${aiCanvasMode === "current" ? "bg-white text-foreground-950" : "text-white/55 hover:text-white"}`}
+                              >
+                                Current
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setAiCanvasMode("preview")}
+                                className={`cursor-pointer rounded-md px-3 py-1.5 text-[10px] font-bold transition ${aiCanvasMode === "preview" ? "bg-primary-500 text-white" : "text-white/55 hover:text-white"}`}
+                              >
+                                AI design
+                              </button>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleAIUniformPlanChange(null)}
+                              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-[10px] font-bold text-white/65 transition hover:bg-white/10 hover:text-white"
+                            >
+                              <i className="ri-close-line" /> Discard
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => applyAIUniformDesign(aiUniformPlan)}
+                              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-primary-500 px-3.5 py-2 text-[10px] font-bold text-white shadow-[0_8px_18px_rgba(0,116,73,.28)] transition hover:bg-primary-400"
+                            >
+                              <i className="ri-check-double-line" /> Apply design
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Floating contextual toolbar */}
                     {stageMode === "edit" && selectedLayer && (
                       <div className="flex items-center flex-shrink-0">
@@ -1738,7 +1826,7 @@ export default function UniformStudioPage() {
                     {stageMode === "edit" ? (
                       <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center gap-2">
                         <div
-                          className="w-full max-w-[800px] transition-transform"
+                          className={`w-full transition-transform ${activeTool === "ai" ? "max-w-[980px]" : "max-w-[800px]"}`}
                           style={{ transform: `scale(${zoom})` }}
                         >
                           <JerseyStage
@@ -1746,9 +1834,10 @@ export default function UniformStudioPage() {
                             sport={activeSport}
                             view={view}
                             onViewChange={setView}
-                            collar={collar}
-                            sleeve={sleeve}
-                            colors={colors}
+                            collar={stageCollar}
+                            sleeve={stageSleeve}
+                            colors={stageColors}
+                            garmentPattern={stageGarmentPattern}
                             studioBackground={studioBackground}
                             highlightZone={hoverZone}
                             zoneModel={activeSport === "soccer" ? zoneModel : undefined}
@@ -1761,9 +1850,9 @@ export default function UniformStudioPage() {
                               setView(side);
                             }}
                             onMoveZonePoint={moveZonePoint}
-                            layers={layers}
-                            selectedId={selectedLayerId}
-                            onSelect={selectLayer}
+                            layers={stageLayers.filter((layer) => layer.source !== "ai-uniform-pattern")}
+                            selectedId={showingAIUniformPreview ? null : selectedLayerId}
+                            onSelect={showingAIUniformPreview ? () => {} : selectLayer}
                             onLayerChange={(id, patch) => updateLayer(id, patch)}
                             onBackgroundClick={() => setSelectedLayerId(null)}
                             pendingLayer={pendingLayer}
@@ -1788,15 +1877,15 @@ export default function UniformStudioPage() {
                         >
                           <Product3DStage
                             productType={studioProductType}
-                            color={colors.body}
-                            colorB={twoTone.enabled ? twoTone.colorB : undefined}
+                            color={stageColors.body}
+                            colorB={showingAIUniformPreview ? stageColors.shorts : (twoTone.enabled ? twoTone.colorB : undefined)}
                             splitAt={twoTone.splitAt}
                             softness={twoTone.softness}
-                            zoneColors={colors}
-                            collar={collar}
-                            sleeve={sleeve}
+                            zoneColors={stageColors}
+                            collar={stageCollar}
+                            sleeve={stageSleeve}
                             fullscreen
-                            layers={layers}
+                            layers={stageLayers.filter((layer) => layer.source !== "ai-uniform-pattern")}
                             selectedLayerId={selectedLayerId}
                             onSelectLayer={selectLayer}
                             onPlaceLayer={placeLayer3d}
@@ -1908,6 +1997,9 @@ export default function UniformStudioPage() {
                     collarOptions={sportConfig.collarOptions}
                     sleeveOptions={sportConfig.sleeveOptions}
                     currentPatternKey={currentAiPatternKey}
+                    uniformPlan={aiUniformPlan}
+                    onUniformPlanChange={handleAIUniformPlanChange}
+                    onModeChange={setAiDesignerMode}
                     onPlace={placeAIArtwork}
                     onApplyUniform={applyAIUniformDesign}
                     onUndoUniform={undoAIUniformDesign}
@@ -2052,6 +2144,9 @@ export default function UniformStudioPage() {
             collarOptions={sportConfig.collarOptions}
             sleeveOptions={sportConfig.sleeveOptions}
             currentPatternKey={currentAiPatternKey}
+            uniformPlan={aiUniformPlan}
+            onUniformPlanChange={handleAIUniformPlanChange}
+            onModeChange={setAiDesignerMode}
             onPlace={placeAIArtwork}
             onApplyUniform={applyAIUniformDesign}
             onUndoUniform={undoAIUniformDesign}

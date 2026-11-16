@@ -935,6 +935,9 @@ export function AIArtworkPanel({
   collarOptions = [],
   sleeveOptions = [],
   currentPatternKey = "none",
+  uniformPlan,
+  onUniformPlanChange,
+  onModeChange,
   onPlace,
   onApplyUniform,
   onUndoUniform,
@@ -947,11 +950,11 @@ export function AIArtworkPanel({
   const [connection, setConnection] = useState("checking");
   const [generating, setGenerating] = useState(false);
   const [preview, setPreview] = useState(null);
-  const [uniformPlan, setUniformPlan] = useState(null);
   const [reference, setReference] = useState(null);
   const [applied, setApplied] = useState(false);
   const [locks, setLocks] = useState({ collar: false, sleeve: false, colors: false, pattern: false, artwork: true });
   const [error, setError] = useState("");
+  const allDesignControlsLocked = locks.collar && locks.sleeve && locks.colors && locks.pattern;
 
   useEffect(() => {
     let active = true;
@@ -1001,7 +1004,7 @@ export function AIArtworkPanel({
     if (!brandName.trim() || !brief.trim()) return;
     setGenerating(true);
     setError("");
-    setUniformPlan(null);
+    onUniformPlanChange?.(null);
     setApplied(false);
     try {
       const response = await fetch("/api/generate-uniform-design", {
@@ -1021,7 +1024,7 @@ export function AIArtworkPanel({
       });
       const data = await response.json();
       if (!response.ok || !data.plan) throw new Error(data.error || "AI uniform design failed.");
-      setUniformPlan(data.plan);
+      onUniformPlanChange?.(data.plan);
     } catch (generationError) {
       setError(generationError.message || "AI uniform design failed.");
     } finally {
@@ -1045,7 +1048,7 @@ export function AIArtworkPanel({
     setError("");
     try {
       setReference(await prepareAIReferenceImage(file));
-      setUniformPlan(null);
+      onUniformPlanChange?.(null);
       setApplied(false);
     } catch (referenceError) {
       setError(referenceError.message || "The reference image could not be prepared.");
@@ -1078,14 +1081,14 @@ export function AIArtworkPanel({
         <div className="grid grid-cols-2 rounded-xl border border-background-300 bg-background-100 p-1">
           <button
             type="button"
-            onClick={() => { setMode("uniform"); setError(""); }}
+            onClick={() => { setMode("uniform"); onModeChange?.("uniform"); setError(""); }}
             className={`cursor-pointer rounded-lg px-3 py-2 text-[11px] font-bold transition ${mode === "uniform" ? "bg-primary-700 text-white shadow-sm" : "text-foreground-600 hover:bg-white"}`}
           >
             <i className="ri-shirt-line mr-1.5" /> Full uniform
           </button>
           <button
             type="button"
-            onClick={() => { setMode("artwork"); setError(""); }}
+            onClick={() => { setMode("artwork"); onModeChange?.("artwork"); setError(""); }}
             className={`cursor-pointer rounded-lg px-3 py-2 text-[11px] font-bold transition ${mode === "artwork" ? "bg-primary-700 text-white shadow-sm" : "text-foreground-600 hover:bg-white"}`}
           >
             <i className="ri-image-edit-line mr-1.5" /> Transparent artwork
@@ -1126,7 +1129,7 @@ export function AIArtworkPanel({
           <div>
             <div className="mb-1.5 flex items-center justify-between gap-2">
               <label className="block text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-500">Reference image <span className="font-medium normal-case tracking-normal text-foreground-400">(optional)</span></label>
-              {reference && <button type="button" onClick={() => { setReference(null); setUniformPlan(null); }} className="cursor-pointer text-[10px] font-bold text-foreground-500 hover:text-red-600">Remove</button>}
+              {reference && <button type="button" onClick={() => { setReference(null); onUniformPlanChange?.(null); }} className="cursor-pointer text-[10px] font-bold text-foreground-500 hover:text-red-600">Remove</button>}
             </div>
             {reference ? (
               <div className="relative overflow-hidden rounded-xl border border-primary-200 bg-background-100">
@@ -1152,8 +1155,21 @@ export function AIArtworkPanel({
           <div className="rounded-xl border border-background-200 bg-white p-3">
             <div className="mb-2 flex items-center justify-between gap-2">
               <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-foreground-500">Keep current settings</p>
-              <span className="text-[9px] text-foreground-400">Locked items will not change</span>
+              <button
+                type="button"
+                onClick={() => setLocks((current) => ({ ...current, collar: false, sleeve: false, colors: false, pattern: false }))}
+                className="cursor-pointer text-[9px] font-bold text-primary-700 hover:text-primary-900"
+              >
+                Unlock design
+              </button>
             </div>
+            <p className="mt-2 text-[9px] leading-relaxed text-foreground-400">Check only the settings AI must preserve. Unchecked settings become part of the new design.</p>
+            {allDesignControlsLocked && (
+              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] leading-relaxed text-amber-800">
+                <strong className="block">The complete design is locked.</strong>
+                Unlock at least one visual setting so AI can create a visibly different uniform.
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2">
               {[
                 ["collar", "Collar"],
@@ -1206,7 +1222,7 @@ export function AIArtworkPanel({
             {uniformPlan.crestSuggestion && (
               <button
                 type="button"
-                onClick={() => { setMode("artwork"); setBrief(uniformPlan.crestSuggestion); setPreview(null); }}
+                onClick={() => { setMode("artwork"); onModeChange?.("artwork"); setBrief(uniformPlan.crestSuggestion); setPreview(null); }}
                 className="w-full cursor-pointer rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-left text-[10px] text-primary-800 hover:bg-primary-100"
               >
                 <strong className="block">Optional matching crest</strong>
@@ -1241,7 +1257,7 @@ export function AIArtworkPanel({
         ) : !uniformPlan || mode === "artwork" ? (
           <button
             type="button"
-            disabled={generating || connection !== "connected" || !brandName.trim() || !brief.trim()}
+            disabled={generating || connection !== "connected" || !brandName.trim() || !brief.trim() || (mode === "uniform" && allDesignControlsLocked)}
             onClick={generate}
             className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 py-3.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,116,73,0.18)] transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-45"
           >
