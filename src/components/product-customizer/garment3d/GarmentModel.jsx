@@ -233,6 +233,7 @@ export default function GarmentModel({
   zoneColors,
   collar,
   sleeve,
+  garmentPattern,
 }) {
   const slug = productType?.slug;
   if (productType?.uniformKit) {
@@ -242,6 +243,7 @@ export default function GarmentModel({
         colors={zoneColors || { body: color, shorts: colorB || color }}
         collar={collar}
         sleeve={sleeve}
+        garmentPattern={garmentPattern}
       />
     );
   }

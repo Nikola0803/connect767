@@ -14,6 +14,7 @@ const DEFAULT_COLORS = {
 };
 
 let fabricNormalTexture;
+const garmentPatternTextures = new Map();
 
 function fabricNormal() {
   if (fabricNormalTexture) return fabricNormalTexture;
@@ -36,11 +37,101 @@ function fabricNormal() {
   return fabricNormalTexture;
 }
 
-function FabricMaterial({ color, textureScale = 1, roughness = 0.8 }) {
+function hexRgb(value, fallback = "#ffffff") {
+  const safe = /^#[0-9a-f]{6}$/i.test(value || "") ? value : fallback;
+  const numeric = Number.parseInt(safe.slice(1), 16);
+  return [(numeric >> 16) & 255, (numeric >> 8) & 255, numeric & 255];
+}
+
+function patternAmount(key, u, v) {
+  if (key === "bands-h") return Math.abs(v - 0.4) < 0.07 || Math.abs(v - 0.55) < 0.03 ? 1 : 0;
+  if (key === "bands-v") return Math.abs(u - 0.43) < 0.08 || Math.abs(u - 0.62) < 0.03 ? 1 : 0;
+  if (key === "diagonal") return Math.abs(v - (1 - u)) < 0.17 ? 1 : 0;
+  if (key === "sash") return Math.abs(v - (1 - u)) < 0.17 ? 1 : 0;
+  if (key === "chevron") return Math.abs(v - (0.22 + Math.abs(u - 0.5) * 0.82)) < 0.1 ? 1 : 0;
+  if (key === "halves") return u > 0.5 ? 1 : 0;
+  if (key === "quarters") return (u > 0.5) === (v > 0.5) ? 1 : 0;
+  if (key === "cross") return Math.abs(u - 0.5) < 0.1 || Math.abs(v - 0.46) < 0.1 ? 1 : 0;
+  if (key === "tricolour") return Math.floor(u * 3) === 1 ? 1 : 0;
+  if (key === "fade") return Math.max(0, Math.min(1, v));
+  if (key === "shield") {
+    const dx = (u - 0.5) / 0.3;
+    const dy = (v - 0.46) / 0.42;
+    return dx * dx + dy * dy < 1 && v < 0.82 ? 1 : 0;
+  }
+  if (key === "star") {
+    const angle = Math.atan2(v - 0.5, u - 0.5);
+    const radius = Math.hypot(u - 0.5, v - 0.5);
+    const edge = 0.23 + 0.1 * Math.cos(angle * 5);
+    return radius < edge ? 1 : 0;
+  }
+  if (key === "camo" || key === "splash") {
+    const noise = Math.sin(u * 31 + Math.sin(v * 17) * 4) * Math.cos(v * 29 - u * 9);
+    return noise > (key === "splash" ? 0.42 : 0.05) ? 1 : 0;
+  }
+  return 0;
+}
+
+function garmentPatternTexture(patternKey, bodyColor, accentColor) {
+  if (!patternKey || patternKey === "none") return null;
+  const cacheKey = `${patternKey}:${bodyColor}:${accentColor}`;
+  if (garmentPatternTextures.has(cacheKey)) return garmentPatternTextures.get(cacheKey);
+
+  const size = 256;
+  const data = new Uint8Array(size * size * 4);
+  const base = hexRgb(bodyColor);
+  const accent = hexRgb(accentColor, bodyColor);
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const amount = patternAmount(patternKey, x / (size - 1), y / (size - 1));
+      const offset = (y * size + x) * 4;
+      data[offset] = Math.round(base[0] + (accent[0] - base[0]) * amount);
+      data[offset + 1] = Math.round(base[1] + (accent[1] - base[1]) * amount);
+      data[offset + 2] = Math.round(base[2] + (accent[2] - base[2]) * amount);
+      data[offset + 3] = 255;
+    }
+  }
+  const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.needsUpdate = true;
+  garmentPatternTextures.set(cacheKey, texture);
+  return texture;
+}
+
+function FabricMaterial({ color, textureScale = 1, roughness = 0.8, pattern = null }) {
   const normal = useMemo(() => fabricNormal(), []);
+  const patternKey = pattern?.enabled ? pattern.key : "none";
+  const patternAccent = pattern?.accentColor || color;
+  const patternMap = useMemo(
+    () => garmentPatternTexture(patternKey, color, patternAccent),
+    [patternKey, color, patternAccent],
+  );
+  const patternView = pattern?.view || "both";
+  const filterPatternFace = useMemo(() => {
+    if (!patternMap || patternView === "both") return undefined;
+    return (shader) => {
+      shader.uniforms.c767PatternBase = { value: new THREE.Color(color) };
+      shader.uniforms.c767PatternFace = { value: patternView === "back" ? -1 : 1 };
+      shader.vertexShader = shader.vertexShader
+        .replace("#include <common>", "#include <common>\nvarying float vC767LocalFace;")
+        .replace("#include <beginnormal_vertex>", "#include <beginnormal_vertex>\nvC767LocalFace = objectNormal.z;");
+      shader.fragmentShader = shader.fragmentShader
+        .replace(
+          "#include <common>",
+          "#include <common>\nvarying float vC767LocalFace;\nuniform vec3 c767PatternBase;\nuniform float c767PatternFace;",
+        )
+        .replace(
+          "#include <map_fragment>",
+          "#include <map_fragment>\nfloat c767PatternAllowed = step(0.2, vC767LocalFace * c767PatternFace);\ndiffuseColor.rgb = mix(c767PatternBase, diffuseColor.rgb, c767PatternAllowed);",
+        );
+    };
+  }, [patternMap, patternView, color]);
   return (
     <meshPhysicalMaterial
-      color={color}
+      color={patternMap ? "#ffffff" : color}
+      map={patternMap}
       roughness={roughness}
       metalness={0}
       sheen={0.36}
@@ -50,11 +141,13 @@ function FabricMaterial({ color, textureScale = 1, roughness = 0.8 }) {
       normalScale={new THREE.Vector2(0.13 * textureScale, 0.13 * textureScale)}
       envMapIntensity={0.72}
       side={THREE.DoubleSide}
+      onBeforeCompile={filterPatternFace}
+      customProgramCacheKey={() => patternMap ? `c767-pattern-${patternKey}-${patternView}-${color}-${patternAccent}` : "c767-solid"}
     />
   );
 }
 
-function ExtrudedPiece({ name, zone, points, color, depth = 0.48, bevel = 0.055, position = [0, 0, 0], rotation = [0, 0, 0], scale = [1, 1, 1], roughness }) {
+function ExtrudedPiece({ name, zone, points, color, depth = 0.48, bevel = 0.055, position = [0, 0, 0], rotation = [0, 0, 0], scale = [1, 1, 1], roughness, pattern }) {
   const signature = points.flat().join("|");
   const geometry = useMemo(() => {
     const shape = new THREE.Shape();
@@ -78,7 +171,7 @@ function ExtrudedPiece({ name, zone, points, color, depth = 0.48, bevel = 0.055,
 
   return (
     <mesh name={name} geometry={geometry} position={position} rotation={rotation} scale={scale} userData={{ garmentZone: zone }} castShadow receiveShadow>
-      <FabricMaterial color={color} roughness={roughness} />
+      <FabricMaterial color={color} roughness={roughness} pattern={pattern} />
     </mesh>
   );
 }
@@ -101,7 +194,7 @@ const NETBALL_DRESS_POINTS = [
   [0.22, 1.5], [0, 1.39], [-0.22, 1.5],
 ];
 
-function Torso({ colors, sport }) {
+function Torso({ colors, sport, garmentPattern }) {
   const isNetball = sport === "netball";
   const isBasketball = sport === "basketball";
   const points = isNetball ? NETBALL_DRESS_POINTS : isBasketball ? BASKETBALL_POINTS : JERSEY_POINTS;
@@ -109,7 +202,15 @@ function Torso({ colors, sport }) {
   const hemWidth = isNetball ? 1.96 : isBasketball ? 1.1 : 1.23;
   return (
     <group>
-      <ExtrudedPiece name="jersey_body" zone="body" points={points} color={colors.body} depth={isNetball ? 0.42 : 0.52} bevel={0.065} />
+      <ExtrudedPiece
+        name="jersey_body"
+        zone="body"
+        points={points}
+        color={colors.body}
+        depth={isNetball ? 0.42 : 0.52}
+        bevel={0.065}
+        pattern={garmentPattern?.enabled ? { ...garmentPattern, accentColor: colors.shirtStrip } : null}
+      />
       <RoundedBox name="shirt_hem" args={[hemWidth, 0.075, isNetball ? 0.43 : 0.54]} radius={0.035} smoothness={4} position={[0, hemY, 0]} userData={{ garmentZone: "shirtStrip" }} castShadow>
         <FabricMaterial color={colors.shirtStrip} roughness={0.72} />
       </RoundedBox>
@@ -222,7 +323,7 @@ function Socks({ colors }) {
 export const UNIFORM_KIT_PARTS = ["jersey_body", "sleeve_left", "sleeve_right", "collar_crew", "collar_vneck", "collar_polo", "shirt_hem", "shorts", "shorts_waistband", "shorts_hem_left", "shorts_hem_right", "sock_left", "sock_right"];
 
 /** Connected, sport-specific ghost-garment geometry for the live configurator. */
-export default function UniformKitModel({ sport = "soccer", colors = {}, collar = "Crew", sleeve = "Short" }) {
+export default function UniformKitModel({ sport = "soccer", colors = {}, collar = "Crew", sleeve = "Short", garmentPattern = null }) {
   const c = { ...DEFAULT_COLORS, ...colors };
   const isNetball = sport === "netball";
   const isBasketball = sport === "basketball";
@@ -231,7 +332,7 @@ export default function UniformKitModel({ sport = "soccer", colors = {}, collar 
   const showSocks = sport === "soccer" || isGoalkeeper;
   return (
     <group name={`connect767_${sport}_kit`} rotation={[0, -0.12, 0]}>
-      <Torso colors={c} sport={sport} />
+      <Torso colors={c} sport={sport} garmentPattern={garmentPattern} />
       {!isNetball && !isBasketball && (
         <>
           <Sleeve side="left" length={effectiveSleeve} colors={c} padded={isGoalkeeper} />

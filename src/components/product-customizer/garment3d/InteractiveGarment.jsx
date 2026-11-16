@@ -51,6 +51,7 @@ export default function InteractiveGarment({
   zoneColors,
   collar,
   sleeve,
+  garmentPattern,
   offsetY = 0,
   layers,
   selectedLayerId,
@@ -130,80 +131,71 @@ export default function InteractiveGarment({
   const defaultSizeFor = useCallback(
     (layerId) => {
       const layer = layers.find((l) => l.id === layerId);
-      return DEFAULT_SIZE[layer?.type] ?? 0.18;
+      const base = DEFAULT_SIZE[layer?.type] ?? 0.18;
+      const flatScale = THREE.MathUtils.clamp((layer?.size || 26) / 26, 0.55, 2.2);
+      return THREE.MathUtils.clamp(base * flatScale, MIN_DECAL_SIZE, MAX_DECAL_SIZE);
     },
     [layers],
   );
 
-  const writePlacement = useCallback(
-    (layerId, point, faceNormal, matrixWorld) => {
-      const existing = placements3d?.[layerId];
-      onPlaceLayer?.(layerId, {
-        position: point.toArray(),
-        orientation: orientationFromHit(point, faceNormal, matrixWorld, existing?.roll ?? 0),
-        scale: existing?.scale ?? defaultSizeFor(layerId),
-        roll: existing?.roll ?? 0,
-      });
-    },
-    [placements3d, onPlaceLayer, defaultSizeFor],
-  );
-
   /**
-   * Drop a newly-added layer straight onto the chest.
+   * Project every flat-editor layer onto the matching side of the 3D jersey.
    *
-   * Adding text used to create a layer that existed only in the flat editor,
-   * so in 3D nothing happened until you found the Edit toggle — the item
-   * appeared to vanish. Auto-placing means "Add text" immediately puts
-   * something visible and grabbable on the garment.
+   * 2D x/y coordinates describe the whole kit card, while decals need a
+   * world-space point and surface orientation. The jersey occupies the upper
+   * central portion of that card, so the percentages are normalized into the
+   * torso bounds and raycast from the front or back. Once projected, the
+   * placement remains independently draggable in 3D.
    */
-  // Layers that have already been auto-dropped once. Without this, removing a
-  // decal re-created it instantly: the trash button cleared the placement, the
-  // layer stayed selected, and this effect saw "selected layer with no
-  // placement" and put it straight back — so the button looked dead.
+  // Layers that have already been auto-projected once. Removing a decal in 3D
+  // must not immediately recreate it while the source layer still exists.
   const autoPlaced = useRef(new Set());
 
   useEffect(() => {
-    if (!enabled || !targetMesh || !selectedLayerId) return;
-    if (placements3d?.[selectedLayerId]) return;
-    if (autoPlaced.current.has(selectedLayerId)) return;
-    autoPlaced.current.add(selectedLayerId);
-    // Reached only by layers added from the flat editor — anything created in
-    // the 3D view already has a placement from the click that made it.
-
+    if (!enabled || !targetMesh) return;
+    const missing = layers.filter((layer) => (
+      !placements3d?.[layer.id]
+      && !autoPlaced.current.has(layer.id)
+      && layer.source !== "ai-uniform-pattern"
+    ));
+    if (!missing.length) return;
     const box = new THREE.Box3().setFromObject(targetMesh);
     const width = box.max.x - box.min.x;
-    const centreX = (box.min.x + box.max.x) / 2;
-    const originZ = box.max.z + 1;
-    const forward = new THREE.Vector3(0, 0, -1);
+    const height = box.max.y - box.min.y;
+    const depthMargin = Math.max(1, box.max.z - box.min.z);
+    const offsets = [0, 0.035, -0.035, 0.08, -0.08, 0.14, -0.14, 0.22, -0.22];
 
-    // Fan out across the chest instead of firing one ray down the centre
-    // line. A single centre ray misses entirely on any model that isn't solid
-    // at x=0 — the soccer export is two separate halves with a gap through
-    // the middle, so nothing was ever placed and no text field appeared.
-    // Widening rings out from centre also means the first hit is the most
-    // central piece of fabric that actually exists.
-    const offsets = [0, 0.06, -0.06, 0.12, -0.12, 0.2, -0.2, 0.3, -0.3];
-    const heights = [0.72, 0.66, 0.6, 0.78];
-
-    let hit = null;
-    outer: for (const hFrac of heights) {
-      const y = box.min.y + (box.max.y - box.min.y) * hFrac;
+    for (const layer of missing) {
+      const back = layer.view === "back";
+      const flatX = THREE.MathUtils.clamp(((layer.x ?? 50) - 25) / 50, 0.08, 0.92);
+      const flatY = THREE.MathUtils.clamp(((layer.y ?? 38) - 10) / 50, 0.1, 0.9);
+      const desiredX = box.min.x + width * flatX;
+      const desiredY = box.max.y - height * flatY;
+      const originZ = back ? box.min.z - depthMargin : box.max.z + depthMargin;
+      const direction = new THREE.Vector3(0, 0, back ? 1 : -1);
+      let hit = null;
       for (const off of offsets) {
         const ray = new THREE.Raycaster(
-          new THREE.Vector3(centreX + off * width, y, originZ),
-          forward,
+          new THREE.Vector3(desiredX + off * width, desiredY, originZ),
+          direction,
         );
         const found = ray.intersectObject(targetMesh, true)[0];
         if (found?.face) {
           hit = found;
-          break outer;
+          break;
         }
       }
+      if (!hit) continue;
+      const roll = THREE.MathUtils.degToRad(layer.rotation || 0);
+      onPlaceLayer?.(layer.id, {
+        position: hit.point.toArray(),
+        orientation: orientationFromHit(hit.point, hit.face.normal, hit.object.matrixWorld, roll),
+        scale: defaultSizeFor(layer.id),
+        roll,
+      });
+      autoPlaced.current.add(layer.id);
     }
-
-    if (!hit) return;
-    writePlacement(selectedLayerId, hit.point, hit.face.normal, hit.object.matrixWorld);
-  }, [enabled, targetMesh, selectedLayerId, placements3d, writePlacement]);
+  }, [enabled, targetMesh, layers, placements3d, onPlaceLayer, defaultSizeFor]);
 
   const beginDrag = useCallback(() => {
     // Ref first: the window-level pointerup listener checks this
@@ -466,6 +458,7 @@ export default function InteractiveGarment({
           zoneColors={zoneColors}
           collar={collar}
           sleeve={sleeve}
+          garmentPattern={garmentPattern}
         />
       </group>
 
