@@ -48,6 +48,23 @@ function pageMeta(pathname) {
   return null;
 }
 
+function generatedRouteMeta(canonical) {
+  const script = document.head.querySelector("#connect767-route-schema");
+  if (!script?.textContent) return null;
+
+  try {
+    const data = JSON.parse(script.textContent);
+    const graph = Array.isArray(data?.["@graph"]) ? data["@graph"] : [];
+    const page = graph.find((entry) => entry?.url === canonical && entry?.name && entry?.description);
+    if (!page) return null;
+    const breadcrumb = graph.find((entry) => entry?.["@type"] === "BreadcrumbList");
+    const label = breadcrumb?.itemListElement?.at(-1)?.name || page.name;
+    return { title: page.name, description: page.description, label };
+  } catch {
+    return null;
+  }
+}
+
 function setMeta(selector, attributes) {
   let element = document.head.querySelector(selector);
   if (!element) {
@@ -123,8 +140,11 @@ export default function RouteSeo() {
 
   useEffect(() => {
     const normalizedPath = pathname !== "/" ? pathname.replace(/\/$/, "") : "/";
-    const meta = pageMeta(normalizedPath);
     const canonical = `${SITE_URL}${normalizedPath === "/" ? "/" : normalizedPath}`;
+    // A direct request to a generated dynamic route already contains its
+    // CMS-specific title and description. Keep those values during hydration
+    // instead of replacing them with generic client-side placeholders.
+    const meta = generatedRouteMeta(canonical) || pageMeta(normalizedPath);
     const privateOrMissing = !meta || NOINDEX_PREFIXES.some(
       (prefix) => normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`),
     ) || /^\/listings\/[^/]+\/edit$/.test(normalizedPath);

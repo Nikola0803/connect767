@@ -31,6 +31,12 @@ function description(value, fallback) {
   return text.length > 160 ? `${text.slice(0, 157).trimEnd()}…` : text;
 }
 
+function bodyText(value, fallback) {
+  const text = plainText(value);
+  if (!text) return fallback;
+  return text.length > 700 ? `${text.slice(0, 697).trimEnd()}…` : text;
+}
+
 function validSlug(value) {
   return typeof value === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
 }
@@ -46,11 +52,30 @@ async function fetchJson(url) {
 
 async function loadPublicContent() {
   const [listings, posts, products] = await Promise.all([
-    fetchJson(`${cmsUrl}/wp-json/wp/v2/listing?per_page=100&_fields=slug,modified,title,excerpt,acf`),
-    fetchJson(`${cmsUrl}/wp-json/wp/v2/posts?per_page=100&_fields=slug,modified,title,excerpt`),
+    fetchJson(`${cmsUrl}/wp-json/wp/v2/listing?per_page=100&_fields=slug,modified,title,excerpt,content,acf`),
+    fetchJson(`${cmsUrl}/wp-json/wp/v2/posts?per_page=100&_fields=slug,modified,title,excerpt,content`),
     fetchJson(`${cmsUrl}/wp-json/connect767/v1/shop/products?per_page=100`),
   ]);
   return { listings, posts, products };
+}
+
+function fallbackLink(route) {
+  if (route.startsWith("/listings/")) return { href: "/listings", label: "Browse the directory" };
+  if (route.startsWith("/shop/")) return { href: "/shop", label: "Browse the shop" };
+  if (route.startsWith("/blog/")) return { href: "/blog", label: "Read more stories" };
+  return { href: "/", label: "Visit Connect767" };
+}
+
+function crawlableFallback(route, meta) {
+  const link = fallbackLink(route);
+  const heading = escapeHtml(meta.heading || meta.label || meta.title);
+  const text = escapeHtml(meta.bodyText || meta.description);
+  return (
+    `<main data-seo-fallback="true" style="max-width:72rem;margin:0 auto;padding:3rem 1.25rem;font-family:system-ui,sans-serif">` +
+      `<article><p>Connect767</p><h1>${heading}</h1><p>${text}</p>` +
+      `<p><a href="${link.href}">${link.label}</a></p></article>` +
+    `</main>`
+  );
 }
 
 function structuredData(route, meta, canonical) {
@@ -85,7 +110,7 @@ function render(html, route, meta, { index = true } = {}) {
   const title = escapeHtml(meta.title);
   const metaDescription = escapeHtml(meta.description);
   const robots = index ? "index, follow, max-image-preview:large" : "noindex, nofollow";
-  return html
+  const rendered = html
     .replace(/<title>.*?<\/title>/, `<title>${title}</title>`)
     .replace(/<meta name="description" content="[^"]*"\s*\/>/, `<meta name="description" content="${metaDescription}" />`)
     .replace("</head>",
@@ -105,6 +130,15 @@ function render(html, route, meta, { index = true } = {}) {
       `    <meta name="twitter:description" content="${metaDescription}" />\n` +
       `    <script id="connect767-route-schema" type="application/ld+json">${structuredData(route, meta, canonical)}</script>\n` +
       "  </head>");
+
+  // Vite's application shell has an empty root element. Giving every generated
+  // route a small, visible, route-specific fallback lets crawlers understand
+  // the page before React and the CMS request finish. React replaces this
+  // fallback with the full interactive page as soon as the app starts.
+  return rendered.replace(
+    /<div id="root"><\/div>/,
+    `<div id="root">${crawlableFallback(route, meta)}</div>`,
+  );
 }
 
 async function writeRoute(route, meta, options) {
@@ -133,10 +167,22 @@ const publicEntries = Object.entries(pages).map(([route, meta]) => ({ route, met
 for (const listing of listings) {
   if (!validSlug(listing.slug)) continue;
   const name = plainText(listing.title?.rendered) || "Directory Profile";
-  const excerpt = description(listing.excerpt?.rendered, `View ${name} in Connect767’s Dominican online directory.`);
+  const listingCopy = listing.acf?.description || listing.content?.rendered || listing.excerpt?.rendered;
+  const fallbackDescription = `View ${name} in Connect767’s Dominican online directory.`;
+  const excerpt = description(listingCopy, fallbackDescription);
+  const listingDetails = [
+    listingCopy,
+    listing.acf?.location_display || listing.acf?.location,
+    listing.acf?.category_slug ? `Industry: ${listing.acf.category_slug.replaceAll("-", " ")}.` : "",
+    listing.acf?.years_experience ? `${listing.acf.years_experience} years of experience.` : "",
+    Array.isArray(listing.acf?.tags) ? listing.acf.tags.join(", ") : "",
+  ].filter(Boolean).join(" ");
   publicEntries.push({
     route: `/listings/${listing.slug}`, modified: listing.modified,
-    meta: { title: `${name} | Connect767 Directory`, description: excerpt, label: name },
+    meta: {
+      title: `${name} | Connect767 Directory`, description: excerpt, label: name, heading: name,
+      bodyText: bodyText(listingDetails, fallbackDescription),
+    },
   });
   if (listing.acf?.sell_products === true || listing.acf?.sell_products === "1") {
     publicEntries.push({
@@ -144,7 +190,8 @@ for (const listing of listings) {
       meta: {
         title: `${name} Storefront | Connect767`,
         description: `Shop products available from ${name} through the Connect767 marketplace.`,
-        label: `${name} Storefront`,
+        label: `${name} Storefront`, heading: `${name} Storefront`,
+        bodyText: `Browse products offered by ${name} through the Connect767 marketplace.`,
       },
     });
   }
@@ -158,7 +205,8 @@ for (const post of posts) {
     meta: {
       title: `${name} | Connect767`,
       description: description(post.excerpt?.rendered, "Read stories and practical guidance from the Connect767 community."),
-      label: name, schemaType: "Article",
+      label: name, heading: name, schemaType: "Article",
+      bodyText: bodyText(post.content?.rendered || post.excerpt?.rendered, "Read this Connect767 story."),
     },
   });
 }
@@ -166,12 +214,21 @@ for (const post of posts) {
 for (const product of products) {
   if (!validSlug(product.slug)) continue;
   const name = plainText(product.name) || "Shop Product";
+  const productDescription = product.short_description || product.description;
+  const productDetails = [
+    productDescription,
+    Array.isArray(product.categories) && product.categories.length
+      ? `Category: ${product.categories.map((category) => category.name).filter(Boolean).join(", ")}.`
+      : "",
+    product.price ? `Price: $${product.price}.` : "",
+  ].filter(Boolean).join(" ");
   publicEntries.push({
     route: `/shop/${product.slug}`, modified: product.date_modified || product.date_created,
     meta: {
       title: `${name} | Connect767 Shop`,
-      description: description(product.short_description || product.description, `Shop ${name} and view available options through the Connect767 Shop.`),
-      label: name, schemaType: "Product",
+      description: description(productDescription, `Shop ${name} and view available options through the Connect767 Shop.`),
+      label: name, heading: name, schemaType: "Product",
+      bodyText: bodyText(productDetails, `Shop ${name} and view available options through the Connect767 Shop.`),
     },
   });
 }
