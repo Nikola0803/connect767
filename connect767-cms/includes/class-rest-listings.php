@@ -611,6 +611,8 @@ class C767_REST_Listings
                 'slug' => $post->post_name,
                 'title' => $post->post_title,
                 'status' => $post->post_status,
+                'logo' => esc_url_raw((string) get_post_meta($post->ID, 'logo', true)),
+                'coverPhoto' => esc_url_raw((string) get_the_post_thumbnail_url($post->ID, 'large')),
                 'category' => $category_names,
                 'tier' => $legacy_featured_tier ? 'Free' : (get_post_meta($post->ID, 'tier', true) ?: 'Free'),
                 'featured' => $featured_active,
