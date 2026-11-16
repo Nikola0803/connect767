@@ -9,7 +9,7 @@ vi.mock("../hooks/useAuth", () => ({
 }));
 
 vi.mock("../hooks/useAsync", () => {
-  const state = { data: { posts: [{ id: 7, listingId: 42, listingSlug: "james-local-fruits", listingTitle: "James Local Fruits", text: "Fresh fruit today", type: "status", createdAt: new Date().toISOString(), comments: [{ id: 11, parentId: 0, name: "Alex", text: "Is delivery available?", reactions: {} }] }] }, loading: false, error: null, reload: vi.fn() };
+  const state = { data: { posts: [{ id: 7, listingId: 42, listingSlug: "james-local-fruits", listingTitle: "James Local Fruits", text: "Fresh fruit today", type: "status", mediaUrl: "https://connect767.com/full-feed-image.jpg", createdAt: new Date().toISOString(), comments: [{ id: 11, parentId: 0, name: "Alex", text: "Is delivery available?", reactions: {} }] }] }, loading: false, error: null, reload: vi.fn() };
   return { useAsync: () => state };
 });
 
@@ -124,6 +124,13 @@ describe("CommunityPage composer menus", () => {
     expect(screen.getByRole("button", { name: "Post type: All Posts" })).toBeInTheDocument();
   });
 
+  it("shows feed images in their entirety instead of cropping them", async () => {
+    render(<MemoryRouter><CommunityPage /></MemoryRouter>);
+    const image = await screen.findByAltText("Update from James Local Fruits");
+    expect(image).toHaveClass("h-auto", "w-full", "object-contain");
+    expect(image).not.toHaveClass("object-cover");
+  });
+
   it("adds emojis and attachments when replying to a comment", async () => {
     Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:comment-photo") });
     Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
@@ -151,6 +158,7 @@ describe("CommunityPage composer menus", () => {
       attachmentType: "image",
     }));
     expect(await screen.findByAltText("Comment attachment")).toHaveAttribute("src", "blob:comment-photo");
+    expect(screen.getByAltText("Comment attachment")).toHaveClass("h-auto", "object-contain");
   });
 
   it("provides owner post options and deletes only after confirmation", async () => {
