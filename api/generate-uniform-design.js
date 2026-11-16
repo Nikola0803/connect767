@@ -1,0 +1,295 @@
+import { createHash, randomUUID } from "node:crypto";
+
+export const config = { maxDuration: 60 };
+
+const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
+const DEFAULT_MODEL = "gpt-6-luna";
+const WINDOW_MS = 10 * 60 * 1000;
+const MAX_REQUESTS_PER_WINDOW = 12;
+const requestWindows = new Map();
+
+const SPORTS = new Set(["Soccer", "Basketball", "Netball", "Cricket", "Goal Keeper", "Other"]);
+const STYLES = new Set(["Modern & Bold", "Classic & Clean", "Minimal & Elegant", "Retro & Vintage", "Street & Edgy"]);
+const COLOR_KEYS = ["body", "sleeve", "collar", "shorts", "socks", "shirtStrip", "sleeveStrip", "shortsStrip"];
+const PATTERN_KEYS = ["none", "bands-h", "bands-v", "diagonal", "chevron", "sash", "halves", "shield", "star", "tricolour", "cross", "quarters", "camo", "splash", "fade"];
+const PATTERN_VIEWS = ["front", "back", "both"];
+const REFERENCE_IMAGE_PATTERN = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/;
+const MAX_REFERENCE_IMAGE_BYTES = 3 * 1024 * 1024;
+
+const text = (value, maxLength) => typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+const isHex = (value) => /^#[0-9a-f]{6}$/i.test(value);
+const hex = (value, fallback = "#FFFFFF") => isHex(value) ? value.toUpperCase() : fallback;
+
+function requestIp(req) {
+  const forwarded = req.headers?.["x-forwarded-for"];
+  return text(Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(",")[0], 128)
+    || text(req.socket?.remoteAddress, 128)
+    || "anonymous";
+}
+
+function safetyIdentifier(req) {
+  return createHash("sha256").update(requestIp(req)).digest("hex").slice(0, 64);
+}
+
+function rateLimit(req) {
+  const key = requestIp(req);
+  const now = Date.now();
+  const current = requestWindows.get(key);
+  if (!current || now - current.startedAt >= WINDOW_MS) {
+    requestWindows.set(key, { count: 1, startedAt: now });
+    return { allowed: true, retryAfter: 0 };
+  }
+  current.count += 1;
+  return {
+    allowed: current.count <= MAX_REQUESTS_PER_WINDOW,
+    retryAfter: Math.max(1, Math.ceil((WINDOW_MS - (now - current.startedAt)) / 1000)),
+  };
+}
+
+function stringList(value, fallback) {
+  const next = Array.isArray(value) ? value.map((item) => text(item, 30)).filter(Boolean) : [];
+  return next.length ? [...new Set(next)].slice(0, 8) : fallback;
+}
+
+function referenceImage(value) {
+  if (!value) return "";
+  if (typeof value !== "string") throw new Error("The reference image is invalid.");
+  const match = value.match(REFERENCE_IMAGE_PATTERN);
+  if (!match) throw new Error("Use a PNG, JPEG or WebP reference image.");
+  const estimatedBytes = Math.floor((match[2].length * 3) / 4);
+  if (estimatedBytes > MAX_REFERENCE_IMAGE_BYTES) {
+    throw new Error("The reference image is too large. Use an image under 3 MB.");
+  }
+  return value;
+}
+
+export function normalizeUniformRequest(body = {}) {
+  const sport = SPORTS.has(body.sport) ? body.sport : "Other";
+  const style = STYLES.has(body.style) ? body.style : "Modern & Bold";
+  const brandName = text(body.brandName, 80);
+  const brief = text(body.brief, 900);
+  if (!brandName) throw new Error("Team or brand name is required.");
+  if (!brief) throw new Error("Describe the uniform you want.");
+
+  const collarOptions = stringList(body.collarOptions, ["Crew", "V-Neck", "Polo"]);
+  const sleeveOptions = stringList(body.sleeveOptions, ["Short", "Long", "Sleeveless", "Mixed"]);
+  const current = {
+    collar: collarOptions.includes(body.current?.collar) ? body.current.collar : collarOptions[0],
+    sleeve: sleeveOptions.includes(body.current?.sleeve) ? body.current.sleeve : sleeveOptions[0],
+    colors: Object.fromEntries(COLOR_KEYS.map((key) => [key, hex(body.current?.colors?.[key])])),
+    patternKey: PATTERN_KEYS.includes(body.current?.patternKey) ? body.current.patternKey : "none",
+  };
+  const locks = {
+    collar: Boolean(body.locks?.collar),
+    sleeve: Boolean(body.locks?.sleeve),
+    colors: Boolean(body.locks?.colors),
+    pattern: Boolean(body.locks?.pattern),
+    artwork: body.locks?.artwork !== false,
+  };
+
+  return {
+    sport,
+    style,
+    brandName,
+    brief,
+    collarOptions,
+    sleeveOptions,
+    current,
+    locks,
+    referenceImage: referenceImage(body.referenceImage),
+  };
+}
+
+export const uniformDesignSchema = {
+  type: "object",
+  properties: {
+    name: { type: "string" },
+    summary: { type: "string" },
+    collar: { type: "string" },
+    sleeve: { type: "string" },
+    colors: {
+      type: "object",
+      properties: Object.fromEntries(COLOR_KEYS.map((key) => [key, { type: "string", pattern: "^#[0-9A-Fa-f]{6}$" }])),
+      required: COLOR_KEYS,
+      additionalProperties: false,
+    },
+    pattern: {
+      type: "object",
+      properties: {
+        enabled: { type: "boolean" },
+        key: { type: "string", enum: PATTERN_KEYS },
+        view: { type: "string", enum: PATTERN_VIEWS },
+      },
+      required: ["enabled", "key", "view"],
+      additionalProperties: false,
+    },
+    crestSuggestion: { type: "string" },
+  },
+  required: ["name", "summary", "collar", "sleeve", "colors", "pattern", "crestSuggestion"],
+  additionalProperties: false,
+};
+
+export function buildUniformPrompt(input) {
+  return [
+    `Design an editable ${input.sport} team uniform for ${JSON.stringify(input.brandName)}.`,
+    `Direction: ${input.style}. Customer brief: ${input.brief}`,
+    `Allowed collars: ${input.collarOptions.join(", ")}. Allowed sleeves: ${input.sleeveOptions.join(", ")}.`,
+    `Current editable design: ${JSON.stringify(input.current)}. Locked controls: ${JSON.stringify(input.locks)}.`,
+    "Return a cohesive production-friendly palette for only these zones: shirt body, sleeves, collar, shorts or trousers, socks, shirt ends, sleeve ends, and shorts ends.",
+    "Socks must be one solid color. Do not invent side panels, shoulder panels, gradients outside the named pattern, or unsupported garment parts.",
+    `Choose pattern.key only from ${PATTERN_KEYS.join(", ")}. Use none when a clean solid kit is better.`,
+    "crestSuggestion is a short prompt for an optional separate transparent crest; do not bake it into the garment design.",
+    input.referenceImage
+      ? "An inspiration image is attached. Use its visual direction, panel rhythm and proportions as a reference, but translate it only into supported editable studio zones. Do not copy logos, words, numbers, people, backgrounds or protected brand marks."
+      : "No inspiration image is attached; follow the written brief.",
+  ].join(" ");
+}
+
+export function normalizeUniformPlan(plan, input) {
+  const current = input.current;
+  const nextColors = Object.fromEntries(COLOR_KEYS.map((key) => [
+    key,
+    input.locks.colors ? current.colors[key] : hex(plan?.colors?.[key], current.colors[key]),
+  ]));
+  const patternKey = PATTERN_KEYS.includes(plan?.pattern?.key) ? plan.pattern.key : "none";
+  const patternEnabled = Boolean(plan?.pattern?.enabled) && patternKey !== "none";
+
+  return {
+    name: text(plan?.name, 80) || `${input.brandName} AI kit`,
+    summary: text(plan?.summary, 300) || "An editable AI-generated uniform direction.",
+    collar: input.locks.collar
+      ? current.collar
+      : input.collarOptions.includes(plan?.collar) ? plan.collar : current.collar,
+    sleeve: input.locks.sleeve
+      ? current.sleeve
+      : input.sleeveOptions.includes(plan?.sleeve) ? plan.sleeve : current.sleeve,
+    colors: nextColors,
+    pattern: input.locks.pattern
+      ? { enabled: current.patternKey !== "none", key: current.patternKey, view: "both" }
+      : {
+          enabled: patternEnabled,
+          key: patternEnabled ? patternKey : "none",
+          view: PATTERN_VIEWS.includes(plan?.pattern?.view) ? plan.pattern.view : "both",
+        },
+    crestSuggestion: input.locks.artwork ? "" : text(plan?.crestSuggestion, 300),
+  };
+}
+
+function extractOutputText(data) {
+  if (typeof data?.output_text === "string") return data.output_text;
+  for (const item of data?.output || []) {
+    for (const content of item?.content || []) {
+      if (content?.type === "output_text" && typeof content.text === "string") return content.text;
+    }
+  }
+  return "";
+}
+
+function responseJson(res, status, payload) {
+  return res.status(status).json(payload);
+}
+
+export default async function handler(req, res) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  const model = process.env.OPENAI_TEXT_MODEL || DEFAULT_MODEL;
+
+  if (req.method === "GET") return responseJson(res, 200, { configured: Boolean(apiKey), model });
+  if (req.method !== "POST") {
+    res.setHeader?.("Allow", "GET, POST");
+    return responseJson(res, 405, { error: "Method not allowed" });
+  }
+  if (!apiKey) return responseJson(res, 503, { error: "AI uniform design is not configured on the server yet." });
+
+  let input;
+  try {
+    input = normalizeUniformRequest(req.body || {});
+  } catch (error) {
+    return responseJson(res, 400, { error: error.message });
+  }
+
+  const limit = rateLimit(req);
+  if (!limit.allowed) {
+    res.setHeader?.("Retry-After", String(limit.retryAfter));
+    return responseJson(res, 429, { error: "Design limit reached. Please wait a few minutes and try again." });
+  }
+
+  const requestId = randomUUID();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 55_000);
+
+  try {
+    const upstream = await fetch(OPENAI_RESPONSES_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+        "X-Client-Request-Id": requestId,
+      },
+      body: JSON.stringify({
+        model,
+        input: [
+          {
+            role: "system",
+            content: "You are a professional sports-uniform designer. Convert the customer's request into supported editable studio controls. Preserve locked settings exactly and prioritize strong contrast, practical production, and readable team identity.",
+          },
+          {
+            role: "user",
+            content: [
+              { type: "input_text", text: buildUniformPrompt(input) },
+              ...(input.referenceImage
+                ? [{ type: "input_image", image_url: input.referenceImage, detail: "high" }]
+                : []),
+            ],
+          },
+        ],
+        text: {
+          format: {
+            type: "json_schema",
+            name: "uniform_design_plan",
+            strict: true,
+            schema: uniformDesignSchema,
+          },
+        },
+        safety_identifier: safetyIdentifier(req),
+      }),
+      signal: controller.signal,
+    });
+
+    const data = await upstream.json().catch(() => ({}));
+    if (!upstream.ok) {
+      const status = upstream.status === 401 ? 502 : upstream.status;
+      const message = upstream.status === 401
+        ? "The AI service rejected the server credential."
+        : data?.error?.message || "The AI service could not create this uniform plan.";
+      return responseJson(res, status, { error: message, requestId });
+    }
+
+    const output = extractOutputText(data);
+    if (!output) return responseJson(res, 502, { error: "The AI service returned no design plan.", requestId });
+    let plan;
+    try {
+      plan = JSON.parse(output);
+    } catch {
+      return responseJson(res, 502, { error: "The AI service returned an unreadable design plan.", requestId });
+    }
+
+    return responseJson(res, 200, {
+      plan: normalizeUniformPlan(plan, input),
+      model,
+      requestId,
+    });
+  } catch (error) {
+    const timedOut = error?.name === "AbortError";
+    console.error("generate-uniform-design error", { requestId, timedOut, message: error?.message });
+    return responseJson(res, timedOut ? 504 : 500, {
+      error: timedOut ? "AI uniform design timed out. Please try again." : "AI uniform design failed unexpectedly.",
+      requestId,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export function resetUniformRateLimitsForTests() {
+  requestWindows.clear();
+}

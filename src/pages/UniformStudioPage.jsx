@@ -91,7 +91,7 @@ const tools = [
     key: "ai",
     label: "AI Designer",
     icon: "ri-sparkling-2-fill",
-    hint: "Describe artwork, generate a transparent concept with AI, preview it, then place it directly on this uniform.",
+    hint: "Describe the complete kit and apply an editable AI design plan, or generate transparent artwork for placement.",
   },
   {
     key: "logo",
@@ -314,6 +314,7 @@ export default function UniformStudioPage() {
   // different things — a layer can legitimately have both, and writing the
   // 3D transform into the layer would invalidate the flat editor's geometry.
   const [placements3d, setPlacements3d] = useState({});
+  const [aiUndoSnapshot, setAiUndoSnapshot] = useState(null);
   // Shown when leaving the studio with unsaved work — see confirmExit below.
   const [exitPrompt, setExitPrompt] = useState(false);
   const placeLayer3d = (layerId, placement) =>
@@ -876,6 +877,76 @@ export default function UniformStudioPage() {
       { id, type: "logo", view: "front", x: 50, y: 42, size: 28, rotation: 0, src, name },
     ]);
     setSelectedLayerId(id);
+  };
+
+  const currentAiPatternKey = useMemo(
+    () => layers.find((layer) => layer.source === "ai-uniform-pattern")?.skinKey || "none",
+    [layers],
+  );
+
+  const applyAIUniformDesign = (plan) => {
+    if (!plan?.colors) return;
+    setAiUndoSnapshot({
+      collar,
+      sleeve,
+      colors: { ...colors },
+      twoTone: { ...twoTone },
+      layers: layers.map((layer) => ({ ...layer })),
+      placements3d: { ...placements3d },
+      view,
+    });
+
+    const nextColors = normalizeZoneColors(plan.colors);
+    setCollar(plan.collar);
+    setSleeve(plan.sleeve);
+    setColors(nextColors);
+    setTwoTone((current) => ({
+      ...current,
+      enabled: nextColors.shorts.toUpperCase() !== nextColors.body.toUpperCase(),
+      colorB: nextColors.shorts,
+    }));
+
+    const priorAiPatternIds = new Set(
+      layers.filter((layer) => layer.source === "ai-uniform-pattern").map((layer) => layer.id),
+    );
+    setPlacements3d((current) => Object.fromEntries(
+      Object.entries(current).filter(([id]) => !priorAiPatternIds.has(id)),
+    ));
+    setLayers((current) => {
+      const retained = current.filter((layer) => layer.source !== "ai-uniform-pattern");
+      if (!plan.pattern?.enabled || plan.pattern.key === "none") return retained;
+      const views = plan.pattern.view === "both" ? ["front", "back"] : [plan.pattern.view || "front"];
+      const additions = views.map((patternView) => ({
+        id: nextLayerId(),
+        type: "skin",
+        skinKey: plan.pattern.key,
+        source: "ai-uniform-pattern",
+        name: `${plan.name || "AI uniform"} pattern`,
+        view: patternView,
+        x: 50,
+        y: 43,
+        size: 58,
+        rotation: 0,
+        src: skinDataUri(plan.pattern.key, nextColors.body, nextColors.shirtStrip),
+      }));
+      return [...retained, ...additions];
+    });
+    setSelectedLayerId(null);
+    setPendingLayer(null);
+    setView("front");
+  };
+
+  const undoAIUniformDesign = () => {
+    if (!aiUndoSnapshot) return;
+    setCollar(aiUndoSnapshot.collar);
+    setSleeve(aiUndoSnapshot.sleeve);
+    setColors(aiUndoSnapshot.colors);
+    setTwoTone(aiUndoSnapshot.twoTone);
+    setLayers(aiUndoSnapshot.layers);
+    setPlacements3d(aiUndoSnapshot.placements3d);
+    setView(aiUndoSnapshot.view);
+    setSelectedLayerId(null);
+    setAiUndoSnapshot(null);
   };
 
   const updateLayer = (id, patch) =>
@@ -1832,7 +1903,15 @@ export default function UniformStudioPage() {
                   <AIArtworkPanel
                     sport={sports.find((item) => item.slug === activeSport)?.label || "Team sport"}
                     colors={colors}
+                    collar={collar}
+                    sleeve={sleeve}
+                    collarOptions={sportConfig.collarOptions}
+                    sleeveOptions={sportConfig.sleeveOptions}
+                    currentPatternKey={currentAiPatternKey}
                     onPlace={placeAIArtwork}
+                    onApplyUniform={applyAIUniformDesign}
+                    onUndoUniform={undoAIUniformDesign}
+                    canUndoUniform={Boolean(aiUndoSnapshot)}
                   />
                 )}
                 {activeTool === "logo" && <LogoPanel onUpload={armLogoPlacement} armed={pendingLayer?.type === "logo"} />}
@@ -1968,7 +2047,15 @@ export default function UniformStudioPage() {
           <AIArtworkPanel
             sport={sports.find((item) => item.slug === activeSport)?.label || "Team sport"}
             colors={colors}
+            collar={collar}
+            sleeve={sleeve}
+            collarOptions={sportConfig.collarOptions}
+            sleeveOptions={sportConfig.sleeveOptions}
+            currentPatternKey={currentAiPatternKey}
             onPlace={placeAIArtwork}
+            onApplyUniform={applyAIUniformDesign}
+            onUndoUniform={undoAIUniformDesign}
+            canUndoUniform={Boolean(aiUndoSnapshot)}
           />
         )}
         {activeTool === "logo" && <LogoPanel onUpload={armLogoPlacement} armed={pendingLayer?.type === "logo"} />}
