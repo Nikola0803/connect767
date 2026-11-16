@@ -880,25 +880,91 @@ const AI_STYLES = [
   "Street & Edgy",
 ];
 
-export function AIArtworkPanel({ sport, colors, onPlace }) {
+const AI_COLOR_LABELS = {
+  body: "Shirt body",
+  sleeve: "Sleeves",
+  collar: "Collar",
+  shorts: "Shorts",
+  socks: "Socks",
+  shirtStrip: "Shirt ends",
+  sleeveStrip: "Sleeve ends",
+  shortsStrip: "Shorts ends",
+};
+
+function prepareAIReferenceImage(file) {
+  return new Promise((resolve, reject) => {
+    if (!file || !["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      reject(new Error("Choose a PNG, JPEG or WebP reference image."));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("The reference image could not be read."));
+    reader.onload = () => {
+      const image = new Image();
+      image.onerror = () => reject(new Error("The reference image could not be opened."));
+      image.onload = () => {
+        const maxDimension = 1536;
+        const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        const context = canvas.getContext("2d");
+        if (!context) {
+          reject(new Error("The reference image could not be prepared."));
+          return;
+        }
+        context.fillStyle = "#FFFFFF";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve({
+          src: canvas.toDataURL("image/jpeg", 0.86),
+          name: file.name || "Uniform inspiration",
+        });
+      };
+      image.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+export function AIArtworkPanel({
+  sport,
+  colors,
+  collar,
+  sleeve,
+  collarOptions = [],
+  sleeveOptions = [],
+  currentPatternKey = "none",
+  onPlace,
+  onApplyUniform,
+  onUndoUniform,
+  canUndoUniform = false,
+}) {
+  const [mode, setMode] = useState("uniform");
   const [brandName, setBrandName] = useState("");
   const [brief, setBrief] = useState("");
   const [style, setStyle] = useState(AI_STYLES[0]);
   const [connection, setConnection] = useState("checking");
   const [generating, setGenerating] = useState(false);
   const [preview, setPreview] = useState(null);
+  const [uniformPlan, setUniformPlan] = useState(null);
+  const [reference, setReference] = useState(null);
+  const [applied, setApplied] = useState(false);
+  const [locks, setLocks] = useState({ collar: false, sleeve: false, colors: false, pattern: false, artwork: true });
   const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true;
-    fetch("/api/generate-design")
-      .then((response) => response.json())
-      .then((data) => active && setConnection(data.configured ? "connected" : "setup"))
+    Promise.all([
+      fetch("/api/generate-design").then((response) => response.json()),
+      fetch("/api/generate-uniform-design").then((response) => response.json()),
+    ])
+      .then(([artwork, uniform]) => active && setConnection(artwork.configured && uniform.configured ? "connected" : "setup"))
       .catch(() => active && setConnection("offline"));
     return () => { active = false; };
   }, []);
 
-  const generate = async () => {
+  const generateArtwork = async () => {
     if (!brandName.trim() || !brief.trim()) return;
     setGenerating(true);
     setError("");
@@ -931,6 +997,61 @@ export function AIArtworkPanel({ sport, colors, onPlace }) {
     }
   };
 
+  const generateUniform = async () => {
+    if (!brandName.trim() || !brief.trim()) return;
+    setGenerating(true);
+    setError("");
+    setUniformPlan(null);
+    setApplied(false);
+    try {
+      const response = await fetch("/api/generate-uniform-design", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sport,
+          style,
+          brandName: brandName.trim(),
+          brief: brief.trim(),
+          collarOptions,
+          sleeveOptions: sleeveOptions?.length ? sleeveOptions : ["Sleeveless"],
+          current: { collar, sleeve, colors, patternKey: currentPatternKey },
+          locks,
+          referenceImage: reference?.src || "",
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.plan) throw new Error(data.error || "AI uniform design failed.");
+      setUniformPlan(data.plan);
+    } catch (generationError) {
+      setError(generationError.message || "AI uniform design failed.");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const generate = mode === "uniform" ? generateUniform : generateArtwork;
+  const toggleLock = (key) => setLocks((current) => ({ ...current, [key]: !current[key] }));
+
+  const applyUniform = () => {
+    if (!uniformPlan) return;
+    onApplyUniform?.(uniformPlan);
+    setApplied(true);
+  };
+
+  const chooseReference = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setError("");
+    try {
+      setReference(await prepareAIReferenceImage(file));
+      setUniformPlan(null);
+      setApplied(false);
+    } catch (referenceError) {
+      setError(referenceError.message || "The reference image could not be prepared.");
+    }
+  };
+
   return (
     <div>
       <div className="mb-5 rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-white p-4">
@@ -941,7 +1062,7 @@ export function AIArtworkPanel({ sport, colors, onPlace }) {
             </span>
             <div>
               <h3 className="font-heading text-lg font-semibold text-foreground-950">AI Designer</h3>
-              <p className="text-[11px] text-foreground-500">Create transparent artwork for this {sport.toLowerCase()} uniform.</p>
+              <p className="text-[11px] text-foreground-500">Design the complete editable kit or create transparent artwork.</p>
             </div>
           </div>
           <span className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-bold uppercase tracking-wide ${
@@ -954,6 +1075,23 @@ export function AIArtworkPanel({ sport, colors, onPlace }) {
       </div>
 
       <div className="space-y-4">
+        <div className="grid grid-cols-2 rounded-xl border border-background-300 bg-background-100 p-1">
+          <button
+            type="button"
+            onClick={() => { setMode("uniform"); setError(""); }}
+            className={`cursor-pointer rounded-lg px-3 py-2 text-[11px] font-bold transition ${mode === "uniform" ? "bg-primary-700 text-white shadow-sm" : "text-foreground-600 hover:bg-white"}`}
+          >
+            <i className="ri-shirt-line mr-1.5" /> Full uniform
+          </button>
+          <button
+            type="button"
+            onClick={() => { setMode("artwork"); setError(""); }}
+            className={`cursor-pointer rounded-lg px-3 py-2 text-[11px] font-bold transition ${mode === "artwork" ? "bg-primary-700 text-white shadow-sm" : "text-foreground-600 hover:bg-white"}`}
+          >
+            <i className="ri-image-edit-line mr-1.5" /> Transparent artwork
+          </button>
+        </div>
+
         <div>
           <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-500">Team or brand name</label>
           <input
@@ -969,8 +1107,10 @@ export function AIArtworkPanel({ sport, colors, onPlace }) {
           <textarea
             value={brief}
             onChange={(event) => setBrief(event.target.value)}
-            placeholder="Describe the crest, graphic, pattern or visual you want…"
-            maxLength={600}
+            placeholder={mode === "uniform"
+              ? "Describe the complete kit: colors, collar, sleeves, pattern and overall feeling…"
+              : "Describe the crest, graphic, pattern or visual you want…"}
+            maxLength={mode === "uniform" ? 900 : 600}
             rows={4}
             className="w-full resize-none rounded-xl border border-background-300 bg-white px-3.5 py-3 text-sm text-foreground-950 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
           />
@@ -982,6 +1122,55 @@ export function AIArtworkPanel({ sport, colors, onPlace }) {
           </select>
         </div>
 
+        {mode === "uniform" && (
+          <div>
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <label className="block text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-500">Reference image <span className="font-medium normal-case tracking-normal text-foreground-400">(optional)</span></label>
+              {reference && <button type="button" onClick={() => { setReference(null); setUniformPlan(null); }} className="cursor-pointer text-[10px] font-bold text-foreground-500 hover:text-red-600">Remove</button>}
+            </div>
+            {reference ? (
+              <div className="relative overflow-hidden rounded-xl border border-primary-200 bg-background-100">
+                <img src={reference.src} alt="Uniform design reference" className="h-36 w-full object-contain" />
+                <div className="border-t border-primary-100 bg-white px-3 py-2 text-[10px] text-foreground-600">
+                  <i className="ri-image-line mr-1 text-primary-700" /> {reference.name}
+                </div>
+              </div>
+            ) : (
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-background-300 bg-white px-3 py-3 transition hover:border-primary-400 hover:bg-primary-50/40">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-background-100 text-lg text-foreground-500"><i className="ri-image-add-line" /></span>
+                <span className="min-w-0">
+                  <strong className="block text-[11px] text-foreground-800">Use a uniform inspiration image</strong>
+                  <span className="block text-[9px] leading-relaxed text-foreground-500">AI follows its visual direction while keeping every result editable.</span>
+                </span>
+                <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={chooseReference} />
+              </label>
+            )}
+          </div>
+        )}
+
+        {mode === "uniform" && (
+          <div className="rounded-xl border border-background-200 bg-white p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-foreground-500">Keep current settings</p>
+              <span className="text-[9px] text-foreground-400">Locked items will not change</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                ["collar", "Collar"],
+                ["sleeve", "Sleeve length"],
+                ["colors", "All colors"],
+                ["pattern", "Pattern"],
+                ["artwork", "Existing artwork"],
+              ].map(([key, label]) => (
+                <label key={key} className="flex cursor-pointer items-center gap-2 rounded-lg bg-background-100 px-2.5 py-2 text-[10px] font-semibold text-foreground-600">
+                  <input type="checkbox" checked={locks[key]} onChange={() => toggleLock(key)} className="accent-primary-700" />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between rounded-xl border border-background-200 bg-background-100 px-3 py-2.5">
           <span className="text-[11px] font-semibold text-foreground-600">Uses current uniform colors</span>
           <div className="flex items-center gap-1.5">
@@ -992,13 +1181,55 @@ export function AIArtworkPanel({ sport, colors, onPlace }) {
 
         {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">{error}</p>}
 
-        {preview && (
+        {mode === "uniform" && uniformPlan && (
+          <div className="space-y-3 rounded-2xl border border-primary-200 bg-white p-4 shadow-sm">
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-primary-700">AI design plan</p>
+              <h4 className="mt-1 font-heading text-lg font-semibold text-foreground-950">{uniformPlan.name}</h4>
+              <p className="mt-1 text-[11px] leading-relaxed text-foreground-500">{uniformPlan.summary}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-[10px]">
+              <div className="rounded-lg bg-background-100 px-3 py-2"><span className="text-foreground-400">Collar</span><strong className="mt-0.5 block text-foreground-800">{uniformPlan.collar}</strong></div>
+              <div className="rounded-lg bg-background-100 px-3 py-2"><span className="text-foreground-400">Sleeves</span><strong className="mt-0.5 block text-foreground-800">{uniformPlan.sleeve}</strong></div>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {Object.entries(uniformPlan.colors).map(([key, value]) => (
+                <div key={key} title={`${AI_COLOR_LABELS[key]}: ${value}`} className="text-center">
+                  <span className="mx-auto block h-8 w-8 rounded-full border border-black/10 shadow-sm" style={{ background: value }} />
+                  <span className="mt-1 block truncate text-[8px] text-foreground-500">{AI_COLOR_LABELS[key]}</span>
+                </div>
+              ))}
+            </div>
+            <div className="rounded-lg border border-background-200 px-3 py-2 text-[10px] text-foreground-600">
+              <strong className="text-foreground-800">Pattern:</strong> {uniformPlan.pattern.enabled ? `${uniformPlan.pattern.key} · ${uniformPlan.pattern.view}` : "Clean / none"}
+            </div>
+            {uniformPlan.crestSuggestion && (
+              <button
+                type="button"
+                onClick={() => { setMode("artwork"); setBrief(uniformPlan.crestSuggestion); setPreview(null); }}
+                className="w-full cursor-pointer rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-left text-[10px] text-primary-800 hover:bg-primary-100"
+              >
+                <strong className="block">Optional matching crest</strong>
+                <span>{uniformPlan.crestSuggestion}</span>
+                <span className="mt-1 block font-bold">Open in Transparent artwork →</span>
+              </button>
+            )}
+            <button type="button" onClick={applyUniform} className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 py-3 text-sm font-bold text-white hover:bg-primary-800">
+              <i className={applied ? "ri-check-double-line" : "ri-magic-line"} /> {applied ? "Design applied — apply again" : "Apply full design"}
+            </button>
+            <button type="button" disabled={generating} onClick={generateUniform} className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-background-300 bg-white px-4 py-2.5 text-xs font-bold text-foreground-700 hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-50">
+              <i className={generating ? "ri-loader-4-line animate-spin" : "ri-refresh-line"} /> {generating ? "Designing…" : "Generate another direction"}
+            </button>
+          </div>
+        )}
+
+        {mode === "artwork" && preview && (
           <div className="rounded-2xl border border-primary-200 bg-[linear-gradient(45deg,#f1efe8_25%,transparent_25%),linear-gradient(-45deg,#f1efe8_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#f1efe8_75%),linear-gradient(-45deg,transparent_75%,#f1efe8_75%)] bg-[length:18px_18px] bg-[position:0_0,0_9px,9px_-9px,-9px_0px] p-3">
             <img src={preview.src} alt="Generated transparent uniform artwork" className="mx-auto aspect-square max-h-64 w-full object-contain" />
           </div>
         )}
 
-        {preview ? (
+        {mode === "artwork" && preview ? (
           <div className="grid grid-cols-[1fr_auto] gap-2">
             <button type="button" onClick={() => onPlace(preview)} className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-primary-800">
               <i className="ri-add-circle-line" /> Place on uniform
@@ -1007,7 +1238,7 @@ export function AIArtworkPanel({ sport, colors, onPlace }) {
               <i className="ri-delete-bin-line" />
             </button>
           </div>
-        ) : (
+        ) : !uniformPlan || mode === "artwork" ? (
           <button
             type="button"
             disabled={generating || connection !== "connected" || !brandName.trim() || !brief.trim()}
@@ -1015,10 +1246,16 @@ export function AIArtworkPanel({ sport, colors, onPlace }) {
             className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 py-3.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,116,73,0.18)] transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-45"
           >
             <i className={generating ? "ri-loader-4-line animate-spin" : "ri-sparkling-2-fill"} />
-            {generating ? "Creating artwork…" : "Generate AI artwork"}
+            {generating ? (mode === "uniform" ? "Designing complete kit…" : "Creating artwork…") : (mode === "uniform" ? "Generate full uniform design" : "Generate AI artwork")}
+          </button>
+        ) : null}
+
+        {canUndoUniform && mode === "uniform" && (
+          <button type="button" onClick={onUndoUniform} className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-background-300 bg-white px-4 py-2.5 text-xs font-bold text-foreground-700 hover:bg-background-100">
+            <i className="ri-arrow-go-back-line" /> Undo last AI design
           </button>
         )}
-        <p className="text-[10px] leading-relaxed text-foreground-500">AI output is a design concept. Confirm final print quality, spelling and production suitability before ordering.</p>
+        <p className="text-[10px] leading-relaxed text-foreground-500">AI creates an editable design direction—not a manufacturing cut file. Confirm colors, spelling and production suitability before ordering.</p>
       </div>
     </div>
   );
