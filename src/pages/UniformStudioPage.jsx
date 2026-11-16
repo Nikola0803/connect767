@@ -890,7 +890,7 @@ export default function UniformStudioPage() {
   const handleAIUniformPlanChange = (plan) => {
     setAiUniformPlan(plan || null);
     if (plan) {
-      setAiCanvasMode("preview");
+      setAiCanvasMode(plan.conceptImage?.src ? "concept" : "preview");
       setStageMode("edit");
       setView("front");
       setSelectedLayerId(null);
@@ -899,6 +899,12 @@ export default function UniformStudioPage() {
 
   const showingAIUniformPreview = Boolean(
     activeTool === "ai" && aiDesignerMode === "uniform" && aiUniformPlan && aiCanvasMode === "preview",
+  );
+  const showingAIConcept = Boolean(
+    activeTool === "ai"
+    && aiDesignerMode === "uniform"
+    && aiUniformPlan?.conceptImage?.src
+    && aiCanvasMode === "concept",
   );
   const aiPreviewColors = useMemo(
     () => aiUniformPlan?.colors ? normalizeZoneColors(aiUniformPlan.colors) : colors,
@@ -1788,8 +1794,17 @@ export default function UniformStudioPage() {
                                 onClick={() => setAiCanvasMode("preview")}
                                 className={`cursor-pointer rounded-md px-3 py-1.5 text-[10px] font-bold transition ${aiCanvasMode === "preview" ? "bg-primary-500 text-white" : "text-white/55 hover:text-white"}`}
                               >
-                                AI design
+                                Editable
                               </button>
+                              {aiUniformPlan.conceptImage?.src && (
+                                <button
+                                  type="button"
+                                  onClick={() => setAiCanvasMode("concept")}
+                                  className={`cursor-pointer rounded-md px-3 py-1.5 text-[10px] font-bold transition ${aiCanvasMode === "concept" ? "bg-accent-500 text-white" : "text-white/55 hover:text-white"}`}
+                                >
+                                  Full AI concept
+                                </button>
+                              )}
                             </div>
                             <button
                               type="button"
@@ -1823,7 +1838,23 @@ export default function UniformStudioPage() {
                       </div>
                     )}
 
-                    {stageMode === "edit" ? (
+                    {showingAIConcept ? (
+                      <div className="flex min-h-0 w-full flex-1 items-center justify-center">
+                        <div className="relative flex h-full max-h-[760px] w-full max-w-[980px] items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[#ece9e1] shadow-[0_26px_70px_rgba(0,0,0,.34)]">
+                          <img
+                            src={aiUniformPlan.conceptImage.src}
+                            alt={`${aiUniformPlan.name} complete front and back AI uniform concept`}
+                            className="h-full w-full object-contain"
+                          />
+                          <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.13em] text-primary-800 shadow-sm backdrop-blur">
+                            <i className="ri-sparkling-2-fill text-accent-500" /> Complete AI uniform · front and back
+                          </div>
+                          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-foreground-950/75 px-4 py-2 text-center text-[10px] text-white/80 backdrop-blur">
+                            Visual concept proof · switch to Editable to adjust individual garment zones
+                          </div>
+                        </div>
+                      </div>
+                    ) : stageMode === "edit" ? (
                       <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center gap-2">
                         <div
                           className={`w-full transition-transform ${activeTool === "ai" ? "max-w-[980px]" : "max-w-[800px]"}`}

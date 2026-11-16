@@ -56,6 +56,14 @@ describe("AI design generation endpoint", () => {
     expect(prompt).toContain("Do not show a garment");
   });
 
+  it("builds a complete front-and-back uniform concept prompt", () => {
+    const prompt = buildPrompt(normalizeBrief({ ...validBrief, generationMode: "uniform" }));
+    expect(prompt).toContain("complete Soccer uniform design concept");
+    expect(prompt).toContain("complete front view and complete back view");
+    expect(prompt).toContain("shorts or trousers");
+    expect(prompt).toContain("socks");
+  });
+
   it("reports connection health without exposing the key", async () => {
     const res = response();
     await handler(request("GET"), res);
