@@ -81,7 +81,7 @@ describe("community post publishing", () => {
     await createCommunityPost({
       listingId: 12,
       text: "We are hiring",
-      type: "opportunity",
+      type: "status",
       mentions: [{ id: 0, slug: "everyone", title: "Everyone in the directory", audience: "directory" }],
       file,
     });

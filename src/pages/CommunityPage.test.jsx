@@ -133,7 +133,7 @@ describe("CommunityPage composer menus", () => {
     expect(screen.getByText("everyone")).toBeInTheDocument();
   });
 
-  it("allows files on offers, events, and opportunities but removes them from updates", async () => {
+  it("allows document attachments on every post type", async () => {
     render(<MemoryRouter><CommunityPage /></MemoryRouter>);
 
     fireEvent.click(await screen.findByRole("button", { name: "Offer" }));
@@ -145,8 +145,12 @@ describe("CommunityPage composer menus", () => {
     expect(screen.getByText("job-description.pdf")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /File added/i })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "General Post" }));
-    expect(screen.queryByText("job-description.pdf")).not.toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent("Files can be attached to offers, events, and opportunities.");
+    for (const postType of ["General Post", "Announcement", "Request", "Event", "Opportunity"]) {
+      fireEvent.click(screen.getByRole("button", { name: postType }));
+      expect(screen.getByText("job-description.pdf")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: /File added/i }));
+      expect(screen.getByRole("menuitem", { name: /File PDF, Word, Excel/i })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: /File added/i }));
+    }
   });
 });

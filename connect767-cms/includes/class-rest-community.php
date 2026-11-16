@@ -525,10 +525,6 @@ class C767_REST_Community
         $file_type = '';
         $file_size = 0;
         if (!empty($_FILES['file']['tmp_name'])) {
-            if (!in_array($type, ['offer', 'event', 'opportunity'], true)) {
-                wp_delete_post($post_id, true);
-                return new WP_Error('c767_community_file_post_type', 'Files can be attached to offers, events, and opportunities.', ['status' => 400]);
-            }
             require_once ABSPATH . 'wp-admin/includes/image.php';
             require_once ABSPATH . 'wp-admin/includes/file.php';
             require_once ABSPATH . 'wp-admin/includes/media.php';
