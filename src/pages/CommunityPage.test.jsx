@@ -48,13 +48,33 @@ describe("CommunityPage composer menus", () => {
     fireEvent.click(attachButton);
     expect(screen.getByRole("menu", { name: "Attach to update" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Feeling/activity" }));
+    fireEvent.click(screen.getByRole("button", { name: "Feeling" }));
     expect(screen.queryByRole("menu", { name: "Attach to update" })).not.toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Choose a feeling or activity" })).toBeInTheDocument();
 
     fireEvent.click(attachButton);
     expect(screen.getByRole("menu", { name: "Attach to update" })).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole("group", { name: "Choose a feeling or activity" })).not.toBeInTheDocument());
+  });
+
+  it("keeps every mobile feed filter and composer mode interactive", async () => {
+    render(<MemoryRouter><CommunityPage /></MemoryRouter>);
+
+    for (const label of ["Following", "Latest", "Trending", "Businesses", "Community", "For you"]) {
+      const tab = screen.getByRole("tab", { name: `Show ${label} posts` });
+      fireEvent.click(tab);
+      expect(tab).toHaveAttribute("aria-selected", "true");
+    }
+
+    const offerButton = await screen.findByRole("button", { name: "Offer" });
+    fireEvent.click(offerButton);
+    expect(offerButton).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByPlaceholderText(/Describe your offer/i)).toBeInTheDocument();
+
+    const postButton = screen.getByRole("button", { name: "Write offer first" });
+    expect(postButton).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("Status update. Type @ to mention a business."), { target: { value: "Fresh fruit boxes available today" } });
+    expect(screen.getByRole("button", { name: "Post offer" })).toBeEnabled();
   });
 
   it("provides owner post options and deletes only after confirmation", async () => {
