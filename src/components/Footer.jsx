@@ -5,7 +5,7 @@ const discoverLinks = [
   { label: "Browse Directory", href: "/listings" },
   { label: "Add a Listing", href: "/listings/submit" },
   { label: "Shop", href: "/shop" },
-  { label: "Community", href: "/community" },
+  { label: "Community Feed", href: "/community" },
   { label: "Blog", href: "/blog" },
 ];
 

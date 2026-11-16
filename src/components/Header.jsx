@@ -8,7 +8,7 @@ import { getUnreadMessageCount } from "../data/repository";
 const navItems = [
   { label: "Directory", href: "/listings" },
   { label: "Shop", href: "/shop" },
-  { label: "Community", href: "/community" },
+  { label: "Community Feed", href: "/community" },
   { label: "Custom Uniforms", href: "/uniforms" },
   { label: "Blog", href: "/blog" },
 ];
@@ -109,7 +109,7 @@ export default function Header() {
     { label: "Home", href: "/", icon: "ri-home-5-line" },
     { label: "Directory", href: "/listings", icon: "ri-map-pin-2-line" },
     { label: "Shop", href: "/shop", icon: "ri-shopping-bag-3-line" },
-    { label: "Community", href: "/community", icon: "ri-group-line" },
+    { label: "Community Feed", href: "/community", icon: "ri-group-line" },
     { label: "Saved", href: "/saved", icon: "ri-heart-line" },
     {
       label: isAuthenticated ? "Dashboard" : "Account",
