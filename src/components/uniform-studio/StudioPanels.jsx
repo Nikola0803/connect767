@@ -1141,34 +1141,6 @@ export function AIArtworkPanel({
     </div>
   ) : null;
 
-  const refinementControls = mode === "uniform" && uniformPlan ? (
-    <div className="rounded-2xl border border-accent-200 bg-accent-50/55 p-3.5 shadow-sm">
-      <div className="flex items-start gap-2.5">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent-500 text-white"><i className="ri-edit-2-line" /></span>
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-accent-800">Refine current design</p>
-          <p className="mt-1 text-[9px] leading-relaxed text-foreground-500">Describe only what should change. The image on the main canvas is automatically used as the reference.</p>
-        </div>
-      </div>
-      <textarea
-        value={refinementBrief}
-        onChange={(event) => setRefinementBrief(event.target.value)}
-        placeholder="e.g. Keep everything else, make the shorts black and add three red horizontal chest stripes."
-        maxLength={600}
-        rows={3}
-        className="mt-3 w-full resize-none rounded-lg border border-accent-200 bg-white px-3 py-2.5 text-[11px] text-foreground-950 outline-none transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
-      />
-      <button
-        type="button"
-        disabled={generating || !refinementBrief.trim()}
-        onClick={() => generateUniform(refinementBrief)}
-        className="mt-2 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-accent-500 px-3 py-2.5 text-[11px] font-bold text-white transition hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-45"
-      >
-        <i className={generating ? "ri-loader-4-line animate-spin" : "ri-magic-line"} /> {generating ? "Refining current image…" : "Refine current image"}
-      </button>
-    </div>
-  ) : null;
-
   return (
     <div>
       <div className="mb-5 rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-white p-4">
@@ -1209,9 +1181,6 @@ export function AIArtworkPanel({
           </button>
         </div>
 
-        {refinementControls}
-        {uniformPlan && preservationControls}
-
         <div>
           <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-500">Team or brand name</label>
           <input
@@ -1223,18 +1192,54 @@ export function AIArtworkPanel({
           />
         </div>
         <div>
-          <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-500">Design brief</label>
+          <div className="mb-1.5 flex items-center justify-between gap-2">
+            <label className="block text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-500">
+              {mode === "uniform" && uniformPlan ? "Refine current design" : "Design brief"}
+            </label>
+            {mode === "uniform" && uniformPlan && (
+              <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-accent-700">
+                <i className="ri-image-line" /> Uses canvas image
+              </span>
+            )}
+          </div>
+          {mode === "uniform" && uniformPlan && (
+            <p className="mb-2 text-[10px] leading-relaxed text-foreground-500">
+              Describe only what should change. Everything else is preserved from the current design.
+            </p>
+          )}
           <textarea
-            value={brief}
-            onChange={(event) => setBrief(event.target.value)}
-            placeholder={mode === "uniform"
-              ? "Describe the complete kit: colors, collar, sleeves, pattern and overall feeling…"
-              : "Describe the crest, graphic, pattern or visual you want…"}
-            maxLength={mode === "uniform" ? 900 : 600}
+            value={mode === "uniform" && uniformPlan ? refinementBrief : brief}
+            onChange={(event) => {
+              if (mode === "uniform" && uniformPlan) setRefinementBrief(event.target.value);
+              else setBrief(event.target.value);
+            }}
+            placeholder={mode === "uniform" && uniformPlan
+              ? "e.g. Keep everything else, make the shorts black and add three red horizontal chest stripes."
+              : mode === "uniform"
+                ? "Describe the complete kit: colors, collar, sleeves, pattern and overall feeling…"
+                : "Describe the crest, graphic, pattern or visual you want…"}
+            maxLength={mode === "uniform" && uniformPlan ? 600 : mode === "uniform" ? 900 : 600}
             rows={4}
-            className="w-full resize-none rounded-xl border border-background-300 bg-white px-3.5 py-3 text-sm text-foreground-950 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+            className={`w-full resize-none border bg-white px-3.5 py-3 text-sm text-foreground-950 outline-none transition focus:ring-2 ${
+              mode === "uniform" && uniformPlan
+                ? "rounded-t-xl border-accent-200 focus:border-accent-500 focus:ring-accent-100"
+                : "rounded-xl border-background-300 focus:border-primary-500 focus:ring-primary-100"
+            }`}
           />
+          {mode === "uniform" && uniformPlan && (
+            <button
+              type="button"
+              disabled={generating || !refinementBrief.trim()}
+              onClick={() => generateUniform(refinementBrief)}
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-b-xl bg-accent-500 px-3 py-3 text-[11px] font-bold text-white transition hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              <i className={generating ? "ri-loader-4-line animate-spin" : "ri-magic-line"} />
+              {generating ? "Refining current image…" : "Refine current image"}
+            </button>
+          )}
         </div>
+
+        {uniformPlan && preservationControls}
         <div>
           <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-500">Style</label>
           <select value={style} onChange={(event) => setStyle(event.target.value)} className="w-full rounded-xl border border-background-300 bg-white px-3.5 py-3 text-sm text-foreground-950 outline-none focus:border-primary-500">
