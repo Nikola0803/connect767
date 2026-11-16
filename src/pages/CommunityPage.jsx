@@ -851,11 +851,11 @@ export default function CommunityPage() {
         <div className="mt-5 grid items-start gap-5 sm:mt-6 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_19rem]">
           <main className="space-y-5">
             <section className="rounded-[1.75rem] border border-background-200/80 bg-white/95 p-4 shadow-[0_18px_55px_rgba(24,48,36,0.08)] backdrop-blur sm:p-5">
-              <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                <div className="min-w-0"><span className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-xl bg-primary-50 text-primary-700"><i className="ri-quill-pen-line" /></span><h2 className="font-heading text-xl font-semibold text-foreground-950">What Would You Like to Share?</h2><p className="mt-1 text-xs text-foreground-500">Publish an update and connect it to your directory profile.</p></div>
-                <section aria-label="Community feed filters" className="flex min-w-0 flex-col gap-2 rounded-2xl border border-background-200/80 bg-background-100/55 p-2.5 sm:flex-row sm:items-center">
-                  <div className="shrink-0"><h3 className="text-xs font-bold text-foreground-900">Explore the feed</h3><p className="text-[9px] text-foreground-400">Choose a view and post type</p></div>
-                  <div className="grid min-w-0 flex-1 grid-cols-2 gap-2 sm:flex sm:flex-none"><FeedFilterMenu compact label="Feed view" value={activeTab} options={FEED_VIEWS} onChange={setActiveTab} /><FeedFilterMenu compact label="Post type" value={categoryFilter} options={FEED_CATEGORIES} onChange={selectCategoryFilter} /></div>
+              <div className="mb-4 flex flex-col gap-4 border-b border-background-200/80 pb-4 xl:flex-row xl:items-center xl:justify-between">
+                <div className="flex min-w-0 items-start gap-3"><span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary-50 text-primary-700"><i className="ri-quill-pen-line" /></span><div><h2 className="font-heading text-xl font-semibold leading-tight text-foreground-950">What Would You Like to Share?</h2><p className="mt-1 text-xs text-foreground-500">Publish an update and connect it to your directory profile.</p></div></div>
+                <section aria-label="Community feed filters" className="grid min-w-0 grid-cols-2 gap-2 xl:shrink-0">
+                  <FeedFilterMenu compact label="Feed view" value={activeTab} options={FEED_VIEWS} onChange={setActiveTab} />
+                  <FeedFilterMenu compact label="Post type" value={categoryFilter} options={FEED_CATEGORIES} onChange={selectCategoryFilter} />
                 </section>
               </div>
               {isAuthenticated && listings.length ? (
