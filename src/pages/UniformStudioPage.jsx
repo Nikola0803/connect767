@@ -250,12 +250,14 @@ export default function UniformStudioPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSport = searchParams.get("sport") || "soccer";
   const scratch = searchParams.get("mode") === "scratch";
-  const initialWorkflowStep = searchParams.get("step") || "design";
+  const initialWorkflowStep = searchParams.get("step") || "ai";
 
   const [activeSport, setActiveSport] = useState(
     sports.some((s) => s.slug === initialSport) ? initialSport : "soccer"
   );
   const [selectedTemplate, setSelectedTemplate] = useState(scratch ? "blank-canvas" : null);
+  // Kept only for backwards-compatible entry URLs. New sessions enter the AI
+  // workspace directly from a sport tile instead of choosing a stock cut.
   const [selectedCategory, setSelectedCategory] = useState(null);
 
   // ---------- Design state ----------
@@ -316,8 +318,10 @@ export default function UniformStudioPage() {
   const [placements3d, setPlacements3d] = useState({});
   const [aiUndoSnapshot, setAiUndoSnapshot] = useState(null);
   const [aiUniformPlan, setAiUniformPlan] = useState(null);
+  const [aiWorkspaceConcept, setAiWorkspaceConcept] = useState(null);
+  const [aiDesignApplied, setAiDesignApplied] = useState(false);
   const [aiDesignerMode, setAiDesignerMode] = useState("uniform");
-  const [aiCanvasMode, setAiCanvasMode] = useState("preview");
+  const [aiCanvasMode, setAiCanvasMode] = useState("concept");
   // Shown when leaving the studio with unsaved work — see confirmExit below.
   const [exitPrompt, setExitPrompt] = useState(false);
   const placeLayer3d = (layerId, placement) =>
@@ -543,6 +547,9 @@ export default function UniformStudioPage() {
           roster,
           contact,
           shipping,
+           aiUniformPlan: aiUniformPlan ? { ...aiUniformPlan, conceptImage: undefined } : null,
+           aiWorkspaceConcept,
+           aiDesignApplied,
           savedAt: Date.now(),
         }),
       );
@@ -551,7 +558,8 @@ export default function UniformStudioPage() {
          no worse than before this existed */
     }
   }, [storageKey, layers, placements3d, colors, studioBackground, collar, sleeve, zoneModel, zoneStyles, twoTone,
-    fitType, kitType, logoApplication, insideCollarMessage, insideCollarText, fanJerseyAdded, supporterJerseys, roster, contact, shipping]);
+    fitType, kitType, logoApplication, insideCollarMessage, insideCollarText, fanJerseyAdded, supporterJerseys, roster, contact, shipping,
+    aiUniformPlan, aiWorkspaceConcept, aiDesignApplied]);
 
   const saveProgress = () => {
     if (!storageKey) return;
@@ -578,6 +586,9 @@ export default function UniformStudioPage() {
           roster,
           contact,
           shipping,
+           aiUniformPlan: aiUniformPlan ? { ...aiUniformPlan, conceptImage: undefined } : null,
+           aiWorkspaceConcept,
+           aiDesignApplied,
           savedAt: Date.now(),
         }),
       );
@@ -616,6 +627,17 @@ export default function UniformStudioPage() {
       if (Array.isArray(saved.roster)) setRoster(saved.roster);
       if (saved.contact) setContact(saved.contact);
       if (saved.shipping) setShipping(saved.shipping);
+      if (saved.aiWorkspaceConcept?.src) {
+        setAiWorkspaceConcept(saved.aiWorkspaceConcept);
+        setAiCanvasMode("concept");
+      }
+      if (saved.aiUniformPlan) {
+        setAiUniformPlan({
+          ...saved.aiUniformPlan,
+          conceptImage: saved.aiWorkspaceConcept?.src ? saved.aiWorkspaceConcept : undefined,
+        });
+      }
+      if (typeof saved.aiDesignApplied === "boolean") setAiDesignApplied(saved.aiDesignApplied);
       return true;
     } catch {
       return false;
@@ -633,6 +655,9 @@ export default function UniformStudioPage() {
     setLayers([]);
     setPlacements3d({});
     setSelectedLayerId(null);
+    setAiUniformPlan(null);
+    setAiWorkspaceConcept(null);
+    setAiDesignApplied(false);
   };
 
   useEffect(() => {
@@ -733,6 +758,9 @@ export default function UniformStudioPage() {
     setPlacements3d({});
     setSelectedLayerId(null);
     setPendingLayer(null);
+    setActiveTool("ai");
+    setAiDesignerMode("uniform");
+    setAiCanvasMode("concept");
     // Pick up where they left off on this exact kit, if they were here before.
     restoreSaved(`c767:studio:${sportSlug}:${t.slug}`);
   };
@@ -890,20 +918,19 @@ export default function UniformStudioPage() {
   const handleAIUniformPlanChange = (plan) => {
     setAiUniformPlan(plan || null);
     if (plan) {
-      setAiCanvasMode(plan.conceptImage?.src ? "concept" : "preview");
+      if (plan.conceptImage?.src) setAiWorkspaceConcept(plan.conceptImage);
+      setAiDesignApplied(false);
+      setAiCanvasMode(plan.conceptImage?.src ? "concept" : "production");
       setStageMode("edit");
       setView("front");
       setSelectedLayerId(null);
     }
   };
 
-  const showingAIUniformPreview = Boolean(
-    activeTool === "ai" && aiDesignerMode === "uniform" && aiUniformPlan && aiCanvasMode === "preview",
-  );
+  const showingAIUniformPreview = Boolean(aiUniformPlan && aiCanvasMode === "production");
   const showingAIConcept = Boolean(
-    activeTool === "ai"
-    && aiDesignerMode === "uniform"
-    && aiUniformPlan?.conceptImage?.src
+    stageMode === "edit"
+    && aiWorkspaceConcept?.src
     && aiCanvasMode === "concept",
   );
   const aiPreviewColors = useMemo(
@@ -976,8 +1003,9 @@ export default function UniformStudioPage() {
     setSelectedLayerId(null);
     setPendingLayer(null);
     setView("front");
-    setAiUniformPlan(null);
-    setAiCanvasMode("preview");
+    if (plan.conceptImage?.src) setAiWorkspaceConcept(plan.conceptImage);
+    setAiDesignApplied(true);
+    setAiCanvasMode("concept");
   };
 
   const undoAIUniformDesign = () => {
@@ -991,7 +1019,8 @@ export default function UniformStudioPage() {
     setView(aiUndoSnapshot.view);
     setSelectedLayerId(null);
     setAiUndoSnapshot(null);
-    setAiUniformPlan(null);
+    setAiDesignApplied(false);
+    setAiCanvasMode(aiWorkspaceConcept?.src ? "concept" : "production");
   };
 
   const updateLayer = (id, patch) =>
@@ -1121,6 +1150,13 @@ export default function UniformStudioPage() {
   };
 
   const handleDownload = async () => {
+    if (showingAIConcept && aiWorkspaceConcept?.src) {
+      const link = document.createElement("a");
+      link.download = `${aiUniformPlan?.name || "ai-uniform-concept"}.png`;
+      link.href = aiWorkspaceConcept.src;
+      link.click();
+      return;
+    }
     if (!stageRef.current) return;
     setExporting(true);
     try {
@@ -1175,6 +1211,7 @@ export default function UniformStudioPage() {
         return null;
       }
     }
+    if (aiWorkspaceConcept?.src) return aiWorkspaceConcept.src;
     return null;
   };
 
@@ -1205,6 +1242,8 @@ export default function UniformStudioPage() {
       roster,
       contact,
       previewImage,
+      aiDesignName: aiUniformPlan?.name || aiWorkspaceConcept?.name || null,
+      aiDesignSummary: aiUniformPlan?.summary || null,
     };
   };
 
@@ -1311,8 +1350,8 @@ export default function UniformStudioPage() {
                 <span className="block italic text-primary-700">Outfit the whole roster.</span>
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-relaxed text-foreground-600 md:text-lg">
-                Choose a sport and starting point, customize every panel, then add player names,
-                sizes and uniform options before requesting production pricing.
+                Choose a sport, describe the uniform you want, and let AI create the complete
+                front-and-back concept before you add the roster and production options.
               </p>
             </div>
             <ol className="grid grid-cols-3 overflow-hidden rounded-2xl border border-background-300 bg-background-50 shadow-sm sm:grid-cols-6">
@@ -1355,7 +1394,7 @@ export default function UniformStudioPage() {
                 </button>
               ) : (
                 <p className="max-w-lg text-sm leading-relaxed text-foreground-500">
-                  Select any category to see its shirt style and blank-canvas options.
+                  Select a category to open its AI uniform workspace. No stock template selection is required.
                 </p>
               )}
             </div>
@@ -1427,13 +1466,11 @@ export default function UniformStudioPage() {
                       key={sport.slug}
                       type="button"
                       onClick={() => {
-                        setActiveSport(sport.slug);
-                        setSelectedCategory(sport.slug);
-                        setSearchParams((prev) => {
-                          const next = new URLSearchParams(prev);
-                          next.set("sport", sport.slug);
-                          return next;
-                        });
+                        selectTemplate({
+                          slug: "blank-canvas",
+                          defaultCollar: uniformTemplate.defaultCollar,
+                          defaultSleeve: uniformTemplate.defaultSleeve,
+                        }, sport.slug);
                       }}
                       className="group overflow-hidden rounded-[24px] border border-background-300 bg-background-50 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:border-primary-400 hover:shadow-[0_20px_42px_rgba(0,116,73,0.11)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 cursor-pointer"
                     >
@@ -1457,10 +1494,10 @@ export default function UniformStudioPage() {
                           </span>
                         </div>
                         <p className="mt-2 text-sm leading-relaxed text-foreground-500">
-                          Open this category to choose a shirt style or begin with a blank canvas.
+                          Generate a unique full uniform from a brief or reference image, then refine it for production.
                         </p>
                         <span className="mt-auto pt-4 text-xs font-bold uppercase tracking-[0.14em] text-primary-800">
-                          Open category
+                          Open AI studio
                         </span>
                       </div>
                     </button>
@@ -1488,7 +1525,7 @@ export default function UniformStudioPage() {
         </button>
         <div className="hidden min-w-0 items-center gap-2 sm:flex">
           <span className="truncate text-sm font-semibold text-background-50/85">
-            {template?.name || "Blank Canvas"}
+            {aiUniformPlan?.name || (template?.slug === "blank-canvas" ? "AI Uniform" : template?.name) || "AI Uniform"}
           </span>
           <span className="text-background-50/20">/</span>
           <span className="truncate text-xs font-medium text-background-50/45">
@@ -1545,7 +1582,7 @@ export default function UniformStudioPage() {
           <button
             type="button"
             onClick={handleDownloadSvg}
-            disabled={stageMode !== "edit"}
+            disabled={stageMode !== "edit" || showingAIConcept}
             className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer bg-white/5 text-background-50/70 hover:bg-white/10 hover:text-background-50 disabled:opacity-40"
           >
             <i className="ri-file-code-line" /> SVG
@@ -1723,7 +1760,7 @@ export default function UniformStudioPage() {
                               }`}
                             >
                               <i className="ri-edit-2-line" />
-                              2D editor
+                              AI canvas
                             </button>
                             <button
                               type="button"
@@ -1767,7 +1804,7 @@ export default function UniformStudioPage() {
                       )}
                     </div>
 
-                    {activeTool === "ai" && aiDesignerMode === "uniform" && aiUniformPlan && (
+                    {(aiUniformPlan || aiWorkspaceConcept) && (
                       <div className="w-full max-w-[980px] flex-shrink-0 overflow-hidden rounded-2xl border border-primary-400/35 bg-[linear-gradient(105deg,rgba(0,116,73,.28),rgba(17,19,16,.92)_48%,rgba(239,84,53,.12))] shadow-[0_18px_50px_rgba(0,0,0,.25)]">
                         <div className="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
                           <div className="min-w-0">
@@ -1777,49 +1814,47 @@ export default function UniformStudioPage() {
                               </span>
                               <span className="text-[10px] text-background-50/40">Preview before applying</span>
                             </div>
-                            <h3 className="mt-1.5 truncate font-heading text-lg font-semibold text-white">{aiUniformPlan.name}</h3>
-                            <p className="mt-0.5 line-clamp-1 text-[10px] text-background-50/55">{aiUniformPlan.summary}</p>
+                            <h3 className="mt-1.5 truncate font-heading text-lg font-semibold text-white">{aiUniformPlan?.name || aiWorkspaceConcept?.name || "AI uniform concept"}</h3>
+                            <p className="mt-0.5 line-clamp-1 text-[10px] text-background-50/55">{aiUniformPlan?.summary || "Your generated concept is the primary design workspace."}</p>
                           </div>
                           <div className="flex flex-wrap items-center gap-2">
                             <div className="inline-flex rounded-lg border border-white/10 bg-black/20 p-1">
                               <button
                                 type="button"
-                                onClick={() => setAiCanvasMode("current")}
-                                className={`cursor-pointer rounded-md px-3 py-1.5 text-[10px] font-bold transition ${aiCanvasMode === "current" ? "bg-white text-foreground-950" : "text-white/55 hover:text-white"}`}
+                                onClick={() => { setAiCanvasMode("concept"); setStageMode("edit"); }}
+                                className={`cursor-pointer rounded-md px-3 py-1.5 text-[10px] font-bold transition ${aiCanvasMode === "concept" ? "bg-accent-500 text-white" : "text-white/55 hover:text-white"}`}
                               >
-                                Current
+                                AI output
                               </button>
                               <button
                                 type="button"
-                                onClick={() => setAiCanvasMode("preview")}
-                                className={`cursor-pointer rounded-md px-3 py-1.5 text-[10px] font-bold transition ${aiCanvasMode === "preview" ? "bg-primary-500 text-white" : "text-white/55 hover:text-white"}`}
+                                onClick={() => { setAiCanvasMode("production"); setStageMode("edit"); }}
+                                className={`cursor-pointer rounded-md px-3 py-1.5 text-[10px] font-bold transition ${aiCanvasMode === "production" ? "bg-primary-500 text-white" : "text-white/55 hover:text-white"}`}
                               >
-                                Editable
+                                Production map
                               </button>
-                              {aiUniformPlan.conceptImage?.src && (
-                                <button
-                                  type="button"
-                                  onClick={() => setAiCanvasMode("concept")}
-                                  className={`cursor-pointer rounded-md px-3 py-1.5 text-[10px] font-bold transition ${aiCanvasMode === "concept" ? "bg-accent-500 text-white" : "text-white/55 hover:text-white"}`}
-                                >
-                                  Full AI concept
-                                </button>
-                              )}
                             </div>
                             <button
                               type="button"
-                              onClick={() => handleAIUniformPlanChange(null)}
+                              onClick={() => {
+                                setAiUniformPlan(null);
+                                setAiWorkspaceConcept(null);
+                                setAiDesignApplied(false);
+                                setAiCanvasMode("concept");
+                              }}
                               className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-[10px] font-bold text-white/65 transition hover:bg-white/10 hover:text-white"
                             >
                               <i className="ri-close-line" /> Discard
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => applyAIUniformDesign(aiUniformPlan)}
-                              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-primary-500 px-3.5 py-2 text-[10px] font-bold text-white shadow-[0_8px_18px_rgba(0,116,73,.28)] transition hover:bg-primary-400"
-                            >
-                              <i className="ri-check-double-line" /> Apply design
-                            </button>
+                            {aiUniformPlan && (
+                              <button
+                                type="button"
+                                onClick={() => applyAIUniformDesign(aiUniformPlan)}
+                                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-primary-500 px-3.5 py-2 text-[10px] font-bold text-white shadow-[0_8px_18px_rgba(0,116,73,.28)] transition hover:bg-primary-400"
+                              >
+                                <i className={aiDesignApplied ? "ri-check-double-line" : "ri-magic-line"} /> {aiDesignApplied ? "Applied to production map" : "Apply design"}
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1842,15 +1877,39 @@ export default function UniformStudioPage() {
                       <div className="flex min-h-0 w-full flex-1 items-center justify-center">
                         <div className="relative flex h-full max-h-[760px] w-full max-w-[980px] items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[#ece9e1] shadow-[0_26px_70px_rgba(0,0,0,.34)]">
                           <img
-                            src={aiUniformPlan.conceptImage.src}
-                            alt={`${aiUniformPlan.name} complete front and back AI uniform concept`}
+                            src={aiWorkspaceConcept.src}
+                            alt={`${aiUniformPlan?.name || aiWorkspaceConcept?.name || "AI generated"} complete front and back uniform concept`}
                             className="h-full w-full object-contain"
                           />
                           <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.13em] text-primary-800 shadow-sm backdrop-blur">
                             <i className="ri-sparkling-2-fill text-accent-500" /> Complete AI uniform · front and back
                           </div>
                           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-foreground-950/75 px-4 py-2 text-center text-[10px] text-white/80 backdrop-blur">
-                            Visual concept proof · switch to Editable to adjust individual garment zones
+                            Primary AI design · use Production map only for precise manufacturing adjustments
+                          </div>
+                        </div>
+                      </div>
+                    ) : stageMode === "edit" && activeTool === "ai" && aiDesignerMode === "uniform" && !aiWorkspaceConcept?.src ? (
+                      <div className="flex min-h-0 w-full flex-1 items-center justify-center px-4">
+                        <div className="w-full max-w-3xl rounded-[28px] border border-dashed border-primary-400/35 bg-[radial-gradient(circle_at_50%_0%,rgba(0,116,73,.2),transparent_56%),rgba(255,255,255,.025)] px-8 py-12 text-center shadow-[0_24px_70px_rgba(0,0,0,.2)]">
+                          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-500 text-3xl text-white shadow-[0_16px_34px_rgba(239,84,53,.24)]">
+                            <i className="ri-sparkling-2-fill" />
+                          </span>
+                          <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.2em] text-primary-300">AI-first uniform studio</p>
+                          <h2 className="mx-auto mt-2 max-w-xl font-heading text-3xl font-semibold leading-tight text-white sm:text-4xl">Your generated uniform will appear here</h2>
+                          <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-background-50/55">Add a team name and design brief in the AI Designer panel. You can also upload a reference image, lock any details you want to keep, and generate a complete front-and-back concept.</p>
+                          <div className="mx-auto mt-7 grid max-w-xl gap-3 text-left sm:grid-cols-3">
+                            {[
+                              ["ri-image-add-line", "Reference", "Optional inspiration image"],
+                              ["ri-quill-pen-line", "Describe", "Colors, style and identity"],
+                              ["ri-magic-line", "Generate", "Complete front and back kit"],
+                            ].map(([icon, title, copy]) => (
+                              <div key={title} className="rounded-2xl border border-white/[0.07] bg-black/15 p-4">
+                                <i className={`${icon} text-lg text-primary-300`} />
+                                <strong className="mt-2 block text-xs text-white">{title}</strong>
+                                <span className="mt-1 block text-[10px] leading-relaxed text-white/40">{copy}</span>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </div>
