@@ -66,9 +66,43 @@ describe("RouteSeo", () => {
     expect(robots()).toBe("index, follow, max-image-preview:large");
   });
 
+  it("preserves generated CMS metadata while hydrating a dynamic route", async () => {
+    document.head.innerHTML = `
+      <link rel="canonical" href="https://connect767.com/listings/matrix-capital-group" />
+      <script id="connect767-route-schema" type="application/ld+json">${JSON.stringify({
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebPage",
+            url: "https://connect767.com/listings/matrix-capital-group",
+            name: "Matrix Capital Group | Connect767 Directory",
+            description: "Construction, finance and real estate services in Houston.",
+          },
+          {
+            "@type": "BreadcrumbList",
+            itemListElement: [{ position: 2, name: "Matrix Capital Group" }],
+          },
+        ],
+      })}</script>
+    `;
+
+    renderRoute("/listings/matrix-capital-group");
+    await waitFor(() =>
+      expect(document.title).toBe("Matrix Capital Group | Connect767 Directory"),
+    );
+    expect(description()).toBe("Construction, finance and real estate services in Houston.");
+    expect(canonical()).toBe("https://connect767.com/listings/matrix-capital-group");
+  });
+
   it("marks unknown routes as not found and prevents indexing", async () => {
     renderRoute("/this-page-does-not-exist");
     await waitFor(() => expect(document.title).toBe("Page Not Found | Connect767"));
     expect(robots()).toBe("noindex, nofollow");
+  });
+
+  it("keeps filtered collection URLs out of the index while preserving their canonical page", async () => {
+    renderRoute("/listings?category=fitness");
+    await waitFor(() => expect(robots()).toBe("noindex, follow"));
+    expect(canonical()).toBe("https://connect767.com/listings");
   });
 });
