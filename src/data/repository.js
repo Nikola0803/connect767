@@ -92,6 +92,7 @@ export async function createCommunityPost(payload) {
     form.append("listingId", String(payload.listingId));
     form.append("text", payload.text);
     form.append("type", payload.type || "status");
+    form.append("fontStyle", payload.fontStyle || "default");
     if (payload.emotion) form.append("emotion", payload.emotion);
     if (payload.activity) form.append("activity", payload.activity);
     if (payload.postLocation) form.append("postLocation", payload.postLocation);
@@ -112,6 +113,7 @@ export async function createCommunityPost(payload) {
       longitude: created?.longitude ?? payload.longitude ?? null,
       mentions: created?.mentions?.length ? created.mentions : payload.mentions || [],
       details: created?.details || payload.details || {},
+      fontStyle: created?.fontStyle || payload.fontStyle || "default",
       fileUrl: created?.fileUrl || "",
       fileName: created?.fileName || payload.file?.name || "",
       fileType: created?.fileType || payload.file?.type || "",
@@ -129,6 +131,7 @@ export async function createCommunityPost(payload) {
     longitude: created?.longitude ?? payload.longitude ?? null,
     mentions: created?.mentions?.length ? created.mentions : payload.mentions || [],
     details: created?.details || payload.details || {},
+    fontStyle: created?.fontStyle || payload.fontStyle || "default",
   };
 }
 

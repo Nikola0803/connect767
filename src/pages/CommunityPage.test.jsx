@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CommunityPage, { listingAvatar } from "./CommunityPage";
-import { deleteCommunityPost, getListings, getMyListings } from "../data/repository";
+import { createCommunityPost, deleteCommunityPost, getListings, getMyListings } from "../data/repository";
 
 vi.mock("../hooks/useAuth", () => ({
   useAuth: () => ({ isAuthenticated: true }),
@@ -37,6 +37,7 @@ describe("CommunityPage composer menus", () => {
     vi.mocked(getListings).mockResolvedValue([
       { id: 84, title: "Sadick Eustache", slug: "sadick-eustache", status: "publish", logo: "https://connect767.com/sadick-profile.jpg", location: "Houston, Texas" },
     ]);
+    vi.mocked(createCommunityPost).mockResolvedValue({ id: 99, listingId: 42, listingSlug: "james-local-fruits", listingTitle: "James Local Fruits", text: "Animated announcement", type: "status", fontStyle: "editorial", mediaUrl: "blob:community-gif", createdAt: new Date().toISOString(), comments: [] });
   });
 
   afterEach(() => vi.restoreAllMocks());
@@ -185,5 +186,28 @@ describe("CommunityPage composer menus", () => {
       expect(screen.getByRole("menuitem", { name: /File PDF, Word, Excel/i })).toBeInTheDocument();
       fireEvent.click(screen.getByRole("button", { name: /File added/i }));
     }
+  });
+
+  it("applies a post font style and attaches an animated GIF", async () => {
+    const objectUrl = vi.fn(() => "blob:community-gif");
+    Object.defineProperty(URL, "createObjectURL", { configurable: true, value: objectUrl });
+    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
+    render(<MemoryRouter><CommunityPage /></MemoryRouter>);
+
+    const composer = await screen.findByLabelText("Status update. Type @ to mention a business.");
+    fireEvent.change(composer, { target: { value: "Animated announcement" } });
+    fireEvent.change(screen.getByLabelText("Post font style"), { target: { value: "editorial" } });
+    expect(composer).toHaveClass("font-heading");
+
+    fireEvent.click(screen.getByRole("button", { name: /^attach/i }));
+    expect(screen.getByRole("menuitem", { name: /GIF Upload an animated GIF/i })).toBeInTheDocument();
+    const gif = new File(["GIF89a"], "launch.gif", { type: "image/gif" });
+    fireEvent.change(screen.getByLabelText("Attach a GIF"), { target: { files: [gif] } });
+    expect(await screen.findByAltText("Animated GIF preview")).toHaveAttribute("src", "blob:community-gif");
+    expect(screen.getByRole("button", { name: /GIF added/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Post update" }));
+    await waitFor(() => expect(createCommunityPost).toHaveBeenCalledWith(expect.objectContaining({ fontStyle: "editorial", image: gif })));
+    expect(objectUrl).toHaveBeenCalledWith(gif);
   });
 });
