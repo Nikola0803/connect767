@@ -146,6 +146,9 @@ class C767_REST_Community
         $location = $listing_id ? (string) get_post_meta($listing_id, 'location', true) : '';
         $industry = $listing_id ? (string) get_post_meta($listing_id, 'category_slug', true) : '';
         $logo = $listing_id ? (string) get_post_meta($listing_id, 'logo', true) : '';
+        if ($logo === '' && $listing_id) {
+            $logo = (string) get_the_post_thumbnail_url($listing_id, 'thumbnail');
+        }
         $mentions = get_post_meta($post->ID, '_community_mentions', true);
         $mentions = is_array($mentions) ? $mentions : [];
 
