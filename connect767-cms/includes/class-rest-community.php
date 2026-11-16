@@ -133,10 +133,19 @@ class C767_REST_Community
     {
         $listing_id = (int) get_post_meta($post->ID, '_community_listing_id', true);
         $listing = get_post($listing_id);
-        $reaction_ids = get_post_meta($post->ID, '_community_reaction_user_ids', true);
-        $reaction_ids = is_array($reaction_ids) ? array_map('intval', $reaction_ids) : [];
-        $thumb_ids = get_post_meta($post->ID, '_community_thumb_user_ids', true);
-        $thumb_ids = is_array($thumb_ids) ? array_map('intval', $thumb_ids) : [];
+        $reaction_meta = self::reaction_meta_keys();
+        $reaction_counts = [];
+        $viewer_reaction = '';
+        $total_reactions = 0;
+        foreach ($reaction_meta as $type => $meta_key) {
+            $ids = get_post_meta($post->ID, $meta_key, true);
+            $ids = is_array($ids) ? array_values(array_unique(array_map('intval', $ids))) : [];
+            $reaction_counts[$type] = count($ids);
+            $total_reactions += count($ids);
+            if (get_current_user_id() > 0 && in_array(get_current_user_id(), $ids, true)) {
+                $viewer_reaction = $type;
+            }
+        }
         $comments = get_comments([
             'post_id' => $post->ID,
             'status' => 'approve',
@@ -173,10 +182,9 @@ class C767_REST_Community
             'videoUrl' => esc_url_raw((string) get_post_meta($post->ID, '_community_video_url', true)),
             'linkUrl' => esc_url_raw((string) get_post_meta($post->ID, '_community_link_url', true)),
             'createdAt' => mysql_to_rfc3339($post->post_date_gmt),
-            'reactionCount' => count($reaction_ids),
-            'reacted' => in_array(get_current_user_id(), $reaction_ids, true),
-            'thumbCount' => count($thumb_ids),
-            'thumbed' => in_array(get_current_user_id(), $thumb_ids, true),
+            'reactions' => $reaction_counts,
+            'viewerReaction' => $viewer_reaction,
+            'totalReactions' => $total_reactions,
             'canManage' => get_current_user_id() > 0 && ((int) $post->post_author === (int) get_current_user_id() || current_user_can('delete_post', $post->ID)),
             'comments' => array_map([__CLASS__, 'serialize_comment'], $comments),
         ];
@@ -499,17 +507,68 @@ class C767_REST_Community
             return new WP_Error('c767_community_post_not_found', 'Community update not found.', ['status' => 404]);
         }
         $user_id = get_current_user_id();
-        $reaction_type = sanitize_key((string) $request->get_param('type')) === 'thumb' ? 'thumb' : 'appreciate';
-        $meta_key = $reaction_type === 'thumb' ? '_community_thumb_user_ids' : '_community_reaction_user_ids';
-        $ids = get_post_meta($post->ID, $meta_key, true);
-        $ids = is_array($ids) ? array_values(array_unique(array_map('intval', $ids))) : [];
-        if (in_array($user_id, $ids, true)) {
-            $ids = array_values(array_diff($ids, [$user_id]));
-        } else {
-            $ids[] = $user_id;
+        $reaction_meta = self::reaction_meta_keys();
+        $requested_type = sanitize_key((string) $request->get_param('type'));
+        $legacy_types = ['thumb' => 'like', 'appreciate' => 'love'];
+        $reaction_type = $legacy_types[$requested_type] ?? $requested_type;
+        if (!isset($reaction_meta[$reaction_type])) {
+            return new WP_Error('c767_invalid_community_reaction', 'Choose a valid reaction.', ['status' => 400]);
         }
-        update_post_meta($post->ID, $meta_key, $ids);
-        return rest_ensure_response(['count' => count($ids), 'reacted' => in_array($user_id, $ids, true)]);
+
+        $current_type = '';
+        $reaction_ids = [];
+        foreach ($reaction_meta as $type => $meta_key) {
+            $ids = get_post_meta($post->ID, $meta_key, true);
+            $ids = is_array($ids) ? array_values(array_unique(array_map('intval', $ids))) : [];
+            if (in_array($user_id, $ids, true)) {
+                $current_type = $type;
+            }
+            $reaction_ids[$type] = array_values(array_diff($ids, [$user_id]));
+        }
+
+        $viewer_reaction = $current_type === $reaction_type ? '' : $reaction_type;
+        if ($viewer_reaction !== '') {
+            $reaction_ids[$viewer_reaction][] = $user_id;
+        }
+
+        $counts = [];
+        $total = 0;
+        foreach ($reaction_meta as $type => $meta_key) {
+            update_post_meta($post->ID, $meta_key, $reaction_ids[$type]);
+            $counts[$type] = count($reaction_ids[$type]);
+            $total += $counts[$type];
+        }
+
+        return rest_ensure_response([
+            'reactions' => $counts,
+            'viewerReaction' => $viewer_reaction,
+            'total' => $total,
+        ]);
+    }
+
+    private static function reaction_meta_keys()
+    {
+        return [
+            'like' => '_community_thumb_user_ids',
+            'dislike' => '_community_reaction_dislike_user_ids',
+            'love' => '_community_reaction_user_ids',
+            'care' => '_community_reaction_care_user_ids',
+            'celebrate' => '_community_reaction_celebrate_user_ids',
+            'support' => '_community_reaction_support_user_ids',
+            'insightful' => '_community_reaction_insightful_user_ids',
+            'curious' => '_community_reaction_curious_user_ids',
+            'funny' => '_community_reaction_funny_user_ids',
+            'wow' => '_community_reaction_wow_user_ids',
+            'sad' => '_community_reaction_sad_user_ids',
+            'angry' => '_community_reaction_angry_user_ids',
+            'fire' => '_community_reaction_fire_user_ids',
+            'applause' => '_community_reaction_applause_user_ids',
+            'thanks' => '_community_reaction_thanks_user_ids',
+            'hundred' => '_community_reaction_hundred_user_ids',
+            'eyes' => '_community_reaction_eyes_user_ids',
+            'rocket' => '_community_reaction_rocket_user_ids',
+            'star' => '_community_reaction_star_user_ids',
+        ];
     }
 
     public static function create_comment(WP_REST_Request $request)

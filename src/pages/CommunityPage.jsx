@@ -23,6 +23,28 @@ const POST_TYPES = [
   { value: "opportunity", label: "Opportunity", icon: "ri-briefcase-4-line", description: "Share a job, partnership, contract, or collaboration opportunity.", placeholder: "Describe the opportunity, requirements, and how to respond…", action: "Post opportunity" },
 ];
 
+export const COMMUNITY_REACTIONS = [
+  { value: "like", label: "Like", emoji: "👍" },
+  { value: "dislike", label: "Dislike", emoji: "👎" },
+  { value: "love", label: "Love", emoji: "❤️" },
+  { value: "care", label: "Care", emoji: "🫶" },
+  { value: "celebrate", label: "Celebrate", emoji: "🎉" },
+  { value: "support", label: "Support", emoji: "🤝" },
+  { value: "insightful", label: "Insightful", emoji: "💡" },
+  { value: "curious", label: "Curious", emoji: "🤔" },
+  { value: "funny", label: "Funny", emoji: "😂" },
+  { value: "wow", label: "Wow", emoji: "😮" },
+  { value: "sad", label: "Sad", emoji: "😢" },
+  { value: "angry", label: "Angry", emoji: "😡" },
+  { value: "fire", label: "Fire", emoji: "🔥" },
+  { value: "applause", label: "Applause", emoji: "👏" },
+  { value: "thanks", label: "Thanks", emoji: "🙏" },
+  { value: "hundred", label: "One hundred", emoji: "💯" },
+  { value: "eyes", label: "Watching", emoji: "👀" },
+  { value: "rocket", label: "Boost", emoji: "🚀" },
+  { value: "star", label: "Star", emoji: "⭐" },
+];
+
 export const COMMUNITY_EMOTIONS = [
   { value: "happy", label: "Happy", emoji: "😊" },
   { value: "loved", label: "Loved", emoji: "🥰" },
@@ -250,6 +272,7 @@ function PostOptionsMenu({ post, authenticated, canManage, onDelete, onEdit, onH
 
 function CommunityPost({ post, authenticated, canManage, onReact, onComment, onDelete, onEdit, onHide, onMute, onReport }) {
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [reactionsOpen, setReactionsOpen] = useState(false);
   const [comment, setComment] = useState("");
   const comments = post.comments || [];
   const emotion = COMMUNITY_EMOTIONS.find((item) => item.value === post.emotion);
@@ -259,6 +282,13 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
   const hasLegacyLocationLabel = hasLiveLocation && isLegacyCoordinateLabel(post.postLocation);
   const [postLocationLabel, setPostLocationLabel] = useState(hasLegacyLocationLabel ? "Current location" : post.postLocation);
   const postShareUrl = typeof window !== "undefined" ? `${window.location.origin}/community#community-post-${post.id}` : "";
+  const reactionCounts = post.reactions || { like: post.thumbCount || 0, love: post.reactionCount || 0 };
+  const viewerReaction = post.viewerReaction || (post.thumbed ? "like" : post.reacted ? "love" : "");
+  const selectedReaction = COMMUNITY_REACTIONS.find((item) => item.value === viewerReaction);
+  const visibleReactions = COMMUNITY_REACTIONS.filter((item) => Number(reactionCounts[item.value]) > 0);
+  const totalReactions = Number.isFinite(Number(post.totalReactions))
+    ? Number(post.totalReactions)
+    : Object.values(reactionCounts).reduce((sum, count) => sum + Number(count || 0), 0);
 
   useEffect(() => {
     setPostLocationLabel(hasLegacyLocationLabel ? "Current location" : post.postLocation);
@@ -314,13 +344,20 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
       )}
 
       <div className="mt-4 flex items-center justify-between border-b border-background-200 pb-3 text-xs text-foreground-500">
-        <span>{post.reactionCount || 0} appreciations · {post.thumbCount || 0} thumbs up</span>
+        <span className="inline-flex min-h-6 items-center gap-2">
+          {visibleReactions.length > 0 && <span className="flex -space-x-1" aria-hidden="true">{visibleReactions.slice(0, 4).map((item) => <span key={item.value} className="grid h-6 w-6 place-items-center rounded-full border-2 border-background-50 bg-white text-sm shadow-sm">{item.emoji}</span>)}</span>}
+          <span>{totalReactions} reaction{totalReactions === 1 ? "" : "s"}</span>
+        </span>
         <button type="button" onClick={() => setCommentsOpen((open) => !open)}>{comments.length} comment{comments.length === 1 ? "" : "s"}</button>
       </div>
       <div className="flex items-center gap-2 pt-2">
         <div role="toolbar" aria-label="Post actions" className="flex min-w-0 flex-1 items-center justify-around gap-1 sm:flex-none sm:justify-start">
-          <button type="button" disabled={!authenticated} onClick={() => onReact(post.id, "appreciate")} aria-label="Appreciate this update" title="Appreciate" className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-lg transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${post.reacted ? "bg-primary-50 text-primary-700" : "text-foreground-600 hover:bg-background-100 hover:text-primary-700"}`}><i aria-hidden="true" className={post.reacted ? "ri-heart-3-fill" : "ri-heart-3-line"} /></button>
-          <button type="button" disabled={!authenticated} onClick={() => onReact(post.id, "thumb")} aria-label="Give this update a thumbs up" title="Thumbs up" className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-lg transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${post.thumbed ? "bg-primary-50 text-primary-700" : "text-foreground-600 hover:bg-background-100 hover:text-primary-700"}`}><i aria-hidden="true" className={post.thumbed ? "ri-thumb-up-fill" : "ri-thumb-up-line"} /></button>
+          <div className="relative">
+            {reactionsOpen && authenticated && <div role="menu" aria-label="Choose a reaction" className="no-scrollbar absolute bottom-full left-0 z-30 mb-2 flex max-w-[calc(100vw-2.5rem)] items-center gap-1 overflow-x-auto rounded-full border border-background-200 bg-white p-1.5 shadow-[0_14px_40px_rgba(24,48,36,0.18)] sm:max-w-[42rem]">
+              {COMMUNITY_REACTIONS.map((item) => <button key={item.value} type="button" role="menuitem" title={item.label} aria-label={item.label} aria-pressed={viewerReaction === item.value} onClick={() => { setReactionsOpen(false); onReact(post.id, item.value); }} className={`group/reaction relative grid h-10 w-10 shrink-0 place-items-center rounded-full text-xl transition hover:-translate-y-1 hover:bg-primary-50 hover:scale-110 ${viewerReaction === item.value ? "bg-primary-100 ring-2 ring-primary-500" : ""}`}><span aria-hidden="true">{item.emoji}</span><span className="pointer-events-none absolute -top-8 hidden rounded-md bg-foreground-950 px-2 py-1 text-[10px] font-bold text-white group-hover/reaction:block">{item.label}</span></button>)}
+            </div>}
+            <button type="button" disabled={!authenticated} onClick={() => setReactionsOpen((open) => !open)} aria-expanded={reactionsOpen} aria-haspopup="menu" aria-label={selectedReaction ? `Reacted ${selectedReaction.label}. Choose another reaction` : "React to this update"} title={selectedReaction?.label || "React"} className={`flex h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-full px-2 text-lg transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${selectedReaction ? "bg-primary-50 text-primary-700" : "text-foreground-600 hover:bg-background-100 hover:text-primary-700"}`}>{selectedReaction ? <span aria-hidden="true">{selectedReaction.emoji}</span> : <i aria-hidden="true" className="ri-emotion-line" />}</button>
+          </div>
           <button type="button" onClick={() => setCommentsOpen((open) => !open)} aria-label={commentsOpen ? "Hide comments" : "Show comments"} title="Comment" className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-lg transition-colors ${commentsOpen ? "bg-primary-50 text-primary-700" : "text-foreground-600 hover:bg-background-100 hover:text-primary-700"}`}><i aria-hidden="true" className="ri-chat-3-line" /></button>
           <ShareMenu title={`${post.listingTitle} on Connect767`} url={postShareUrl} placement="top" iconOnly buttonClassName="!h-11 !w-11 !rounded-full !bg-transparent !text-lg !text-foreground-600 !shadow-none hover:!bg-background-100 hover:!text-primary-700" />
         </div>
@@ -540,15 +577,20 @@ export default function CommunityPage() {
       setMessage(postError.message || "Your update could not be published.");
     } finally { setSubmitting(false); }
   };
-  const react = async (postId, reactionType = "appreciate") => {
+  const react = async (postId, reactionType = "like") => {
     const current = posts.find((post) => post.id === postId);
-    const isThumb = reactionType === "thumb";
-    const activeKey = isThumb ? "thumbed" : "reacted";
-    const countKey = isThumb ? "thumbCount" : "reactionCount";
-    setPosts((items) => items.map((post) => post.id === postId ? { ...post, [activeKey]: !post[activeKey], [countKey]: Math.max(0, (post[countKey] || 0) + (post[activeKey] ? -1 : 1)) } : post));
+    const previousType = current?.viewerReaction || (current?.thumbed ? "like" : current?.reacted ? "love" : "");
+    const nextType = previousType === reactionType ? "" : reactionType;
+    setPosts((items) => items.map((post) => {
+      if (post.id !== postId) return post;
+      const counts = { ...(post.reactions || { like: post.thumbCount || 0, love: post.reactionCount || 0 }) };
+      if (previousType) counts[previousType] = Math.max(0, Number(counts[previousType] || 0) - 1);
+      if (nextType) counts[nextType] = Number(counts[nextType] || 0) + 1;
+      return { ...post, reactions: counts, viewerReaction: nextType, totalReactions: Object.values(counts).reduce((sum, count) => sum + Number(count || 0), 0) };
+    }));
     try {
       const result = await toggleCommunityReaction(postId, reactionType);
-      if (result) setPosts((items) => items.map((post) => post.id === postId ? { ...post, [activeKey]: result.reacted, [countKey]: result.count } : post));
+      if (result) setPosts((items) => items.map((post) => post.id === postId ? { ...post, reactions: result.reactions, viewerReaction: result.viewerReaction, totalReactions: result.total } : post));
     } catch { setPosts((items) => items.map((post) => post.id === postId ? current : post)); }
   };
   const comment = async (postId, value) => {

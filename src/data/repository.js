@@ -73,10 +73,9 @@ export async function createCommunityPost(payload) {
       listingTitle: payload.listingTitle || "Your business",
       listingLogo: payload.listingLogo || "",
       createdAt: new Date().toISOString(),
-      reactionCount: 0,
-      reacted: false,
-      thumbCount: 0,
-      thumbed: false,
+      reactions: {},
+      viewerReaction: "",
+      totalReactions: 0,
       comments: [],
     };
   }
@@ -118,7 +117,7 @@ export async function createCommunityPost(payload) {
   };
 }
 
-export async function toggleCommunityReaction(postId, reactionType = "appreciate") {
+export async function toggleCommunityReaction(postId, reactionType = "like") {
   if (!isLiveApi) return null;
   return customClient.post(`/community/posts/${postId}/reactions`, { type: reactionType });
 }
