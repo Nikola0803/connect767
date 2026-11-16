@@ -44,6 +44,11 @@ describe("CommunityPage composer menus", () => {
   it("shows only one attachment or feeling panel at a time", async () => {
     render(<MemoryRouter><CommunityPage /></MemoryRouter>);
 
+    const composer = await screen.findByLabelText("Status update. Type @ to mention a business.");
+    expect(screen.queryByRole("button", { name: /attach/i })).not.toBeInTheDocument();
+    expect(composer).toHaveAttribute("aria-expanded", "false");
+    fireEvent.focus(composer);
+    expect(composer).toHaveAttribute("aria-expanded", "true");
     const attachButton = await screen.findByRole("button", { name: /attach/i });
     fireEvent.click(attachButton);
     expect(screen.getByRole("menu", { name: "Attach to update" })).toBeInTheDocument();
@@ -59,7 +64,7 @@ describe("CommunityPage composer menus", () => {
 
   it("keeps every mobile feed filter and composer mode interactive", async () => {
     render(<MemoryRouter><CommunityPage /></MemoryRouter>);
-    await screen.findByLabelText("Status update. Type @ to mention a business.");
+    const composer = await screen.findByLabelText("Status update. Type @ to mention a business.");
     const consolidatedFilters = screen.getByRole("region", { name: "Community feed filters" });
     expect(consolidatedFilters).toContainElement(screen.getByRole("button", { name: "Feed view: For you" }));
     expect(consolidatedFilters).toContainElement(screen.getByRole("button", { name: "Post type: All Posts" }));
@@ -83,6 +88,8 @@ describe("CommunityPage composer menus", () => {
     expect(screen.getByRole("button", { name: "Feed view: For you" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Post type: Requests" })).toBeInTheDocument();
 
+    expect(screen.queryByRole("button", { name: "Offer" })).not.toBeInTheDocument();
+    fireEvent.change(composer, { target: { value: "Fresh fruit boxes available today" } });
     const offerButton = await screen.findByRole("button", { name: "Offer" });
     fireEvent.click(offerButton);
     expect(offerButton).toHaveAttribute("aria-pressed", "true");
@@ -91,9 +98,6 @@ describe("CommunityPage composer menus", () => {
     fireEvent.change(screen.getByLabelText("Price"), { target: { value: "$25" } });
     expect(screen.getByLabelText("Price")).toHaveValue("$25");
 
-    const postButton = screen.getByRole("button", { name: "Write offer first" });
-    expect(postButton).toBeDisabled();
-    fireEvent.change(screen.getByLabelText("Status update. Type @ to mention a business."), { target: { value: "Fresh fruit boxes available today" } });
     expect(screen.getByRole("button", { name: "Post offer" })).toBeEnabled();
 
     fireEvent.click(screen.getByRole("button", { name: "Announcement" }));
@@ -164,6 +168,7 @@ describe("CommunityPage composer menus", () => {
   it("allows document attachments on every post type", async () => {
     render(<MemoryRouter><CommunityPage /></MemoryRouter>);
 
+    fireEvent.focus(await screen.findByLabelText("Status update. Type @ to mention a business."));
     fireEvent.click(await screen.findByRole("button", { name: "Offer" }));
     fireEvent.click(screen.getByRole("button", { name: /attach/i }));
     expect(screen.getByRole("menuitem", { name: /File PDF, Word, Excel/i })).toBeInTheDocument();
