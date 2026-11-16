@@ -1002,8 +1002,10 @@ export function AIArtworkPanel({
   };
 
   const generateUniform = async (revision = "") => {
-    if (!brandName.trim() || !brief.trim()) return;
     const refinement = typeof revision === "string" ? revision.trim() : "";
+    const effectiveBrandName = brandName.trim() || uniformPlan?.name || "Team uniform";
+    const effectiveBrief = brief.trim() || uniformPlan?.summary || "Preserve the current uniform direction.";
+    if (!effectiveBrandName || (!effectiveBrief && !refinement)) return;
     const existingConcept = refinement ? uniformPlan?.conceptImage?.src || "" : "";
     const currentDesign = uniformPlan || { collar, sleeve, colors, pattern: { key: currentPatternKey } };
     setGenerating(true);
@@ -1017,10 +1019,10 @@ export function AIArtworkPanel({
         body: JSON.stringify({
           sport,
           style,
-          brandName: brandName.trim(),
+          brandName: effectiveBrandName,
           brief: refinement
-            ? `Revision request: ${refinement}\nPreserve every part of the current concept that is not explicitly changed. Original direction: ${brief.trim()}`
-            : brief.trim(),
+            ? `Revision request: ${refinement}\nPreserve every part of the current concept that is not explicitly changed. Original direction: ${effectiveBrief}`
+            : effectiveBrief,
           collarOptions,
           sleeveOptions: sleeveOptions?.length ? sleeveOptions : ["Sleeveless"],
           current: {
@@ -1042,7 +1044,7 @@ export function AIArtworkPanel({
         body: JSON.stringify({
           productType: "Jersey",
           style,
-          brandName: brandName.trim(),
+          brandName: effectiveBrandName,
           primaryColor: plan.colors.body,
           secondaryColor: plan.colors.shirtStrip,
           generationMode: "uniform",
@@ -1101,6 +1103,72 @@ export function AIArtworkPanel({
     }
   };
 
+  const preservationControls = mode === "uniform" ? (
+    <div className="rounded-xl border border-background-200 bg-white p-3">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-foreground-500">Keep unchanged</p>
+          <p className="mt-1 text-[9px] leading-relaxed text-foreground-400">Check only what AI must preserve in the next result.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setLocks((current) => ({ ...current, collar: false, sleeve: false, colors: false, pattern: false }))}
+          className="shrink-0 cursor-pointer text-[9px] font-bold text-primary-700 hover:text-primary-900"
+        >
+          Unlock design
+        </button>
+      </div>
+      {allDesignControlsLocked && (
+        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] leading-relaxed text-amber-800">
+          <strong className="block">The complete design is locked.</strong>
+          Unlock at least one visual setting to create a visible change.
+        </div>
+      )}
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        {[
+          ["collar", "Collar"],
+          ["sleeve", "Sleeve length"],
+          ["colors", "All colors"],
+          ["pattern", "Pattern"],
+          ["artwork", "Existing artwork"],
+        ].map(([key, label]) => (
+          <label key={key} className="flex cursor-pointer items-center gap-2 rounded-lg bg-background-100 px-2.5 py-2 text-[10px] font-semibold text-foreground-600">
+            <input type="checkbox" checked={locks[key]} onChange={() => toggleLock(key)} className="accent-primary-700" />
+            {label}
+          </label>
+        ))}
+      </div>
+    </div>
+  ) : null;
+
+  const refinementControls = mode === "uniform" && uniformPlan ? (
+    <div className="rounded-2xl border border-accent-200 bg-accent-50/55 p-3.5 shadow-sm">
+      <div className="flex items-start gap-2.5">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent-500 text-white"><i className="ri-edit-2-line" /></span>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-accent-800">Refine current design</p>
+          <p className="mt-1 text-[9px] leading-relaxed text-foreground-500">Describe only what should change. The image on the main canvas is automatically used as the reference.</p>
+        </div>
+      </div>
+      <textarea
+        value={refinementBrief}
+        onChange={(event) => setRefinementBrief(event.target.value)}
+        placeholder="e.g. Keep everything else, make the shorts black and add three red horizontal chest stripes."
+        maxLength={600}
+        rows={3}
+        className="mt-3 w-full resize-none rounded-lg border border-accent-200 bg-white px-3 py-2.5 text-[11px] text-foreground-950 outline-none transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
+      />
+      <button
+        type="button"
+        disabled={generating || !refinementBrief.trim()}
+        onClick={() => generateUniform(refinementBrief)}
+        className="mt-2 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-accent-500 px-3 py-2.5 text-[11px] font-bold text-white transition hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-45"
+      >
+        <i className={generating ? "ri-loader-4-line animate-spin" : "ri-magic-line"} /> {generating ? "Refining current image…" : "Refine current image"}
+      </button>
+    </div>
+  ) : null;
+
   return (
     <div>
       <div className="mb-5 rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-white p-4">
@@ -1140,6 +1208,9 @@ export function AIArtworkPanel({
             <i className="ri-image-edit-line mr-1.5" /> Transparent artwork
           </button>
         </div>
+
+        {refinementControls}
+        {uniformPlan && preservationControls}
 
         <div>
           <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-500">Team or brand name</label>
@@ -1197,41 +1268,7 @@ export function AIArtworkPanel({
           </div>
         )}
 
-        {mode === "uniform" && (
-          <div className="rounded-xl border border-background-200 bg-white p-3">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-foreground-500">Keep current settings</p>
-              <button
-                type="button"
-                onClick={() => setLocks((current) => ({ ...current, collar: false, sleeve: false, colors: false, pattern: false }))}
-                className="cursor-pointer text-[9px] font-bold text-primary-700 hover:text-primary-900"
-              >
-                Unlock design
-              </button>
-            </div>
-            <p className="mt-2 text-[9px] leading-relaxed text-foreground-400">Check only the settings AI must preserve. Unchecked settings become part of the new design.</p>
-            {allDesignControlsLocked && (
-              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] leading-relaxed text-amber-800">
-                <strong className="block">The complete design is locked.</strong>
-                Unlock at least one visual setting so AI can create a visibly different uniform.
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                ["collar", "Collar"],
-                ["sleeve", "Sleeve length"],
-                ["colors", "All colors"],
-                ["pattern", "Pattern"],
-                ["artwork", "Existing artwork"],
-              ].map(([key, label]) => (
-                <label key={key} className="flex cursor-pointer items-center gap-2 rounded-lg bg-background-100 px-2.5 py-2 text-[10px] font-semibold text-foreground-600">
-                  <input type="checkbox" checked={locks[key]} onChange={() => toggleLock(key)} className="accent-primary-700" />
-                  {label}
-                </label>
-              ))}
-            </div>
-          </div>
-        )}
+        {!uniformPlan && preservationControls}
 
         <div className="flex items-center justify-between rounded-xl border border-background-200 bg-background-100 px-3 py-2.5">
           <span className="text-[11px] font-semibold text-foreground-600">Uses current uniform colors</span>
@@ -1245,58 +1282,37 @@ export function AIArtworkPanel({
 
         {mode === "uniform" && uniformPlan && (
           <div className="space-y-3 rounded-2xl border border-primary-200 bg-white p-4 shadow-sm">
-            {uniformPlan.conceptImage?.src && (
-              <div className="overflow-hidden rounded-xl border border-background-200 bg-background-100">
-                <img
-                  src={uniformPlan.conceptImage.src}
-                  alt={`${uniformPlan.name} complete front and back uniform concept`}
-                  className="aspect-square w-full object-contain"
-                />
-                <div className="border-t border-background-200 bg-white px-3 py-2 text-[9px] font-bold uppercase tracking-[0.12em] text-primary-700">
-                  Full AI uniform concept · front and back
-                </div>
+            <div>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-primary-700">Current AI design</p>
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-1 text-[8px] font-bold uppercase tracking-wide text-primary-800"><i className="ri-layout-2-line" /> Shown on canvas</span>
               </div>
-            )}
-              <div>
-              <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-primary-700">AI design plan</p>
               <h4 className="mt-1 font-heading text-lg font-semibold text-foreground-950">{uniformPlan.name}</h4>
               <p className="mt-1 text-[11px] leading-relaxed text-foreground-500">{uniformPlan.summary}</p>
             </div>
-              <div className="rounded-xl border border-accent-200 bg-accent-50/55 p-3">
-                <label className="text-[9px] font-bold uppercase tracking-[0.14em] text-accent-800">Refine current design</label>
-                <p className="mt-1 text-[9px] leading-relaxed text-foreground-500">Describe only what should change. The current AI image is automatically used as the visual reference.</p>
-                <textarea
-                  value={refinementBrief}
-                  onChange={(event) => setRefinementBrief(event.target.value)}
-                  placeholder="e.g. Keep everything else, make the shorts black and add three red horizontal chest stripes."
-                  maxLength={600}
-                  rows={3}
-                  className="mt-2 w-full resize-none rounded-lg border border-accent-200 bg-white px-3 py-2.5 text-[11px] text-foreground-950 outline-none transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
-                />
-                <button
-                  type="button"
-                  disabled={generating || !refinementBrief.trim()}
-                  onClick={() => generateUniform(refinementBrief)}
-                  className="mt-2 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-accent-500 px-3 py-2.5 text-[11px] font-bold text-white transition hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-45"
-                >
-                  <i className={generating ? "ri-loader-4-line animate-spin" : "ri-edit-2-line"} /> {generating ? "Refining current image…" : "Refine current image"}
-                </button>
-              </div>
-            <div className="grid grid-cols-2 gap-2 text-[10px]">
-              <div className="rounded-lg bg-background-100 px-3 py-2"><span className="text-foreground-400">Collar</span><strong className="mt-0.5 block text-foreground-800">{uniformPlan.collar}</strong></div>
-              <div className="rounded-lg bg-background-100 px-3 py-2"><span className="text-foreground-400">Sleeves</span><strong className="mt-0.5 block text-foreground-800">{uniformPlan.sleeve}</strong></div>
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              {Object.entries(uniformPlan.colors).map(([key, value]) => (
-                <div key={key} title={`${AI_COLOR_LABELS[key]}: ${value}`} className="text-center">
-                  <span className="mx-auto block h-8 w-8 rounded-full border border-black/10 shadow-sm" style={{ background: value }} />
-                  <span className="mt-1 block truncate text-[8px] text-foreground-500">{AI_COLOR_LABELS[key]}</span>
+            <details className="group rounded-xl border border-background-200 bg-background-50">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 text-[10px] font-bold text-foreground-700">
+                Production mapping details
+                <i className="ri-arrow-down-s-line transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="space-y-3 border-t border-background-200 p-3">
+                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                  <div className="rounded-lg bg-background-100 px-3 py-2"><span className="text-foreground-400">Collar</span><strong className="mt-0.5 block text-foreground-800">{uniformPlan.collar}</strong></div>
+                  <div className="rounded-lg bg-background-100 px-3 py-2"><span className="text-foreground-400">Sleeves</span><strong className="mt-0.5 block text-foreground-800">{uniformPlan.sleeve}</strong></div>
                 </div>
-              ))}
-            </div>
-            <div className="rounded-lg border border-background-200 px-3 py-2 text-[10px] text-foreground-600">
-              <strong className="text-foreground-800">Pattern:</strong> {uniformPlan.pattern.enabled ? `${uniformPlan.pattern.key} · ${uniformPlan.pattern.view}` : "Clean / none"}
-            </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {Object.entries(uniformPlan.colors).map(([key, value]) => (
+                    <div key={key} title={`${AI_COLOR_LABELS[key]}: ${value}`} className="text-center">
+                      <span className="mx-auto block h-8 w-8 rounded-full border border-black/10 shadow-sm" style={{ background: value }} />
+                      <span className="mt-1 block truncate text-[8px] text-foreground-500">{AI_COLOR_LABELS[key]}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="rounded-lg border border-background-200 px-3 py-2 text-[10px] text-foreground-600">
+                  <strong className="text-foreground-800">Pattern:</strong> {uniformPlan.pattern.enabled ? `${uniformPlan.pattern.key} · ${uniformPlan.pattern.view}` : "Clean / none"}
+                </div>
+              </div>
+            </details>
             {uniformPlan.crestSuggestion && (
               <button
                 type="button"
