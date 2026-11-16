@@ -20,10 +20,45 @@ import {
 } from "../data/repository";
 
 const POST_TYPES = [
-  { value: "status", label: "Update", icon: "ri-chat-3-line", description: "Share business news, progress, or a quick announcement.", placeholder: "Share a business update…", action: "Post update" },
-  { value: "offer", label: "Offer", icon: "ri-coupon-3-line", description: "Promote a special price, service, product, or limited-time deal.", placeholder: "Describe your offer, price, and how customers can claim it…", action: "Post offer" },
-  { value: "event", label: "Event", icon: "ri-calendar-event-line", description: "Announce an upcoming activity and include the date, time, and location.", placeholder: "Share the event date, time, location, and attendance details…", action: "Post event" },
-  { value: "opportunity", label: "Opportunity", icon: "ri-briefcase-4-line", description: "Share a job, partnership, contract, or collaboration opportunity.", placeholder: "Describe the opportunity, requirements, and how to respond…", action: "Post opportunity" },
+  { value: "status", label: "General Post", shortLabel: "General", icon: "ri-chat-3-line", description: "Share everyday updates, thoughts, and community discussions.", placeholder: "What would you like to share?", action: "Post update" },
+  { value: "offer", label: "Offer", icon: "ri-price-tag-3-line", description: "Promote a product, service, discount, or limited-time deal.", placeholder: "Describe your offer and how customers can claim it…", action: "Post offer" },
+  { value: "opportunity", label: "Opportunity", icon: "ri-briefcase-4-line", description: "Share a job, partnership, contract, or business prospect.", placeholder: "Describe the opportunity, requirements, and how to respond…", action: "Post opportunity" },
+  { value: "event", label: "Event", icon: "ri-calendar-event-line", description: "Share a community activity or upcoming event.", placeholder: "Share the event date, time, location, and attendance details…", action: "Post event" },
+  { value: "announcement", label: "Announcement", icon: "ri-megaphone-line", description: "Publish an important update from your business or organization.", placeholder: "Share your important announcement…", action: "Post announcement" },
+  { value: "request", label: "Request", icon: "ri-hand-heart-line", description: "Ask for services, products, assistance, or recommendations.", placeholder: "Describe what you need and how the community can help…", action: "Post request" },
+];
+
+const FEED_CATEGORIES = [
+  { value: "all", label: "All Posts", icon: "ri-layout-grid-line" },
+  { value: "offer", label: "Offers", icon: "ri-price-tag-3-line" },
+  { value: "opportunity", label: "Opportunities", icon: "ri-briefcase-4-line" },
+  { value: "event", label: "Events", icon: "ri-calendar-event-line" },
+  { value: "announcement", label: "Announcements", icon: "ri-megaphone-line" },
+  { value: "request", label: "Requests", icon: "ri-hand-heart-line" },
+];
+
+const POST_CTA_LABELS = {
+  offer: ["View Offer", "Claim Offer", "Learn More"],
+  opportunity: ["Apply Now", "View Opportunity", "Learn More"],
+};
+
+const EVERYONE_MENTION = {
+  id: 0,
+  slug: "everyone",
+  title: "Everyone in the directory",
+  audience: "directory",
+};
+
+const COMMUNITY_FILE_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "text/csv",
+  "text/plain",
 ];
 
 export const COMMUNITY_REACTIONS = [
@@ -139,6 +174,19 @@ function linkLabel(value = "") {
   } catch {
     return value;
   }
+}
+
+function formatFileSize(value = 0) {
+  const bytes = Number(value) || 0;
+  if (!bytes) return "File attachment";
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatPostDate(value = "") {
+  if (!value) return "";
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
 function mapUrl(latitude, longitude) {
@@ -282,6 +330,7 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
   const emotion = COMMUNITY_EMOTIONS.find((item) => item.value === post.emotion);
   const activity = COMMUNITY_ACTIVITIES.find((item) => item.value === post.activity);
   const postType = POST_TYPES.find((item) => item.value === post.type) || POST_TYPES[0];
+  const details = post.details || {};
   const hasLiveLocation = Number.isFinite(Number(post.latitude)) && Number.isFinite(Number(post.longitude));
   const hasLegacyLocationLabel = hasLiveLocation && isLegacyCoordinateLabel(post.postLocation);
   const [postLocationLabel, setPostLocationLabel] = useState(hasLegacyLocationLabel ? "Current location" : post.postLocation);
@@ -356,12 +405,13 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
       {post.mediaUrl && <img src={post.mediaUrl} alt={`Update from ${post.listingTitle}`} className="mt-4 max-h-[32rem] w-full rounded-2xl border border-background-200 object-cover" />}
       {post.videoUrl && <video src={post.videoUrl} controls playsInline preload="metadata" className="mt-4 max-h-[32rem] w-full rounded-2xl border border-background-200 bg-black object-contain">Your browser does not support video playback.</video>}
       {post.linkUrl && <a href={post.linkUrl} target="_blank" rel="noreferrer" className="mt-4 flex items-center gap-3 rounded-2xl border border-background-200 bg-background-100 p-4 transition hover:border-primary-300 hover:bg-primary-50/40"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary-700 text-white"><i className="ri-links-line text-lg" /></span><span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-primary-700">Shared link</span><span className="mt-1 block truncate text-sm font-semibold text-foreground-900">{linkLabel(post.linkUrl)}</span><span className="mt-0.5 block truncate text-xs text-foreground-500">{post.linkUrl}</span></span><i className="ri-arrow-right-up-line text-foreground-400" /></a>}
-      {!!post.mentions?.length && <div className="mt-4 flex flex-wrap items-center gap-2"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-foreground-400">With</span>{post.mentions.map((mention) => <Link key={mention.id || mention.slug} to={`/listings/${mention.slug}`} className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-800"><span className="font-bold">@</span>{mention.title}</Link>)}</div>}
+      {post.fileUrl && <a href={post.fileUrl} target="_blank" rel="noreferrer" className="mt-4 flex items-center gap-3 rounded-2xl border border-primary-200 bg-primary-50/50 p-4 transition hover:border-primary-400 hover:bg-primary-50"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-primary-700 text-xl text-white"><i className="ri-file-text-line" /></span><span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-primary-700">Attached file</span><span className="mt-1 block truncate text-sm font-bold text-foreground-900">{post.fileName || "Download attachment"}</span><span className="mt-0.5 block text-xs text-foreground-500">{formatFileSize(post.fileSize)}</span></span><span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-primary-700"><i className="ri-download-2-line" /></span></a>}
+      {!!post.mentions?.length && <div className="mt-4 flex flex-wrap items-center gap-2"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-foreground-400">With</span>{post.mentions.map((mention) => mention.slug === "everyone" ? <span key="everyone" className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3 py-1.5 text-xs font-semibold text-foreground-800"><i className="ri-megaphone-line text-accent-600" /><span className="font-bold">@everyone</span></span> : <Link key={mention.id || mention.slug} to={`/listings/${mention.slug}`} className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-800"><span className="font-bold">@</span>{mention.title}</Link>)}</div>}
       {post.type !== "status" && (
         <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-accent-200 bg-accent-50/60 p-3 sm:flex-row sm:items-center">
           <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent-500 text-white"><i className={postType.icon} /></span>
-          <div><p className="text-sm font-bold text-foreground-900">{postType.label}</p><p className="text-xs text-foreground-500">{postType.description}</p></div>
-          <Link to={`/listings/${post.listingSlug}`} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-primary-200 px-3 text-xs font-bold text-primary-700 sm:ml-auto sm:min-h-0 sm:border-0 sm:px-0">View profile <i className="ri-arrow-right-up-line ml-1" /></Link>
+          <div className="min-w-0 flex-1"><p className="text-sm font-bold text-foreground-900">{postType.label}</p><p className="text-xs text-foreground-500">{postType.description}</p>{post.type === "offer" && <div className="mt-2 flex flex-wrap gap-1.5">{details.price && <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-primary-800">{details.price}</span>}{details.discount && <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-primary-800">{details.discount}</span>}{details.expiryDate && <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-foreground-600">Ends {formatPostDate(details.expiryDate)}</span>}</div>}{post.type === "opportunity" && <div className="mt-2 flex flex-wrap gap-1.5">{details.opportunityType && <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-primary-800">{details.opportunityType}</span>}{details.opportunityLocation && <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-foreground-600"><i className="ri-map-pin-2-line mr-1" />{details.opportunityLocation}</span>}{details.deadline && <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-foreground-600">Apply by {formatPostDate(details.deadline)}</span>}</div>}</div>
+          <Link to={`/listings/${post.listingSlug}`} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-primary-200 px-3 text-xs font-bold text-primary-700 sm:ml-auto sm:min-h-0 sm:border-0 sm:px-0">{details.ctaLabel || (post.type === "offer" ? "View Offer" : post.type === "opportunity" ? "Apply Now" : "View profile")} <i className="ri-arrow-right-up-line ml-1" /></Link>
         </div>
       )}
 
@@ -407,7 +457,8 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
 export default function CommunityPage() {
   const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState("for-you");
-  const { data, loading, error, reload } = useAsync(() => getCommunityPosts({ tab: activeTab }), [activeTab]);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const { data, loading, error, reload } = useAsync(() => getCommunityPosts({ tab: activeTab, type: categoryFilter === "all" ? "" : categoryFilter }), [activeTab, categoryFilter]);
   const [posts, setPosts] = useState([]);
   const [listings, setListings] = useState([]);
   const [hiddenPostIds, setHiddenPostIds] = useState(() => new Set());
@@ -415,6 +466,7 @@ export default function CommunityPage() {
   const [listingId, setListingId] = useState("");
   const [text, setText] = useState("");
   const [type, setType] = useState("status");
+  const [postDetails, setPostDetails] = useState({});
   const [emotion, setEmotion] = useState("");
   const [activity, setActivity] = useState("");
   const [emotionOpen, setEmotionOpen] = useState(false);
@@ -438,18 +490,19 @@ export default function CommunityPage() {
   const postTextRef = useRef(null);
   const imageInputRef = useRef(null);
   const videoInputRef = useRef(null);
+  const fileInputRef = useRef(null);
   const activeMentionSearch = inlineMention?.query ?? "";
 
   useEffect(() => { if (data?.posts) setPosts(data.posts); }, [data]);
   useEffect(() => {
-    if (!attachment) {
+    if (!attachment || attachmentType === "file") {
       setAttachmentPreview("");
       return undefined;
     }
     const preview = URL.createObjectURL(attachment);
     setAttachmentPreview(preview);
     return () => URL.revokeObjectURL(preview);
-  }, [attachment]);
+  }, [attachment, attachmentType]);
   useEffect(() => {
     if (!isAuthenticated) return;
     getMyListings().then((items) => {
@@ -466,8 +519,17 @@ export default function CommunityPage() {
     let active = true;
     const timer = setTimeout(() => {
       getListings(activeMentionSearch.trim() ? { search: activeMentionSearch.trim() } : {})
-        .then((items) => { if (active) setMentionResults((items || []).slice(0, 6)); })
-        .catch(() => { if (active) setMentionResults([]); });
+        .then((items) => {
+          if (!active) return;
+          const query = activeMentionSearch.trim().toLowerCase();
+          const includeEveryone = !query || "everyone".startsWith(query) || "everyone in the directory".includes(query);
+          setMentionResults(includeEveryone ? [EVERYONE_MENTION, ...(items || []).slice(0, 5)] : (items || []).slice(0, 6));
+        })
+        .catch(() => {
+          if (!active) return;
+          const query = activeMentionSearch.trim().toLowerCase();
+          setMentionResults(!query || "everyone".startsWith(query) ? [EVERYONE_MENTION] : []);
+        });
     }, 250);
     return () => { active = false; clearTimeout(timer); };
   }, [activeMentionSearch, inlineMention]);
@@ -484,14 +546,15 @@ export default function CommunityPage() {
     const value = event.target.value;
     const cursor = event.target.selectionStart ?? value.length;
     const beforeCursor = value.slice(0, cursor);
-    const match = beforeCursor.match(/(?:^|[\s(])@([^@\n]{0,60})$/);
+    const match = beforeCursor.match(/(?:^|[\s(])@@?([^@\n]{0,60})$/);
     setText(value);
     if (!match) {
       setInlineMention(null);
       return;
     }
     const query = match[1].trimStart();
-    setInlineMention({ query, start: cursor - match[1].length - 1, end: cursor });
+    const token = match[0].trimStart();
+    setInlineMention({ query, start: cursor - token.length, end: cursor });
   };
   const beginInlineMention = () => {
     const textarea = postTextRef.current;
@@ -510,10 +573,11 @@ export default function CommunityPage() {
   };
   const selectMention = (item) => {
     if (!mentionedBusinesses.some((mention) => String(mention.id) === String(item.id)) && mentionedBusinesses.length < 10) {
-      setMentionedBusinesses((current) => [...current, { id: item.id, slug: item.slug, title: item.title }]);
+      setMentionedBusinesses((current) => [...current, { id: item.id, slug: item.slug, title: item.title, audience: item.audience || "" }]);
     }
     if (inlineMention) {
-      setText((current) => `${current.slice(0, inlineMention.start)}@${item.title} ${current.slice(inlineMention.end)}`);
+      const token = item.slug === "everyone" ? "@everyone" : `@${item.title}`;
+      setText((current) => `${current.slice(0, inlineMention.start)}${token} ${current.slice(inlineMention.end)}`);
       setInlineMention(null);
     }
     setMentionResults([]);
@@ -526,20 +590,32 @@ export default function CommunityPage() {
     setAttachmentMenuOpen(false);
     if (imageInputRef.current) imageInputRef.current.value = "";
     if (videoInputRef.current) videoInputRef.current.value = "";
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+  const selectPostType = (nextType) => {
+    setType(nextType);
+    if (nextType !== type) setPostDetails({});
+    if (!['offer', 'event', 'opportunity'].includes(nextType) && attachmentType === "file") {
+      clearAttachment();
+      setMessage("Files can be attached to offers, events, and opportunities.");
+      return;
+    }
+    setMessage("");
   };
   const selectMedia = (event, kind) => {
     const file = event.target.files?.[0];
     if (!file) return;
     const isImage = kind === "image";
+    const isFile = kind === "file";
     const validVideoTypes = ["video/mp4", "video/webm", "video/quicktime"];
-    if ((isImage && !file.type.startsWith("image/")) || (!isImage && !validVideoTypes.includes(file.type))) {
-      setMessage(isImage ? "Choose a JPG, PNG, WebP, or GIF image." : "Choose an MP4, WebM, or MOV video.");
+    if ((isImage && !file.type.startsWith("image/")) || (isFile && !COMMUNITY_FILE_TYPES.includes(file.type)) || (!isImage && !isFile && !validVideoTypes.includes(file.type))) {
+      setMessage(isImage ? "Choose a JPG, PNG, WebP, or GIF image." : isFile ? "Choose a PDF, Word, Excel, PowerPoint, CSV, or text file." : "Choose an MP4, WebM, or MOV video.");
       event.target.value = "";
       return;
     }
-    const sizeLimit = (isImage ? 5 : 25) * 1024 * 1024;
+    const sizeLimit = (isImage ? 5 : isFile ? 10 : 25) * 1024 * 1024;
     if (file.size > sizeLimit) {
-      setMessage(isImage ? "Community images must be 5 MB or smaller." : "Community videos must be 25 MB or smaller.");
+      setMessage(isImage ? "Community images must be 5 MB or smaller." : isFile ? "Community files must be 10 MB or smaller." : "Community videos must be 25 MB or smaller.");
       event.target.value = "";
       return;
     }
@@ -597,10 +673,11 @@ export default function CommunityPage() {
     setSubmitting(true);
     setMessage("");
     try {
-      const created = await createCommunityPost({ listingId: Number(listingId), text: text.trim(), type, emotion, activity, postLocation: postLocation.trim(), latitude: locationCoordinates?.latitude ?? null, longitude: locationCoordinates?.longitude ?? null, mentions: mentionedBusinesses.map(({ id, slug, title }) => ({ id, slug, title })), image: attachmentType === "image" ? attachment : null, video: attachmentType === "video" ? attachment : null, linkUrl: attachmentType === "link" ? linkUrl : "", listingSlug: selectedListing?.slug, listingTitle: selectedListing?.title, listingLogo: listingAvatar(selectedListing) });
+      const created = await createCommunityPost({ listingId: Number(listingId), text: text.trim(), type, details: postDetails, emotion, activity, postLocation: postLocation.trim(), latitude: locationCoordinates?.latitude ?? null, longitude: locationCoordinates?.longitude ?? null, mentions: mentionedBusinesses.map(({ id, slug, title, audience }) => ({ id, slug, title, audience })), image: attachmentType === "image" ? attachment : null, video: attachmentType === "video" ? attachment : null, file: attachmentType === "file" ? attachment : null, linkUrl: attachmentType === "link" ? linkUrl : "", listingSlug: selectedListing?.slug, listingTitle: selectedListing?.title, listingLogo: listingAvatar(selectedListing) });
       setPosts((current) => [created, ...current]);
       setText("");
       setType("status");
+      setPostDetails({});
       setEmotion("");
       setActivity("");
       setEmotionOpen(false);
@@ -677,9 +754,12 @@ export default function CommunityPage() {
           <div className="grid w-full grid-cols-3 gap-1 rounded-2xl border border-background-300 bg-background-50 p-1 text-[11px] font-bold sm:w-auto sm:grid-cols-none sm:grid-flow-col sm:rounded-full sm:text-xs" role="tablist" aria-label="Community feed views">{[["for-you", "For you"], ["following", "Following"], ["latest", "Latest"], ["trending", "Trending"], ["businesses", "Businesses"], ["community", "Community"]].map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={activeTab === value} aria-label={`Show ${label} posts`} onClick={() => setActiveTab(value)} className={`min-h-10 min-w-0 rounded-xl px-2 py-2 transition sm:rounded-full sm:px-4 ${activeTab === value ? "bg-primary-700 text-white shadow-sm" : "text-foreground-500 hover:bg-background-100 hover:text-primary-700"}`}>{label}</button>)}</div>
         </div>
 
+        <div className="no-scrollbar mt-4 flex gap-2 overflow-x-auto pb-1" role="toolbar" aria-label="Filter community posts by category">{FEED_CATEGORIES.map((category) => <button key={category.value} type="button" aria-label={`Filter by ${category.label}`} aria-pressed={categoryFilter === category.value} onClick={() => setCategoryFilter(category.value)} className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-xs font-bold transition ${categoryFilter === category.value ? "border-primary-700 bg-primary-700 text-white shadow-sm" : "border-background-300 bg-background-50 text-foreground-600 hover:border-primary-300 hover:text-primary-700"}`}><i className={category.icon} />{category.label}</button>)}</div>
+
         <div className="mt-5 grid gap-6 sm:mt-7 lg:grid-cols-[minmax(0,1fr)_19rem]">
           <main className="space-y-4">
             <section className="rounded-[1.5rem] border border-background-200/80 bg-background-50 p-4 shadow-[0_14px_45px_rgba(24,48,36,0.06)] sm:p-5">
+              <div className="mb-4"><h2 className="font-heading text-xl font-semibold text-foreground-950">What Would You Like to Share?</h2><p className="mt-1 text-xs text-foreground-500">Choose a post type, publish it to the community, and connect it to your directory profile.</p></div>
               {isAuthenticated && listings.length ? (
                 <form onSubmit={submitPost}>
                   <span id="community-feeling-panel" className="sr-only">Feeling and activity options</span>
@@ -694,26 +774,32 @@ export default function CommunityPage() {
                       <div className="relative"><textarea ref={postTextRef} value={text} onChange={updatePostText} onKeyDown={(event) => { if (event.key === "Escape") setInlineMention(null); }} maxLength={1200} rows={3} className="min-h-28 w-full resize-none rounded-2xl border border-background-300 bg-white px-3 pb-10 pt-3 text-sm leading-6 outline-none focus:border-primary-500" placeholder={`${selectedPostType.placeholder.replace(/…$/, "")} from ${selectedListing?.title || "your business"}…`} aria-label="Status update. Type @ to mention a business." />
                         <button type="button" onClick={beginInlineMention} aria-label="Mention a business in this update" title="Mention a business" className="absolute bottom-2 left-2 grid h-8 w-8 place-items-center rounded-lg bg-primary-50 text-base font-bold text-primary-700 transition hover:bg-primary-100">@</button>
                         <span className="pointer-events-none absolute bottom-2 left-12 hidden text-[10px] font-medium text-foreground-400 sm:inline">Type @ to mention a directory listing</span>
-                        {inlineMention && <div role="listbox" aria-label="Directory listing suggestions" className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-background-200 bg-white p-1.5 shadow-[0_18px_50px_rgba(24,48,36,0.2)]">{mentionResults.length ? mentionResults.map((item) => <button key={item.id || item.slug} type="button" role="option" disabled={mentionedBusinesses.some((mention) => String(mention.id) === String(item.id)) || mentionedBusinesses.length >= 10} onClick={() => selectMention(item)} className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-primary-50 disabled:opacity-45">{listingAvatar(item) ? <img src={listingAvatar(item)} alt="" className="h-9 w-9 shrink-0 rounded-xl border border-background-200 object-cover" /> : <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary-50 text-[10px] font-bold text-primary-700">{initials(item.title)}</span>}<span className="min-w-0 flex-1"><span className="block truncate text-xs font-bold text-foreground-900">{item.title}</span><span className="block truncate text-[10px] text-foreground-500">{item.location || item.category}</span></span><span className="text-xs font-bold text-primary-700">@</span></button>) : <p className="px-3 py-4 text-center text-xs text-foreground-500">Searching published directory listings…</p>}</div>}
+                        {inlineMention && <div role="listbox" aria-label="Directory listing suggestions" className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-background-200 bg-white p-1.5 shadow-[0_18px_50px_rgba(24,48,36,0.2)]">{mentionResults.length ? mentionResults.map((item) => <button key={item.id || item.slug} type="button" role="option" disabled={mentionedBusinesses.some((mention) => String(mention.id) === String(item.id)) || mentionedBusinesses.length >= 10} onClick={() => selectMention(item)} className={`flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-2 text-left disabled:opacity-45 ${item.slug === "everyone" ? "bg-accent-50 hover:bg-accent-100" : "hover:bg-primary-50"}`}>{item.slug === "everyone" ? <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent-500 text-white"><i className="ri-megaphone-line" /></span> : listingAvatar(item) ? <img src={listingAvatar(item)} alt="" className="h-9 w-9 shrink-0 rounded-xl border border-background-200 object-cover" /> : <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary-50 text-[10px] font-bold text-primary-700">{initials(item.title)}</span>}<span className="min-w-0 flex-1"><span className="block truncate text-xs font-bold text-foreground-900">{item.slug === "everyone" ? "@everyone" : item.title}</span><span className="block truncate text-[10px] text-foreground-500">{item.slug === "everyone" ? "Add a feed-wide directory audience tag" : item.location || item.category}</span></span><span className="text-xs font-bold text-primary-700">@</span></button>) : <p className="px-3 py-4 text-center text-xs text-foreground-500">Searching published directory listings…</p>}</div>}
                       </div>
-                      {!!mentionedBusinesses.length && <div className="mt-2 flex flex-wrap gap-2">{mentionedBusinesses.map((item) => <span key={item.id || item.slug} className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-800"><span className="font-bold">@</span>{item.title}<button type="button" onClick={() => setMentionedBusinesses((current) => current.filter((mention) => String(mention.id) !== String(item.id)))} aria-label={`Remove ${item.title}`}><i className="ri-close-line" /></button></span>)}</div>}
+                      {!!mentionedBusinesses.length && <div className="mt-2 flex flex-wrap gap-2">{mentionedBusinesses.map((item) => <span key={item.id || item.slug} className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${item.slug === "everyone" ? "bg-accent-50 text-foreground-800" : "bg-primary-50 text-primary-800"}`}><span className="font-bold">@</span>{item.slug === "everyone" ? "everyone" : item.title}<button type="button" onClick={() => setMentionedBusinesses((current) => current.filter((mention) => String(mention.id) !== String(item.id)))} aria-label={`Remove ${item.slug === "everyone" ? "everyone" : item.title}`}><i className="ri-close-line" /></button></span>)}</div>}
                       <div className="mt-2 flex items-center gap-2 rounded-xl border border-primary-200 bg-primary-50/70 px-3 py-2 text-xs text-foreground-600" role="status" aria-live="polite"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-primary-700 text-white"><i className={selectedPostType.icon} /></span><span><strong className="text-primary-800">{selectedPostType.label} selected.</strong> {selectedPostType.description}</span></div>
                     </div>
                   </div>
-                  {attachmentPreview && <div className="relative mt-3 overflow-hidden rounded-2xl border border-background-200 bg-background-100 sm:ml-14">{attachmentType === "image" ? <img src={attachmentPreview} alt="Attachment preview" className="max-h-72 w-full object-cover" /> : <video src={attachmentPreview} controls playsInline preload="metadata" className="max-h-72 w-full bg-black object-contain" />}<button type="button" onClick={clearAttachment} aria-label="Remove attachment" className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-black/70 text-white shadow-lg"><i className="ri-close-line text-lg" /></button><div className="absolute inset-x-0 bottom-0 pointer-events-none bg-gradient-to-t from-black/70 to-transparent px-4 pb-3 pt-10 text-xs font-semibold text-white"><i className={`${attachmentType === "video" ? "ri-video-line" : "ri-image-line"} mr-1.5`} />{attachment.name}</div></div>}
+                  {type === "offer" && <div className="mt-3 rounded-2xl border border-background-200 bg-background-100 p-3 sm:ml-14"><p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-primary-700">Offer details <span className="font-medium normal-case tracking-normal text-foreground-400">(optional)</span></p><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4"><label className="text-[10px] font-bold text-foreground-600">Price<input value={postDetails.price || ""} maxLength={40} onChange={(event) => setPostDetails((current) => ({ ...current, price: event.target.value }))} className="mt-1 h-10 w-full rounded-xl border border-background-300 bg-white px-3 text-sm font-normal outline-none focus:border-primary-500" placeholder="$25 or Free" /></label><label className="text-[10px] font-bold text-foreground-600">Discount<input value={postDetails.discount || ""} maxLength={80} onChange={(event) => setPostDetails((current) => ({ ...current, discount: event.target.value }))} className="mt-1 h-10 w-full rounded-xl border border-background-300 bg-white px-3 text-sm font-normal outline-none focus:border-primary-500" placeholder="20% off" /></label><label className="text-[10px] font-bold text-foreground-600">Expiration date<input type="date" value={postDetails.expiryDate || ""} onChange={(event) => setPostDetails((current) => ({ ...current, expiryDate: event.target.value }))} className="mt-1 h-10 w-full rounded-xl border border-background-300 bg-white px-3 text-sm font-normal outline-none focus:border-primary-500" /></label><label className="text-[10px] font-bold text-foreground-600">Button label<select value={postDetails.ctaLabel || "View Offer"} onChange={(event) => setPostDetails((current) => ({ ...current, ctaLabel: event.target.value }))} className="mt-1 h-10 w-full rounded-xl border border-background-300 bg-white px-3 text-sm font-normal outline-none focus:border-primary-500">{POST_CTA_LABELS.offer.map((label) => <option key={label}>{label}</option>)}</select></label></div></div>}
+                  {type === "opportunity" && <div className="mt-3 rounded-2xl border border-background-200 bg-background-100 p-3 sm:ml-14"><p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-primary-700">Opportunity details <span className="font-medium normal-case tracking-normal text-foreground-400">(optional)</span></p><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4"><label className="text-[10px] font-bold text-foreground-600">Opportunity type<input value={postDetails.opportunityType || ""} maxLength={80} onChange={(event) => setPostDetails((current) => ({ ...current, opportunityType: event.target.value }))} className="mt-1 h-10 w-full rounded-xl border border-background-300 bg-white px-3 text-sm font-normal outline-none focus:border-primary-500" placeholder="Job, contract, partnership" /></label><label className="text-[10px] font-bold text-foreground-600">Location<input value={postDetails.opportunityLocation || ""} maxLength={120} onChange={(event) => setPostDetails((current) => ({ ...current, opportunityLocation: event.target.value }))} className="mt-1 h-10 w-full rounded-xl border border-background-300 bg-white px-3 text-sm font-normal outline-none focus:border-primary-500" placeholder="Remote or city" /></label><label className="text-[10px] font-bold text-foreground-600">Application deadline<input type="date" value={postDetails.deadline || ""} onChange={(event) => setPostDetails((current) => ({ ...current, deadline: event.target.value }))} className="mt-1 h-10 w-full rounded-xl border border-background-300 bg-white px-3 text-sm font-normal outline-none focus:border-primary-500" /></label><label className="text-[10px] font-bold text-foreground-600">Button label<select value={postDetails.ctaLabel || "Apply Now"} onChange={(event) => setPostDetails((current) => ({ ...current, ctaLabel: event.target.value }))} className="mt-1 h-10 w-full rounded-xl border border-background-300 bg-white px-3 text-sm font-normal outline-none focus:border-primary-500">{POST_CTA_LABELS.opportunity.map((label) => <option key={label}>{label}</option>)}</select></label></div></div>}
+                  {attachmentPreview && attachmentType !== "file" && <div className="relative mt-3 overflow-hidden rounded-2xl border border-background-200 bg-background-100 sm:ml-14">{attachmentType === "image" ? <img src={attachmentPreview} alt="Attachment preview" className="max-h-72 w-full object-cover" /> : <video src={attachmentPreview} controls playsInline preload="metadata" className="max-h-72 w-full bg-black object-contain" />}<button type="button" onClick={clearAttachment} aria-label="Remove attachment" className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-black/70 text-white shadow-lg"><i className="ri-close-line text-lg" /></button><div className="absolute inset-x-0 bottom-0 pointer-events-none bg-gradient-to-t from-black/70 to-transparent px-4 pb-3 pt-10 text-xs font-semibold text-white"><i className={`${attachmentType === "video" ? "ri-video-line" : "ri-image-line"} mr-1.5`} />{attachment.name}</div></div>}
+                  {attachmentType === "file" && attachment && <div className="mt-3 flex items-center gap-3 rounded-2xl border border-primary-200 bg-primary-50/50 p-3 sm:ml-14"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary-700 text-lg text-white"><i className="ri-file-text-line" /></span><span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-primary-700">File ready to attach</span><span className="mt-1 block truncate text-sm font-semibold text-foreground-900">{attachment.name}</span><span className="block text-[10px] text-foreground-500">{formatFileSize(attachment.size)}</span></span><button type="button" onClick={clearAttachment} aria-label="Remove attached file" className="grid h-9 w-9 place-items-center rounded-full text-foreground-500 hover:bg-white"><i className="ri-close-line text-lg" /></button></div>}
                   {attachmentType === "link" && <div className="mt-3 flex items-center gap-3 rounded-2xl border border-primary-200 bg-primary-50/50 p-3 sm:ml-14"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-700 text-white"><i className="ri-links-line" /></span><span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-primary-700">Link ready to share</span><span className="mt-1 block truncate text-sm font-semibold text-foreground-900">{linkLabel(linkUrl)}</span></span><button type="button" onClick={clearAttachment} aria-label="Remove attached link" className="grid h-9 w-9 place-items-center rounded-full text-foreground-500 hover:bg-white"><i className="ri-close-line text-lg" /></button></div>}
                   {linkOpen && <div className="mt-3 flex flex-col gap-2 rounded-2xl border border-background-200 bg-background-100 p-3 sm:ml-14 sm:flex-row"><input type="url" value={linkUrl} onChange={(event) => setLinkUrl(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); attachLink(); } }} className="h-10 min-w-0 flex-1 rounded-xl border border-background-300 bg-white px-3 text-sm outline-none focus:border-primary-500" placeholder="https://yourbusiness.com/page" aria-label="Website link" /><button type="button" onClick={attachLink} className="h-10 rounded-xl bg-primary-700 px-4 text-xs font-bold text-white">Attach link</button></div>}
                   {emotionOpen && <div className="mt-3 rounded-2xl border border-background-200 bg-background-100 p-3 sm:ml-14" role="group" aria-label="Choose a feeling or activity"><div className="mb-3 flex items-center justify-between gap-2"><div className="inline-flex rounded-xl border border-background-300 bg-white p-1"><button type="button" onClick={() => { setFeelingTab("feelings"); setEmotionSearch(""); }} className={`rounded-lg px-3 py-1.5 text-[11px] font-bold ${feelingTab === "feelings" ? "bg-primary-700 text-white" : "text-foreground-500"}`}>Feelings</button><button type="button" onClick={() => { setFeelingTab("activities"); setEmotionSearch(""); }} className={`rounded-lg px-3 py-1.5 text-[11px] font-bold ${feelingTab === "activities" ? "bg-primary-700 text-white" : "text-foreground-500"}`}>Activities</button></div>{(emotion || activity) && <button type="button" onClick={() => { setEmotion(""); setActivity(""); setEmotionSearch(""); setEmotionOpen(false); }} className="text-[10px] font-bold text-primary-700">Clear</button>}</div><label className="mb-3 flex h-10 items-center gap-2 rounded-xl border border-background-300 bg-white px-3 text-foreground-500 focus-within:border-primary-400"><i className="ri-search-line" /><input value={emotionSearch} onChange={(event) => setEmotionSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-xs text-foreground-800 outline-none" placeholder={`Search ${feelingOptions.length} ${feelingTab}…`} aria-label={`Search ${feelingTab}`} /></label><div className="grid max-h-72 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-4">{filteredFeelings.map((item) => <button key={item.value} type="button" onClick={() => { if (feelingTab === "feelings") { setEmotion(item.value); setActivity(""); } else { setActivity(item.value); setEmotion(""); } setEmotionSearch(""); setEmotionOpen(false); }} className={`inline-flex h-10 items-center justify-start gap-2 rounded-xl border px-3 text-xs font-semibold transition ${(emotion === item.value || activity === item.value) ? "border-primary-500 bg-primary-50 text-primary-800" : "border-background-300 bg-white text-foreground-700 hover:border-primary-300 hover:bg-primary-50/40"}`}><span className="text-base" aria-hidden="true">{item.emoji}</span><span className="truncate">{item.label}</span></button>)}</div>{!filteredFeelings.length && <p className="py-6 text-center text-xs text-foreground-500">No {feelingTab} match “{emotionSearch}”.</p>}</div>}
                   {locationOpen && <div className="mt-3 rounded-2xl border border-background-200 bg-background-100 p-3 sm:ml-14"><button type="button" onClick={useCurrentLocation} disabled={locating} className="flex w-full items-center gap-3 rounded-xl border border-primary-200 bg-primary-50 p-3 text-left text-primary-800 transition hover:bg-primary-100 disabled:opacity-60"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-700 text-white"><i className={locating ? "ri-loader-4-line animate-spin" : "ri-crosshair-2-line"} /></span><span><span className="block text-xs font-bold">{locating ? "Finding your location…" : "Use current location"}</span><span className="mt-0.5 block text-[10px] text-foreground-500">Your browser will ask for permission</span></span></button><div className="my-3 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground-400"><span className="h-px flex-1 bg-background-300" />or enter a place<span className="h-px flex-1 bg-background-300" /></div><div className="flex flex-col gap-2 sm:flex-row"><label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-xl border border-background-300 bg-white px-3 text-primary-700 focus-within:border-primary-400"><i className="ri-map-pin-2-line" /><input value={postLocation} onChange={(event) => { setPostLocation(event.target.value.slice(0, 120)); setLocationCoordinates(null); }} className="min-w-0 flex-1 bg-transparent text-sm text-foreground-800 outline-none" placeholder="Add a city, venue, or place" aria-label="Post location" /></label><button type="button" onClick={() => setLocationOpen(false)} className="h-10 rounded-xl bg-primary-700 px-4 text-xs font-bold text-white">Done</button></div><p className="mt-2 text-[10px] text-foreground-400">Location names © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="underline hover:text-primary-700">OpenStreetMap contributors</a></p></div>}
                   <div className="mt-3 grid grid-cols-3 items-center gap-2 border-t border-background-200 pt-3 sm:flex sm:flex-wrap">
-                    <div className="col-span-3 grid grid-cols-2 gap-1 rounded-xl border border-background-200 bg-background-100 p-1 sm:col-auto sm:flex sm:flex-wrap" role="group" aria-label="Update type">{POST_TYPES.map((option) => <button key={option.value} type="button" aria-pressed={type === option.value} title={option.description} onClick={() => { setType(option.value); setMessage(""); }} className={`inline-flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-semibold transition sm:h-9 sm:px-3 ${type === option.value ? "bg-primary-700 text-white shadow-sm" : "text-foreground-600 hover:bg-white hover:text-primary-700"}`}><i className={option.icon} />{option.label}</button>)}</div>
+                    <p className="col-span-3 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-500 sm:w-full">Choose a Post Type</p>
+                    <div className="col-span-3 grid grid-cols-2 gap-1 rounded-xl border border-background-200 bg-background-100 p-1 sm:col-auto sm:flex sm:flex-wrap" role="group" aria-label="Update type">{POST_TYPES.map((option) => <button key={option.value} type="button" aria-pressed={type === option.value} title={option.description} onClick={() => selectPostType(option.value)} className={`inline-flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-semibold transition sm:h-9 sm:px-3 ${type === option.value ? "bg-primary-700 text-white shadow-sm" : "text-foreground-600 hover:bg-white hover:text-primary-700"}`}><i className={option.icon} />{option.label}</button>)}</div>
                     <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => selectMedia(event, "image")} className="sr-only" />
                     <input ref={videoInputRef} type="file" accept="video/mp4,video/webm,video/quicktime" onChange={(event) => selectMedia(event, "video")} className="sr-only" />
+                    <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/csv,text/plain" aria-label="Attach a document" onChange={(event) => selectMedia(event, "file")} className="sr-only" />
                     <div className="relative min-w-0 sm:min-w-fit">
-                      <button type="button" aria-haspopup="menu" aria-expanded={attachmentMenuOpen} onClick={() => { setAttachmentMenuOpen((open) => !open); setLinkOpen(false); setEmotionOpen(false); setLocationOpen(false); }} className={`inline-flex h-11 w-full min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 text-xs font-semibold transition sm:h-10 sm:w-auto sm:px-3 ${attachmentType || attachmentMenuOpen || linkOpen ? "bg-primary-50 text-primary-700" : "text-foreground-500 hover:bg-background-100"}`}><i className="ri-attachment-2" /><span className="truncate">{attachmentType ? `${attachmentType === "image" ? "Photo" : attachmentType === "video" ? "Video" : "Link"} added` : "Attach"}</span><i className={`ri-arrow-${attachmentMenuOpen ? "up" : "down"}-s-line text-sm`} /></button>
+                      <button type="button" aria-haspopup="menu" aria-expanded={attachmentMenuOpen} onClick={() => { setAttachmentMenuOpen((open) => !open); setLinkOpen(false); setEmotionOpen(false); setLocationOpen(false); }} className={`inline-flex h-11 w-full min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 text-xs font-semibold transition sm:h-10 sm:w-auto sm:px-3 ${attachmentType || attachmentMenuOpen || linkOpen ? "bg-primary-50 text-primary-700" : "text-foreground-500 hover:bg-background-100"}`}><i className="ri-attachment-2" /><span className="truncate">{attachmentType ? `${attachmentType === "image" ? "Photo" : attachmentType === "video" ? "Video" : attachmentType === "file" ? "File" : "Link"} added` : "Attach"}</span><i className={`ri-arrow-${attachmentMenuOpen ? "up" : "down"}-s-line text-sm`} /></button>
                       {attachmentMenuOpen && <div role="menu" aria-label="Attach to update" className="absolute bottom-12 left-0 z-30 w-52 overflow-hidden rounded-2xl border border-background-200 bg-white p-1.5 shadow-[0_16px_45px_rgba(24,48,36,0.18)]">
                         <button type="button" role="menuitem" onClick={() => { setAttachmentMenuOpen(false); imageInputRef.current?.click(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50"><span className="grid h-9 w-9 place-items-center rounded-xl bg-primary-50 text-primary-700"><i className="ri-image-add-line" /></span><span><span className="block text-xs font-bold text-foreground-900">Photo</span><span className="block text-[10px] text-foreground-500">JPG, PNG, WebP or GIF</span></span></button>
                         <button type="button" role="menuitem" onClick={() => { setAttachmentMenuOpen(false); videoInputRef.current?.click(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50"><span className="grid h-9 w-9 place-items-center rounded-xl bg-primary-50 text-primary-700"><i className="ri-video-add-line" /></span><span><span className="block text-xs font-bold text-foreground-900">Video</span><span className="block text-[10px] text-foreground-500">MP4, WebM or MOV</span></span></button>
+                        {['offer', 'event', 'opportunity'].includes(type) && <button type="button" role="menuitem" onClick={() => { setAttachmentMenuOpen(false); fileInputRef.current?.click(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50"><span className="grid h-9 w-9 place-items-center rounded-xl bg-primary-50 text-primary-700"><i className="ri-file-add-line" /></span><span><span className="block text-xs font-bold text-foreground-900">File</span><span className="block text-[10px] text-foreground-500">PDF, Word, Excel, PowerPoint, CSV or TXT</span></span></button>}
                         <button type="button" role="menuitem" onClick={() => { setAttachment(null); setAttachmentType(""); setLinkOpen(true); setAttachmentMenuOpen(false); setMessage(""); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50"><span className="grid h-9 w-9 place-items-center rounded-xl bg-primary-50 text-primary-700"><i className="ri-links-line" /></span><span><span className="block text-xs font-bold text-foreground-900">Website link</span><span className="block text-[10px] text-foreground-500">Share a secure URL</span></span></button>
                       </div>}
                     </div>

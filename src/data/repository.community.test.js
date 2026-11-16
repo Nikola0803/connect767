@@ -75,6 +75,25 @@ describe("community post publishing", () => {
     expect(form.get("image")).toBeNull();
   });
 
+  it("uses multipart form data when a document is attached", async () => {
+    const file = new File(["job-description"], "job-description.pdf", { type: "application/pdf" });
+
+    await createCommunityPost({
+      listingId: 12,
+      text: "We are hiring",
+      type: "opportunity",
+      mentions: [{ id: 0, slug: "everyone", title: "Everyone in the directory", audience: "directory" }],
+      file,
+    });
+
+    const [, form] = api.customClient.post.mock.calls[0];
+    expect(form).toBeInstanceOf(FormData);
+    expect(form.get("file")).toBe(file);
+    expect(form.get("image")).toBeNull();
+    expect(form.get("video")).toBeNull();
+    expect(JSON.parse(form.get("mentions"))).toEqual([{ id: 0, slug: "everyone", title: "Everyone in the directory", audience: "directory" }]);
+  });
+
   it("keeps link updates as JSON payloads", async () => {
     const payload = {
       listingId: 12,
@@ -150,12 +169,12 @@ describe("community post publishing", () => {
   it("passes feed filters and persists social relationship actions", async () => {
     api.customClient.get.mockResolvedValueOnce({ posts: [], tab: "following" });
 
-    await getCommunityPosts({ tab: "following", cursor: "2026-11-15T12:00:00Z" });
+    await getCommunityPosts({ tab: "following", type: "opportunity", cursor: "2026-11-15T12:00:00Z" });
     await toggleCommunityBookmark(42);
     await toggleCommunityRepost(42, { listingId: 12 });
     await toggleCommunityFollow(12);
 
-    expect(api.customClient.get).toHaveBeenCalledWith("/community/posts", { tab: "following", cursor: "2026-11-15T12:00:00Z" });
+    expect(api.customClient.get).toHaveBeenCalledWith("/community/posts", { tab: "following", type: "opportunity", cursor: "2026-11-15T12:00:00Z" });
     expect(api.customClient.post).toHaveBeenCalledWith("/community/posts/42/bookmark", {});
     expect(api.customClient.post).toHaveBeenCalledWith("/community/posts/42/repost", { listingId: 12 });
     expect(api.customClient.post).toHaveBeenCalledWith("/community/listings/12/follow", {});

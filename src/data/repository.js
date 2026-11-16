@@ -57,7 +57,10 @@ import { localCommunityPosts } from "./community";
 // ---------- Business community feed ----------
 
 export async function getCommunityPosts(params = {}) {
-  if (!isLiveApi) return { posts: localCommunityPosts, page: 1, totalPages: 1, tab: params.tab || "for-you" };
+  if (!isLiveApi) {
+    const posts = params.type ? localCommunityPosts.filter((post) => post.type === params.type) : localCommunityPosts;
+    return { posts, page: 1, totalPages: 1, tab: params.tab || "for-you", type: params.type || "" };
+  }
   return customClient.get("/community/posts", params);
 }
 
@@ -68,6 +71,10 @@ export async function createCommunityPost(payload) {
       ...payload,
       mediaUrl: payload.image ? URL.createObjectURL(payload.image) : payload.mediaUrl || "",
       videoUrl: payload.video ? URL.createObjectURL(payload.video) : payload.videoUrl || "",
+      fileUrl: payload.file ? URL.createObjectURL(payload.file) : payload.fileUrl || "",
+      fileName: payload.file?.name || payload.fileName || "",
+      fileType: payload.file?.type || payload.fileType || "",
+      fileSize: payload.file?.size || payload.fileSize || 0,
       linkUrl: payload.linkUrl || "",
       listingSlug: payload.listingSlug || "",
       listingTitle: payload.listingTitle || "Your business",
@@ -80,7 +87,7 @@ export async function createCommunityPost(payload) {
     };
   }
 
-  if (payload.image || payload.video) {
+  if (payload.image || payload.video || payload.file) {
     const form = new FormData();
     form.append("listingId", String(payload.listingId));
     form.append("text", payload.text);
@@ -91,8 +98,10 @@ export async function createCommunityPost(payload) {
     if (Number.isFinite(payload.latitude)) form.append("latitude", String(payload.latitude));
     if (Number.isFinite(payload.longitude)) form.append("longitude", String(payload.longitude));
     if (payload.mentions?.length) form.append("mentions", JSON.stringify(payload.mentions));
+    if (payload.details && Object.keys(payload.details).length) form.append("details", JSON.stringify(payload.details));
     if (payload.image) form.append("image", payload.image);
     if (payload.video) form.append("video", payload.video);
+    if (payload.file) form.append("file", payload.file);
     const created = await customClient.post("/community/posts", form);
     return {
       ...created,
@@ -102,6 +111,11 @@ export async function createCommunityPost(payload) {
       latitude: created?.latitude ?? payload.latitude ?? null,
       longitude: created?.longitude ?? payload.longitude ?? null,
       mentions: created?.mentions?.length ? created.mentions : payload.mentions || [],
+      details: created?.details || payload.details || {},
+      fileUrl: created?.fileUrl || "",
+      fileName: created?.fileName || payload.file?.name || "",
+      fileType: created?.fileType || payload.file?.type || "",
+      fileSize: created?.fileSize || payload.file?.size || 0,
     };
   }
 
@@ -114,6 +128,7 @@ export async function createCommunityPost(payload) {
     latitude: created?.latitude ?? payload.latitude ?? null,
     longitude: created?.longitude ?? payload.longitude ?? null,
     mentions: created?.mentions?.length ? created.mentions : payload.mentions || [],
+    details: created?.details || payload.details || {},
   };
 }
 
