@@ -26,6 +26,7 @@ class C767_REST_Community
         'exercising', 'creating', 'planning', 'collaborating', 'meeting', 'delivering',
         'exploring', 'celebrating-activity',
     ];
+    const FONT_STYLES = ['default', 'editorial', 'bold', 'typewriter'];
 
     public static function init()
     {
@@ -234,6 +235,10 @@ class C767_REST_Community
         }
         $mentions = get_post_meta($post->ID, '_community_mentions', true);
         $mentions = is_array($mentions) ? $mentions : [];
+        $font_style = sanitize_key((string) get_post_meta($post->ID, '_community_font_style', true));
+        if (!in_array($font_style, self::FONT_STYLES, true)) {
+            $font_style = 'default';
+        }
 
         return [
             'id' => (int) $post->ID,
@@ -245,6 +250,7 @@ class C767_REST_Community
             'industry' => sanitize_text_field($industry),
             'verified' => $listing_id ? (bool) get_post_meta($listing_id, 'verified', true) : false,
             'type' => sanitize_key((string) get_post_meta($post->ID, '_community_update_type', true)) ?: 'status',
+            'fontStyle' => $font_style,
             'details' => (array) get_post_meta($post->ID, '_community_details', true),
             'emotion' => sanitize_key((string) get_post_meta($post->ID, '_community_emotion', true)),
             'activity' => sanitize_key((string) get_post_meta($post->ID, '_community_activity', true)),
@@ -359,6 +365,10 @@ class C767_REST_Community
         $type = sanitize_key((string) $request->get_param('type'));
         if (!in_array($type, ['status', 'offer', 'opportunity', 'event', 'announcement', 'request'], true)) {
             $type = 'status';
+        }
+        $font_style = sanitize_key((string) $request->get_param('fontStyle'));
+        if (!in_array($font_style, self::FONT_STYLES, true)) {
+            $font_style = 'default';
         }
         $emotion = sanitize_key((string) $request->get_param('emotion'));
         if (!in_array($emotion, self::EMOTIONS, true)) {
@@ -481,6 +491,7 @@ class C767_REST_Community
 
         update_post_meta($post_id, '_community_listing_id', (int) $listing->ID);
         update_post_meta($post_id, '_community_update_type', $type);
+        update_post_meta($post_id, '_community_font_style', $font_style);
         update_post_meta($post_id, '_community_emotion', $emotion);
         update_post_meta($post_id, '_community_activity', $activity);
         update_post_meta($post_id, '_community_post_location', $post_location);
