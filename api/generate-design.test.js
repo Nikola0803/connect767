@@ -43,8 +43,8 @@ describe("AI design generation endpoint", () => {
   });
 
   it("validates and constrains the customer brief", () => {
-    const brief = normalizeBrief({ ...validBrief, notes: "x".repeat(1000) });
-    expect(brief.notes).toHaveLength(600);
+    const brief = normalizeBrief({ ...validBrief, notes: "x".repeat(2000) });
+    expect(brief.notes).toHaveLength(1200);
     expect(brief.primaryColor).toBe("#006B3F");
     expect(() => normalizeBrief({ ...validBrief, productType: "Unknown" })).toThrow("supported product");
   });
@@ -105,6 +105,35 @@ describe("AI design generation endpoint", () => {
     });
     expect(upstreamBody.safety_identifier).toMatch(/^[a-f0-9]{64}$/);
     expect(options.headers.Authorization).toBe("Bearer test-only-key");
+  });
+
+  it("uses the image edit endpoint when refining an existing uniform concept", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: [{ b64_json: "cmV2aXNlZA==" }] }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const res = response();
+    const referenceImage = "data:image/png;base64,cG5n";
+
+    await handler(request("POST", {
+      ...validBrief,
+      generationMode: "uniform",
+      notes: "Keep everything else and make the shorts black.",
+      referenceImage,
+    }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.b64).toBe("cmV2aXNlZA==");
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe("https://api.openai.com/v1/images/edits");
+    expect(options.body).toBeInstanceOf(FormData);
+    expect(options.body.get("model")).toBe("gpt-image-2.6-flare");
+    expect(options.body.get("prompt")).toContain("Edit the provided complete Soccer uniform concept");
+    expect(options.body.get("prompt")).toContain("make the shorts black");
+    expect(options.body.get("image")).toBeInstanceOf(Blob);
+    expect(options.headers["Content-Type"]).toBeUndefined();
   });
 
   it("does not leak a rejected credential to the browser", async () => {

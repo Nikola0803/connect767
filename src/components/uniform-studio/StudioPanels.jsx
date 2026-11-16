@@ -952,6 +952,7 @@ export function AIArtworkPanel({
   const [preview, setPreview] = useState(null);
   const [reference, setReference] = useState(null);
   const [applied, setApplied] = useState(false);
+  const [refinementBrief, setRefinementBrief] = useState("");
   const [locks, setLocks] = useState({ collar: false, sleeve: false, colors: false, pattern: false, artwork: true });
   const [error, setError] = useState("");
   const allDesignControlsLocked = locks.collar && locks.sleeve && locks.colors && locks.pattern;
@@ -1000,11 +1001,14 @@ export function AIArtworkPanel({
     }
   };
 
-  const generateUniform = async () => {
+  const generateUniform = async (revision = "") => {
     if (!brandName.trim() || !brief.trim()) return;
+    const refinement = typeof revision === "string" ? revision.trim() : "";
+    const existingConcept = refinement ? uniformPlan?.conceptImage?.src || "" : "";
+    const currentDesign = uniformPlan || { collar, sleeve, colors, pattern: { key: currentPatternKey } };
     setGenerating(true);
     setError("");
-    onUniformPlanChange?.(null);
+    if (!refinement) onUniformPlanChange?.(null);
     setApplied(false);
     try {
       const response = await fetch("/api/generate-uniform-design", {
@@ -1014,12 +1018,19 @@ export function AIArtworkPanel({
           sport,
           style,
           brandName: brandName.trim(),
-          brief: brief.trim(),
+          brief: refinement
+            ? `Revision request: ${refinement}\nPreserve every part of the current concept that is not explicitly changed. Original direction: ${brief.trim()}`
+            : brief.trim(),
           collarOptions,
           sleeveOptions: sleeveOptions?.length ? sleeveOptions : ["Sleeveless"],
-          current: { collar, sleeve, colors, patternKey: currentPatternKey },
+          current: {
+            collar: currentDesign.collar || collar,
+            sleeve: currentDesign.sleeve || sleeve,
+            colors: currentDesign.colors || colors,
+            patternKey: currentDesign.pattern?.key || currentPatternKey,
+          },
           locks,
-          referenceImage: reference?.src || "",
+          referenceImage: existingConcept || reference?.src || "",
         }),
       });
       const data = await response.json();
@@ -1037,7 +1048,7 @@ export function AIArtworkPanel({
           generationMode: "uniform",
           sport,
           notes: [
-            brief.trim(),
+            refinement ? `Revise the supplied existing uniform image: ${refinement}` : brief.trim(),
             `Design plan: ${plan.summary}`,
             `Collar: ${plan.collar}. Sleeves: ${plan.sleeve}.`,
             `Exact zone colors: body ${plan.colors.body}, sleeves ${plan.colors.sleeve}, collar ${plan.colors.collar}, shorts ${plan.colors.shorts}, socks ${plan.colors.socks}, shirt trim ${plan.colors.shirtStrip}, sleeve trim ${plan.colors.sleeveStrip}, shorts trim ${plan.colors.shortsStrip}.`,
@@ -1045,6 +1056,7 @@ export function AIArtworkPanel({
               ? `Pattern: ${plan.pattern.key}, applied to ${plan.pattern.view}.`
               : "Pattern: clean solid-color design with no decorative pattern.",
           ].join(" "),
+          referenceImage: existingConcept,
         }),
       });
       const conceptData = await conceptResponse.json();
@@ -1058,6 +1070,7 @@ export function AIArtworkPanel({
           name: `${plan.name} full uniform concept`,
         },
       });
+      if (refinement) setRefinementBrief("");
     } catch (generationError) {
       setError(generationError.message || "AI uniform design failed.");
     } finally {
@@ -1244,11 +1257,31 @@ export function AIArtworkPanel({
                 </div>
               </div>
             )}
-            <div>
+              <div>
               <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-primary-700">AI design plan</p>
               <h4 className="mt-1 font-heading text-lg font-semibold text-foreground-950">{uniformPlan.name}</h4>
               <p className="mt-1 text-[11px] leading-relaxed text-foreground-500">{uniformPlan.summary}</p>
             </div>
+              <div className="rounded-xl border border-accent-200 bg-accent-50/55 p-3">
+                <label className="text-[9px] font-bold uppercase tracking-[0.14em] text-accent-800">Refine current design</label>
+                <p className="mt-1 text-[9px] leading-relaxed text-foreground-500">Describe only what should change. The current AI image is automatically used as the visual reference.</p>
+                <textarea
+                  value={refinementBrief}
+                  onChange={(event) => setRefinementBrief(event.target.value)}
+                  placeholder="e.g. Keep everything else, make the shorts black and add three red horizontal chest stripes."
+                  maxLength={600}
+                  rows={3}
+                  className="mt-2 w-full resize-none rounded-lg border border-accent-200 bg-white px-3 py-2.5 text-[11px] text-foreground-950 outline-none transition focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
+                />
+                <button
+                  type="button"
+                  disabled={generating || !refinementBrief.trim()}
+                  onClick={() => generateUniform(refinementBrief)}
+                  className="mt-2 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-accent-500 px-3 py-2.5 text-[11px] font-bold text-white transition hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  <i className={generating ? "ri-loader-4-line animate-spin" : "ri-edit-2-line"} /> {generating ? "Refining current image…" : "Refine current image"}
+                </button>
+              </div>
             <div className="grid grid-cols-2 gap-2 text-[10px]">
               <div className="rounded-lg bg-background-100 px-3 py-2"><span className="text-foreground-400">Collar</span><strong className="mt-0.5 block text-foreground-800">{uniformPlan.collar}</strong></div>
               <div className="rounded-lg bg-background-100 px-3 py-2"><span className="text-foreground-400">Sleeves</span><strong className="mt-0.5 block text-foreground-800">{uniformPlan.sleeve}</strong></div>
@@ -1278,7 +1311,7 @@ export function AIArtworkPanel({
             <button type="button" onClick={applyUniform} className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 py-3 text-sm font-bold text-white hover:bg-primary-800">
               <i className={applied ? "ri-check-double-line" : "ri-magic-line"} /> {applied ? "Design applied — apply again" : "Apply full design"}
             </button>
-            <button type="button" disabled={generating} onClick={generateUniform} className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-background-300 bg-white px-4 py-2.5 text-xs font-bold text-foreground-700 hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-50">
+            <button type="button" disabled={generating} onClick={() => generateUniform()} className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-background-300 bg-white px-4 py-2.5 text-xs font-bold text-foreground-700 hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-50">
               <i className={generating ? "ri-loader-4-line animate-spin" : "ri-refresh-line"} /> {generating ? "Designing…" : "Generate another direction"}
             </button>
           </div>
@@ -1303,7 +1336,7 @@ export function AIArtworkPanel({
           <button
             type="button"
             disabled={generating || connection !== "connected" || !brandName.trim() || !brief.trim() || (mode === "uniform" && allDesignControlsLocked)}
-            onClick={generate}
+            onClick={() => generate()}
             className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 py-3.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,116,73,0.18)] transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-45"
           >
             <i className={generating ? "ri-loader-4-line animate-spin" : "ri-sparkling-2-fill"} />
