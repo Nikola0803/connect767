@@ -131,6 +131,24 @@ describe("CommunityPage composer menus", () => {
     fireEvent.click(everyone);
     expect(composer).toHaveValue("New opportunity @everyone ");
     expect(screen.getByText("everyone")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Remove everyone" }));
+    expect(composer).toHaveValue("New opportunity ");
+    expect(screen.queryByRole("button", { name: "Remove everyone" })).not.toBeInTheDocument();
+  });
+
+  it("exits the mention picker without tagging anyone", async () => {
+    render(<MemoryRouter><CommunityPage /></MemoryRouter>);
+
+    const composer = await screen.findByLabelText("Status update. Type @ to mention a business.");
+    fireEvent.change(composer, { target: { value: "@ev", selectionStart: 3 } });
+    fireEvent.click(await screen.findByRole("button", { name: "Cancel mention without tagging" }));
+    expect(composer).toHaveValue("");
+    expect(screen.queryByRole("listbox", { name: "Directory listing suggestions" })).not.toBeInTheDocument();
+
+    fireEvent.change(composer, { target: { value: "Before @high", selectionStart: 12 } });
+    fireEvent.keyDown(composer, { key: "Escape" });
+    expect(composer).toHaveValue("Before ");
+    expect(screen.queryByRole("listbox", { name: "Directory listing suggestions" })).not.toBeInTheDocument();
   });
 
   it("allows document attachments on every post type", async () => {
