@@ -10,6 +10,7 @@ class C767_REST_Community
     const NAMESPACE_ = 'connect767/v1';
     const MAX_IMAGE_BYTES = 5242880;
     const MAX_VIDEO_BYTES = 26214400;
+    const MAX_FILE_BYTES = 10485760;
     const EMOTIONS = [
         'happy', 'loved', 'excited', 'grateful', 'celebrating', 'inspired', 'proud', 'focused',
         'optimistic', 'supportive', 'curious', 'motivated', 'surprised', 'thoughtful',
@@ -244,6 +245,7 @@ class C767_REST_Community
             'industry' => sanitize_text_field($industry),
             'verified' => $listing_id ? (bool) get_post_meta($listing_id, 'verified', true) : false,
             'type' => sanitize_key((string) get_post_meta($post->ID, '_community_update_type', true)) ?: 'status',
+            'details' => (array) get_post_meta($post->ID, '_community_details', true),
             'emotion' => sanitize_key((string) get_post_meta($post->ID, '_community_emotion', true)),
             'activity' => sanitize_key((string) get_post_meta($post->ID, '_community_activity', true)),
             'postLocation' => sanitize_text_field((string) get_post_meta($post->ID, '_community_post_location', true)),
@@ -254,6 +256,10 @@ class C767_REST_Community
             'mediaUrl' => esc_url_raw((string) get_post_meta($post->ID, '_community_media_url', true)),
             'videoUrl' => esc_url_raw((string) get_post_meta($post->ID, '_community_video_url', true)),
             'linkUrl' => esc_url_raw((string) get_post_meta($post->ID, '_community_link_url', true)),
+            'fileUrl' => esc_url_raw((string) get_post_meta($post->ID, '_community_file_url', true)),
+            'fileName' => sanitize_file_name((string) get_post_meta($post->ID, '_community_file_name', true)),
+            'fileType' => sanitize_text_field((string) get_post_meta($post->ID, '_community_file_type', true)),
+            'fileSize' => (int) get_post_meta($post->ID, '_community_file_size', true),
             'createdAt' => mysql_to_rfc3339($post->post_date_gmt),
             'reactions' => $reaction['counts'],
             'viewerReaction' => $reaction['viewerReaction'],
@@ -280,6 +286,7 @@ class C767_REST_Community
         $page = max(1, (int) $request->get_param('page'));
         $tab = sanitize_key((string) $request->get_param('tab')) ?: 'for-you';
         $allowed_tabs = ['for-you', 'following', 'latest', 'trending', 'businesses', 'community'];
+        $allowed_types = ['status', 'offer', 'opportunity', 'event', 'announcement', 'request'];
         if (!in_array($tab, $allowed_tabs, true)) {
             $tab = 'for-you';
         }
@@ -309,9 +316,18 @@ class C767_REST_Community
         } elseif ($tab === 'community') {
             $args['meta_query'] = [['key' => '_community_update_type', 'value' => 'status']];
         } elseif ($tab === 'businesses') {
-            $args['meta_query'] = [['key' => '_community_update_type', 'value' => ['offer', 'event', 'opportunity'], 'compare' => 'IN']];
+            $args['meta_query'] = [['key' => '_community_update_type', 'value' => ['offer', 'opportunity', 'event', 'announcement', 'request'], 'compare' => 'IN']];
         } elseif ($tab === 'trending') {
             $args['orderby'] = ['comment_count' => 'DESC', 'date' => 'DESC'];
+        }
+        $type_filter = sanitize_key((string) $request->get_param('type'));
+        if (in_array($type_filter, $allowed_types, true)) {
+            $type_query = ['key' => '_community_update_type', 'value' => $type_filter];
+            if (empty($args['meta_query'])) {
+                $args['meta_query'] = [$type_query];
+            } else {
+                $args['meta_query'] = array_merge(['relation' => 'AND'], $args['meta_query'], [$type_query]);
+            }
         }
         $query = new WP_Query($args);
         $last_post = $query->posts ? end($query->posts) : null;
@@ -338,7 +354,7 @@ class C767_REST_Community
             return new WP_Error('c767_invalid_community_text', 'Updates must contain between 1 and 1,200 characters.', ['status' => 400]);
         }
         $type = sanitize_key((string) $request->get_param('type'));
-        if (!in_array($type, ['status', 'offer', 'event', 'opportunity'], true)) {
+        if (!in_array($type, ['status', 'offer', 'opportunity', 'event', 'announcement', 'request'], true)) {
             $type = 'status';
         }
         $emotion = sanitize_key((string) $request->get_param('emotion'));
@@ -388,6 +404,15 @@ class C767_REST_Community
         }
         $mentions = [];
         foreach (array_slice((array) $mentions_param, 0, 10) as $mention) {
+            if (sanitize_key((string) ($mention['slug'] ?? '')) === 'everyone') {
+                $mentions[] = [
+                    'id' => 0,
+                    'slug' => 'everyone',
+                    'title' => 'Everyone in the directory',
+                    'audience' => 'directory',
+                ];
+                continue;
+            }
             $mentioned_listing = get_post((int) ($mention['id'] ?? 0));
             if (!$mentioned_listing || $mentioned_listing->post_type !== 'listing' || $mentioned_listing->post_status !== 'publish') {
                 continue;
@@ -399,6 +424,29 @@ class C767_REST_Community
             ];
         }
 
+        $details_param = $request->get_param('details');
+        if (is_string($details_param) && $details_param !== '') {
+            $details_param = json_decode($details_param, true);
+        }
+        $details_param = is_array($details_param) ? $details_param : [];
+        $details = [];
+        if ($type === 'offer') {
+            $details = [
+                'price' => substr(sanitize_text_field((string) ($details_param['price'] ?? '')), 0, 40),
+                'discount' => substr(sanitize_text_field((string) ($details_param['discount'] ?? '')), 0, 80),
+                'expiryDate' => self::sanitize_date((string) ($details_param['expiryDate'] ?? '')),
+                'ctaLabel' => in_array((string) ($details_param['ctaLabel'] ?? ''), ['View Offer', 'Claim Offer', 'Learn More'], true) ? (string) $details_param['ctaLabel'] : 'View Offer',
+            ];
+        } elseif ($type === 'opportunity') {
+            $details = [
+                'opportunityType' => substr(sanitize_text_field((string) ($details_param['opportunityType'] ?? '')), 0, 80),
+                'opportunityLocation' => substr(sanitize_text_field((string) ($details_param['opportunityLocation'] ?? '')), 0, 120),
+                'deadline' => self::sanitize_date((string) ($details_param['deadline'] ?? '')),
+                'ctaLabel' => in_array((string) ($details_param['ctaLabel'] ?? ''), ['Apply Now', 'View Opportunity', 'Learn More'], true) ? (string) $details_param['ctaLabel'] : 'Apply Now',
+            ];
+        }
+        $details = array_filter($details, static function ($value) { return $value !== ''; });
+
         $attachment_check = self::validate_attachment();
         if (is_wp_error($attachment_check)) {
             return $attachment_check;
@@ -406,9 +454,9 @@ class C767_REST_Community
 
         $link_url = trim((string) $request->get_param('linkUrl'));
         if ($link_url !== '') {
-            $has_file = !empty($_FILES['image']['tmp_name']) || !empty($_FILES['video']['tmp_name']);
+            $has_file = !empty($_FILES['image']['tmp_name']) || !empty($_FILES['video']['tmp_name']) || !empty($_FILES['file']['tmp_name']);
             if ($has_file) {
-                return new WP_Error('c767_community_attachment_limit', 'Attach one photo, video, or link per update.', ['status' => 400]);
+                return new WP_Error('c767_community_attachment_limit', 'Attach one photo, video, file, or link per update.', ['status' => 400]);
             }
             $link_url = esc_url_raw($link_url, ['http', 'https']);
             if (!$link_url || !wp_http_validate_url($link_url)) {
@@ -436,6 +484,7 @@ class C767_REST_Community
         update_post_meta($post_id, '_community_latitude', $latitude === null ? '' : $latitude);
         update_post_meta($post_id, '_community_longitude', $longitude === null ? '' : $longitude);
         update_post_meta($post_id, '_community_mentions', $mentions);
+        update_post_meta($post_id, '_community_details', $details);
 
         $media_url = esc_url_raw((string) $request->get_param('mediaUrl'));
         if (!empty($_FILES['image']['tmp_name'])) {
@@ -471,6 +520,34 @@ class C767_REST_Community
             $video_url = wp_get_attachment_url($attachment_id);
         }
         update_post_meta($post_id, '_community_video_url', $video_url);
+        $file_url = '';
+        $file_name = '';
+        $file_type = '';
+        $file_size = 0;
+        if (!empty($_FILES['file']['tmp_name'])) {
+            if (!in_array($type, ['offer', 'event', 'opportunity'], true)) {
+                wp_delete_post($post_id, true);
+                return new WP_Error('c767_community_file_post_type', 'Files can be attached to offers, events, and opportunities.', ['status' => 400]);
+            }
+            require_once ABSPATH . 'wp-admin/includes/image.php';
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            require_once ABSPATH . 'wp-admin/includes/media.php';
+            $file_name = sanitize_file_name((string) ($_FILES['file']['name'] ?? 'attachment'));
+            $attachment_id = media_handle_upload('file', $post_id);
+            if (is_wp_error($attachment_id)) {
+                wp_delete_post($post_id, true);
+                return new WP_Error('c767_community_file_failed', 'The file could not be uploaded. Try a PDF, Word, Excel, PowerPoint, CSV, or text file.', ['status' => 400]);
+            }
+            $file_url = wp_get_attachment_url($attachment_id);
+            $file_type = (string) get_post_mime_type($attachment_id);
+            $stored_file = get_attached_file($attachment_id);
+            $file_size = $stored_file && file_exists($stored_file) ? (int) filesize($stored_file) : (int) ($_FILES['file']['size'] ?? 0);
+            update_post_meta($attachment_id, '_c767_original_name', $file_name);
+        }
+        update_post_meta($post_id, '_community_file_url', $file_url);
+        update_post_meta($post_id, '_community_file_name', $file_name);
+        update_post_meta($post_id, '_community_file_type', $file_type);
+        update_post_meta($post_id, '_community_file_size', $file_size);
         update_post_meta($post_id, '_community_link_url', $link_url);
         update_post_meta($post_id, '_community_reaction_user_ids', []);
         update_post_meta($post_id, '_community_thumb_user_ids', []);
@@ -557,10 +634,24 @@ class C767_REST_Community
     {
         $has_image = isset($_FILES['image']) && (int) ($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
         $has_video = isset($_FILES['video']) && (int) ($_FILES['video']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
-        if ($has_image && $has_video) {
-            return new WP_Error('c767_community_attachment_limit', 'Attach one photo, video, or link per update.', ['status' => 400]);
+        $has_file = isset($_FILES['file']) && (int) ($_FILES['file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+        if (count(array_filter([$has_image, $has_video, $has_file])) > 1) {
+            return new WP_Error('c767_community_attachment_limit', 'Attach one photo, video, file, or link per update.', ['status' => 400]);
         }
 
+        if ($has_file) {
+            return self::validate_upload('file', self::MAX_FILE_BYTES, [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/vnd.ms-powerpoint',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'text/csv',
+                'text/plain',
+            ]);
+        }
         if ($has_video) {
             return self::validate_upload('video', self::MAX_VIDEO_BYTES, ['video/mp4', 'video/webm', 'video/quicktime']);
         }
@@ -570,10 +661,16 @@ class C767_REST_Community
         return true;
     }
 
+    private static function sanitize_date($value)
+    {
+        $value = sanitize_text_field($value);
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) ? $value : '';
+    }
+
     private static function validate_upload($field, $max_bytes, $allowed_types)
     {
         $file = $_FILES[$field];
-        $label = $field === 'video' ? 'video' : 'image';
+        $label = in_array($field, ['video', 'file'], true) ? $field : 'image';
 
         $error = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
         if ($error === UPLOAD_ERR_NO_FILE) {
@@ -583,7 +680,7 @@ class C767_REST_Community
             || (int) ($file['size'] ?? 0) > $max_bytes) {
             return new WP_Error(
                 'c767_community_' . $label . '_too_large',
-                $label === 'video' ? 'Community videos must be 25 MB or smaller.' : 'Community images must be 5 MB or smaller.',
+                $label === 'video' ? 'Community videos must be 25 MB or smaller.' : ($label === 'file' ? 'Community files must be 10 MB or smaller.' : 'Community images must be 5 MB or smaller.'),
                 ['status' => 413]
             );
         }
@@ -603,7 +700,7 @@ class C767_REST_Community
         if (empty($checked['type']) || !in_array($checked['type'], $allowed_types, true)) {
             return new WP_Error(
                 'c767_community_' . $label . '_type',
-                $label === 'video' ? 'Choose a valid MP4, WebM, or MOV video.' : 'Choose a valid JPG, PNG, WebP, or GIF image.',
+                $label === 'video' ? 'Choose a valid MP4, WebM, or MOV video.' : ($label === 'file' ? 'Choose a PDF, Word, Excel, PowerPoint, CSV, or text file.' : 'Choose a valid JPG, PNG, WebP, or GIF image.'),
                 ['status' => 400]
             );
         }

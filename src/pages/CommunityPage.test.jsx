@@ -59,6 +59,7 @@ describe("CommunityPage composer menus", () => {
 
   it("keeps every mobile feed filter and composer mode interactive", async () => {
     render(<MemoryRouter><CommunityPage /></MemoryRouter>);
+    await screen.findByLabelText("Status update. Type @ to mention a business.");
 
     for (const label of ["Following", "Latest", "Trending", "Businesses", "Community", "For you"]) {
       const tab = screen.getByRole("tab", { name: `Show ${label} posts` });
@@ -66,15 +67,29 @@ describe("CommunityPage composer menus", () => {
       expect(tab).toHaveAttribute("aria-selected", "true");
     }
 
+    for (const label of ["Offers", "Opportunities", "Events", "Announcements", "Requests", "All Posts"]) {
+      const category = screen.getByRole("button", { name: `Filter by ${label}` });
+      fireEvent.click(category);
+      expect(category).toHaveAttribute("aria-pressed", "true");
+    }
+
     const offerButton = await screen.findByRole("button", { name: "Offer" });
     fireEvent.click(offerButton);
     expect(offerButton).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByPlaceholderText(/Describe your offer/i)).toBeInTheDocument();
+    expect(screen.getByText("Offer details")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Price"), { target: { value: "$25" } });
+    expect(screen.getByLabelText("Price")).toHaveValue("$25");
 
     const postButton = screen.getByRole("button", { name: "Write offer first" });
     expect(postButton).toBeDisabled();
     fireEvent.change(screen.getByLabelText("Status update. Type @ to mention a business."), { target: { value: "Fresh fruit boxes available today" } });
     expect(screen.getByRole("button", { name: "Post offer" })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Announcement" }));
+    expect(screen.getByPlaceholderText(/important announcement/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Request" }));
+    expect(screen.getByPlaceholderText(/what you need/i)).toBeInTheDocument();
   });
 
   it("provides owner post options and deletes only after confirmation", async () => {
@@ -97,12 +112,41 @@ describe("CommunityPage composer menus", () => {
     render(<MemoryRouter><CommunityPage /></MemoryRouter>);
 
     expect(await screen.findByAltText("James Local Fruits profile")).toHaveAttribute("src", "https://connect767.com/james-cover.jpg");
-    const composer = screen.getByPlaceholderText(/Share a business update from James Local Fruits/i);
+    const composer = screen.getByLabelText("Status update. Type @ to mention a business.");
     fireEvent.change(composer, { target: { value: "@sadick", selectionStart: 7 } });
 
     const result = await screen.findByRole("option", { name: /Sadick Eustache/i });
     expect(result.querySelector("img")).toHaveAttribute("src", "https://connect767.com/sadick-profile.jpg");
     fireEvent.click(result);
     expect(composer).toHaveValue("@Sadick Eustache ");
+  });
+
+  it("adds the directory-wide audience tag from @@everyone", async () => {
+    render(<MemoryRouter><CommunityPage /></MemoryRouter>);
+
+    const composer = await screen.findByLabelText("Status update. Type @ to mention a business.");
+    fireEvent.change(composer, { target: { value: "New opportunity @@ever", selectionStart: 22 } });
+
+    const everyone = await screen.findByRole("option", { name: /@everyone/i });
+    fireEvent.click(everyone);
+    expect(composer).toHaveValue("New opportunity @everyone ");
+    expect(screen.getByText("everyone")).toBeInTheDocument();
+  });
+
+  it("allows files on offers, events, and opportunities but removes them from updates", async () => {
+    render(<MemoryRouter><CommunityPage /></MemoryRouter>);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Offer" }));
+    fireEvent.click(screen.getByRole("button", { name: /attach/i }));
+    expect(screen.getByRole("menuitem", { name: /File PDF, Word, Excel/i })).toBeInTheDocument();
+
+    const documentFile = new File(["job-description"], "job-description.pdf", { type: "application/pdf" });
+    fireEvent.change(screen.getByLabelText("Attach a document"), { target: { files: [documentFile] } });
+    expect(screen.getByText("job-description.pdf")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /File added/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "General Post" }));
+    expect(screen.queryByText("job-description.pdf")).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Files can be attached to offers, events, and opportunities.");
   });
 });
