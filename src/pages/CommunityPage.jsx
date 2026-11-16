@@ -12,7 +12,10 @@ import {
   getListings,
   getMyListings,
   reportCommunityPost,
+  toggleCommunityBookmark,
+  toggleCommunityFollow,
   toggleCommunityReaction,
+  toggleCommunityRepost,
   updateCommunityPost,
 } from "../data/repository";
 
@@ -172,12 +175,12 @@ const REPORT_REASONS = [
   ["other", "Something else"],
 ];
 
-function PostOptionsMenu({ post, authenticated, canManage, onDelete, onEdit, onHide, onMute, onReport }) {
+function PostOptionsMenu({ post, authenticated, canManage, onDelete, onEdit, onHide, onMute, onReport, onBookmark, onFollow }) {
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editText, setEditText] = useState(post.text || "");
   const [reportOpen, setReportOpen] = useState(false);
-  const [saved, setSaved] = useState(() => readStoredIds("c767_saved_community_posts").has(String(post.id)));
+  const [saved, setSaved] = useState(Boolean(post.bookmarked));
   const [notice, setNotice] = useState("");
   const menuRef = useRef(null);
 
@@ -193,12 +196,10 @@ function PostOptionsMenu({ post, authenticated, canManage, onDelete, onEdit, onH
     };
   }, [open]);
 
-  const toggleSaved = () => {
-    const ids = readStoredIds("c767_saved_community_posts");
-    const id = String(post.id);
-    if (ids.has(id)) ids.delete(id); else ids.add(id);
-    writeStoredIds("c767_saved_community_posts", ids);
-    setSaved(ids.has(id));
+  const toggleSaved = async () => {
+    if (!authenticated) return;
+    const result = await onBookmark(post.id);
+    setSaved(Boolean(result.bookmarked));
     setOpen(false);
   };
 
@@ -254,9 +255,10 @@ function PostOptionsMenu({ post, authenticated, canManage, onDelete, onEdit, onH
     <div ref={menuRef} className="relative shrink-0">
       <button type="button" aria-label="Post options" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((value) => !value)} className="grid h-11 w-11 place-items-center rounded-full text-foreground-400 transition hover:bg-background-100 hover:text-primary-700"><i className="ri-more-2-fill text-lg" /></button>
       {open && <div role="menu" aria-label="Post options" className="absolute right-0 top-12 z-40 w-64 rounded-2xl border border-background-200 bg-white p-1.5 shadow-[0_18px_50px_rgba(24,48,36,0.18)]">
-        <button type="button" role="menuitem" onClick={toggleSaved} className={itemClass}><i className={saved ? "ri-bookmark-fill" : "ri-bookmark-line"} />{saved ? "Remove from saved" : "Save post"}</button>
+        {authenticated ? <button type="button" role="menuitem" onClick={toggleSaved} className={itemClass}><i className={saved ? "ri-bookmark-fill" : "ri-bookmark-line"} />{saved ? "Remove from saved" : "Save post"}</button> : <Link role="menuitem" to="/auth/login?redirect=/community" className={itemClass}><i className="ri-bookmark-line" />Sign in to save</Link>}
         <button type="button" role="menuitem" onClick={copyLink} className={itemClass}><i className="ri-link" />Copy post link</button>
         <Link role="menuitem" to={`/listings/${post.listingSlug}`} onClick={() => setOpen(false)} className={itemClass}><i className="ri-user-3-line" />View business profile</Link>
+        {!canManage && authenticated && <button type="button" role="menuitem" onClick={async () => { await onFollow(post.listingId); setOpen(false); }} className={itemClass}><i className={post.following ? "ri-user-unfollow-line" : "ri-user-follow-line"} />{post.following ? "Unfollow business" : "Follow business"}</button>}
         <div className="my-1 h-px bg-background-200" />
         <button type="button" role="menuitem" onClick={() => { setOpen(false); onHide(post.id); }} className={itemClass}><i className="ri-eye-off-line" />Hide this post</button>
         {!canManage && <button type="button" role="menuitem" onClick={() => { setOpen(false); onMute(post.listingId); }} className={itemClass}><i className="ri-volume-mute-line" />Mute this business</button>}
@@ -270,10 +272,11 @@ function PostOptionsMenu({ post, authenticated, canManage, onDelete, onEdit, onH
   );
 }
 
-function CommunityPost({ post, authenticated, canManage, onReact, onComment, onDelete, onEdit, onHide, onMute, onReport }) {
+function CommunityPost({ post, authenticated, canManage, onReact, onComment, onDelete, onEdit, onHide, onMute, onReport, onBookmark, onRepost, onFollow }) {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [reactionsOpen, setReactionsOpen] = useState(false);
   const [comment, setComment] = useState("");
+  const [replyTo, setReplyTo] = useState(null);
   const reactionsRef = useRef(null);
   const comments = post.comments || [];
   const emotion = COMMUNITY_EMOTIONS.find((item) => item.value === post.emotion);
@@ -322,8 +325,9 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
     event.preventDefault();
     const clean = comment.trim();
     if (!clean) return;
-    await onComment(post.id, clean);
+    await onComment(post.id, clean, replyTo?.id || 0);
     setComment("");
+    setReplyTo(null);
     setCommentsOpen(true);
   };
 
@@ -343,7 +347,7 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
           </div>
           <p className="mt-1 text-xs text-foreground-500">{headerLocationLabel} · {relativeTime(post.createdAt)}</p>
         </div>
-        <PostOptionsMenu post={post} authenticated={authenticated} canManage={canManage} onDelete={onDelete} onEdit={onEdit} onHide={onHide} onMute={onMute} onReport={onReport} />
+        <PostOptionsMenu post={post} authenticated={authenticated} canManage={canManage} onDelete={onDelete} onEdit={onEdit} onHide={onHide} onMute={onMute} onReport={onReport} onBookmark={onBookmark} onFollow={onFollow} />
       </header>
 
       {(emotion || activity) && <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-accent-50 px-3 py-1.5 text-xs font-semibold text-foreground-700"><span className="text-base" aria-hidden="true">{emotion?.emoji || activity?.emoji}</span>{emotion ? `Feeling ${emotion.label.toLowerCase()}` : activity.label}</div>}
@@ -364,7 +368,7 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
       <div className="mt-4 flex items-center justify-between border-b border-background-200 pb-3 text-xs text-foreground-500">
         <span className="inline-flex min-h-6 items-center gap-2">
           {visibleReactions.length > 0 && <span className="flex -space-x-1" aria-hidden="true">{visibleReactions.slice(0, 4).map((item) => <span key={item.value} className="grid h-6 w-6 place-items-center rounded-full border-2 border-background-50 bg-white text-sm shadow-sm">{item.emoji}</span>)}</span>}
-          <span>{totalReactions} reaction{totalReactions === 1 ? "" : "s"}</span>
+          <span>{totalReactions} reaction{totalReactions === 1 ? "" : "s"}{Number(post.repostCount) > 0 ? ` · ${post.repostCount} repost${Number(post.repostCount) === 1 ? "" : "s"}` : ""}</span>
         </span>
         <button type="button" onClick={() => setCommentsOpen((open) => !open)}>{comments.length} comment{comments.length === 1 ? "" : "s"}</button>
       </div>
@@ -380,6 +384,7 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
             <button type="button" disabled={!authenticated} onClick={() => setReactionsOpen((open) => !open)} aria-expanded={reactionsOpen} aria-haspopup="menu" aria-label={selectedReaction ? `Reacted ${selectedReaction.label}. Choose another reaction` : "React to this update"} title={selectedReaction?.label || "React"} className={`flex h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-full px-2 text-lg transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${selectedReaction ? "bg-primary-50 text-primary-700" : "text-foreground-600 hover:bg-background-100 hover:text-primary-700"}`}>{selectedReaction ? <span aria-hidden="true">{selectedReaction.emoji}</span> : <i aria-hidden="true" className="ri-emotion-line" />}</button>
           </div>
           <button type="button" onClick={() => setCommentsOpen((open) => !open)} aria-label={commentsOpen ? "Hide comments" : "Show comments"} title="Comment" className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-lg transition-colors ${commentsOpen ? "bg-primary-50 text-primary-700" : "text-foreground-600 hover:bg-background-100 hover:text-primary-700"}`}><i aria-hidden="true" className="ri-chat-3-line" /></button>
+          <button type="button" disabled={!authenticated} onClick={() => onRepost(post.id)} aria-label={post.viewerReposted ? "Remove repost" : "Repost update"} title={post.viewerReposted ? "Remove repost" : "Repost"} className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-lg transition-colors disabled:opacity-45 ${post.viewerReposted ? "bg-primary-50 text-primary-700" : "text-foreground-600 hover:bg-background-100 hover:text-primary-700"}`}><i aria-hidden="true" className="ri-repeat-2-line" /></button>
           <ShareMenu title={`${post.listingTitle} on Connect767`} url={postShareUrl} placement="top" iconOnly buttonClassName="!h-11 !w-11 !rounded-full !bg-transparent !text-lg !text-foreground-600 !shadow-none hover:!bg-background-100 hover:!text-primary-700" />
         </div>
         <Link to={`/listings/${post.listingSlug}`} className="ml-auto hidden text-xs font-bold text-primary-700 sm:inline-flex">View profile <i className="ri-arrow-right-up-line ml-1" /></Link>
@@ -388,10 +393,10 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
       {commentsOpen && (
         <div className="mt-3 border-t border-background-200 pt-4">
           <div className="space-y-3">
-            {comments.map((item) => <div key={item.id} className="rounded-xl bg-background-100 px-3 py-2"><p className="text-xs font-bold text-foreground-900">{item.name}</p><p className="mt-1 text-sm text-foreground-700">{item.text}</p></div>)}
+            {comments.filter((item) => !Number(item.parentId)).map((item) => <div key={item.id}><div className="rounded-xl bg-background-100 px-3 py-2"><p className="text-xs font-bold text-foreground-900">{item.name}</p><p className="mt-1 text-sm text-foreground-700">{item.text}</p>{authenticated && <button type="button" onClick={() => { setReplyTo(item); setCommentsOpen(true); }} className="mt-2 text-[10px] font-bold text-primary-700">Reply</button>}</div>{comments.filter((reply) => Number(reply.parentId) === Number(item.id)).map((reply) => <div key={reply.id} className="ml-6 mt-2 rounded-xl border-l-2 border-primary-200 bg-background-100/70 px-3 py-2"><p className="text-xs font-bold text-foreground-900">{reply.name}</p><p className="mt-1 text-sm text-foreground-700">{reply.text}</p></div>)}</div>)}
           </div>
           {authenticated ? (
-            <form onSubmit={submitComment} className="mt-3 flex gap-2"><input value={comment} onChange={(event) => setComment(event.target.value)} maxLength={600} className="h-10 min-w-0 flex-1 rounded-xl border border-background-300 bg-white px-3 text-sm outline-none focus:border-primary-500" placeholder="Add a helpful comment…" /><button className="h-10 rounded-xl bg-primary-700 px-4 text-xs font-bold text-white" type="submit">Reply</button></form>
+            <><form onSubmit={submitComment} className="mt-3 flex gap-2"><input value={comment} onChange={(event) => setComment(event.target.value)} maxLength={600} className="h-10 min-w-0 flex-1 rounded-xl border border-background-300 bg-white px-3 text-sm outline-none focus:border-primary-500" placeholder={replyTo ? `Reply to ${replyTo.name}…` : "Add a helpful comment…"} /><button className="h-10 rounded-xl bg-primary-700 px-4 text-xs font-bold text-white" type="submit">Reply</button></form>{replyTo && <button type="button" onClick={() => setReplyTo(null)} className="mt-2 text-[10px] font-bold text-foreground-500">Cancel reply</button>}</>
           ) : <Link to="/auth/login" className="mt-3 inline-flex text-xs font-bold text-primary-700">Sign in to join the conversation</Link>}
         </div>
       )}
@@ -401,7 +406,8 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
 
 export default function CommunityPage() {
   const { isAuthenticated } = useAuth();
-  const { data, loading, error, reload } = useAsync(getCommunityPosts, []);
+  const [activeTab, setActiveTab] = useState("for-you");
+  const { data, loading, error, reload } = useAsync(() => getCommunityPosts({ tab: activeTab }), [activeTab]);
   const [posts, setPosts] = useState([]);
   const [listings, setListings] = useState([]);
   const [hiddenPostIds, setHiddenPostIds] = useState(() => new Set());
@@ -625,9 +631,23 @@ export default function CommunityPage() {
       if (result) setPosts((items) => items.map((post) => post.id === postId ? { ...post, reactions: result.reactions, viewerReaction: result.viewerReaction, totalReactions: result.total } : post));
     } catch { setPosts((items) => items.map((post) => post.id === postId ? current : post)); }
   };
-  const comment = async (postId, value) => {
-    const created = await createCommunityComment(postId, value);
+  const comment = async (postId, value, parentId = 0) => {
+    const created = await createCommunityComment(postId, value, parentId);
     setPosts((items) => items.map((post) => post.id === postId ? { ...post, comments: [...(post.comments || []), created] } : post));
+  };
+  const bookmarkPost = async (postId) => {
+    const result = await toggleCommunityBookmark(postId);
+    setPosts((items) => items.map((post) => String(post.id) === String(postId) ? { ...post, bookmarked: result.bookmarked } : post));
+    return result;
+  };
+  const repostPost = async (postId) => {
+    const result = await toggleCommunityRepost(postId, { listingId: Number(listingId) || 0 });
+    setPosts((items) => items.map((post) => String(post.id) === String(postId) ? { ...post, viewerReposted: result.reposted, repostCount: result.count } : post));
+  };
+  const followBusiness = async (businessId) => {
+    const result = await toggleCommunityFollow(businessId);
+    setPosts((items) => items.map((post) => String(post.listingId) === String(businessId) ? { ...post, following: result.following } : post));
+    return result;
   };
   const hidePost = (postId) => setHiddenPostIds((current) => new Set([...current, String(postId)]));
   const muteBusiness = (listingToMute) => {
@@ -654,7 +674,7 @@ export default function CommunityPage() {
       <section className="mx-auto max-w-7xl px-4 md:px-8">
         <div className="flex flex-col gap-5 border-b border-background-200 pb-7 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-700">Connect · Share · Grow</p><h1 className="mt-2 font-heading text-4xl font-light text-foreground-950 md:text-5xl">Business <span className="italic text-accent-500">community</span></h1><p className="mt-3 max-w-2xl text-sm text-foreground-600">Updates, offers and conversations from businesses across Dominica and abroad.</p></div>
-          <div className="inline-flex rounded-full border border-background-300 bg-background-50 p-1 text-xs font-bold"><span className="rounded-full bg-primary-700 px-4 py-2 text-white">For you</span><span className="px-4 py-2 text-foreground-500">Following</span><span className="px-4 py-2 text-foreground-500">Nearby</span></div>
+          <div className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-full border border-background-300 bg-background-50 p-1 text-xs font-bold" role="tablist" aria-label="Community feed views">{[["for-you", "For you"], ["following", "Following"], ["latest", "Latest"], ["trending", "Trending"], ["businesses", "Businesses"], ["community", "Community"]].map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={activeTab === value} onClick={() => setActiveTab(value)} className={`shrink-0 rounded-full px-4 py-2 transition ${activeTab === value ? "bg-primary-700 text-white" : "text-foreground-500 hover:bg-background-100 hover:text-primary-700"}`}>{label}</button>)}</div>
         </div>
 
         <div className="mt-7 grid gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
@@ -707,7 +727,8 @@ export default function CommunityPage() {
 
             {loading && !posts.length && <div className="py-16 text-center text-sm text-foreground-500">Loading community updates…</div>}
             {error && !posts.length && <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">The community feed could not load. <button onClick={reload} className="font-bold underline">Try again</button></div>}
-            {visiblePosts.map((post) => <CommunityPost key={post.id} post={post} authenticated={isAuthenticated} canManage={Boolean(post.canManage) || ownedListingIds.has(String(post.listingId))} onReact={react} onComment={comment} onDelete={removePost} onEdit={editPost} onHide={hidePost} onMute={muteBusiness} onReport={reportPost} />)}
+            {!loading && !error && !visiblePosts.length && <div className="rounded-2xl border border-background-200 bg-background-50 p-8 text-center text-sm text-foreground-500">No posts are available in this feed yet.</div>}
+            {visiblePosts.map((post) => <CommunityPost key={post.id} post={post} authenticated={isAuthenticated} canManage={Boolean(post.canManage) || ownedListingIds.has(String(post.listingId))} onReact={react} onComment={comment} onDelete={removePost} onEdit={editPost} onHide={hidePost} onMute={muteBusiness} onReport={reportPost} onBookmark={bookmarkPost} onRepost={repostPost} onFollow={followBusiness} />)}
           </main>
 
           <aside className="space-y-4">

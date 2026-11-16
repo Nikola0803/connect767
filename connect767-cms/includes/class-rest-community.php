@@ -93,6 +93,55 @@ class C767_REST_Community
             'callback' => [__CLASS__, 'create_comment'],
             'permission_callback' => [__CLASS__, 'is_authenticated'],
         ]);
+
+        register_rest_route(self::NAMESPACE_, '/community/comments/(?P<comment_id>\d+)', [
+            [
+                'methods' => WP_REST_Server::EDITABLE,
+                'callback' => [__CLASS__, 'update_comment'],
+                'permission_callback' => [__CLASS__, 'is_authenticated'],
+            ],
+            [
+                'methods' => WP_REST_Server::DELETABLE,
+                'callback' => [__CLASS__, 'delete_comment'],
+                'permission_callback' => [__CLASS__, 'is_authenticated'],
+            ],
+        ]);
+
+        register_rest_route(self::NAMESPACE_, '/community/comments/(?P<comment_id>\d+)/reactions', [
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => [__CLASS__, 'toggle_comment_reaction'],
+            'permission_callback' => [__CLASS__, 'is_authenticated'],
+        ]);
+
+        register_rest_route(self::NAMESPACE_, '/community/posts/(?P<id>\d+)/bookmark', [
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => [__CLASS__, 'toggle_bookmark'],
+            'permission_callback' => [__CLASS__, 'is_authenticated'],
+        ]);
+
+        register_rest_route(self::NAMESPACE_, '/community/posts/(?P<id>\d+)/repost', [
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => [__CLASS__, 'toggle_repost'],
+            'permission_callback' => [__CLASS__, 'is_authenticated'],
+        ]);
+
+        register_rest_route(self::NAMESPACE_, '/community/listings/(?P<listing_id>\d+)/follow', [
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => [__CLASS__, 'toggle_follow'],
+            'permission_callback' => [__CLASS__, 'is_authenticated'],
+        ]);
+
+        register_rest_route(self::NAMESPACE_, '/community/notifications', [
+            'methods' => WP_REST_Server::READABLE,
+            'callback' => [__CLASS__, 'get_notifications'],
+            'permission_callback' => [__CLASS__, 'is_authenticated'],
+        ]);
+
+        register_rest_route(self::NAMESPACE_, '/community/notifications/read', [
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => [__CLASS__, 'mark_notifications_read'],
+            'permission_callback' => [__CLASS__, 'is_authenticated'],
+        ]);
     }
 
     public static function is_authenticated(WP_REST_Request $request)
@@ -121,31 +170,55 @@ class C767_REST_Community
 
     private static function serialize_comment($comment)
     {
+        $reaction = C767_Social_Database::reaction_summary('comment', $comment->comment_ID, get_current_user_id());
         return [
             'id' => (int) $comment->comment_ID,
+            'parentId' => (int) $comment->comment_parent,
+            'userId' => (int) $comment->user_id,
             'name' => sanitize_text_field($comment->comment_author),
             'text' => wp_strip_all_tags($comment->comment_content),
             'createdAt' => mysql_to_rfc3339($comment->comment_date_gmt),
+            'reactions' => $reaction['counts'],
+            'viewerReaction' => $reaction['viewerReaction'],
+            'totalReactions' => $reaction['total'],
+            'canManage' => get_current_user_id() > 0 && ((int) $comment->user_id === (int) get_current_user_id() || current_user_can('edit_comment', $comment->comment_ID)),
         ];
+    }
+
+    private static function migrate_legacy_reactions($post_id)
+    {
+        if (get_post_meta($post_id, '_c767_social_reactions_migrated', true)) {
+            return;
+        }
+        global $wpdb;
+        $table = C767_Social_Database::table('reactions');
+        $now = current_time('mysql', true);
+        foreach (self::reaction_meta_keys() as $type => $meta_key) {
+            $ids = get_post_meta($post_id, $meta_key, true);
+            foreach (array_unique(array_map('intval', is_array($ids) ? $ids : [])) as $user_id) {
+                if ($user_id <= 0) {
+                    continue;
+                }
+                $wpdb->query($wpdb->prepare(
+                    "INSERT IGNORE INTO $table (object_type, object_id, user_id, reaction, created_at, updated_at) VALUES ('post', %d, %d, %s, %s, %s)",
+                    (int) $post_id,
+                    $user_id,
+                    $type,
+                    $now,
+                    $now
+                ));
+            }
+        }
+        update_post_meta($post_id, '_c767_social_reactions_migrated', 1);
     }
 
     private static function serialize_post($post)
     {
         $listing_id = (int) get_post_meta($post->ID, '_community_listing_id', true);
         $listing = get_post($listing_id);
-        $reaction_meta = self::reaction_meta_keys();
-        $reaction_counts = [];
-        $viewer_reaction = '';
-        $total_reactions = 0;
-        foreach ($reaction_meta as $type => $meta_key) {
-            $ids = get_post_meta($post->ID, $meta_key, true);
-            $ids = is_array($ids) ? array_values(array_unique(array_map('intval', $ids))) : [];
-            $reaction_counts[$type] = count($ids);
-            $total_reactions += count($ids);
-            if (get_current_user_id() > 0 && in_array(get_current_user_id(), $ids, true)) {
-                $viewer_reaction = $type;
-            }
-        }
+        self::migrate_legacy_reactions($post->ID);
+        $reaction = C767_Social_Database::reaction_summary('post', $post->ID, get_current_user_id());
+        $repost = C767_Social_Database::repost_summary($post->ID, get_current_user_id());
         $comments = get_comments([
             'post_id' => $post->ID,
             'status' => 'approve',
@@ -182,9 +255,13 @@ class C767_REST_Community
             'videoUrl' => esc_url_raw((string) get_post_meta($post->ID, '_community_video_url', true)),
             'linkUrl' => esc_url_raw((string) get_post_meta($post->ID, '_community_link_url', true)),
             'createdAt' => mysql_to_rfc3339($post->post_date_gmt),
-            'reactions' => $reaction_counts,
-            'viewerReaction' => $viewer_reaction,
-            'totalReactions' => $total_reactions,
+            'reactions' => $reaction['counts'],
+            'viewerReaction' => $reaction['viewerReaction'],
+            'totalReactions' => $reaction['total'],
+            'bookmarked' => C767_Social_Database::is_bookmarked($post->ID, get_current_user_id()),
+            'following' => C767_Social_Database::is_following(get_current_user_id(), 'listing', $listing_id),
+            'repostCount' => $repost['count'],
+            'viewerReposted' => $repost['viewerReposted'],
             'canManage' => get_current_user_id() > 0 && ((int) $post->post_author === (int) get_current_user_id() || current_user_can('delete_post', $post->ID)),
             'comments' => array_map([__CLASS__, 'serialize_comment'], $comments),
         ];
@@ -201,19 +278,50 @@ class C767_REST_Community
         }
 
         $page = max(1, (int) $request->get_param('page'));
-        $query = new WP_Query([
+        $tab = sanitize_key((string) $request->get_param('tab')) ?: 'for-you';
+        $allowed_tabs = ['for-you', 'following', 'latest', 'trending', 'businesses', 'community'];
+        if (!in_array($tab, $allowed_tabs, true)) {
+            $tab = 'for-you';
+        }
+        $args = [
             'post_type' => 'community_update',
             'post_status' => 'publish',
             'posts_per_page' => 20,
             'paged' => $page,
             'orderby' => 'date',
             'order' => 'DESC',
-        ]);
+        ];
+        $cursor = sanitize_text_field((string) $request->get_param('cursor'));
+        if ($cursor && strtotime($cursor)) {
+            $args['date_query'] = [['before' => gmdate('Y-m-d H:i:s', strtotime($cursor)), 'inclusive' => false]];
+        }
+        if ($tab === 'following') {
+            $followed = C767_Social_Database::followed_subject_ids(get_current_user_id(), 'listing');
+            if (!$followed) {
+                return rest_ensure_response(['posts' => [], 'page' => 1, 'totalPages' => 0, 'nextCursor' => null, 'tab' => $tab]);
+            }
+            $args['meta_query'] = [[
+                'key' => '_community_listing_id',
+                'value' => $followed,
+                'compare' => 'IN',
+                'type' => 'NUMERIC',
+            ]];
+        } elseif ($tab === 'community') {
+            $args['meta_query'] = [['key' => '_community_update_type', 'value' => 'status']];
+        } elseif ($tab === 'businesses') {
+            $args['meta_query'] = [['key' => '_community_update_type', 'value' => ['offer', 'event', 'opportunity'], 'compare' => 'IN']];
+        } elseif ($tab === 'trending') {
+            $args['orderby'] = ['comment_count' => 'DESC', 'date' => 'DESC'];
+        }
+        $query = new WP_Query($args);
+        $last_post = $query->posts ? end($query->posts) : null;
 
         return rest_ensure_response([
             'posts' => array_map([__CLASS__, 'serialize_post'], $query->posts),
             'page' => $page,
             'totalPages' => (int) $query->max_num_pages,
+            'nextCursor' => $last_post ? mysql_to_rfc3339($last_post->post_date_gmt) : null,
+            'tab' => $tab,
         ]);
     }
 
@@ -426,20 +534,23 @@ class C767_REST_Community
         }
 
         $user_id = get_current_user_id();
-        $reports = get_post_meta($post_id, '_community_reports', true);
-        $reports = is_array($reports) ? $reports : [];
-        foreach ($reports as $report) {
-            if ((int) ($report['user_id'] ?? 0) === (int) $user_id) {
-                return rest_ensure_response(['reported' => true, 'duplicate' => true, 'id' => $post_id]);
-            }
+        global $wpdb;
+        $table = C767_Social_Database::table('reports');
+        $duplicate = (bool) $wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE object_type = 'post' AND object_id = %d AND reporter_user_id = %d", $post_id, $user_id));
+        if (!$duplicate) {
+            $now = current_time('mysql', true);
+            $wpdb->insert($table, [
+                'object_type' => 'post',
+                'object_id' => $post_id,
+                'reporter_user_id' => $user_id,
+                'reason' => $reason,
+                'details' => '',
+                'status' => 'open',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ], ['%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s']);
         }
-        $reports[] = [
-            'user_id' => $user_id,
-            'reason' => $reason,
-            'created_at' => current_time('mysql', true),
-        ];
-        update_post_meta($post_id, '_community_reports', $reports);
-        return rest_ensure_response(['reported' => true, 'duplicate' => false, 'id' => $post_id]);
+        return rest_ensure_response(['reported' => true, 'duplicate' => $duplicate, 'id' => $post_id]);
     }
 
     private static function validate_attachment()
@@ -515,34 +626,16 @@ class C767_REST_Community
             return new WP_Error('c767_invalid_community_reaction', 'Choose a valid reaction.', ['status' => 400]);
         }
 
-        $current_type = '';
-        $reaction_ids = [];
-        foreach ($reaction_meta as $type => $meta_key) {
-            $ids = get_post_meta($post->ID, $meta_key, true);
-            $ids = is_array($ids) ? array_values(array_unique(array_map('intval', $ids))) : [];
-            if (in_array($user_id, $ids, true)) {
-                $current_type = $type;
-            }
-            $reaction_ids[$type] = array_values(array_diff($ids, [$user_id]));
-        }
-
-        $viewer_reaction = $current_type === $reaction_type ? '' : $reaction_type;
-        if ($viewer_reaction !== '') {
-            $reaction_ids[$viewer_reaction][] = $user_id;
-        }
-
-        $counts = [];
-        $total = 0;
-        foreach ($reaction_meta as $type => $meta_key) {
-            update_post_meta($post->ID, $meta_key, $reaction_ids[$type]);
-            $counts[$type] = count($reaction_ids[$type]);
-            $total += $counts[$type];
+        self::migrate_legacy_reactions($post->ID);
+        $summary = C767_Social_Database::toggle_reaction('post', $post->ID, $user_id, $reaction_type);
+        if ($summary['viewerReaction']) {
+            C767_Social_Database::notify($post->post_author, $user_id, 'reaction', 'post', $post->ID, ['reaction' => $summary['viewerReaction']]);
         }
 
         return rest_ensure_response([
-            'reactions' => $counts,
-            'viewerReaction' => $viewer_reaction,
-            'total' => $total,
+            'reactions' => $summary['counts'],
+            'viewerReaction' => $summary['viewerReaction'],
+            'total' => $summary['total'],
         ]);
     }
 
@@ -581,17 +674,158 @@ class C767_REST_Community
         if ($text === '' || strlen($text) > 600) {
             return new WP_Error('c767_invalid_community_comment', 'Comments must contain between 1 and 600 characters.', ['status' => 400]);
         }
+        $parent_id = max(0, (int) $request->get_param('parentId'));
+        if ($parent_id) {
+            $parent = get_comment($parent_id);
+            if (!$parent || (int) $parent->comment_post_ID !== (int) $post->ID) {
+                return new WP_Error('c767_invalid_comment_parent', 'The reply target is invalid.', ['status' => 400]);
+            }
+        }
         $user = wp_get_current_user();
         $comment_id = wp_insert_comment([
             'comment_post_ID' => $post->ID,
             'comment_content' => $text,
             'comment_type' => 'comment',
-            'comment_parent' => 0,
+            'comment_parent' => $parent_id,
             'user_id' => $user->ID,
             'comment_author' => $user->display_name ?: $user->user_login,
             'comment_author_email' => $user->user_email,
             'comment_approved' => 1,
         ]);
+        if ($comment_id) {
+            $recipient = $parent_id ? (int) get_comment($parent_id)->user_id : (int) $post->post_author;
+            C767_Social_Database::notify($recipient, $user->ID, $parent_id ? 'reply' : 'comment', 'post', $post->ID, ['commentId' => (int) $comment_id]);
+        }
         return new WP_REST_Response(self::serialize_comment(get_comment($comment_id)), 201);
+    }
+
+    public static function update_comment(WP_REST_Request $request)
+    {
+        $comment = get_comment((int) $request['comment_id']);
+        if (!$comment) {
+            return new WP_Error('c767_comment_not_found', 'Comment not found.', ['status' => 404]);
+        }
+        if ((int) $comment->user_id !== (int) get_current_user_id() && !current_user_can('edit_comment', $comment->comment_ID)) {
+            return new WP_Error('c767_comment_forbidden', 'You can only edit your own comments.', ['status' => 403]);
+        }
+        $text = trim(sanitize_textarea_field((string) $request->get_param('text')));
+        if ($text === '' || strlen($text) > 600) {
+            return new WP_Error('c767_invalid_community_comment', 'Comments must contain between 1 and 600 characters.', ['status' => 400]);
+        }
+        $result = wp_update_comment(['comment_ID' => $comment->comment_ID, 'comment_content' => $text], true);
+        if (is_wp_error($result)) {
+            return $result;
+        }
+        return rest_ensure_response(self::serialize_comment(get_comment($comment->comment_ID)));
+    }
+
+    public static function delete_comment(WP_REST_Request $request)
+    {
+        $comment = get_comment((int) $request['comment_id']);
+        if (!$comment) {
+            return new WP_Error('c767_comment_not_found', 'Comment not found.', ['status' => 404]);
+        }
+        if ((int) $comment->user_id !== (int) get_current_user_id() && !current_user_can('delete_comment', $comment->comment_ID)) {
+            return new WP_Error('c767_comment_forbidden', 'You can only delete your own comments.', ['status' => 403]);
+        }
+        if (!wp_delete_comment($comment->comment_ID, true)) {
+            return new WP_Error('c767_comment_delete_failed', 'The comment could not be deleted.', ['status' => 500]);
+        }
+        return rest_ensure_response(['deleted' => true, 'id' => (int) $comment->comment_ID]);
+    }
+
+    public static function toggle_comment_reaction(WP_REST_Request $request)
+    {
+        $comment = get_comment((int) $request['comment_id']);
+        if (!$comment) {
+            return new WP_Error('c767_comment_not_found', 'Comment not found.', ['status' => 404]);
+        }
+        $reaction = sanitize_key((string) $request->get_param('type'));
+        if (!isset(self::reaction_meta_keys()[$reaction])) {
+            return new WP_Error('c767_invalid_community_reaction', 'Choose a valid reaction.', ['status' => 400]);
+        }
+        $summary = C767_Social_Database::toggle_reaction('comment', $comment->comment_ID, get_current_user_id(), $reaction);
+        if ($summary['viewerReaction']) {
+            C767_Social_Database::notify($comment->user_id, get_current_user_id(), 'comment_reaction', 'comment', $comment->comment_ID, ['reaction' => $summary['viewerReaction']]);
+        }
+        return rest_ensure_response(['reactions' => $summary['counts'], 'viewerReaction' => $summary['viewerReaction'], 'total' => $summary['total']]);
+    }
+
+    public static function toggle_bookmark(WP_REST_Request $request)
+    {
+        $post = get_post((int) $request['id']);
+        if (!$post || $post->post_type !== 'community_update' || $post->post_status !== 'publish') {
+            return new WP_Error('c767_community_post_not_found', 'Community update not found.', ['status' => 404]);
+        }
+        return rest_ensure_response(['bookmarked' => C767_Social_Database::toggle_bookmark($post->ID, get_current_user_id())]);
+    }
+
+    public static function toggle_repost(WP_REST_Request $request)
+    {
+        $post = get_post((int) $request['id']);
+        if (!$post || $post->post_type !== 'community_update' || $post->post_status !== 'publish') {
+            return new WP_Error('c767_community_post_not_found', 'Community update not found.', ['status' => 404]);
+        }
+        $listing_id = max(0, (int) $request->get_param('listingId'));
+        if ($listing_id && !self::owned_listing($listing_id, get_current_user_id())) {
+            return new WP_Error('c767_repost_listing_forbidden', 'You cannot repost as that business.', ['status' => 403]);
+        }
+        $reposted = C767_Social_Database::toggle_repost($post->ID, get_current_user_id(), $listing_id, (string) $request->get_param('quoteText'));
+        if ($reposted) {
+            C767_Social_Database::notify($post->post_author, get_current_user_id(), 'repost', 'post', $post->ID, ['listingId' => $listing_id]);
+        }
+        $summary = C767_Social_Database::repost_summary($post->ID, get_current_user_id());
+        return rest_ensure_response(['reposted' => $reposted, 'count' => $summary['count']]);
+    }
+
+    public static function toggle_follow(WP_REST_Request $request)
+    {
+        $listing = get_post((int) $request['listing_id']);
+        if (!$listing || $listing->post_type !== 'listing' || $listing->post_status !== 'publish') {
+            return new WP_Error('c767_listing_not_found', 'Listing not found.', ['status' => 404]);
+        }
+        $following = C767_Social_Database::toggle_follow(get_current_user_id(), 'listing', $listing->ID);
+        if ($following) {
+            C767_Social_Database::notify($listing->post_author, get_current_user_id(), 'follow', 'listing', $listing->ID);
+        }
+        return rest_ensure_response(['following' => $following, 'listingId' => (int) $listing->ID]);
+    }
+
+    public static function get_notifications(WP_REST_Request $request)
+    {
+        global $wpdb;
+        $table = C767_Social_Database::table('notifications');
+        $limit = min(50, max(1, (int) $request->get_param('limit') ?: 20));
+        $rows = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table WHERE user_id = %d ORDER BY created_at DESC LIMIT %d", get_current_user_id(), $limit), ARRAY_A);
+        $items = array_map(function ($row) {
+            $actor = get_userdata((int) $row['actor_user_id']);
+            return [
+                'id' => (int) $row['id'],
+                'type' => sanitize_key($row['notification_type']),
+                'objectType' => sanitize_key($row['object_type']),
+                'objectId' => (int) $row['object_id'],
+                'actor' => $actor ? sanitize_text_field($actor->display_name ?: $actor->user_login) : 'Connect767 member',
+                'payload' => json_decode((string) $row['payload'], true) ?: new stdClass(),
+                'read' => !empty($row['read_at']),
+                'createdAt' => mysql_to_rfc3339($row['created_at']),
+            ];
+        }, (array) $rows);
+        $unread = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table WHERE user_id = %d AND read_at IS NULL", get_current_user_id()));
+        return rest_ensure_response(['notifications' => $items, 'unread' => $unread]);
+    }
+
+    public static function mark_notifications_read(WP_REST_Request $request)
+    {
+        global $wpdb;
+        $table = C767_Social_Database::table('notifications');
+        $ids = array_values(array_filter(array_map('intval', (array) $request->get_param('ids'))));
+        if (!$ids) {
+            $wpdb->update($table, ['read_at' => current_time('mysql', true)], ['user_id' => get_current_user_id(), 'read_at' => null], ['%s'], ['%d', '%s']);
+        } else {
+            $placeholders = implode(',', array_fill(0, count($ids), '%d'));
+            $params = array_merge([current_time('mysql', true), get_current_user_id()], $ids);
+            $wpdb->query($wpdb->prepare("UPDATE $table SET read_at = %s WHERE user_id = %d AND id IN ($placeholders)", $params));
+        }
+        return rest_ensure_response(['read' => true]);
     }
 }

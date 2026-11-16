@@ -56,9 +56,9 @@ import { localCommunityPosts } from "./community";
 
 // ---------- Business community feed ----------
 
-export async function getCommunityPosts() {
-  if (!isLiveApi) return { posts: localCommunityPosts, page: 1, totalPages: 1 };
-  return customClient.get("/community/posts");
+export async function getCommunityPosts(params = {}) {
+  if (!isLiveApi) return { posts: localCommunityPosts, page: 1, totalPages: 1, tab: params.tab || "for-you" };
+  return customClient.get("/community/posts", params);
 }
 
 export async function createCommunityPost(payload) {
@@ -122,11 +122,51 @@ export async function toggleCommunityReaction(postId, reactionType = "like") {
   return customClient.post(`/community/posts/${postId}/reactions`, { type: reactionType });
 }
 
-export async function createCommunityComment(postId, text) {
+export async function createCommunityComment(postId, text, parentId = 0) {
   if (!isLiveApi) {
-    return { id: `local-comment-${Date.now()}`, name: "You", text, createdAt: new Date().toISOString() };
+    return { id: `local-comment-${Date.now()}`, parentId, name: "You", text, createdAt: new Date().toISOString(), reactions: {} };
   }
-  return customClient.post(`/community/posts/${postId}/comments`, { text });
+  return customClient.post(`/community/posts/${postId}/comments`, { text, parentId });
+}
+
+export async function updateCommunityComment(commentId, text) {
+  if (!isLiveApi) return { id: commentId, text };
+  return customClient.post(`/community/comments/${commentId}`, { text });
+}
+
+export async function deleteCommunityComment(commentId) {
+  if (!isLiveApi) return { deleted: true, id: commentId };
+  return customClient.del(`/community/comments/${commentId}`);
+}
+
+export async function toggleCommunityCommentReaction(commentId, type = "like") {
+  if (!isLiveApi) return { reactions: { [type]: 1 }, viewerReaction: type, total: 1 };
+  return customClient.post(`/community/comments/${commentId}/reactions`, { type });
+}
+
+export async function toggleCommunityBookmark(postId) {
+  if (!isLiveApi) return { bookmarked: true };
+  return customClient.post(`/community/posts/${postId}/bookmark`, {});
+}
+
+export async function toggleCommunityRepost(postId, payload = {}) {
+  if (!isLiveApi) return { reposted: true, count: 1 };
+  return customClient.post(`/community/posts/${postId}/repost`, payload);
+}
+
+export async function toggleCommunityFollow(listingId) {
+  if (!isLiveApi) return { following: true, listingId };
+  return customClient.post(`/community/listings/${listingId}/follow`, {});
+}
+
+export async function getCommunityNotifications(limit = 20) {
+  if (!isLiveApi) return { notifications: [], unread: 0 };
+  return customClient.get("/community/notifications", { limit });
+}
+
+export async function markCommunityNotificationsRead(ids = []) {
+  if (!isLiveApi) return { read: true };
+  return customClient.post("/community/notifications/read", { ids });
 }
 
 export async function deleteCommunityPost(postId) {

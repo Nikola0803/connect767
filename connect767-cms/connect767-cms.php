@@ -3,7 +3,7 @@
  * Plugin Name: Connect767 CMS
  * Plugin URI: https://connect767.com
  * Description: Content management, REST API, auth, and WooCommerce checkout bridge for the Connect767 headless React frontend. Registers the Listing and Uniform Template custom post types, exposes the connect767/v1 REST namespace (auth, AI matching, listing submissions, uniform quotes, headless checkout), and includes a one-click sample content importer matching the frontend's local fixture data.
- * Version: 1.7.19
+ * Version: 2.0.0
  * Author: Connect767
  * Text Domain: connect767-cms
  * Requires PHP: 7.4
@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
     exit; // No direct access.
 }
 
-define('C767_VERSION', '1.7.19');
+define('C767_VERSION', '2.0.0');
 define('C767_PLUGIN_FILE', __FILE__);
 define('C767_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('C767_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -98,6 +98,7 @@ function c767_require_includes()
     $includes = [
         'includes/class-cors.php',
         'includes/class-jwt.php',
+        'includes/class-social-database.php',
         'includes/class-post-types.php',
         'includes/class-meta-fields.php',
         'includes/class-rest-auth.php',
@@ -140,6 +141,7 @@ c767_require_includes();
 function c767_init_plugin()
 {
     C767_CORS::init();
+    C767_Social_Database::init();
     C767_Post_Types::init();
     C767_Meta_Fields::init();
     C767_REST_Auth::init();
@@ -176,6 +178,7 @@ function c767_activate()
     c767_require_includes();
     C767_Post_Types::register_post_types();
     C767_Post_Types::register_taxonomies();
+    C767_Social_Database::install();
     flush_rewrite_rules();
 }
 register_activation_hook(__FILE__, 'c767_activate');
