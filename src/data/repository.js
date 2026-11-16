@@ -140,11 +140,34 @@ export async function toggleCommunityReaction(postId, reactionType = "like") {
   return customClient.post(`/community/posts/${postId}/reactions`, { type: reactionType });
 }
 
-export async function createCommunityComment(postId, text, parentId = 0) {
+export async function createCommunityComment(postId, text, parentId = 0, options = {}) {
+  const attachment = options.attachment || null;
+  const attachmentType = options.attachmentType || "";
   if (!isLiveApi) {
-    return { id: `local-comment-${Date.now()}`, parentId, name: "You", text, createdAt: new Date().toISOString(), reactions: {} };
+    const previewUrl = attachment && typeof URL !== "undefined" && URL.createObjectURL
+      ? URL.createObjectURL(attachment)
+      : "";
+    return {
+      id: `local-comment-${Date.now()}`,
+      parentId,
+      name: "You",
+      text,
+      createdAt: new Date().toISOString(),
+      reactions: {},
+      mediaUrl: ["image", "gif"].includes(attachmentType) ? previewUrl : "",
+      videoUrl: attachmentType === "video" ? previewUrl : "",
+      fileUrl: attachmentType === "file" ? previewUrl : "",
+      fileName: attachmentType === "file" ? attachment?.name || "" : "",
+      fileSize: attachmentType === "file" ? attachment?.size || 0 : 0,
+    };
   }
-  return customClient.post(`/community/posts/${postId}/comments`, { text, parentId });
+  const payload = new FormData();
+  payload.append("text", text);
+  payload.append("parentId", String(parentId || 0));
+  if (attachment) {
+    payload.append(["image", "gif"].includes(attachmentType) ? "image" : attachmentType, attachment);
+  }
+  return customClient.post(`/community/posts/${postId}/comments`, payload);
 }
 
 export async function updateCommunityComment(commentId, text) {
