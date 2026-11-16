@@ -10,7 +10,7 @@ const requestWindows = new Map();
 
 const PRODUCTS = new Set(["T-Shirt", "Jersey", "Hoodie", "Polo", "Cap", "Tote Bag"]);
 const STYLES = new Set(["Modern & Bold", "Classic & Clean", "Minimal & Elegant", "Retro & Vintage", "Street & Edgy"]);
-const MODES = new Set(["garment", "artwork"]);
+const MODES = new Set(["garment", "artwork", "uniform"]);
 const SPORTS = new Set(["Soccer", "Basketball", "Netball", "Cricket", "Goal Keeper", "Other"]);
 
 function text(value, maxLength) {
@@ -77,6 +77,19 @@ export function buildPrompt(brief) {
       "Return only the isolated printable artwork on a transparent background.",
       "Do not show a garment, mannequin, model, room, mockup, frame, watermark, colour swatch, or presentation board.",
       "Keep all important artwork within the centre 80 percent with crisp edges and strong legibility suitable for sublimation, screen printing, or embroidery digitization.",
+    ].join(" ");
+  }
+
+  if (brief.generationMode === "uniform") {
+    return [
+      `Create a realistic professional complete ${brief.sport || "sports"} uniform design concept.`,
+      `Visual direction: ${brief.style}. ${identity}`,
+      "Show two coordinated views side by side: the complete front view and complete back view of the same uniform.",
+      "Each view must include every applicable garment piece, including the jersey or dress, shorts or trousers, and socks when the sport uses socks.",
+      "Keep both uniforms fully visible, equally scaled, centred, and separated on a clean warm-white studio background.",
+      "Use realistic performance fabric, stitching, seams, folds, highlights, and shadows while keeping the colors, trims, pattern, and design identity clearly readable.",
+      "Do not show a person, mannequin head, hands, shoes, props, watermark, colour swatches, UI, presentation board, cropped garment, or duplicate angle.",
+      "This is a customer-facing full-uniform design proof, not a manufacturing pattern or technical cut file.",
     ].join(" ");
   }
 

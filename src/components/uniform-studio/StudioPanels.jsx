@@ -1024,7 +1024,40 @@ export function AIArtworkPanel({
       });
       const data = await response.json();
       if (!response.ok || !data.plan) throw new Error(data.error || "AI uniform design failed.");
-      onUniformPlanChange?.(data.plan);
+      const plan = data.plan;
+      const conceptResponse = await fetch("/api/generate-design", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productType: "Jersey",
+          style,
+          brandName: brandName.trim(),
+          primaryColor: plan.colors.body,
+          secondaryColor: plan.colors.shirtStrip,
+          generationMode: "uniform",
+          sport,
+          notes: [
+            brief.trim(),
+            `Design plan: ${plan.summary}`,
+            `Collar: ${plan.collar}. Sleeves: ${plan.sleeve}.`,
+            `Exact zone colors: body ${plan.colors.body}, sleeves ${plan.colors.sleeve}, collar ${plan.colors.collar}, shorts ${plan.colors.shorts}, socks ${plan.colors.socks}, shirt trim ${plan.colors.shirtStrip}, sleeve trim ${plan.colors.sleeveStrip}, shorts trim ${plan.colors.shortsStrip}.`,
+            plan.pattern?.enabled
+              ? `Pattern: ${plan.pattern.key}, applied to ${plan.pattern.view}.`
+              : "Pattern: clean solid-color design with no decorative pattern.",
+          ].join(" "),
+        }),
+      });
+      const conceptData = await conceptResponse.json();
+      if (!conceptResponse.ok || !conceptData.b64) {
+        throw new Error(conceptData.error || "The editable design was created, but its full-uniform preview could not be rendered.");
+      }
+      onUniformPlanChange?.({
+        ...plan,
+        conceptImage: {
+          src: `data:${conceptData.mimeType || "image/png"};base64,${conceptData.b64}`,
+          name: `${plan.name} full uniform concept`,
+        },
+      });
     } catch (generationError) {
       setError(generationError.message || "AI uniform design failed.");
     } finally {
@@ -1199,6 +1232,18 @@ export function AIArtworkPanel({
 
         {mode === "uniform" && uniformPlan && (
           <div className="space-y-3 rounded-2xl border border-primary-200 bg-white p-4 shadow-sm">
+            {uniformPlan.conceptImage?.src && (
+              <div className="overflow-hidden rounded-xl border border-background-200 bg-background-100">
+                <img
+                  src={uniformPlan.conceptImage.src}
+                  alt={`${uniformPlan.name} complete front and back uniform concept`}
+                  className="aspect-square w-full object-contain"
+                />
+                <div className="border-t border-background-200 bg-white px-3 py-2 text-[9px] font-bold uppercase tracking-[0.12em] text-primary-700">
+                  Full AI uniform concept · front and back
+                </div>
+              </div>
+            )}
             <div>
               <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-primary-700">AI design plan</p>
               <h4 className="mt-1 font-heading text-lg font-semibold text-foreground-950">{uniformPlan.name}</h4>
