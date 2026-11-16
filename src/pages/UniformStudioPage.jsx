@@ -29,6 +29,7 @@ import {
   ZoneEditorPanel,
   TextPanel,
   LogoPanel,
+  AIArtworkPanel,
   LayersPanel,
   OptionsPanel,
   SkinsPanel,
@@ -87,6 +88,12 @@ const tools = [
     hint: "Add player names, numbers or a club motto. Click Add text, then click the design where you want it.",
   },
   {
+    key: "ai",
+    label: "AI Designer",
+    icon: "ri-sparkling-2-fill",
+    hint: "Describe artwork, generate a transparent concept with AI, preview it, then place it directly on this uniform.",
+  },
+  {
     key: "logo",
     label: "Logo",
     icon: "ri-image-add-line",
@@ -141,7 +148,7 @@ const studioWorkflow = [
     icon: "ri-image-edit-line",
     step: 2,
     defaultTool: "text",
-    tools: ["text", "logo", "skins", "layers"],
+    tools: ["ai", "text", "logo", "skins", "layers"],
   },
   {
     key: "options",
@@ -237,6 +244,7 @@ function parseCsv(text) {
 
 let layerIdCounter = 0;
 const nextLayerId = () => `layer-${Date.now()}-${layerIdCounter++}`;
+const AI_TRANSFER_KEY = "connect767-ai-design-transfer";
 
 export default function UniformStudioPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -394,11 +402,42 @@ export default function UniformStudioPage() {
   const visibleTools = tools.filter((tool) => workflowStep.tools.includes(tool.key));
   const activeToolConfig = tools.find((tool) => tool.key === activeTool) || visibleTools[0];
 
+  useEffect(() => {
+    if (searchParams.get("aiDesign") !== "1") return;
+    try {
+      const raw = window.sessionStorage.getItem(AI_TRANSFER_KEY);
+      const transfer = raw ? JSON.parse(raw) : null;
+      if (!transfer?.src?.startsWith("data:image/")) return;
+      const id = nextLayerId();
+      setLayers((current) => [
+        ...current,
+        { id, type: "logo", view: "front", x: 50, y: 42, size: 28, rotation: 0, src: transfer.src, name: transfer.name || "AI artwork" },
+      ]);
+      setSelectedLayerId(id);
+      setActiveTool("logo");
+      window.sessionStorage.removeItem(AI_TRANSFER_KEY);
+      setSearchParams((previous) => {
+        const next = new URLSearchParams(previous);
+        next.delete("aiDesign");
+        return next;
+      }, { replace: true });
+    } catch {
+      window.sessionStorage.removeItem(AI_TRANSFER_KEY);
+    }
+  }, [searchParams, setSearchParams]);
+
   const openWorkflowStep = (index) => {
     const nextStep = studioWorkflow[Math.max(0, Math.min(studioWorkflow.length - 1, index))];
     setPendingLayer(null);
     setSelectedLayerId(null);
     setActiveTool(nextStep.defaultTool);
+  };
+
+  const openAIDesigner = () => {
+    setPendingLayer(null);
+    setSelectedLayerId(null);
+    setStageMode("edit");
+    setActiveTool("ai");
   };
 
   const continueWorkflow = () => {
@@ -827,6 +866,16 @@ export default function UniformStudioPage() {
     };
     reader.readAsDataURL(file);
     e.target.value = "";
+  };
+
+  const placeAIArtwork = ({ src, name }) => {
+    const id = nextLayerId();
+    setView("front");
+    setLayers((current) => [
+      ...current,
+      { id, type: "logo", view: "front", x: 50, y: 42, size: 28, rotation: 0, src, name },
+    ]);
+    setSelectedLayerId(id);
   };
 
   const updateLayer = (id, patch) =>
@@ -1336,6 +1385,19 @@ export default function UniformStudioPage() {
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={openAIDesigner}
+            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition ${
+              activeTool === "ai"
+                ? "border-accent-400 bg-accent-500 text-white shadow-[0_8px_20px_rgba(239,84,53,0.22)]"
+                : "border-accent-400/40 bg-accent-950/30 text-accent-200 hover:border-accent-300 hover:bg-accent-950/55"
+            }`}
+          >
+            <i className="ri-sparkling-2-fill" />
+            <span className="hidden sm:inline">AI Designer</span>
+            <span className="sm:hidden">AI</span>
+          </button>
+          <button
+            type="button"
             onClick={saveProgress}
             className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
               manualSaveStatus === "saved"
@@ -1766,6 +1828,13 @@ export default function UniformStudioPage() {
                   />
                 )}
                 {activeTool === "text" && <TextPanel onAdd={armTextPlacement} armed={pendingLayer?.type === "text"} />}
+                {activeTool === "ai" && (
+                  <AIArtworkPanel
+                    sport={sports.find((item) => item.slug === activeSport)?.label || "Team sport"}
+                    colors={colors}
+                    onPlace={placeAIArtwork}
+                  />
+                )}
                 {activeTool === "logo" && <LogoPanel onUpload={armLogoPlacement} armed={pendingLayer?.type === "logo"} />}
                 {activeTool === "skins" && (
                   <SkinsPanel
@@ -1895,6 +1964,13 @@ export default function UniformStudioPage() {
           />
         )}
         {activeTool === "text" && <TextPanel onAdd={armTextPlacement} armed={pendingLayer?.type === "text"} />}
+        {activeTool === "ai" && (
+          <AIArtworkPanel
+            sport={sports.find((item) => item.slug === activeSport)?.label || "Team sport"}
+            colors={colors}
+            onPlace={placeAIArtwork}
+          />
+        )}
         {activeTool === "logo" && <LogoPanel onUpload={armLogoPlacement} armed={pendingLayer?.type === "logo"} />}
         {activeTool === "skins" && (
           <SkinsPanel

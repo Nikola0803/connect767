@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -22,6 +22,15 @@ const STYLES = [
 
 const PRESETS_A = ["#111111","#1A2A4A","#D4572A","#00CC66","#4A90D9"];
 const PRESETS_B = ["#FFFFFF","#C8A96E","#FF2D55","#FFCC00","#7B2FBE"];
+const SPORTS = [
+  { id: "soccer", label: "Soccer" },
+  { id: "basketball", label: "Basketball" },
+  { id: "netball", label: "Netball" },
+  { id: "cricket", label: "Cricket" },
+  { id: "goal-keeper", label: "Goal Keeper" },
+  { id: "other", label: "Other" },
+];
+const AI_TRANSFER_KEY = "connect767-ai-design-transfer";
 
 // ─── Components ───────────────────────────────────────────────────────────────
 
@@ -89,6 +98,7 @@ function NavBtn({ onClick, disabled, children, primary }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AIDesignStudioPage() {
+  const navigate = useNavigate();
   const [step, setStep]               = useState(0);
   const [productType, setProductType] = useState(null);
   const [style, setStyle]             = useState(null);
@@ -97,6 +107,9 @@ export default function AIDesignStudioPage() {
   const [primaryColor, setPrimary]    = useState("#111111");
   const [secondaryColor, setSecondary] = useState("#FFFFFF");
   const [notes, setNotes]             = useState("");
+  const [generationMode, setGenerationMode] = useState("garment");
+  const [sport, setSport]             = useState("soccer");
+  const [connection, setConnection]   = useState({ checked: false, configured: false, model: "" });
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState(null);
   const [result, setResult]           = useState(null);
@@ -106,8 +119,17 @@ export default function AIDesignStudioPage() {
   const selectedProduct = PRODUCT_TYPES.find(p => p.id === productType);
   const selectedStyle   = STYLES.find(s => s.id === style);
 
-  // Cleanup interval on unmount
-  useEffect(() => () => clearInterval(intervalRef.current), []);
+  useEffect(() => {
+    let active = true;
+    fetch("/api/generate-design")
+      .then((response) => response.json())
+      .then((data) => active && setConnection({ checked: true, configured: Boolean(data.configured), model: data.model || "" }))
+      .catch(() => active && setConnection({ checked: true, configured: false, model: "" }));
+    return () => {
+      active = false;
+      clearInterval(intervalRef.current);
+    };
+  }, []);
 
   const startDots = () => {
     clearInterval(intervalRef.current);
@@ -138,6 +160,8 @@ export default function AIDesignStudioPage() {
           primaryColor,
           secondaryColor,
           notes,
+          generationMode,
+          sport: SPORTS.find((item) => item.id === sport)?.label,
         }),
       });
       const data = await res.json();
@@ -166,6 +190,20 @@ export default function AIDesignStudioPage() {
     a.click();
   };
 
+  const openInUniformStudio = () => {
+    if (!result?.b64) return;
+    try {
+      window.sessionStorage.setItem(AI_TRANSFER_KEY, JSON.stringify({
+        src: `data:${result.mimeType || "image/png"};base64,${result.b64}`,
+        name: `${brandName} AI artwork`,
+        createdAt: Date.now(),
+      }));
+      navigate(`/uniforms?sport=${sport}&mode=scratch&step=artwork&aiDesign=1`);
+    } catch {
+      setError("This image is too large to transfer automatically. Download it, then upload it in the Uniform Studio.");
+    }
+  };
+
   // ─── Layout ─────────────────────────────────────────────────────────────────
   // h-[100dvh] + inner overflow-y-auto so it works inside the chromeless Chrome wrapper
 
@@ -181,7 +219,10 @@ export default function AIDesignStudioPage() {
         <p className="text-xs font-label font-semibold uppercase tracking-widest text-foreground-500">
           AI Design Studio
         </p>
-        <div className="w-14" />
+        <div className={`inline-flex items-center gap-1.5 text-[10px] font-label ${connection.configured ? "text-primary-700" : "text-foreground-400"}`}>
+          <span className={`w-2 h-2 rounded-full ${connection.configured ? "bg-primary-500" : "bg-background-300"}`} />
+          {connection.checked ? (connection.configured ? "AI connected" : "AI setup needed") : "Checking AI"}
+        </div>
       </div>
 
       {/* ── Step bar ── */}
@@ -253,7 +294,38 @@ export default function AIDesignStudioPage() {
             <h1 className="font-heading text-2xl font-light text-foreground-950 mb-1">Tell us about your brand</h1>
             <p className="text-sm text-foreground-500 font-label mb-6">The more specific you are, the better the result.</p>
 
+            {connection.checked && !connection.configured && (
+              <div className="flex items-start gap-2 p-4 mb-5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-label">
+                <i className="ri-key-2-line mt-0.5" />
+                <span>AI generation is ready in the app, but the server still needs its temporary <code>OPENAI_API_KEY</code>.</span>
+              </div>
+            )}
+
             <div className="flex flex-col gap-5 mb-8">
+              <div>
+                <label className="block text-xs font-label font-semibold text-foreground-700 mb-2 uppercase tracking-wide">Output</label>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <Card selected={generationMode === "garment"} onClick={() => setGenerationMode("garment")}>
+                    <i className="ri-shirt-line text-xl text-primary-600" />
+                    <p className="font-label font-semibold text-sm text-foreground-950 mt-2">Garment concept</p>
+                    <p className="text-[11px] text-foreground-500 mt-1 font-label">A realistic clothing proof for review.</p>
+                  </Card>
+                  <Card selected={generationMode === "artwork"} onClick={() => setGenerationMode("artwork")}>
+                    <i className="ri-image-edit-line text-xl text-primary-600" />
+                    <p className="font-label font-semibold text-sm text-foreground-950 mt-2">Transparent print artwork</p>
+                    <p className="text-[11px] text-foreground-500 mt-1 font-label">Isolated artwork ready to place in Uniform Studio.</p>
+                  </Card>
+                </div>
+              </div>
+
+              {productType === "jersey" && (
+                <div>
+                  <label className="block text-xs font-label font-semibold text-foreground-700 mb-1.5 uppercase tracking-wide">Sport</label>
+                  <select value={sport} onChange={(event) => setSport(event.target.value)} className="w-full px-4 py-3 rounded-xl border border-background-200 bg-background-50 text-foreground-950 focus:outline-none focus:border-primary-400 font-label text-sm">
+                    {SPORTS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+                  </select>
+                </div>
+              )}
               {/* Brand name */}
               <div>
                 <label className="block text-xs font-label font-semibold text-foreground-700 mb-1.5 uppercase tracking-wide">
@@ -343,7 +415,7 @@ export default function AIDesignStudioPage() {
 
             <div className="flex justify-between">
               <NavBtn onClick={() => setStep(1)}><i className="ri-arrow-left-line" /> Back</NavBtn>
-              <NavBtn primary disabled={!brandName.trim() || loading} onClick={generate}>
+              <NavBtn primary disabled={!brandName.trim() || loading || !connection.configured} onClick={generate}>
                 <i className="ri-sparkling-2-fill" /> Generate Design
               </NavBtn>
             </div>
@@ -385,7 +457,7 @@ export default function AIDesignStudioPage() {
               </div>
               <div>
                 <h1 className="font-heading text-xl font-medium text-foreground-950">Your design is ready</h1>
-                <p className="text-xs text-foreground-500 font-label">1024 × 1024 px · print-ready PNG</p>
+                <p className="text-xs text-foreground-500 font-label">1024 × 1024 px · {result.mode === "artwork" ? "transparent PNG artwork" : "AI garment concept"}</p>
               </div>
             </div>
 
@@ -412,12 +484,15 @@ export default function AIDesignStudioPage() {
               >
                 <i className="ri-download-2-line" /> Download PNG
               </button>
-              <Link
-                to="/uniforms"
-                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-primary-500 text-white text-sm font-semibold hover:bg-primary-600 transition-colors cursor-pointer"
-              >
-                <i className="ri-shirt-line" /> Order Uniforms
-              </Link>
+              {result.mode === "artwork" ? (
+                <button type="button" onClick={openInUniformStudio} className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-primary-500 text-white text-sm font-semibold hover:bg-primary-600 transition-colors cursor-pointer">
+                  <i className="ri-shirt-line" /> Use in Uniform Studio
+                </button>
+              ) : (
+                <Link to={`/uniforms?sport=${sport}`} className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-primary-500 text-white text-sm font-semibold hover:bg-primary-600 transition-colors cursor-pointer">
+                  <i className="ri-shirt-line" /> Customize a Uniform
+                </Link>
+              )}
               <button
                 type="button"
                 onClick={tryAgain}
