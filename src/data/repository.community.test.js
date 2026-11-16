@@ -127,12 +127,12 @@ describe("community post publishing", () => {
     expect(created.listingLogo).toBe("https://connect767.com/uploads/james-local-fruits.webp");
   });
 
-  it("sends appreciate and thumbs-up as separate reaction types", async () => {
-    await toggleCommunityReaction(42, "appreciate");
-    await toggleCommunityReaction(42, "thumb");
+  it("sends the selected unified reaction type", async () => {
+    await toggleCommunityReaction(42, "love");
+    await toggleCommunityReaction(42, "insightful");
 
-    expect(api.customClient.post).toHaveBeenNthCalledWith(1, "/community/posts/42/reactions", { type: "appreciate" });
-    expect(api.customClient.post).toHaveBeenNthCalledWith(2, "/community/posts/42/reactions", { type: "thumb" });
+    expect(api.customClient.post).toHaveBeenNthCalledWith(1, "/community/posts/42/reactions", { type: "love" });
+    expect(api.customClient.post).toHaveBeenNthCalledWith(2, "/community/posts/42/reactions", { type: "insightful" });
   });
 
   it("uses protected post-management endpoints", async () => {
