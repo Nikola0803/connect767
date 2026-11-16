@@ -37,6 +37,15 @@ const FEED_CATEGORIES = [
   { value: "request", label: "Requests", icon: "ri-hand-heart-line" },
 ];
 
+const FEED_VIEWS = [
+  { value: "for-you", label: "For you", icon: "ri-sparkling-line" },
+  { value: "following", label: "Following", icon: "ri-user-follow-line" },
+  { value: "latest", label: "Latest", icon: "ri-time-line" },
+  { value: "trending", label: "Trending", icon: "ri-fire-line" },
+  { value: "businesses", label: "Businesses", icon: "ri-building-2-line" },
+  { value: "community", label: "Community", icon: "ri-group-line" },
+];
+
 const POST_CTA_LABELS = {
   offer: ["View Offer", "Claim Offer", "Learn More"],
   opportunity: ["Apply Now", "View Opportunity", "Learn More"],
@@ -200,6 +209,36 @@ function readStoredIds(key) {
   } catch {
     return new Set();
   }
+}
+
+function FeedFilterMenu({ label, value, options, onChange }) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef(null);
+  const selected = options.find((option) => option.value === value) || options[0];
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const closeOutside = (event) => {
+      if (!menuRef.current?.contains(event.target)) setOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  return (
+    <div ref={menuRef} className="relative min-w-0">
+      <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-400">{label}</span>
+      <button type="button" aria-haspopup="menu" aria-expanded={open} aria-label={`${label}: ${selected.label}`} onClick={() => setOpen((current) => !current)} className={`flex h-12 w-full items-center gap-3 rounded-2xl border px-4 text-left text-sm font-bold transition ${open ? "border-primary-500 bg-primary-50 text-primary-800" : "border-background-300 bg-white text-foreground-800 hover:border-primary-300"}`}><span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-primary-50 text-primary-700"><i className={selected.icon} /></span><span className="min-w-0 flex-1 truncate">{selected.label}</span><i className={`ri-arrow-${open ? "up" : "down"}-s-line text-lg text-foreground-400`} /></button>
+      {open && <div role="menu" aria-label={`${label} options`} className="absolute inset-x-0 top-full z-40 mt-2 grid gap-1 rounded-2xl border border-background-200 bg-white p-1.5 shadow-[0_18px_50px_rgba(24,48,36,0.18)] sm:grid-cols-2">{options.map((option) => <button key={option.value} type="button" role="menuitemradio" aria-checked={option.value === value} onClick={() => { onChange(option.value); setOpen(false); }} className={`flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold transition ${option.value === value ? "bg-primary-700 text-white" : "text-foreground-700 hover:bg-primary-50 hover:text-primary-800"}`}><i className={option.icon} /><span className="flex-1">{option.label}</span>{option.value === value && <i className="ri-check-line" />}</button>)}</div>}
+    </div>
+  );
 }
 
 function writeStoredIds(key, ids) {
@@ -764,12 +803,14 @@ export default function CommunityPage() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-background-100/45 pb-20 pt-20 sm:pt-24 md:pt-28">
       <section className="mx-auto max-w-7xl px-3 sm:px-4 md:px-8">
-        <div className="flex flex-col gap-5 border-b border-background-200 pb-7 sm:flex-row sm:items-end sm:justify-between">
+        <div className="border-b border-background-200 pb-7">
           <div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-700">Connect · Share · Grow</p><h1 className="mt-2 font-heading text-3xl font-light leading-tight text-foreground-950 sm:text-4xl md:text-5xl">Business <span className="italic text-accent-500">community</span></h1><p className="mt-3 max-w-2xl text-sm leading-6 text-foreground-600">Updates, offers and conversations from businesses across Dominica and abroad.</p></div>
-          <div className="grid w-full grid-cols-3 gap-1 rounded-2xl border border-background-300 bg-background-50 p-1 text-[11px] font-bold sm:w-auto sm:grid-cols-none sm:grid-flow-col sm:rounded-full sm:text-xs" role="tablist" aria-label="Community feed views">{[["for-you", "For you"], ["following", "Following"], ["latest", "Latest"], ["trending", "Trending"], ["businesses", "Businesses"], ["community", "Community"]].map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={activeTab === value} aria-label={`Show ${label} posts`} onClick={() => setActiveTab(value)} className={`min-h-10 min-w-0 rounded-xl px-2 py-2 transition sm:rounded-full sm:px-4 ${activeTab === value ? "bg-primary-700 text-white shadow-sm" : "text-foreground-500 hover:bg-background-100 hover:text-primary-700"}`}>{label}</button>)}</div>
         </div>
 
-        <div className="no-scrollbar mt-4 flex gap-2 overflow-x-auto pb-1" role="toolbar" aria-label="Filter community posts by category">{FEED_CATEGORIES.map((category) => <button key={category.value} type="button" aria-label={`Filter by ${category.label}`} aria-pressed={categoryFilter === category.value} onClick={() => selectCategoryFilter(category.value)} className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-xs font-bold transition ${categoryFilter === category.value ? "border-primary-700 bg-primary-700 text-white shadow-sm" : "border-background-300 bg-background-50 text-foreground-600 hover:border-primary-300 hover:text-primary-700"}`}><i className={category.icon} />{category.label}</button>)}</div>
+        <section aria-label="Community feed filters" className="mt-4 rounded-[1.4rem] border border-background-300 bg-background-50 p-3 shadow-[0_8px_28px_rgba(24,48,36,0.04)] sm:p-4">
+          <div className="mb-3"><h2 className="text-sm font-bold text-foreground-900">Explore the feed</h2><p className="mt-0.5 text-[10px] text-foreground-500">Two compact menus contain every feed and post-type option.</p></div>
+          <div className="grid gap-3 sm:grid-cols-2"><FeedFilterMenu label="Feed view" value={activeTab} options={FEED_VIEWS} onChange={setActiveTab} /><FeedFilterMenu label="Post type" value={categoryFilter} options={FEED_CATEGORIES} onChange={selectCategoryFilter} /></div>
+        </section>
 
         <div className="mt-5 grid gap-6 sm:mt-7 lg:grid-cols-[minmax(0,1fr)_19rem]">
           <main className="space-y-4">
