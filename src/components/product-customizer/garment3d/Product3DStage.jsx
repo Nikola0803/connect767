@@ -61,6 +61,7 @@ export default function Product3DStage({
   zoneColors,
   collar,
   sleeve,
+  garmentPattern,
   textures,
   spinning = true,
   fullscreen = false,
@@ -143,6 +144,7 @@ export default function Product3DStage({
               zoneColors={zoneColors}
               collar={collar}
               sleeve={sleeve}
+              garmentPattern={garmentPattern}
               offsetY={modelOffsetY}
               layers={layers}
               selectedLayerId={selectedLayerId}
@@ -163,6 +165,7 @@ export default function Product3DStage({
                 zoneColors={zoneColors}
                 collar={collar}
                 sleeve={sleeve}
+                garmentPattern={garmentPattern}
               />
               {placements.map((p) => {
                 const canvas = textures?.[p.key];

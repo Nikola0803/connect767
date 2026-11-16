@@ -1915,6 +1915,7 @@ export default function UniformStudioPage() {
                             zoneColors={stageColors}
                             collar={stageCollar}
                             sleeve={stageSleeve}
+                            garmentPattern={stageGarmentPattern}
                             fullscreen
                             layers={stageLayers.filter((layer) => layer.source !== "ai-uniform-pattern")}
                             selectedLayerId={selectedLayerId}
