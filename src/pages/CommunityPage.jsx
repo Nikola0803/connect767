@@ -831,10 +831,6 @@ export default function CommunityPage() {
 
         <div className="mt-5 grid gap-6 sm:mt-7 lg:grid-cols-[minmax(0,1fr)_19rem]">
           <main className="space-y-4">
-            <section aria-label="Community feed filters" className="rounded-[1.5rem] border border-background-200/80 bg-background-50 p-4 shadow-[0_14px_45px_rgba(24,48,36,0.06)] sm:p-5">
-              <div className="mb-3"><h2 className="text-sm font-bold text-foreground-900">Explore the feed</h2><p className="mt-0.5 text-[10px] text-foreground-500">Two compact menus contain every feed and post-type option.</p></div>
-              <div className="grid gap-3 sm:grid-cols-2"><FeedFilterMenu label="Feed view" value={activeTab} options={FEED_VIEWS} onChange={setActiveTab} /><FeedFilterMenu label="Post type" value={categoryFilter} options={FEED_CATEGORIES} onChange={selectCategoryFilter} /></div>
-            </section>
             <section className="rounded-[1.5rem] border border-background-200/80 bg-background-50 p-4 shadow-[0_14px_45px_rgba(24,48,36,0.06)] sm:p-5">
               <div className="mb-4"><h2 className="font-heading text-xl font-semibold text-foreground-950">What Would You Like to Share?</h2><p className="mt-1 text-xs text-foreground-500">Choose a post type, publish it to the community, and connect it to your directory profile.</p></div>
               {isAuthenticated && listings.length ? (
@@ -887,6 +883,10 @@ export default function CommunityPage() {
                   {message && <p role="alert" className="mt-3 text-xs text-red-600">{message}</p>}
                 </form>
               ) : isAuthenticated ? <div className="text-sm text-foreground-600">Publish a directory listing before posting to the community. <Link to="/listings/submit" className="font-bold text-primary-700">Create your listing</Link></div> : <div className="flex items-center justify-between gap-4"><p className="text-sm text-foreground-600">Sign in as a listing owner to share business updates.</p><Link to="/auth/login" className="shrink-0 rounded-xl bg-primary-700 px-4 py-2.5 text-xs font-bold text-white">Sign in</Link></div>}
+            </section>
+            <section aria-label="Community feed filters" className="rounded-[1.5rem] border border-background-200/80 bg-background-50 p-4 shadow-[0_14px_45px_rgba(24,48,36,0.06)] sm:p-5">
+              <div className="mb-3"><h2 className="text-sm font-bold text-foreground-900">Explore the feed</h2><p className="mt-0.5 text-[10px] text-foreground-500">Two compact menus contain every feed and post-type option.</p></div>
+              <div className="grid gap-3 sm:grid-cols-2"><FeedFilterMenu label="Feed view" value={activeTab} options={FEED_VIEWS} onChange={setActiveTab} /><FeedFilterMenu label="Post type" value={categoryFilter} options={FEED_CATEGORIES} onChange={selectCategoryFilter} /></div>
             </section>
 
             {loading && !posts.length && <div className="py-16 text-center text-sm text-foreground-500">Loading community updates…</div>}
