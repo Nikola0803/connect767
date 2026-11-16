@@ -2021,16 +2021,16 @@ export default function UniformStudioPage() {
                   </div>
 
               {/* Docked fields panel */}
-              <aside className="hidden w-full max-w-[420px] flex-shrink-0 overflow-y-auto border-l border-black/10 bg-[#f7f5ef] md:block">
-                <div className="sticky top-0 z-10 border-b border-black/[0.07] bg-[#f7f5ef]/95 px-5 py-4 backdrop-blur-xl">
+              <aside className={`hidden w-full flex-shrink-0 border-l border-black/10 bg-[#f7f5ef] md:block ${activeTool === "ai" ? "max-w-[460px] overflow-hidden" : "max-w-[420px] overflow-y-auto"}`}>
+                {activeTool !== "ai" && <div className="sticky top-0 z-10 border-b border-black/[0.07] bg-[#f7f5ef]/95 px-5 py-4 backdrop-blur-xl">
                   <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary-700">Step {workflowStep.step} · {workflowStep.label}</p>
                   <div className="mt-1 flex items-center justify-between gap-3">
                     <h2 className="font-heading text-xl font-medium text-foreground-950">{activeToolConfig?.label || workflowStep.label}</h2>
                     <span className="rounded-full border border-background-300 bg-white px-2.5 py-1 text-[10px] font-semibold text-foreground-500">Live preview</span>
                   </div>
                   <p className="mt-1 text-xs text-foreground-500">{activeToolConfig?.hint || workflowStep.description}</p>
-                </div>
-                <div className="p-5">
+                </div>}
+                <div className={activeTool === "ai" ? "h-full" : "p-5"}>
                 {selectedLayer && <SelectedItemPanel
                   layer={selectedLayer}
                   placement={selectedLayerId ? placements3d[selectedLayerId] : null}
@@ -2179,7 +2179,7 @@ export default function UniformStudioPage() {
       </div>
 
       {/* Mobile: the fields panel docks to the bottom instead of the side */}
-      <div className="md:hidden flex-shrink-0 max-h-[42dvh] overflow-y-auto overscroll-contain border-t border-background-200/60 bg-background-50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className={`md:hidden flex-shrink-0 overflow-y-auto overscroll-contain border-t border-background-200/60 bg-background-50 ${activeTool === "ai" ? "max-h-[72dvh] p-0" : "max-h-[42dvh] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"}`}>
         <SelectedItemPanel
           layer={selectedLayer}
           placement={selectedLayerId ? placements3d[selectedLayerId] : null}
