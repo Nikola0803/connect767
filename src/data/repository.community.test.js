@@ -12,7 +12,7 @@ vi.mock("../lib/apiClient", () => ({
   getStoredUser: vi.fn(),
 }));
 
-import { createCommunityPost, deleteCommunityPost, reportCommunityPost, toggleCommunityReaction, updateCommunityPost } from "./repository";
+import { createCommunityPost, deleteCommunityPost, getCommunityPosts, reportCommunityPost, toggleCommunityBookmark, toggleCommunityFollow, toggleCommunityReaction, toggleCommunityRepost, updateCommunityPost } from "./repository";
 
 describe("community post publishing", () => {
   beforeEach(() => {
@@ -145,5 +145,19 @@ describe("community post publishing", () => {
     expect(api.customClient.del).toHaveBeenCalledWith("/community/posts/42");
     expect(api.customClient.post).toHaveBeenCalledWith("/community/posts/42/reports", { reason: "spam" });
     expect(api.customClient.post).toHaveBeenCalledWith("/community/posts/42", { text: "Updated message" });
+  });
+
+  it("passes feed filters and persists social relationship actions", async () => {
+    api.customClient.get.mockResolvedValueOnce({ posts: [], tab: "following" });
+
+    await getCommunityPosts({ tab: "following", cursor: "2026-11-15T12:00:00Z" });
+    await toggleCommunityBookmark(42);
+    await toggleCommunityRepost(42, { listingId: 12 });
+    await toggleCommunityFollow(12);
+
+    expect(api.customClient.get).toHaveBeenCalledWith("/community/posts", { tab: "following", cursor: "2026-11-15T12:00:00Z" });
+    expect(api.customClient.post).toHaveBeenCalledWith("/community/posts/42/bookmark", {});
+    expect(api.customClient.post).toHaveBeenCalledWith("/community/posts/42/repost", { listingId: 12 });
+    expect(api.customClient.post).toHaveBeenCalledWith("/community/listings/12/follow", {});
   });
 });

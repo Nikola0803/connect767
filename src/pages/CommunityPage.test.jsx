@@ -21,7 +21,10 @@ vi.mock("../data/repository", () => ({
   getListings: vi.fn().mockResolvedValue([]),
   getMyListings: vi.fn(),
   reportCommunityPost: vi.fn().mockResolvedValue({ reported: true }),
+  toggleCommunityBookmark: vi.fn().mockResolvedValue({ bookmarked: true }),
+  toggleCommunityFollow: vi.fn().mockResolvedValue({ following: true }),
   toggleCommunityReaction: vi.fn(),
+  toggleCommunityRepost: vi.fn().mockResolvedValue({ reposted: true, count: 1 }),
   updateCommunityPost: vi.fn().mockResolvedValue({ id: 7, text: "Updated post" }),
 }));
 
