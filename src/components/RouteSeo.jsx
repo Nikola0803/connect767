@@ -17,6 +17,13 @@ const NOINDEX_PREFIXES = [
 
 function pageMeta(pathname) {
   if (seoPages[pathname]) return seoPages[pathname];
+  if (pathname === "/design-studio") {
+    return {
+      title: "AI Clothing Design Studio | Connect767",
+      description: "Create apparel concepts and transparent uniform artwork with the Connect767 AI Clothing Design Studio.",
+      label: "AI Clothing Design Studio",
+    };
+  }
   if (/^\/listings\/[^/]+$/.test(pathname)) {
     return {
       title: "Directory Profile | Connect767",

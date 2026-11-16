@@ -872,6 +872,158 @@ export function LogoPanel({ onUpload, armed }) {
   );
 }
 
+const AI_STYLES = [
+  "Modern & Bold",
+  "Classic & Clean",
+  "Minimal & Elegant",
+  "Retro & Vintage",
+  "Street & Edgy",
+];
+
+export function AIArtworkPanel({ sport, colors, onPlace }) {
+  const [brandName, setBrandName] = useState("");
+  const [brief, setBrief] = useState("");
+  const [style, setStyle] = useState(AI_STYLES[0]);
+  const [connection, setConnection] = useState("checking");
+  const [generating, setGenerating] = useState(false);
+  const [preview, setPreview] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/generate-design")
+      .then((response) => response.json())
+      .then((data) => active && setConnection(data.configured ? "connected" : "setup"))
+      .catch(() => active && setConnection("offline"));
+    return () => { active = false; };
+  }, []);
+
+  const generate = async () => {
+    if (!brandName.trim() || !brief.trim()) return;
+    setGenerating(true);
+    setError("");
+    setPreview(null);
+    try {
+      const response = await fetch("/api/generate-design", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productType: "Jersey",
+          style,
+          brandName: brandName.trim(),
+          primaryColor: colors.body,
+          secondaryColor: colors.shirtStrip,
+          notes: brief.trim(),
+          generationMode: "artwork",
+          sport,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.b64) throw new Error(data.error || "AI generation failed.");
+      setPreview({
+        src: `data:${data.mimeType || "image/png"};base64,${data.b64}`,
+        name: `${brandName.trim()} AI artwork`,
+      });
+    } catch (generationError) {
+      setError(generationError.message || "AI generation failed.");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  return (
+    <div>
+      <div className="mb-5 rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-white p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-700 text-lg text-white shadow-sm">
+              <i className="ri-sparkling-2-fill" />
+            </span>
+            <div>
+              <h3 className="font-heading text-lg font-semibold text-foreground-950">AI Designer</h3>
+              <p className="text-[11px] text-foreground-500">Create transparent artwork for this {sport.toLowerCase()} uniform.</p>
+            </div>
+          </div>
+          <span className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-bold uppercase tracking-wide ${
+            connection === "connected" ? "bg-primary-100 text-primary-800" : "bg-amber-100 text-amber-800"
+          }`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${connection === "connected" ? "bg-primary-500" : "bg-amber-500"}`} />
+            {connection === "checking" ? "Checking" : connection === "connected" ? "Connected" : "Setup needed"}
+          </span>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-500">Team or brand name</label>
+          <input
+            value={brandName}
+            onChange={(event) => setBrandName(event.target.value)}
+            placeholder="e.g. Riverside FC"
+            maxLength={80}
+            className="w-full rounded-xl border border-background-300 bg-white px-3.5 py-3 text-sm text-foreground-950 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+          />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-500">Design brief</label>
+          <textarea
+            value={brief}
+            onChange={(event) => setBrief(event.target.value)}
+            placeholder="Describe the crest, graphic, pattern or visual you want…"
+            maxLength={600}
+            rows={4}
+            className="w-full resize-none rounded-xl border border-background-300 bg-white px-3.5 py-3 text-sm text-foreground-950 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+          />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-500">Style</label>
+          <select value={style} onChange={(event) => setStyle(event.target.value)} className="w-full rounded-xl border border-background-300 bg-white px-3.5 py-3 text-sm text-foreground-950 outline-none focus:border-primary-500">
+            {AI_STYLES.map((option) => <option key={option}>{option}</option>)}
+          </select>
+        </div>
+
+        <div className="flex items-center justify-between rounded-xl border border-background-200 bg-background-100 px-3 py-2.5">
+          <span className="text-[11px] font-semibold text-foreground-600">Uses current uniform colors</span>
+          <div className="flex items-center gap-1.5">
+            <span className="h-6 w-6 rounded-full border border-black/10" style={{ background: colors.body }} />
+            <span className="h-6 w-6 rounded-full border border-black/10" style={{ background: colors.shirtStrip }} />
+          </div>
+        </div>
+
+        {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">{error}</p>}
+
+        {preview && (
+          <div className="rounded-2xl border border-primary-200 bg-[linear-gradient(45deg,#f1efe8_25%,transparent_25%),linear-gradient(-45deg,#f1efe8_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#f1efe8_75%),linear-gradient(-45deg,transparent_75%,#f1efe8_75%)] bg-[length:18px_18px] bg-[position:0_0,0_9px,9px_-9px,-9px_0px] p-3">
+            <img src={preview.src} alt="Generated transparent uniform artwork" className="mx-auto aspect-square max-h-64 w-full object-contain" />
+          </div>
+        )}
+
+        {preview ? (
+          <div className="grid grid-cols-[1fr_auto] gap-2">
+            <button type="button" onClick={() => onPlace(preview)} className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-primary-800">
+              <i className="ri-add-circle-line" /> Place on uniform
+            </button>
+            <button type="button" aria-label="Clear AI preview" onClick={() => setPreview(null)} className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-background-300 bg-white px-3 text-foreground-600 hover:bg-background-100">
+              <i className="ri-delete-bin-line" />
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            disabled={generating || connection !== "connected" || !brandName.trim() || !brief.trim()}
+            onClick={generate}
+            className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 py-3.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,116,73,0.18)] transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            <i className={generating ? "ri-loader-4-line animate-spin" : "ri-sparkling-2-fill"} />
+            {generating ? "Creating artwork…" : "Generate AI artwork"}
+          </button>
+        )}
+        <p className="text-[10px] leading-relaxed text-foreground-500">AI output is a design concept. Confirm final print quality, spelling and production suitability before ordering.</p>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Placeable graphics library. Each swatch previews with the customer's own
  * two colours, so what they click is what lands on the garment — a library of

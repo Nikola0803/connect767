@@ -1,0 +1,114 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import handler, { buildPrompt, normalizeBrief, resetRateLimitsForTests } from "./generate-design.js";
+
+function request(method = "POST", body = {}) {
+  return { method, body, headers: { "x-forwarded-for": "203.0.113.10" }, socket: {} };
+}
+
+function response() {
+  return {
+    statusCode: 200,
+    headers: {},
+    payload: null,
+    status(code) { this.statusCode = code; return this; },
+    setHeader(name, value) { this.headers[name] = value; },
+    json(payload) { this.payload = payload; return this; },
+  };
+}
+
+const validBrief = {
+  productType: "Jersey",
+  style: "Modern & Bold",
+  brandName: "Island FC",
+  tagline: "Play together",
+  primaryColor: "#006B3F",
+  secondaryColor: "#FCD116",
+  generationMode: "artwork",
+  sport: "Soccer",
+};
+
+describe("AI design generation endpoint", () => {
+  beforeEach(() => {
+    resetRateLimitsForTests();
+    process.env.OPENAI_API_KEY = "test-only-key";
+    process.env.OPENAI_IMAGE_MODEL = "gpt-image-2.6-flare";
+    process.env.OPENAI_IMAGE_QUALITY = "medium";
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.OPENAI_IMAGE_MODEL;
+    delete process.env.OPENAI_IMAGE_QUALITY;
+  });
+
+  it("validates and constrains the customer brief", () => {
+    const brief = normalizeBrief({ ...validBrief, notes: "x".repeat(1000) });
+    expect(brief.notes).toHaveLength(600);
+    expect(brief.primaryColor).toBe("#006B3F");
+    expect(() => normalizeBrief({ ...validBrief, productType: "Unknown" })).toThrow("supported product");
+  });
+
+  it("builds an isolated transparent-artwork prompt", () => {
+    const prompt = buildPrompt(normalizeBrief(validBrief));
+    expect(prompt).toContain("transparent background");
+    expect(prompt).toContain("Sport: Soccer");
+    expect(prompt).toContain("Do not show a garment");
+  });
+
+  it("reports connection health without exposing the key", async () => {
+    const res = response();
+    await handler(request("GET"), res);
+    expect(res.statusCode).toBe(200);
+    expect(res.payload).toEqual({ configured: true, model: "gpt-image-2.6-flare" });
+    expect(JSON.stringify(res.payload)).not.toContain("test-only-key");
+  });
+
+  it("returns a clear setup error when the server key is absent", async () => {
+    delete process.env.OPENAI_API_KEY;
+    const res = response();
+    await handler(request("POST", validBrief), res);
+    expect(res.statusCode).toBe(503);
+    expect(res.payload.error).toMatch(/not configured/i);
+  });
+
+  it("calls the current Images API contract and returns base64 PNG data", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: [{ b64_json: "cG5n" }], usage: { total_tokens: 42 } }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const res = response();
+
+    await handler(request("POST", validBrief), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload).toMatchObject({ b64: "cG5n", mimeType: "image/png", mode: "artwork" });
+    const [url, options] = fetchMock.mock.calls[0];
+    const upstreamBody = JSON.parse(options.body);
+    expect(url).toBe("https://api.openai.com/v1/images/generations");
+    expect(upstreamBody).toMatchObject({
+      model: "gpt-image-2.6-flare",
+      output_format: "png",
+      background: "transparent",
+      size: "1024x1024",
+      quality: "medium",
+    });
+    expect(upstreamBody.safety_identifier).toMatch(/^[a-f0-9]{64}$/);
+    expect(options.headers.Authorization).toBe("Bearer test-only-key");
+  });
+
+  it("does not leak a rejected credential to the browser", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: { message: "Incorrect API key: test-only-key" } }),
+    }));
+    const res = response();
+    await handler(request("POST", validBrief), res);
+    expect(res.statusCode).toBe(502);
+    expect(res.payload.error).toMatch(/rejected the server credential/i);
+    expect(JSON.stringify(res.payload)).not.toContain("test-only-key");
+  });
+});
