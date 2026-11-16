@@ -829,13 +829,12 @@ export default function CommunityPage() {
           <div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-700">Connect · Share · Grow</p><h1 className="mt-2 font-heading text-3xl font-light leading-tight text-foreground-950 sm:text-4xl md:text-5xl">Business <span className="italic text-accent-500">community</span></h1><p className="mt-3 max-w-2xl text-sm leading-6 text-foreground-600">Updates, offers and conversations from businesses across Dominica and abroad.</p></div>
         </div>
 
-        <section aria-label="Community feed filters" className="mt-4 rounded-[1.4rem] border border-background-300 bg-background-50 p-3 shadow-[0_8px_28px_rgba(24,48,36,0.04)] sm:p-4">
-          <div className="mb-3"><h2 className="text-sm font-bold text-foreground-900">Explore the feed</h2><p className="mt-0.5 text-[10px] text-foreground-500">Two compact menus contain every feed and post-type option.</p></div>
-          <div className="grid gap-3 sm:grid-cols-2"><FeedFilterMenu label="Feed view" value={activeTab} options={FEED_VIEWS} onChange={setActiveTab} /><FeedFilterMenu label="Post type" value={categoryFilter} options={FEED_CATEGORIES} onChange={selectCategoryFilter} /></div>
-        </section>
-
         <div className="mt-5 grid gap-6 sm:mt-7 lg:grid-cols-[minmax(0,1fr)_19rem]">
           <main className="space-y-4">
+            <section aria-label="Community feed filters" className="rounded-[1.5rem] border border-background-200/80 bg-background-50 p-4 shadow-[0_14px_45px_rgba(24,48,36,0.06)] sm:p-5">
+              <div className="mb-3"><h2 className="text-sm font-bold text-foreground-900">Explore the feed</h2><p className="mt-0.5 text-[10px] text-foreground-500">Two compact menus contain every feed and post-type option.</p></div>
+              <div className="grid gap-3 sm:grid-cols-2"><FeedFilterMenu label="Feed view" value={activeTab} options={FEED_VIEWS} onChange={setActiveTab} /><FeedFilterMenu label="Post type" value={categoryFilter} options={FEED_CATEGORIES} onChange={selectCategoryFilter} /></div>
+            </section>
             <section className="rounded-[1.5rem] border border-background-200/80 bg-background-50 p-4 shadow-[0_14px_45px_rgba(24,48,36,0.06)] sm:p-5">
               <div className="mb-4"><h2 className="font-heading text-xl font-semibold text-foreground-950">What Would You Like to Share?</h2><p className="mt-1 text-xs text-foreground-500">Choose a post type, publish it to the community, and connect it to your directory profile.</p></div>
               {isAuthenticated && listings.length ? (
