@@ -60,24 +60,28 @@ describe("CommunityPage composer menus", () => {
   it("keeps every mobile feed filter and composer mode interactive", async () => {
     render(<MemoryRouter><CommunityPage /></MemoryRouter>);
     await screen.findByLabelText("Status update. Type @ to mention a business.");
+    const consolidatedFilters = screen.getByRole("region", { name: "Community feed filters" });
+    expect(consolidatedFilters).toContainElement(screen.getByRole("button", { name: "Feed view: For you" }));
+    expect(consolidatedFilters).toContainElement(screen.getByRole("button", { name: "Post type: All Posts" }));
 
     for (const label of ["Following", "Latest", "Trending", "Businesses", "Community", "For you"]) {
-      const tab = screen.getByRole("tab", { name: `Show ${label} posts` });
-      fireEvent.click(tab);
-      expect(tab).toHaveAttribute("aria-selected", "true");
+      fireEvent.click(screen.getByRole("button", { name: /^Feed view:/ }));
+      fireEvent.click(screen.getByRole("menuitemradio", { name: label }));
+      expect(screen.getByRole("button", { name: `Feed view: ${label}` })).toHaveAttribute("aria-expanded", "false");
     }
 
     for (const label of ["Offers", "Opportunities", "Events", "Announcements", "Requests", "All Posts"]) {
-      const category = screen.getByRole("button", { name: `Filter by ${label}` });
-      fireEvent.click(category);
-      expect(category).toHaveAttribute("aria-pressed", "true");
+      fireEvent.click(screen.getByRole("button", { name: /^Post type:/ }));
+      fireEvent.click(screen.getByRole("menuitemradio", { name: label }));
+      expect(screen.getByRole("button", { name: `Post type: ${label}` })).toHaveAttribute("aria-expanded", "false");
     }
 
-    const communityTab = screen.getByRole("tab", { name: "Show Community posts" });
-    fireEvent.click(communityTab);
-    fireEvent.click(screen.getByRole("button", { name: "Filter by Requests" }));
-    expect(screen.getByRole("tab", { name: "Show For you posts" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("button", { name: "Filter by Requests" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Feed view: For you" }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Community" }));
+    fireEvent.click(screen.getByRole("button", { name: "Post type: All Posts" }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Requests" }));
+    expect(screen.getByRole("button", { name: "Feed view: For you" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Post type: Requests" })).toBeInTheDocument();
 
     const offerButton = await screen.findByRole("button", { name: "Offer" });
     fireEvent.click(offerButton);
