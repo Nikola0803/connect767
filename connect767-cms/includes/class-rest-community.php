@@ -290,6 +290,10 @@ class C767_REST_Community
         if (!in_array($tab, $allowed_tabs, true)) {
             $tab = 'for-you';
         }
+        $type_filter = sanitize_key((string) $request->get_param('type'));
+        if (!in_array($type_filter, $allowed_types, true)) {
+            $type_filter = '';
+        }
         $args = [
             'post_type' => 'community_update',
             'post_status' => 'publish',
@@ -313,15 +317,14 @@ class C767_REST_Community
                 'compare' => 'IN',
                 'type' => 'NUMERIC',
             ]];
-        } elseif ($tab === 'community') {
+        } elseif ($tab === 'community' && $type_filter === '') {
             $args['meta_query'] = [['key' => '_community_update_type', 'value' => 'status']];
-        } elseif ($tab === 'businesses') {
+        } elseif ($tab === 'businesses' && $type_filter === '') {
             $args['meta_query'] = [['key' => '_community_update_type', 'value' => ['offer', 'opportunity', 'event', 'announcement', 'request'], 'compare' => 'IN']];
         } elseif ($tab === 'trending') {
             $args['orderby'] = ['comment_count' => 'DESC', 'date' => 'DESC'];
         }
-        $type_filter = sanitize_key((string) $request->get_param('type'));
-        if (in_array($type_filter, $allowed_types, true)) {
+        if ($type_filter !== '') {
             $type_query = ['key' => '_community_update_type', 'value' => $type_filter];
             if (empty($args['meta_query'])) {
                 $args['meta_query'] = [$type_query];

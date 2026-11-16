@@ -542,6 +542,10 @@ export default function CommunityPage() {
   const selectedActivity = COMMUNITY_ACTIVITIES.find((item) => item.value === activity);
   const feelingOptions = feelingTab === "feelings" ? COMMUNITY_EMOTIONS : COMMUNITY_ACTIVITIES;
   const filteredFeelings = feelingOptions.filter((item) => item.label.toLowerCase().includes(emotionSearch.trim().toLowerCase()));
+  const selectCategoryFilter = (nextCategory) => {
+    setCategoryFilter(nextCategory);
+    if (nextCategory !== "all" && ["businesses", "community"].includes(activeTab)) setActiveTab("for-you");
+  };
   const updatePostText = (event) => {
     const value = event.target.value;
     const cursor = event.target.selectionStart ?? value.length;
@@ -765,7 +769,7 @@ export default function CommunityPage() {
           <div className="grid w-full grid-cols-3 gap-1 rounded-2xl border border-background-300 bg-background-50 p-1 text-[11px] font-bold sm:w-auto sm:grid-cols-none sm:grid-flow-col sm:rounded-full sm:text-xs" role="tablist" aria-label="Community feed views">{[["for-you", "For you"], ["following", "Following"], ["latest", "Latest"], ["trending", "Trending"], ["businesses", "Businesses"], ["community", "Community"]].map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={activeTab === value} aria-label={`Show ${label} posts`} onClick={() => setActiveTab(value)} className={`min-h-10 min-w-0 rounded-xl px-2 py-2 transition sm:rounded-full sm:px-4 ${activeTab === value ? "bg-primary-700 text-white shadow-sm" : "text-foreground-500 hover:bg-background-100 hover:text-primary-700"}`}>{label}</button>)}</div>
         </div>
 
-        <div className="no-scrollbar mt-4 flex gap-2 overflow-x-auto pb-1" role="toolbar" aria-label="Filter community posts by category">{FEED_CATEGORIES.map((category) => <button key={category.value} type="button" aria-label={`Filter by ${category.label}`} aria-pressed={categoryFilter === category.value} onClick={() => setCategoryFilter(category.value)} className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-xs font-bold transition ${categoryFilter === category.value ? "border-primary-700 bg-primary-700 text-white shadow-sm" : "border-background-300 bg-background-50 text-foreground-600 hover:border-primary-300 hover:text-primary-700"}`}><i className={category.icon} />{category.label}</button>)}</div>
+        <div className="no-scrollbar mt-4 flex gap-2 overflow-x-auto pb-1" role="toolbar" aria-label="Filter community posts by category">{FEED_CATEGORIES.map((category) => <button key={category.value} type="button" aria-label={`Filter by ${category.label}`} aria-pressed={categoryFilter === category.value} onClick={() => selectCategoryFilter(category.value)} className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-xs font-bold transition ${categoryFilter === category.value ? "border-primary-700 bg-primary-700 text-white shadow-sm" : "border-background-300 bg-background-50 text-foreground-600 hover:border-primary-300 hover:text-primary-700"}`}><i className={category.icon} />{category.label}</button>)}</div>
 
         <div className="mt-5 grid gap-6 sm:mt-7 lg:grid-cols-[minmax(0,1fr)_19rem]">
           <main className="space-y-4">
