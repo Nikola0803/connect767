@@ -211,7 +211,7 @@ function readStoredIds(key) {
   }
 }
 
-function FeedFilterMenu({ label, value, options, onChange }) {
+function FeedFilterMenu({ label, value, options, onChange, compact = false }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
   const selected = options.find((option) => option.value === value) || options[0];
@@ -233,10 +233,10 @@ function FeedFilterMenu({ label, value, options, onChange }) {
   }, [open]);
 
   return (
-    <div ref={menuRef} className="relative min-w-0">
-      <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-400">{label}</span>
-      <button type="button" aria-haspopup="menu" aria-expanded={open} aria-label={`${label}: ${selected.label}`} onClick={() => setOpen((current) => !current)} className={`flex h-12 w-full items-center gap-3 rounded-2xl border px-4 text-left text-sm font-bold transition ${open ? "border-primary-500 bg-primary-50 text-primary-800" : "border-background-300 bg-white text-foreground-800 hover:border-primary-300"}`}><span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-primary-50 text-primary-700"><i className={selected.icon} /></span><span className="min-w-0 flex-1 truncate">{selected.label}</span><i className={`ri-arrow-${open ? "up" : "down"}-s-line text-lg text-foreground-400`} /></button>
-      {open && <div role="menu" aria-label={`${label} options`} className="absolute inset-x-0 top-full z-40 mt-2 grid gap-1 rounded-2xl border border-background-200 bg-white p-1.5 shadow-[0_18px_50px_rgba(24,48,36,0.18)] sm:grid-cols-2">{options.map((option) => <button key={option.value} type="button" role="menuitemradio" aria-checked={option.value === value} onClick={() => { onChange(option.value); setOpen(false); }} className={`flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold transition ${option.value === value ? "bg-primary-700 text-white" : "text-foreground-700 hover:bg-primary-50 hover:text-primary-800"}`}><i className={option.icon} /><span className="flex-1">{option.label}</span>{option.value === value && <i className="ri-check-line" />}</button>)}</div>}
+    <div ref={menuRef} className={`relative min-w-0 ${compact ? "flex-1 sm:flex-none" : ""}`}>
+      {!compact && <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-400">{label}</span>}
+      <button type="button" aria-haspopup="menu" aria-expanded={open} aria-label={`${label}: ${selected.label}`} onClick={() => setOpen((current) => !current)} className={`flex items-center rounded-2xl border text-left font-bold transition ${compact ? "h-10 w-full min-w-0 gap-2 px-2.5 text-xs sm:w-auto sm:min-w-32" : "h-12 w-full gap-3 px-4 text-sm"} ${open ? "border-primary-500 bg-primary-50 text-primary-800" : "border-background-300 bg-white text-foreground-800 hover:border-primary-300"}`}><span className={`grid shrink-0 place-items-center rounded-xl bg-primary-50 text-primary-700 ${compact ? "h-7 w-7" : "h-8 w-8"}`}><i className={selected.icon} /></span><span className="min-w-0 flex-1 truncate">{selected.label}</span><i className={`ri-arrow-${open ? "up" : "down"}-s-line text-base text-foreground-400`} /></button>
+      {open && <div role="menu" aria-label={`${label} options`} className={`absolute top-full z-40 mt-2 grid gap-1 rounded-2xl border border-background-200 bg-white p-1.5 shadow-[0_18px_50px_rgba(24,48,36,0.18)] sm:grid-cols-2 ${compact ? "right-0 w-72 max-w-[calc(100vw-2rem)]" : "inset-x-0"}`}>{options.map((option) => <button key={option.value} type="button" role="menuitemradio" aria-checked={option.value === value} onClick={() => { onChange(option.value); setOpen(false); }} className={`flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold transition ${option.value === value ? "bg-primary-700 text-white" : "text-foreground-700 hover:bg-primary-50 hover:text-primary-800"}`}><i className={option.icon} /><span className="flex-1">{option.label}</span>{option.value === value && <i className="ri-check-line" />}</button>)}</div>}
     </div>
   );
 }
@@ -832,7 +832,13 @@ export default function CommunityPage() {
         <div className="mt-5 grid gap-6 sm:mt-7 lg:grid-cols-[minmax(0,1fr)_19rem]">
           <main className="space-y-4">
             <section className="rounded-[1.5rem] border border-background-200/80 bg-background-50 p-4 shadow-[0_14px_45px_rgba(24,48,36,0.06)] sm:p-5">
-              <div className="mb-4"><h2 className="font-heading text-xl font-semibold text-foreground-950">What Would You Like to Share?</h2><p className="mt-1 text-xs text-foreground-500">Choose a post type, publish it to the community, and connect it to your directory profile.</p></div>
+              <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                <div className="min-w-0"><h2 className="font-heading text-xl font-semibold text-foreground-950">What Would You Like to Share?</h2><p className="mt-1 text-xs text-foreground-500">Publish an update and connect it to your directory profile.</p></div>
+                <section aria-label="Community feed filters" className="flex min-w-0 flex-col gap-2 border-t border-background-200 pt-3 sm:flex-row sm:items-center xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
+                  <div className="shrink-0"><h3 className="text-xs font-bold text-foreground-900">Explore the feed</h3><p className="text-[9px] text-foreground-400">Choose a view and post type</p></div>
+                  <div className="grid min-w-0 flex-1 grid-cols-2 gap-2 sm:flex sm:flex-none"><FeedFilterMenu compact label="Feed view" value={activeTab} options={FEED_VIEWS} onChange={setActiveTab} /><FeedFilterMenu compact label="Post type" value={categoryFilter} options={FEED_CATEGORIES} onChange={selectCategoryFilter} /></div>
+                </section>
+              </div>
               {isAuthenticated && listings.length ? (
                 <form onSubmit={submitPost} onFocus={() => setComposerExpanded(true)} onBlur={collapseEmptyComposer}>
                   <span id="community-feeling-panel" className="sr-only">Feeling and activity options</span>
@@ -884,11 +890,6 @@ export default function CommunityPage() {
                 </form>
               ) : isAuthenticated ? <div className="text-sm text-foreground-600">Publish a directory listing before posting to the community. <Link to="/listings/submit" className="font-bold text-primary-700">Create your listing</Link></div> : <div className="flex items-center justify-between gap-4"><p className="text-sm text-foreground-600">Sign in as a listing owner to share business updates.</p><Link to="/auth/login" className="shrink-0 rounded-xl bg-primary-700 px-4 py-2.5 text-xs font-bold text-white">Sign in</Link></div>}
             </section>
-            <section aria-label="Community feed filters" className="rounded-[1.5rem] border border-background-200/80 bg-background-50 p-4 shadow-[0_14px_45px_rgba(24,48,36,0.06)] sm:p-5">
-              <div className="mb-3"><h2 className="text-sm font-bold text-foreground-900">Explore the feed</h2><p className="mt-0.5 text-[10px] text-foreground-500">Two compact menus contain every feed and post-type option.</p></div>
-              <div className="grid gap-3 sm:grid-cols-2"><FeedFilterMenu label="Feed view" value={activeTab} options={FEED_VIEWS} onChange={setActiveTab} /><FeedFilterMenu label="Post type" value={categoryFilter} options={FEED_CATEGORIES} onChange={selectCategoryFilter} /></div>
-            </section>
-
             {loading && !posts.length && <div className="py-16 text-center text-sm text-foreground-500">Loading community updates…</div>}
             {error && !posts.length && <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">The community feed could not load. <button onClick={reload} className="font-bold underline">Try again</button></div>}
             {!loading && !error && !visiblePosts.length && <div className="rounded-2xl border border-background-200 bg-background-50 p-8 text-center text-sm text-foreground-500">No posts are available in this feed yet.</div>}
