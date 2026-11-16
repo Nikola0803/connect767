@@ -274,6 +274,7 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [reactionsOpen, setReactionsOpen] = useState(false);
   const [comment, setComment] = useState("");
+  const reactionsRef = useRef(null);
   const comments = post.comments || [];
   const emotion = COMMUNITY_EMOTIONS.find((item) => item.value === post.emotion);
   const activity = COMMUNITY_ACTIVITIES.find((item) => item.value === post.activity);
@@ -281,6 +282,7 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
   const hasLiveLocation = Number.isFinite(Number(post.latitude)) && Number.isFinite(Number(post.longitude));
   const hasLegacyLocationLabel = hasLiveLocation && isLegacyCoordinateLabel(post.postLocation);
   const [postLocationLabel, setPostLocationLabel] = useState(hasLegacyLocationLabel ? "Current location" : post.postLocation);
+  const headerLocationLabel = postLocationLabel ? "Connect767 community" : (post.location || "Connect767 community");
   const postShareUrl = typeof window !== "undefined" ? `${window.location.origin}/community#community-post-${post.id}` : "";
   const reactionCounts = post.reactions || { like: post.thumbCount || 0, love: post.reactionCount || 0 };
   const viewerReaction = post.viewerReaction || (post.thumbed ? "like" : post.reacted ? "love" : "");
@@ -299,6 +301,22 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
     });
     return () => { active = false; };
   }, [hasLegacyLocationLabel, post.latitude, post.longitude, post.postLocation]);
+
+  useEffect(() => {
+    if (!reactionsOpen) return undefined;
+    const closeOutside = (event) => {
+      if (!reactionsRef.current?.contains(event.target)) setReactionsOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setReactionsOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [reactionsOpen]);
 
   const submitComment = async (event) => {
     event.preventDefault();
@@ -323,7 +341,7 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
             {post.verified && <i className="ri-verified-badge-fill text-primary-600" aria-label="Verified listing" />}
             <span className="rounded-full bg-primary-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-primary-700">{post.industry || "Business"}</span>
           </div>
-          <p className="mt-1 text-xs text-foreground-500">{post.location || "Connect767 community"} · {relativeTime(post.createdAt)}</p>
+          <p className="mt-1 text-xs text-foreground-500">{headerLocationLabel} · {relativeTime(post.createdAt)}</p>
         </div>
         <PostOptionsMenu post={post} authenticated={authenticated} canManage={canManage} onDelete={onDelete} onEdit={onEdit} onHide={onHide} onMute={onMute} onReport={onReport} />
       </header>
@@ -352,9 +370,12 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
       </div>
       <div className="flex items-center gap-2 pt-2">
         <div role="toolbar" aria-label="Post actions" className="flex min-w-0 flex-1 items-center justify-around gap-1 sm:flex-none sm:justify-start">
-          <div className="relative">
-            {reactionsOpen && authenticated && <div role="menu" aria-label="Choose a reaction" className="no-scrollbar absolute bottom-full left-0 z-30 mb-2 flex max-w-[calc(100vw-2.5rem)] items-center gap-1 overflow-x-auto rounded-full border border-background-200 bg-white p-1.5 shadow-[0_14px_40px_rgba(24,48,36,0.18)] sm:max-w-[42rem]">
-              {COMMUNITY_REACTIONS.map((item) => <button key={item.value} type="button" role="menuitem" title={item.label} aria-label={item.label} aria-pressed={viewerReaction === item.value} onClick={() => { setReactionsOpen(false); onReact(post.id, item.value); }} className={`group/reaction relative grid h-10 w-10 shrink-0 place-items-center rounded-full text-xl transition hover:-translate-y-1 hover:bg-primary-50 hover:scale-110 ${viewerReaction === item.value ? "bg-primary-100 ring-2 ring-primary-500" : ""}`}><span aria-hidden="true">{item.emoji}</span><span className="pointer-events-none absolute -top-8 hidden rounded-md bg-foreground-950 px-2 py-1 text-[10px] font-bold text-white group-hover/reaction:block">{item.label}</span></button>)}
+          <div ref={reactionsRef} className="relative">
+            {reactionsOpen && authenticated && <div role="menu" aria-label="Choose a reaction" className="absolute bottom-full left-0 z-30 mb-2 flex w-max max-w-[calc(100vw-2.5rem)] items-center rounded-full border border-background-200 bg-white p-1.5 shadow-[0_14px_40px_rgba(24,48,36,0.18)] sm:max-w-[42rem]">
+              <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
+                {COMMUNITY_REACTIONS.map((item) => <button key={item.value} type="button" role="menuitem" title={item.label} aria-label={item.label} aria-pressed={viewerReaction === item.value} onClick={() => { setReactionsOpen(false); onReact(post.id, item.value); }} className={`group/reaction relative grid h-10 w-10 shrink-0 place-items-center rounded-full text-xl transition hover:-translate-y-1 hover:bg-primary-50 hover:scale-110 ${viewerReaction === item.value ? "bg-primary-100 ring-2 ring-primary-500" : ""}`}><span aria-hidden="true">{item.emoji}</span><span className="pointer-events-none absolute -top-8 hidden rounded-md bg-foreground-950 px-2 py-1 text-[10px] font-bold text-white group-hover/reaction:block">{item.label}</span></button>)}
+              </div>
+              <button type="button" onClick={() => setReactionsOpen(false)} aria-label="Close reactions" title="Close" className="ml-1 grid h-10 w-10 shrink-0 place-items-center rounded-full border-l border-background-200 text-lg text-foreground-500 transition hover:bg-background-100 hover:text-foreground-900"><i aria-hidden="true" className="ri-close-line" /></button>
             </div>}
             <button type="button" disabled={!authenticated} onClick={() => setReactionsOpen((open) => !open)} aria-expanded={reactionsOpen} aria-haspopup="menu" aria-label={selectedReaction ? `Reacted ${selectedReaction.label}. Choose another reaction` : "React to this update"} title={selectedReaction?.label || "React"} className={`flex h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-full px-2 text-lg transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${selectedReaction ? "bg-primary-50 text-primary-700" : "text-foreground-600 hover:bg-background-100 hover:text-primary-700"}`}>{selectedReaction ? <span aria-hidden="true">{selectedReaction.emoji}</span> : <i aria-hidden="true" className="ri-emotion-line" />}</button>
           </div>
