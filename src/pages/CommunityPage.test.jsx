@@ -73,6 +73,12 @@ describe("CommunityPage composer menus", () => {
       expect(category).toHaveAttribute("aria-pressed", "true");
     }
 
+    const communityTab = screen.getByRole("tab", { name: "Show Community posts" });
+    fireEvent.click(communityTab);
+    fireEvent.click(screen.getByRole("button", { name: "Filter by Requests" }));
+    expect(screen.getByRole("tab", { name: "Show For you posts" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("button", { name: "Filter by Requests" })).toHaveAttribute("aria-pressed", "true");
+
     const offerButton = await screen.findByRole("button", { name: "Offer" });
     fireEvent.click(offerButton);
     expect(offerButton).toHaveAttribute("aria-pressed", "true");
