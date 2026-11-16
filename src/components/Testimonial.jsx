@@ -32,22 +32,9 @@ export default function Testimonial() {
               <span className="font-semibold">— Amara Joseph</span>{" "}
               <span className="text-foreground-600 font-label">· Owner, Cocoa Palm Bistro</span>
             </p>
-            <div className="mt-10 flex items-center gap-3">
-              <button
-                aria-label="Previous testimonial"
-                type="button"
-                className="w-11 h-11 flex items-center justify-center rounded-full border border-background-300 text-foreground-700 hover:bg-background-200/60 cursor-pointer"
-              >
-                <i className="ri-arrow-left-line" />
-              </button>
-              <button
-                aria-label="Next testimonial"
-                type="button"
-                className="w-11 h-11 flex items-center justify-center rounded-full bg-foreground-950 text-background-50 hover:bg-foreground-800 cursor-pointer"
-              >
-                <i className="ri-arrow-right-line" />
-              </button>
-              <div className="ml-3 text-xs text-foreground-500 font-label">01 / 03</div>
+            <div className="mt-10 inline-flex items-center gap-2 rounded-full border border-background-300 bg-background-50 px-4 py-2 text-xs font-semibold text-primary-700 font-label">
+              <i className="ri-verified-badge-line text-base" aria-hidden="true" />
+              Verified community story
             </div>
           </div>
         </div>

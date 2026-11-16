@@ -107,6 +107,22 @@ describe("CommunityPage composer menus", () => {
     expect(screen.getByPlaceholderText(/what you need/i)).toBeInTheDocument();
   });
 
+  it("connects each trending shortcut to a working feed filter", async () => {
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      configurable: true,
+      value: vi.fn(),
+    });
+    render(<MemoryRouter><CommunityPage /></MemoryRouter>);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Show Holiday services in the community feed" }));
+    expect(screen.getByRole("button", { name: "Feed view: Trending" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Post type: Offers" })).toBeInTheDocument();
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show #ShopLocal767 in the community feed" }));
+    expect(screen.getByRole("button", { name: "Post type: All Posts" })).toBeInTheDocument();
+  });
+
   it("provides owner post options and deletes only after confirmation", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<MemoryRouter><CommunityPage /></MemoryRouter>);

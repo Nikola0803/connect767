@@ -726,13 +726,6 @@ export default function ListingProfile({ data, isPreview = false }) {
                           </div>
                         ))}
                       </div>
-                      <button
-                        type="button"
-                        className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-primary-700 hover:text-primary-800 cursor-pointer whitespace-nowrap"
-                      >
-                        Read all {data.reviewCount} reviews
-                        <i className="text-xs ri-arrow-down-s-line" />
-                      </button>
                     </>
                   ) : (
                     <p className="text-sm text-foreground-500 font-label">
