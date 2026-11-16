@@ -203,6 +203,19 @@ function formatFileSize(value = 0) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function CommentAttachment({ comment }) {
+  if (comment.mediaUrl) {
+    return <img src={comment.mediaUrl} alt="Comment attachment" loading="lazy" className="mt-2 max-h-56 w-full rounded-xl border border-background-200 object-cover" />;
+  }
+  if (comment.videoUrl) {
+    return <video src={comment.videoUrl} controls playsInline preload="metadata" className="mt-2 max-h-56 w-full rounded-xl border border-background-200 bg-black object-contain">Your browser does not support video playback.</video>;
+  }
+  if (comment.fileUrl) {
+    return <a href={comment.fileUrl} target="_blank" rel="noreferrer" className="mt-2 flex items-center gap-2 rounded-xl border border-primary-200 bg-white p-2.5 text-primary-800 transition hover:bg-primary-50"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary-700 text-white"><i className="ri-file-text-line" /></span><span className="min-w-0 flex-1"><span className="block truncate text-xs font-bold">{comment.fileName || "Download attachment"}</span><span className="block text-[10px] text-foreground-500">{formatFileSize(comment.fileSize)}</span></span><i className="ri-download-2-line" /></a>;
+  }
+  return null;
+}
+
 function formatPostDate(value = "") {
   if (!value) return "";
   const date = new Date(`${value}T12:00:00`);
@@ -377,6 +390,15 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
   const [reactionsOpen, setReactionsOpen] = useState(false);
   const [comment, setComment] = useState("");
   const [replyTo, setReplyTo] = useState(null);
+  const [commentEmojiOpen, setCommentEmojiOpen] = useState(false);
+  const [commentAttachmentMenuOpen, setCommentAttachmentMenuOpen] = useState(false);
+  const [commentAttachment, setCommentAttachment] = useState(null);
+  const [commentAttachmentType, setCommentAttachmentType] = useState("");
+  const [commentAttachmentPreview, setCommentAttachmentPreview] = useState("");
+  const commentImageInputRef = useRef(null);
+  const commentGifInputRef = useRef(null);
+  const commentVideoInputRef = useRef(null);
+  const commentFileInputRef = useRef(null);
   const reactionsRef = useRef(null);
   const comments = post.comments || [];
   const emotion = COMMUNITY_EMOTIONS.find((item) => item.value === post.emotion);
@@ -422,13 +444,43 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
     };
   }, [reactionsOpen]);
 
+  useEffect(() => () => {
+    if (commentAttachmentPreview?.startsWith("blob:")) URL.revokeObjectURL(commentAttachmentPreview);
+  }, [commentAttachmentPreview]);
+
+  const clearCommentAttachment = () => {
+    setCommentAttachment(null);
+    setCommentAttachmentType("");
+    setCommentAttachmentPreview("");
+  };
+
+  const chooseCommentAttachment = (file, type) => {
+    if (!file) return;
+    clearCommentAttachment();
+    setCommentAttachment(file);
+    setCommentAttachmentType(type);
+    if (["image", "gif", "video"].includes(type)) setCommentAttachmentPreview(URL.createObjectURL(file));
+    setCommentAttachmentMenuOpen(false);
+  };
+
+  const insertCommentEmoji = (emoji) => {
+    setComment((current) => `${current}${current && !/\s$/.test(current) ? " " : ""}${emoji} `);
+    setCommentEmojiOpen(false);
+  };
+
   const submitComment = async (event) => {
     event.preventDefault();
     const clean = comment.trim();
     if (!clean) return;
-    await onComment(post.id, clean, replyTo?.id || 0);
+    await onComment(post.id, clean, replyTo?.id || 0, {
+      attachment: commentAttachment,
+      attachmentType: commentAttachmentType,
+    });
     setComment("");
     setReplyTo(null);
+    clearCommentAttachment();
+    setCommentEmojiOpen(false);
+    setCommentAttachmentMenuOpen(false);
     setCommentsOpen(true);
   };
 
@@ -495,10 +547,25 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
       {commentsOpen && (
         <div className="mt-3 border-t border-background-200 pt-4">
           <div className="space-y-3">
-            {comments.filter((item) => !Number(item.parentId)).map((item) => <div key={item.id}><div className="rounded-xl bg-background-100 px-3 py-2"><p className="text-xs font-bold text-foreground-900">{item.name}</p><p className="mt-1 text-sm text-foreground-700">{item.text}</p>{authenticated && <button type="button" onClick={() => { setReplyTo(item); setCommentsOpen(true); }} className="mt-2 text-[10px] font-bold text-primary-700">Reply</button>}</div>{comments.filter((reply) => Number(reply.parentId) === Number(item.id)).map((reply) => <div key={reply.id} className="ml-6 mt-2 rounded-xl border-l-2 border-primary-200 bg-background-100/70 px-3 py-2"><p className="text-xs font-bold text-foreground-900">{reply.name}</p><p className="mt-1 text-sm text-foreground-700">{reply.text}</p></div>)}</div>)}
+            {comments.filter((item) => !Number(item.parentId)).map((item) => <div key={item.id}><div className="rounded-xl bg-background-100 px-3 py-2"><p className="text-xs font-bold text-foreground-900">{item.name}</p><p className="mt-1 text-sm text-foreground-700">{item.text}</p><CommentAttachment comment={item} />{authenticated && <button type="button" onClick={() => { setReplyTo(item); setCommentsOpen(true); }} className="mt-2 text-[10px] font-bold text-primary-700">Reply</button>}</div>{comments.filter((reply) => Number(reply.parentId) === Number(item.id)).map((reply) => <div key={reply.id} className="ml-6 mt-2 rounded-xl border-l-2 border-primary-200 bg-background-100/70 px-3 py-2"><p className="text-xs font-bold text-foreground-900">{reply.name}</p><p className="mt-1 text-sm text-foreground-700">{reply.text}</p><CommentAttachment comment={reply} /></div>)}</div>)}
           </div>
           {authenticated ? (
-            <><form onSubmit={submitComment} className="mt-3 flex gap-2"><input value={comment} onChange={(event) => setComment(event.target.value)} maxLength={600} className="h-10 min-w-0 flex-1 rounded-xl border border-background-300 bg-white px-3 text-sm outline-none focus:border-primary-500" placeholder={replyTo ? `Reply to ${replyTo.name}…` : "Add a helpful comment…"} /><button className="h-10 rounded-xl bg-primary-700 px-4 text-xs font-bold text-white" type="submit">Reply</button></form>{replyTo && <button type="button" onClick={() => setReplyTo(null)} className="mt-2 text-[10px] font-bold text-foreground-500">Cancel reply</button>}</>
+            <form onSubmit={submitComment} className="mt-3 rounded-2xl border border-background-300 bg-white p-2.5 shadow-sm">
+              {replyTo && <div className="mb-2 flex items-center justify-between gap-3 rounded-xl bg-primary-50 px-3 py-2 text-[11px] text-primary-800"><span className="truncate">Replying to <strong>{replyTo.name}</strong></span><button type="button" onClick={() => setReplyTo(null)} aria-label="Cancel reply" className="grid h-7 w-7 shrink-0 place-items-center rounded-full hover:bg-white"><i className="ri-close-line" /></button></div>}
+              <textarea value={comment} onChange={(event) => setComment(event.target.value)} maxLength={600} rows={2} className="min-h-16 w-full resize-none bg-transparent px-2 py-1 text-sm outline-none" placeholder={replyTo ? `Reply to ${replyTo.name}…` : "Add a helpful comment…"} aria-label={replyTo ? `Reply to ${replyTo.name}` : "Add a helpful comment"} />
+              {commentAttachment && <div className="mb-2 rounded-xl border border-primary-100 bg-primary-50/50 p-2.5"><div className="flex items-center gap-2"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary-700 text-white"><i className={commentAttachmentType === "video" ? "ri-video-line" : commentAttachmentType === "file" ? "ri-file-text-line" : commentAttachmentType === "gif" ? "ri-file-gif-line" : "ri-image-line"} /></span><span className="min-w-0 flex-1 truncate text-xs font-bold text-foreground-800">{commentAttachment.name}</span><button type="button" onClick={clearCommentAttachment} aria-label="Remove comment attachment" className="grid h-8 w-8 place-items-center rounded-full text-foreground-500 hover:bg-white"><i className="ri-close-line" /></button></div>{commentAttachmentPreview && (["image", "gif"].includes(commentAttachmentType) ? <img src={commentAttachmentPreview} alt="Comment attachment preview" className="mt-2 max-h-40 w-full rounded-lg object-cover" /> : <video src={commentAttachmentPreview} controls playsInline className="mt-2 max-h-40 w-full rounded-lg bg-black object-contain" />)}</div>}
+              <div className="relative flex flex-wrap items-center gap-1 border-t border-background-200 pt-2">
+                <button type="button" aria-expanded={commentEmojiOpen} onClick={() => { setCommentEmojiOpen((open) => !open); setCommentAttachmentMenuOpen(false); }} aria-label="Add emoji to comment" className={`grid h-10 w-10 place-items-center rounded-full text-lg ${commentEmojiOpen ? "bg-primary-50 text-primary-700" : "text-foreground-500 hover:bg-background-100"}`}><i className="ri-emotion-line" /></button>
+                <button type="button" aria-expanded={commentAttachmentMenuOpen} onClick={() => { setCommentAttachmentMenuOpen((open) => !open); setCommentEmojiOpen(false); }} aria-label="Attach to comment" className={`grid h-10 w-10 place-items-center rounded-full text-lg ${commentAttachmentMenuOpen ? "bg-primary-50 text-primary-700" : "text-foreground-500 hover:bg-background-100"}`}><i className="ri-attachment-2" /></button>
+                <button className="ml-auto h-10 rounded-xl bg-primary-700 px-4 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-45" type="submit" disabled={!comment.trim()}>{replyTo ? "Reply" : "Comment"}</button>
+                {commentEmojiOpen && <div role="menu" aria-label="Choose an emoji for comment" className="absolute bottom-12 left-0 z-40 w-[min(22rem,calc(100vw-3.5rem))] rounded-2xl border border-background-200 bg-white p-2 shadow-[0_16px_45px_rgba(24,48,36,0.18)]"><div className="grid grid-cols-7 gap-1">{COMMUNITY_REACTIONS.map((item) => <button key={item.value} type="button" role="menuitem" title={item.label} aria-label={`Add ${item.label} emoji`} onClick={() => insertCommentEmoji(item.emoji)} className="grid h-10 w-10 place-items-center rounded-full text-xl transition hover:bg-primary-50 hover:scale-110"><span aria-hidden="true">{item.emoji}</span></button>)}</div></div>}
+                {commentAttachmentMenuOpen && <div role="menu" aria-label="Attach to comment" className="absolute bottom-12 left-10 z-40 w-56 rounded-2xl border border-background-200 bg-white p-1.5 shadow-[0_16px_45px_rgba(24,48,36,0.18)]">{[["Photo", "ri-image-add-line", commentImageInputRef], ["GIF", "ri-file-gif-line", commentGifInputRef], ["Video", "ri-video-add-line", commentVideoInputRef], ["File", "ri-file-add-line", commentFileInputRef]].map(([label, icon, inputRef]) => <button key={label} type="button" role="menuitem" onClick={() => { setCommentAttachmentMenuOpen(false); inputRef.current?.click(); }} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-xs font-bold text-foreground-800 hover:bg-primary-50"><span className="grid h-8 w-8 place-items-center rounded-lg bg-primary-50 text-primary-700"><i className={icon} /></span>{label}</button>)}</div>}
+                <input ref={commentImageInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" aria-label="Attach a photo to comment" onChange={(event) => { chooseCommentAttachment(event.target.files?.[0], "image"); event.target.value = ""; }} />
+                <input ref={commentGifInputRef} type="file" accept="image/gif" className="hidden" aria-label="Attach a GIF to comment" onChange={(event) => { chooseCommentAttachment(event.target.files?.[0], "gif"); event.target.value = ""; }} />
+                <input ref={commentVideoInputRef} type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden" aria-label="Attach a video to comment" onChange={(event) => { chooseCommentAttachment(event.target.files?.[0], "video"); event.target.value = ""; }} />
+                <input ref={commentFileInputRef} type="file" accept={COMMUNITY_FILE_TYPES.join(",")} className="hidden" aria-label="Attach a file to comment" onChange={(event) => { chooseCommentAttachment(event.target.files?.[0], "file"); event.target.value = ""; }} />
+              </div>
+            </form>
           ) : <Link to="/auth/login" className="mt-3 inline-flex text-xs font-bold text-primary-700">Sign in to join the conversation</Link>}
         </div>
       )}
@@ -804,8 +871,8 @@ export default function CommunityPage() {
       if (result) setPosts((items) => items.map((post) => post.id === postId ? { ...post, reactions: result.reactions, viewerReaction: result.viewerReaction, totalReactions: result.total } : post));
     } catch { setPosts((items) => items.map((post) => post.id === postId ? current : post)); }
   };
-  const comment = async (postId, value, parentId = 0) => {
-    const created = await createCommunityComment(postId, value, parentId);
+  const comment = async (postId, value, parentId = 0, options = {}) => {
+    const created = await createCommunityComment(postId, value, parentId, options);
     setPosts((items) => items.map((post) => post.id === postId ? { ...post, comments: [...(post.comments || []), created] } : post));
   };
   const bookmarkPost = async (postId) => {

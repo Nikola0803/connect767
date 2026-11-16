@@ -183,6 +183,11 @@ class C767_REST_Community
             'reactions' => $reaction['counts'],
             'viewerReaction' => $reaction['viewerReaction'],
             'totalReactions' => $reaction['total'],
+            'mediaUrl' => esc_url_raw((string) get_comment_meta($comment->comment_ID, '_c767_comment_media_url', true)),
+            'videoUrl' => esc_url_raw((string) get_comment_meta($comment->comment_ID, '_c767_comment_video_url', true)),
+            'fileUrl' => esc_url_raw((string) get_comment_meta($comment->comment_ID, '_c767_comment_file_url', true)),
+            'fileName' => sanitize_file_name((string) get_comment_meta($comment->comment_ID, '_c767_comment_file_name', true)),
+            'fileSize' => max(0, (int) get_comment_meta($comment->comment_ID, '_c767_comment_file_size', true)),
             'canManage' => get_current_user_id() > 0 && ((int) $comment->user_id === (int) get_current_user_id() || current_user_can('edit_comment', $comment->comment_ID)),
         ];
     }
@@ -781,6 +786,10 @@ class C767_REST_Community
         if ($text === '' || strlen($text) > 600) {
             return new WP_Error('c767_invalid_community_comment', 'Comments must contain between 1 and 600 characters.', ['status' => 400]);
         }
+        $attachment_check = self::validate_attachment();
+        if (is_wp_error($attachment_check)) {
+            return $attachment_check;
+        }
         $parent_id = max(0, (int) $request->get_param('parentId'));
         if ($parent_id) {
             $parent = get_comment($parent_id);
@@ -799,6 +808,36 @@ class C767_REST_Community
             'comment_author_email' => $user->user_email,
             'comment_approved' => 1,
         ]);
+        if (!$comment_id) {
+            return new WP_Error('c767_comment_create_failed', 'The comment could not be posted.', ['status' => 500]);
+        }
+
+        $attachment_field = !empty($_FILES['image']['tmp_name'])
+            ? 'image'
+            : (!empty($_FILES['video']['tmp_name']) ? 'video' : (!empty($_FILES['file']['tmp_name']) ? 'file' : ''));
+        if ($attachment_field) {
+            require_once ABSPATH . 'wp-admin/includes/image.php';
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            require_once ABSPATH . 'wp-admin/includes/media.php';
+            $attachment_id = media_handle_upload($attachment_field, $post->ID);
+            if (is_wp_error($attachment_id)) {
+                wp_delete_comment($comment_id, true);
+                return new WP_Error('c767_comment_attachment_failed', 'The comment attachment could not be uploaded.', ['status' => 400]);
+            }
+            $attachment_url = (string) wp_get_attachment_url($attachment_id);
+            if ($attachment_field === 'image') {
+                update_comment_meta($comment_id, '_c767_comment_media_url', $attachment_url);
+            } elseif ($attachment_field === 'video') {
+                update_comment_meta($comment_id, '_c767_comment_video_url', $attachment_url);
+            } else {
+                $file_name = sanitize_file_name((string) ($_FILES['file']['name'] ?? 'attachment'));
+                $stored_file = get_attached_file($attachment_id);
+                $file_size = $stored_file && file_exists($stored_file) ? (int) filesize($stored_file) : (int) ($_FILES['file']['size'] ?? 0);
+                update_comment_meta($comment_id, '_c767_comment_file_url', $attachment_url);
+                update_comment_meta($comment_id, '_c767_comment_file_name', $file_name);
+                update_comment_meta($comment_id, '_c767_comment_file_size', $file_size);
+            }
+        }
         if ($comment_id) {
             $recipient = $parent_id ? (int) get_comment($parent_id)->user_id : (int) $post->post_author;
             C767_Social_Database::notify($recipient, $user->ID, $parent_id ? 'reply' : 'comment', 'post', $post->ID, ['commentId' => (int) $comment_id]);

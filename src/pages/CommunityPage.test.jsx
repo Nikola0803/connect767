@@ -2,14 +2,14 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CommunityPage, { listingAvatar } from "./CommunityPage";
-import { createCommunityPost, deleteCommunityPost, getListings, getMyListings } from "../data/repository";
+import { createCommunityComment, createCommunityPost, deleteCommunityPost, getListings, getMyListings } from "../data/repository";
 
 vi.mock("../hooks/useAuth", () => ({
   useAuth: () => ({ isAuthenticated: true }),
 }));
 
 vi.mock("../hooks/useAsync", () => {
-  const state = { data: { posts: [{ id: 7, listingId: 42, listingSlug: "james-local-fruits", listingTitle: "James Local Fruits", text: "Fresh fruit today", type: "status", createdAt: new Date().toISOString(), comments: [] }] }, loading: false, error: null, reload: vi.fn() };
+  const state = { data: { posts: [{ id: 7, listingId: 42, listingSlug: "james-local-fruits", listingTitle: "James Local Fruits", text: "Fresh fruit today", type: "status", createdAt: new Date().toISOString(), comments: [{ id: 11, parentId: 0, name: "Alex", text: "Is delivery available?", reactions: {} }] }] }, loading: false, error: null, reload: vi.fn() };
   return { useAsync: () => state };
 });
 
@@ -38,6 +38,7 @@ describe("CommunityPage composer menus", () => {
       { id: 84, title: "Sadick Eustache", slug: "sadick-eustache", status: "publish", logo: "https://connect767.com/sadick-profile.jpg", location: "Houston, Texas" },
     ]);
     vi.mocked(createCommunityPost).mockResolvedValue({ id: 99, listingId: 42, listingSlug: "james-local-fruits", listingTitle: "James Local Fruits", text: "Animated announcement", type: "status", fontStyle: "editorial", mediaUrl: "blob:community-gif", createdAt: new Date().toISOString(), comments: [] });
+    vi.mocked(createCommunityComment).mockResolvedValue({ id: 12, parentId: 11, name: "You", text: "Yes 🎉", mediaUrl: "blob:comment-photo", reactions: {} });
   });
 
   afterEach(() => vi.restoreAllMocks());
@@ -121,6 +122,35 @@ describe("CommunityPage composer menus", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Show #ShopLocal767 in the community feed" }));
     expect(screen.getByRole("button", { name: "Post type: All Posts" })).toBeInTheDocument();
+  });
+
+  it("adds emojis and attachments when replying to a comment", async () => {
+    Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:comment-photo") });
+    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
+    render(<MemoryRouter><CommunityPage /></MemoryRouter>);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Show comments" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reply" }));
+    expect(screen.getByText(/Replying to/)).toHaveTextContent("Alex");
+
+    fireEvent.click(screen.getByRole("button", { name: "Add emoji to comment" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Add Celebrate emoji" }));
+    const replyBox = screen.getByRole("textbox", { name: "Reply to Alex" });
+    expect(replyBox).toHaveValue("🎉 ");
+    fireEvent.change(replyBox, { target: { value: "Yes 🎉" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Attach to comment" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Photo" }));
+    const photo = new File(["photo"], "delivery.jpg", { type: "image/jpeg" });
+    fireEvent.change(screen.getByLabelText("Attach a photo to comment"), { target: { files: [photo] } });
+    expect(await screen.findByAltText("Comment attachment preview")).toHaveAttribute("src", "blob:comment-photo");
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Reply" }).at(-1));
+    await waitFor(() => expect(createCommunityComment).toHaveBeenCalledWith(7, "Yes 🎉", 11, {
+      attachment: photo,
+      attachmentType: "image",
+    }));
+    expect(await screen.findByAltText("Comment attachment")).toHaveAttribute("src", "blob:comment-photo");
   });
 
   it("provides owner post options and deletes only after confirmation", async () => {
