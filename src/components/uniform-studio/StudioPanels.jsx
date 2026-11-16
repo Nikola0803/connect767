@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { skinLibrary, skinGroups, skinDataUri, findSkin } from "../../data/skins";
 import {
   zoneColorPalette,
@@ -14,6 +14,7 @@ import {
   STUDIO_BACKGROUND_PRESETS,
   isStudioHex,
 } from "./studioBackgrounds";
+import AIUniformComposer from "./AIUniformComposer";
 
 /** #rrggbb → {r,g,b}, tolerating a missing leading hash. */
 function hexToRgb(hex) {
@@ -893,6 +894,10 @@ const AI_COLOR_LABELS = {
 
 function prepareAIReferenceImage(file) {
   return new Promise((resolve, reject) => {
+    if (file?.size > 10 * 1024 * 1024) {
+      reject(new Error("Reference images must be 10 MB or smaller."));
+      return;
+    }
     if (!file || !["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
       reject(new Error("Choose a PNG, JPEG or WebP reference image."));
       return;
@@ -942,6 +947,7 @@ export function AIArtworkPanel({
   onApplyUniform,
   onUndoUniform,
   canUndoUniform = false,
+  composerVariant = "unified",
 }) {
   const [mode, setMode] = useState("uniform");
   const [brandName, setBrandName] = useState("");
@@ -955,12 +961,15 @@ export function AIArtworkPanel({
   const [refinementBrief, setRefinementBrief] = useState("");
   const [locks, setLocks] = useState({ collar: false, sleeve: false, colors: false, pattern: false, artwork: true });
   const [promptHistory, setPromptHistory] = useState([]);
+  const [archivedPrompts, setArchivedPrompts] = useState([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [error, setError] = useState("");
+  const generationControllerRef = useRef(null);
   const allDesignControlsLocked = locks.collar && locks.sleeve && locks.colors && locks.pattern;
   const lockedControlCount = Object.values(locks).filter(Boolean).length;
   const activePrompt = mode === "uniform" && uniformPlan ? refinementBrief : brief;
   const promptHistoryKey = `connect767-ai-prompt-history:${sport || "uniform"}`;
+  const promptArchiveKey = `connect767-ai-prompt-archive:${sport || "uniform"}`;
 
   useEffect(() => {
     try {
@@ -971,7 +980,16 @@ export function AIArtworkPanel({
     }
   }, [promptHistoryKey]);
 
-  const savePrompt = ({ prompt, promptMode, kind, name, promptStyle }) => {
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(promptArchiveKey) || "[]");
+      setArchivedPrompts(Array.isArray(saved) ? saved.slice(0, 70) : []);
+    } catch {
+      setArchivedPrompts([]);
+    }
+  }, [promptArchiveKey]);
+
+  const savePrompt = ({ prompt, promptMode, kind, name, promptStyle, response }) => {
     const entry = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       prompt,
@@ -979,6 +997,7 @@ export function AIArtworkPanel({
       kind,
       brandName: name,
       style: promptStyle,
+      response,
       createdAt: new Date().toISOString(),
     };
     setPromptHistory((current) => {
@@ -991,7 +1010,9 @@ export function AIArtworkPanel({
 
   const clearPromptHistory = () => {
     setPromptHistory([]);
+    setArchivedPrompts([]);
     try { window.sessionStorage.removeItem(promptHistoryKey); } catch { /* storage unavailable */ }
+    try { window.localStorage.removeItem(promptArchiveKey); } catch { /* storage unavailable */ }
   };
 
   const reusePrompt = (entry) => {
@@ -1015,18 +1036,22 @@ export function AIArtworkPanel({
   }, []);
 
   const generateArtwork = async () => {
-    if (!brandName.trim() || !brief.trim()) return;
+    if (!brief.trim()) return;
+    const effectiveBrandName = brandName.trim() || "Team artwork";
     setGenerating(true);
     setError("");
     setPreview(null);
+    generationControllerRef.current?.abort();
+    generationControllerRef.current = new AbortController();
     try {
       const response = await fetch("/api/generate-design", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: generationControllerRef.current.signal,
         body: JSON.stringify({
           productType: "Jersey",
           style,
-          brandName: brandName.trim(),
+          brandName: effectiveBrandName,
           primaryColor: colors.body,
           secondaryColor: colors.shirtStrip,
           notes: brief.trim(),
@@ -1038,19 +1063,21 @@ export function AIArtworkPanel({
       if (!response.ok || !data.b64) throw new Error(data.error || "AI generation failed.");
       setPreview({
         src: `data:${data.mimeType || "image/png"};base64,${data.b64}`,
-        name: `${brandName.trim()} AI artwork`,
+        name: `${effectiveBrandName} AI artwork`,
       });
       savePrompt({
         prompt: brief.trim(),
         promptMode: "artwork",
         kind: "Artwork",
-        name: brandName.trim(),
+        name: effectiveBrandName,
         promptStyle: style,
+        response: "Your transparent artwork is ready to preview and place on the uniform.",
       });
     } catch (generationError) {
-      setError(generationError.message || "AI generation failed.");
+      if (generationError.name !== "AbortError") setError(generationError.message || "AI generation failed.");
     } finally {
       setGenerating(false);
+      generationControllerRef.current = null;
     }
   };
 
@@ -1064,12 +1091,15 @@ export function AIArtworkPanel({
     const currentDesign = uniformPlan || { collar, sleeve, colors, pattern: { key: currentPatternKey } };
     setGenerating(true);
     setError("");
+    generationControllerRef.current?.abort();
+    generationControllerRef.current = new AbortController();
     if (!refinement) onUniformPlanChange?.(null);
     setApplied(false);
     try {
       const response = await fetch("/api/generate-uniform-design", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: generationControllerRef.current.signal,
         body: JSON.stringify({
           sport,
           style,
@@ -1095,6 +1125,7 @@ export function AIArtworkPanel({
       const conceptResponse = await fetch("/api/generate-design", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: generationControllerRef.current.signal,
         body: JSON.stringify({
           productType: "Jersey",
           style,
@@ -1132,12 +1163,14 @@ export function AIArtworkPanel({
         kind: promptKind,
         name: effectiveBrandName,
         promptStyle: style,
+        response: plan.summary || `${plan.name} is ready to review on the AI canvas.`,
       });
       if (refinement) setRefinementBrief("");
     } catch (generationError) {
-      setError(generationError.message || "AI uniform design failed.");
+      if (generationError.name !== "AbortError") setError(generationError.message || "AI uniform design failed.");
     } finally {
       setGenerating(false);
+      generationControllerRef.current = null;
     }
   };
 
@@ -1150,9 +1183,7 @@ export function AIArtworkPanel({
     setApplied(true);
   };
 
-  const chooseReference = async (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
+  const acceptReferenceFile = async (file) => {
     if (!file) return;
     setError("");
     try {
@@ -1162,6 +1193,39 @@ export function AIArtworkPanel({
     } catch (referenceError) {
       setError(referenceError.message || "The reference image could not be prepared.");
     }
+  };
+
+  const chooseReference = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    await acceptReferenceFile(file);
+  };
+
+  const stopGenerating = () => {
+    generationControllerRef.current?.abort();
+    generationControllerRef.current = null;
+    setGenerating(false);
+  };
+
+  const startNewChat = () => {
+    stopGenerating();
+    if (promptHistory.length) {
+      setArchivedPrompts((current) => {
+        const next = [...promptHistory, ...current].slice(0, 70);
+        try { window.localStorage.setItem(promptArchiveKey, JSON.stringify(next)); } catch { /* storage unavailable */ }
+        return next;
+      });
+      setPromptHistory([]);
+      try { window.sessionStorage.removeItem(promptHistoryKey); } catch { /* storage unavailable */ }
+    }
+    setBrandName("");
+    setBrief("");
+    setRefinementBrief("");
+    setReference(null);
+    setPreview(null);
+    setApplied(false);
+    setError("");
+    onUniformPlanChange?.(null);
   };
 
   const preservationControls = mode === "uniform" ? (
@@ -1210,6 +1274,63 @@ export function AIArtworkPanel({
       </div>
     </details>
   ) : null;
+
+  if (composerVariant === "unified") {
+    const isRefinement = mode === "uniform" && Boolean(uniformPlan);
+    const canSend = connection === "connected"
+      && Boolean(activePrompt.trim())
+      && !(mode === "uniform" && allDesignControlsLocked);
+    const changeMode = (nextMode) => {
+      setMode(nextMode);
+      onModeChange?.(nextMode);
+      setError("");
+    };
+    const sendPrompt = () => {
+      if (isRefinement) generateUniform(refinementBrief);
+      else generate();
+    };
+
+    return (
+      <AIUniformComposer
+        sport={sport}
+        mode={mode}
+        onModeChange={changeMode}
+        connection={connection}
+        brandName={brandName}
+        onBrandNameChange={setBrandName}
+        prompt={activePrompt}
+        onPromptChange={isRefinement ? setRefinementBrief : setBrief}
+        isRefinement={isRefinement}
+        generating={generating}
+        canSend={canSend}
+        onSend={sendPrompt}
+        onStop={stopGenerating}
+        style={style}
+        styles={AI_STYLES}
+        onStyleChange={setStyle}
+        reference={reference}
+        onReferenceFile={acceptReferenceFile}
+        onRemoveReference={() => { setReference(null); onUniformPlanChange?.(null); }}
+        promptHistory={promptHistory}
+        historyEntries={[...promptHistory, ...archivedPrompts]}
+        onReusePrompt={reusePrompt}
+        onClearHistory={clearPromptHistory}
+        error={error}
+        onRetry={sendPrompt}
+        uniformPlan={uniformPlan}
+        applied={applied}
+        onApplyUniform={applyUniform}
+        onNewDirection={() => generateUniform()}
+        artworkPreview={preview}
+        onPlaceArtwork={onPlace}
+        onClearArtwork={() => setPreview(null)}
+        preservationControls={preservationControls}
+        canUndo={canUndoUniform}
+        onUndo={onUndoUniform}
+        onNewChat={startNewChat}
+      />
+    );
+  }
 
   return (
     <div>

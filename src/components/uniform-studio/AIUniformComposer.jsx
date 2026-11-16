@@ -1,0 +1,329 @@
+import { useEffect, useRef, useState } from "react";
+
+const MODE_COPY = {
+  uniform: {
+    label: "Full uniform",
+    icon: "ri-shirt-line",
+    placeholder: "Ask Connect767 AI to design or refine this uniform…",
+  },
+  artwork: {
+    label: "Transparent artwork",
+    icon: "ri-image-edit-line",
+    placeholder: "Describe the crest, graphic or pattern you want…",
+  },
+};
+
+function ComposerAction({ icon, label, onClick, active = false }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full px-3 text-[10px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${
+        active
+          ? "bg-primary-700 text-white"
+          : "border border-current/10 bg-white/70 text-foreground-600 hover:bg-white hover:text-foreground-900"
+      }`}
+    >
+      <i className={icon} /> {label}
+    </button>
+  );
+}
+
+function EmptyConversation({ sport, onExample, dark }) {
+  const examples = [
+    `Create a premium ${sport.toLowerCase()} kit in forest green, cream and coral with a clean modern pattern.`,
+    "Keep the current shape, add a bold diagonal chest graphic and matching shorts trim.",
+    "Create a minimalist island-inspired uniform with subtle wave details and strong contrast.",
+  ];
+
+  return (
+    <div className="mx-auto flex max-w-sm flex-col items-center px-5 py-8 text-center">
+      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-700 text-xl text-white shadow-[0_12px_30px_rgba(0,116,73,.2)]">
+        <i className="ri-sparkling-2-fill" />
+      </span>
+      <h3 className={`mt-4 font-heading text-xl font-semibold ${dark ? "text-white" : "text-foreground-950"}`}>Design with Connect767 AI</h3>
+      <p className={`mt-2 text-[11px] leading-relaxed ${dark ? "text-white/55" : "text-foreground-500"}`}>
+        Describe a complete kit or create transparent artwork. Your generated result stays editable in the Uniform Studio.
+      </p>
+      <div className="mt-5 grid w-full gap-2 text-left">
+        {examples.map((example) => (
+          <button
+            key={example}
+            type="button"
+            onClick={() => onExample(example)}
+            className={`cursor-pointer rounded-xl border px-3 py-2.5 text-[10px] leading-relaxed transition ${dark ? "border-white/10 bg-white/[0.055] text-white/70 hover:border-primary-400 hover:bg-primary-950/50" : "border-background-200 bg-white text-foreground-600 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-900"}`}
+          >
+            {example}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function AIUniformComposer({
+  sport,
+  mode,
+  onModeChange,
+  connection,
+  brandName,
+  onBrandNameChange,
+  prompt,
+  onPromptChange,
+  isRefinement,
+  generating,
+  canSend,
+  onSend,
+  onStop,
+  style,
+  styles,
+  onStyleChange,
+  reference,
+  onReferenceFile,
+  onRemoveReference,
+  promptHistory,
+  historyEntries = promptHistory,
+  onReusePrompt,
+  onClearHistory,
+  error,
+  onRetry,
+  uniformPlan,
+  applied,
+  onApplyUniform,
+  onNewDirection,
+  artworkPreview,
+  onPlaceArtwork,
+  onClearArtwork,
+  preservationControls,
+  canUndo,
+  onUndo,
+  onNewChat,
+}) {
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [dark, setDark] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const conversationRef = useRef(null);
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "0px";
+    textarea.style.height = `${Math.min(176, Math.max(52, textarea.scrollHeight))}px`;
+  }, [prompt]);
+
+  useEffect(() => {
+    const conversation = conversationRef.current;
+    if (!conversation) return;
+    if (typeof conversation.scrollTo === "function") {
+      conversation.scrollTo({ top: conversation.scrollHeight, behavior: "smooth" });
+    } else {
+      conversation.scrollTop = conversation.scrollHeight;
+    }
+  }, [promptHistory.length, uniformPlan, artworkPreview, generating]);
+
+  const submit = () => {
+    if (canSend && !generating) onSend();
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      submit();
+    }
+    if (event.key === "Escape") {
+      setToolsOpen(false);
+      setSettingsOpen(false);
+    }
+  };
+
+  const acceptDroppedFile = (event) => {
+    event.preventDefault();
+    setDragging(false);
+    const file = event.dataTransfer.files?.[0];
+    if (file) onReferenceFile(file);
+  };
+
+  const reuse = (entry) => {
+    onReusePrompt(entry);
+    setHistoryOpen(false);
+    textareaRef.current?.focus();
+  };
+
+  const copyText = async (text) => {
+    try { await navigator.clipboard.writeText(text); } catch { /* Clipboard access can be blocked by the browser. */ }
+  };
+
+  const hasConversation = promptHistory.length > 0 || uniformPlan || artworkPreview || generating;
+  const surface = dark ? "bg-[#11140f] text-white" : "bg-[#f8f7f2] text-foreground-950";
+  const card = dark ? "border-white/10 bg-white/[0.055] text-white" : "border-background-200 bg-white text-foreground-950";
+  const muted = dark ? "text-white/50" : "text-foreground-500";
+
+  return (
+    <section className={`relative flex h-full min-h-[620px] flex-col overflow-hidden transition-colors ${surface}`} aria-label="Connect767 AI uniform designer">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (file) onReferenceFile(file);
+        }}
+      />
+
+      <header className={`flex flex-shrink-0 items-center justify-between gap-3 border-b px-4 py-3 ${dark ? "border-white/10" : "border-background-200"}`}>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-700 text-white shadow-sm"><i className="ri-sparkling-2-fill" /></span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h2 className="truncate font-heading text-base font-semibold">Connect767 AI</h2>
+              <span className={`h-1.5 w-1.5 rounded-full ${connection === "connected" ? "bg-emerald-500" : connection === "checking" ? "bg-amber-400" : "bg-red-400"}`} />
+            </div>
+            <p className={`truncate text-[9px] ${muted}`}>Uniform design assistant · {MODE_COPY[mode].label}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          <button type="button" onClick={() => setHistoryOpen((value) => !value)} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl transition hover:bg-black/5 dark:hover:bg-white/10" aria-label="Open conversation history" aria-expanded={historyOpen}><i className="ri-history-line" /></button>
+          <button type="button" onClick={() => setDark((value) => !value)} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl transition hover:bg-black/5" aria-label={dark ? "Use light mode" : "Use dark mode"}><i className={dark ? "ri-sun-line" : "ri-moon-line"} /></button>
+          <button type="button" onClick={onNewChat} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl bg-primary-700 text-white transition hover:bg-primary-800" aria-label="Start a new AI design chat"><i className="ri-chat-new-line" /></button>
+        </div>
+      </header>
+
+      {historyOpen && (
+        <aside className={`absolute inset-x-3 top-[68px] z-30 max-h-[60%] overflow-hidden rounded-2xl border shadow-2xl ${card}`} aria-label="AI design conversation history">
+          <div className="flex items-center justify-between border-b border-current/10 px-3 py-2.5">
+              <div><strong className="block text-xs">Design history</strong><span className={`text-[9px] ${muted}`}>{historyEntries.length} saved {historyEntries.length === 1 ? "prompt" : "prompts"}</span></div>
+            <button type="button" onClick={onClearHistory} disabled={!historyEntries.length} className="cursor-pointer text-[9px] font-bold text-foreground-400 hover:text-red-600 disabled:opacity-40">Clear</button>
+          </div>
+          <div className="max-h-72 space-y-1 overflow-y-auto p-2">
+            {historyEntries.length ? historyEntries.map((entry) => (
+              <button key={entry.id} type="button" onClick={() => reuse(entry)} className="w-full cursor-pointer rounded-xl px-3 py-2.5 text-left transition hover:bg-primary-50">
+                <span className="flex items-center justify-between gap-2"><strong className="text-[9px] uppercase tracking-wide text-primary-700">{entry.kind}</strong><span className={`text-[8px] ${muted}`}>{new Date(entry.createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span></span>
+                <span className="mt-1 line-clamp-2 block text-[10px] leading-relaxed">{entry.prompt}</span>
+              </button>
+            )) : <p className={`px-3 py-8 text-center text-[10px] ${muted}`}>Your successful prompts will appear here.</p>}
+          </div>
+        </aside>
+      )}
+
+      <div ref={conversationRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4" aria-live="polite">
+        {!hasConversation ? <EmptyConversation sport={sport} onExample={onPromptChange} dark={dark} /> : (
+          <div className="mx-auto max-w-xl space-y-4">
+            {[...promptHistory].reverse().map((entry) => (
+              <div key={entry.id} className="space-y-2">
+                <div className="ml-auto max-w-[88%] rounded-2xl rounded-br-md bg-primary-700 px-3.5 py-2.5 text-[11px] leading-relaxed text-white shadow-sm">
+                  {entry.prompt}
+                </div>
+                {entry.response && (
+                  <div className={`max-w-[92%] rounded-2xl rounded-bl-md border px-3.5 py-3 text-[11px] leading-relaxed ${card}`}>
+                    <div className="mb-1.5 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-primary-700"><i className="ri-sparkling-2-fill" /> Connect767 AI</div>
+                    <p className={muted}>{entry.response}</p>
+                    <div className="mt-2 flex items-center gap-1 text-foreground-400">
+                      <button type="button" onClick={() => copyText(entry.response)} className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg hover:bg-black/5" aria-label="Copy response"><i className="ri-file-copy-line" /></button>
+                      <button type="button" onClick={() => setFeedback(feedback === `${entry.id}:up` ? "" : `${entry.id}:up`)} className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg hover:bg-black/5 ${feedback === `${entry.id}:up` ? "text-primary-700" : ""}`} aria-label="Helpful response"><i className="ri-thumb-up-line" /></button>
+                      <button type="button" onClick={() => setFeedback(feedback === `${entry.id}:down` ? "" : `${entry.id}:down`)} className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg hover:bg-black/5 ${feedback === `${entry.id}:down` ? "text-accent-500" : ""}`} aria-label="Unhelpful response"><i className="ri-thumb-down-line" /></button>
+                      <button type="button" onClick={() => reuse(entry)} className="ml-1 cursor-pointer text-[9px] font-bold hover:text-primary-700"><i className="ri-refresh-line" /> Reuse</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {generating && (
+              <div className={`inline-flex items-center gap-2 rounded-2xl rounded-bl-md border px-3.5 py-3 text-[11px] ${card}`}>
+                <span className="flex gap-1"><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary-600 [animation-delay:-.3s]" /><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary-600 [animation-delay:-.15s]" /><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary-600" /></span>
+                <span className={muted}>{mode === "uniform" ? "Designing your uniform…" : "Creating transparent artwork…"}</span>
+              </div>
+            )}
+
+            {uniformPlan && !generating && (
+              <article className={`overflow-hidden rounded-2xl border shadow-sm ${card}`}>
+                {uniformPlan.conceptImage?.src && <img src={uniformPlan.conceptImage.src} alt={`${uniformPlan.name} AI uniform concept`} className="max-h-56 w-full bg-[#ece9e1] object-contain" />}
+                <div className="p-3.5">
+                  <div className="flex items-start justify-between gap-3"><div><p className="text-[9px] font-bold uppercase tracking-[0.14em] text-primary-700">Current AI design</p><h3 className="mt-1 font-heading text-base font-semibold">{uniformPlan.name}</h3></div><span className="rounded-full bg-primary-50 px-2 py-1 text-[8px] font-bold text-primary-800">On canvas</span></div>
+                  <p className={`mt-2 text-[10px] leading-relaxed ${muted}`}>{uniformPlan.summary}</p>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button type="button" onClick={onApplyUniform} className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-primary-700 px-3 py-2.5 text-[10px] font-bold text-white hover:bg-primary-800"><i className={applied ? "ri-check-double-line" : "ri-magic-line"} /> {applied ? "Applied" : "Apply design"}</button>
+                    <button type="button" onClick={onNewDirection} className={`inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-[10px] font-bold transition ${dark ? "border-white/15 hover:bg-white/10" : "border-background-300 hover:bg-background-100"}`}><i className="ri-refresh-line" /> New direction</button>
+                  </div>
+                </div>
+              </article>
+            )}
+
+            {artworkPreview && !generating && (
+              <article className={`rounded-2xl border p-3 shadow-sm ${card}`}>
+                <div className="rounded-xl bg-[linear-gradient(45deg,#ece9e1_25%,transparent_25%),linear-gradient(-45deg,#ece9e1_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#ece9e1_75%),linear-gradient(-45deg,transparent_75%,#ece9e1_75%)] bg-[length:18px_18px] p-2"><img src={artworkPreview.src} alt="Generated transparent uniform artwork" className="mx-auto max-h-52 w-full object-contain" /></div>
+                <div className="mt-3 flex gap-2"><button type="button" onClick={() => onPlaceArtwork(artworkPreview)} className="flex-1 cursor-pointer rounded-xl bg-primary-700 px-3 py-2.5 text-[10px] font-bold text-white hover:bg-primary-800"><i className="ri-add-circle-line mr-1" /> Place on uniform</button><button type="button" onClick={onClearArtwork} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-background-300" aria-label="Remove artwork preview"><i className="ri-delete-bin-line" /></button></div>
+              </article>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className={`relative flex-shrink-0 border-t p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] ${dark ? "border-white/10 bg-[#11140f]" : "border-background-200 bg-[#f8f7f2]"}`}>
+        {error && <div role="alert" className="mb-2 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[10px] text-red-700"><span>{error}</span><button type="button" onClick={onRetry} className="shrink-0 cursor-pointer font-bold underline">Retry</button></div>}
+
+        {settingsOpen && (
+          <div className={`absolute bottom-[calc(100%-4px)] left-3 right-3 z-20 max-h-72 overflow-y-auto rounded-2xl border p-3 shadow-2xl ${card}`}>
+            <div className="flex items-center justify-between"><strong className="text-xs">Design controls</strong><button type="button" onClick={() => setSettingsOpen(false)} className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg hover:bg-black/5" aria-label="Close design controls"><i className="ri-close-line" /></button></div>
+            <label className={`mt-3 block text-[9px] font-bold uppercase tracking-wide ${muted}`}>Team or brand</label>
+            <input value={brandName} onChange={(event) => onBrandNameChange(event.target.value)} placeholder="e.g. Riverside FC" maxLength={80} className="mt-1 w-full rounded-xl border border-background-300 bg-white px-3 py-2.5 text-xs text-foreground-950 outline-none focus:border-primary-500" />
+            <label className={`mt-3 block text-[9px] font-bold uppercase tracking-wide ${muted}`}>Creative direction</label>
+            <select value={style} onChange={(event) => onStyleChange(event.target.value)} className="mt-1 w-full rounded-xl border border-background-300 bg-white px-3 py-2.5 text-xs text-foreground-950 outline-none focus:border-primary-500">{styles.map((option) => <option key={option}>{option}</option>)}</select>
+            <div className="mt-3">{preservationControls}</div>
+            {canUndo && <button type="button" onClick={onUndo} className="mt-3 w-full cursor-pointer rounded-xl border border-background-300 px-3 py-2 text-[10px] font-bold hover:bg-background-100"><i className="ri-arrow-go-back-line mr-1" /> Undo last AI design</button>}
+          </div>
+        )}
+
+        {toolsOpen && (
+          <div className={`absolute bottom-[calc(100%-4px)] left-3 z-30 w-64 overflow-hidden rounded-2xl border p-2 shadow-2xl ${card}`} role="menu" aria-label="AI composer tools">
+            <button type="button" onClick={() => { fileInputRef.current?.click(); setToolsOpen(false); }} className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-700"><i className="ri-image-add-line" /></span><span><strong className="block text-[10px]">Upload inspiration image</strong><span className={`text-[8px] ${muted}`}>PNG, JPG or WebP · up to 10 MB</span></span></button>
+            <button type="button" onClick={() => { onModeChange("uniform"); setToolsOpen(false); }} className="mt-1 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-700"><i className="ri-shirt-line" /></span><span><strong className="block text-[10px]">Design full uniform</strong><span className={`text-[8px] ${muted}`}>Generate an editable kit concept</span></span></button>
+            <button type="button" onClick={() => { onModeChange("artwork"); setToolsOpen(false); }} className="mt-1 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-50 text-accent-600"><i className="ri-image-edit-line" /></span><span><strong className="block text-[10px]">Create transparent artwork</strong><span className={`text-[8px] ${muted}`}>Generate artwork to place on the kit</span></span></button>
+          </div>
+        )}
+
+        <div
+          onDragEnter={(event) => { event.preventDefault(); setDragging(true); }}
+          onDragOver={(event) => event.preventDefault()}
+          onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false); }}
+          onDrop={acceptDroppedFile}
+          className={`relative mx-auto max-w-xl rounded-[22px] border bg-white shadow-[0_10px_30px_rgba(31,43,35,.09)] transition ${dragging ? "border-primary-500 ring-4 ring-primary-100" : "border-background-300 focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-100"}`}
+        >
+          {dragging && <div className="absolute inset-1 z-10 flex items-center justify-center rounded-[18px] border-2 border-dashed border-primary-400 bg-primary-50/95 text-xs font-bold text-primary-800"><i className="ri-upload-cloud-2-line mr-2" /> Drop an image to use as reference</div>}
+          {reference && <div className="flex items-center gap-2 border-b border-background-200 px-3 py-2"><img src={reference.src} alt="Attached uniform reference" className="h-9 w-9 rounded-lg border border-background-200 object-cover" /><div className="min-w-0 flex-1"><strong className="block truncate text-[9px] text-foreground-700">{reference.name}</strong><span className="block text-[8px] text-foreground-400">Reference image</span></div><button type="button" onClick={onRemoveReference} className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-foreground-400 hover:bg-red-50 hover:text-red-600" aria-label="Remove reference image"><i className="ri-close-line" /></button></div>}
+          <textarea
+            ref={textareaRef}
+            value={prompt}
+            onChange={(event) => onPromptChange(event.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={isRefinement ? "Describe only what should change…" : MODE_COPY[mode].placeholder}
+            maxLength={mode === "uniform" ? 900 : 600}
+            rows={2}
+            className="block min-h-[52px] w-full resize-none overflow-y-auto rounded-t-[22px] bg-transparent px-4 pb-2 pt-3.5 text-sm leading-relaxed text-foreground-950 outline-none placeholder:text-foreground-400"
+            aria-label="Message Connect767 AI"
+          />
+          <div className="flex items-center justify-between gap-2 px-2.5 pb-2.5">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <button type="button" onClick={() => setToolsOpen((value) => !value)} className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-background-200 bg-background-50 text-foreground-700 transition hover:bg-background-100" aria-label="Add attachment or AI tool" aria-expanded={toolsOpen}><i className={toolsOpen ? "ri-close-line" : "ri-add-line"} /></button>
+              <ComposerAction icon={MODE_COPY[mode].icon} label={MODE_COPY[mode].label} onClick={() => onModeChange(mode === "uniform" ? "artwork" : "uniform")} active />
+              <button type="button" onClick={() => setSettingsOpen((value) => !value)} className="inline-flex h-9 w-9 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-background-200 bg-background-50 text-[10px] font-bold text-foreground-600 hover:bg-background-100 sm:w-auto sm:px-3"><i className="ri-equalizer-2-line" /><span className="hidden sm:inline">Controls</span></button>
+            </div>
+            {generating ? (
+              <button type="button" onClick={onStop} className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-foreground-950 text-white transition hover:bg-red-600" aria-label="Stop generating"><i className="ri-stop-fill" /></button>
+            ) : (
+              <button type="button" onClick={submit} disabled={!canSend} className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary-700 text-white shadow-sm transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:bg-background-300 disabled:text-foreground-400" aria-label="Send message"><i className="ri-arrow-up-line" /></button>
+            )}
+          </div>
+        </div>
+        <p className={`mt-2 text-center text-[8px] ${muted}`}>Enter to send · Shift + Enter for a new line · AI concepts require production review</p>
+      </div>
+    </section>
+  );
+}
