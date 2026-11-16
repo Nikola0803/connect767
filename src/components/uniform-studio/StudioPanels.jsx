@@ -954,8 +954,54 @@ export function AIArtworkPanel({
   const [applied, setApplied] = useState(false);
   const [refinementBrief, setRefinementBrief] = useState("");
   const [locks, setLocks] = useState({ collar: false, sleeve: false, colors: false, pattern: false, artwork: true });
+  const [promptHistory, setPromptHistory] = useState([]);
+  const [historyOpen, setHistoryOpen] = useState(true);
   const [error, setError] = useState("");
   const allDesignControlsLocked = locks.collar && locks.sleeve && locks.colors && locks.pattern;
+  const lockedControlCount = Object.values(locks).filter(Boolean).length;
+  const activePrompt = mode === "uniform" && uniformPlan ? refinementBrief : brief;
+  const promptHistoryKey = `connect767-ai-prompt-history:${sport || "uniform"}`;
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(window.sessionStorage.getItem(promptHistoryKey) || "[]");
+      setPromptHistory(Array.isArray(saved) ? saved.slice(0, 30) : []);
+    } catch {
+      setPromptHistory([]);
+    }
+  }, [promptHistoryKey]);
+
+  const savePrompt = ({ prompt, promptMode, kind, name, promptStyle }) => {
+    const entry = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      prompt,
+      mode: promptMode,
+      kind,
+      brandName: name,
+      style: promptStyle,
+      createdAt: new Date().toISOString(),
+    };
+    setPromptHistory((current) => {
+      const next = [entry, ...current].slice(0, 30);
+      try { window.sessionStorage.setItem(promptHistoryKey, JSON.stringify(next)); } catch { /* storage unavailable */ }
+      return next;
+    });
+    setHistoryOpen(true);
+  };
+
+  const clearPromptHistory = () => {
+    setPromptHistory([]);
+    try { window.sessionStorage.removeItem(promptHistoryKey); } catch { /* storage unavailable */ }
+  };
+
+  const reusePrompt = (entry) => {
+    setMode(entry.mode);
+    onModeChange?.(entry.mode);
+    setBrandName(entry.brandName || "");
+    setStyle(entry.style || AI_STYLES[0]);
+    if (entry.mode === "uniform" && uniformPlan) setRefinementBrief(entry.prompt);
+    else setBrief(entry.prompt);
+  };
 
   useEffect(() => {
     let active = true;
@@ -994,6 +1040,13 @@ export function AIArtworkPanel({
         src: `data:${data.mimeType || "image/png"};base64,${data.b64}`,
         name: `${brandName.trim()} AI artwork`,
       });
+      savePrompt({
+        prompt: brief.trim(),
+        promptMode: "artwork",
+        kind: "Artwork",
+        name: brandName.trim(),
+        promptStyle: style,
+      });
     } catch (generationError) {
       setError(generationError.message || "AI generation failed.");
     } finally {
@@ -1003,6 +1056,7 @@ export function AIArtworkPanel({
 
   const generateUniform = async (revision = "") => {
     const refinement = typeof revision === "string" ? revision.trim() : "";
+    const promptKind = refinement ? "Refinement" : uniformPlan ? "Variation" : "Initial";
     const effectiveBrandName = brandName.trim() || uniformPlan?.name || "Team uniform";
     const effectiveBrief = brief.trim() || uniformPlan?.summary || "Preserve the current uniform direction.";
     if (!effectiveBrandName || (!effectiveBrief && !refinement)) return;
@@ -1072,6 +1126,13 @@ export function AIArtworkPanel({
           name: `${plan.name} full uniform concept`,
         },
       });
+      savePrompt({
+        prompt: refinement || effectiveBrief,
+        promptMode: "uniform",
+        kind: promptKind,
+        name: effectiveBrandName,
+        promptStyle: style,
+      });
       if (refinement) setRefinementBrief("");
     } catch (generationError) {
       setError(generationError.message || "AI uniform design failed.");
@@ -1104,78 +1165,82 @@ export function AIArtworkPanel({
   };
 
   const preservationControls = mode === "uniform" ? (
-    <div className="rounded-xl border border-background-200 bg-white p-3">
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-foreground-500">Keep unchanged</p>
-          <p className="mt-1 text-[9px] leading-relaxed text-foreground-400">Check only what AI must preserve in the next result.</p>
+    <details className="group overflow-hidden rounded-xl border border-background-200 bg-white">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-3">
+        <span className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-background-100 text-foreground-600"><i className="ri-lock-line" /></span>
+          <span className="min-w-0">
+            <strong className="block text-[11px] text-foreground-800">Control what AI can change</strong>
+            <span className="block text-[9px] text-foreground-400">{lockedControlCount} of 5 details preserved</span>
+          </span>
+        </span>
+        <i className="ri-arrow-down-s-line text-foreground-400 transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="border-t border-background-200 p-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[9px] leading-relaxed text-foreground-400">Check only what AI must preserve in the next result.</p>
+          <button
+            type="button"
+            onClick={() => setLocks((current) => ({ ...current, collar: false, sleeve: false, colors: false, pattern: false }))}
+            className="shrink-0 cursor-pointer text-[9px] font-bold text-primary-700 hover:text-primary-900"
+          >
+            Unlock all
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setLocks((current) => ({ ...current, collar: false, sleeve: false, colors: false, pattern: false }))}
-          className="shrink-0 cursor-pointer text-[9px] font-bold text-primary-700 hover:text-primary-900"
-        >
-          Unlock design
-        </button>
-      </div>
-      {allDesignControlsLocked && (
-        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] leading-relaxed text-amber-800">
-          <strong className="block">The complete design is locked.</strong>
-          Unlock at least one visual setting to create a visible change.
+        {allDesignControlsLocked && (
+          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] leading-relaxed text-amber-800">
+            <strong className="block">The complete design is locked.</strong>
+            Unlock at least one visual setting to create a visible change.
+          </div>
+        )}
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {[
+            ["collar", "Collar"],
+            ["sleeve", "Sleeve length"],
+            ["colors", "All colors"],
+            ["pattern", "Pattern"],
+            ["artwork", "Existing artwork"],
+          ].map(([key, label]) => (
+            <label key={key} className="flex cursor-pointer items-center gap-2 rounded-lg bg-background-100 px-2.5 py-2 text-[10px] font-semibold text-foreground-600">
+              <input type="checkbox" checked={locks[key]} onChange={() => toggleLock(key)} className="accent-primary-700" />
+              {label}
+            </label>
+          ))}
         </div>
-      )}
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        {[
-          ["collar", "Collar"],
-          ["sleeve", "Sleeve length"],
-          ["colors", "All colors"],
-          ["pattern", "Pattern"],
-          ["artwork", "Existing artwork"],
-        ].map(([key, label]) => (
-          <label key={key} className="flex cursor-pointer items-center gap-2 rounded-lg bg-background-100 px-2.5 py-2 text-[10px] font-semibold text-foreground-600">
-            <input type="checkbox" checked={locks[key]} onChange={() => toggleLock(key)} className="accent-primary-700" />
-            {label}
-          </label>
-        ))}
       </div>
-    </div>
+    </details>
   ) : null;
 
   return (
     <div>
-      <div className="mb-5 rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-white p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-700 text-lg text-white shadow-sm">
-              <i className="ri-sparkling-2-fill" />
-            </span>
-            <div>
-              <h3 className="font-heading text-lg font-semibold text-foreground-950">AI Designer</h3>
-              <p className="text-[11px] text-foreground-500">Design the complete editable kit or create transparent artwork.</p>
-            </div>
-          </div>
-          <span className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-bold uppercase tracking-wide ${
-            connection === "connected" ? "bg-primary-100 text-primary-800" : "bg-amber-100 text-amber-800"
-          }`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${connection === "connected" ? "bg-primary-500" : "bg-amber-500"}`} />
-            {connection === "checking" ? "Checking" : connection === "connected" ? "Connected" : "Setup needed"}
-          </span>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-foreground-500">Create with AI</p>
+          <p className="mt-0.5 text-[11px] text-foreground-500">Prompt, preview and refine in one workspace.</p>
         </div>
+        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide ${
+          connection === "connected"
+            ? "border-primary-200 bg-primary-50 text-primary-800"
+            : "border-amber-200 bg-amber-50 text-amber-800"
+        }`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${connection === "connected" ? "bg-primary-500" : "bg-amber-500"}`} />
+          {connection === "checking" ? "Checking" : connection === "connected" ? "Ready" : "Setup needed"}
+        </span>
       </div>
 
       <div className="space-y-4">
-        <div className="grid grid-cols-2 rounded-xl border border-background-300 bg-background-100 p-1">
+        <div className="grid grid-cols-2 rounded-xl bg-background-100 p-1">
           <button
             type="button"
             onClick={() => { setMode("uniform"); onModeChange?.("uniform"); setError(""); }}
-            className={`cursor-pointer rounded-lg px-3 py-2 text-[11px] font-bold transition ${mode === "uniform" ? "bg-primary-700 text-white shadow-sm" : "text-foreground-600 hover:bg-white"}`}
+            className={`cursor-pointer rounded-lg px-3 py-2.5 text-[11px] font-bold transition ${mode === "uniform" ? "bg-white text-foreground-950 shadow-sm ring-1 ring-black/5" : "text-foreground-500 hover:text-foreground-800"}`}
           >
             <i className="ri-shirt-line mr-1.5" /> Full uniform
           </button>
           <button
             type="button"
             onClick={() => { setMode("artwork"); onModeChange?.("artwork"); setError(""); }}
-            className={`cursor-pointer rounded-lg px-3 py-2 text-[11px] font-bold transition ${mode === "artwork" ? "bg-primary-700 text-white shadow-sm" : "text-foreground-600 hover:bg-white"}`}
+            className={`cursor-pointer rounded-lg px-3 py-2.5 text-[11px] font-bold transition ${mode === "artwork" ? "bg-white text-foreground-950 shadow-sm ring-1 ring-black/5" : "text-foreground-500 hover:text-foreground-800"}`}
           >
             <i className="ri-image-edit-line mr-1.5" /> Transparent artwork
           </button>
@@ -1208,7 +1273,7 @@ export function AIArtworkPanel({
             </p>
           )}
           <textarea
-            value={mode === "uniform" && uniformPlan ? refinementBrief : brief}
+            value={activePrompt}
             onChange={(event) => {
               if (mode === "uniform" && uniformPlan) setRefinementBrief(event.target.value);
               else setBrief(event.target.value);
@@ -1220,22 +1285,71 @@ export function AIArtworkPanel({
                 : "Describe the crest, graphic, pattern or visual you want…"}
             maxLength={mode === "uniform" && uniformPlan ? 600 : mode === "uniform" ? 900 : 600}
             rows={4}
-            className={`w-full resize-none border bg-white px-3.5 py-3 text-sm text-foreground-950 outline-none transition focus:ring-2 ${
+            className={`w-full resize-none rounded-t-xl border bg-white px-3.5 py-3 text-sm text-foreground-950 outline-none transition focus:ring-2 ${
               mode === "uniform" && uniformPlan
-                ? "rounded-t-xl border-accent-200 focus:border-accent-500 focus:ring-accent-100"
-                : "rounded-xl border-background-300 focus:border-primary-500 focus:ring-primary-100"
+                ? "border-accent-200 focus:border-accent-500 focus:ring-accent-100"
+                : "border-background-300 focus:border-primary-500 focus:ring-primary-100"
             }`}
           />
-          {mode === "uniform" && uniformPlan && (
-            <button
-              type="button"
-              disabled={generating || !refinementBrief.trim()}
-              onClick={() => generateUniform(refinementBrief)}
-              className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-b-xl bg-accent-500 px-3 py-3 text-[11px] font-bold text-white transition hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              <i className={generating ? "ri-loader-4-line animate-spin" : "ri-magic-line"} />
-              {generating ? "Refining current image…" : "Refine current image"}
-            </button>
+          <button
+            type="button"
+            disabled={generating || connection !== "connected" || !activePrompt.trim() || (!brandName.trim() && !(mode === "uniform" && uniformPlan)) || (mode === "uniform" && allDesignControlsLocked)}
+            onClick={() => mode === "uniform" && uniformPlan ? generateUniform(refinementBrief) : generate()}
+            className={`inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-b-xl px-3 py-3 text-[11px] font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-45 ${
+              mode === "uniform" && uniformPlan ? "bg-accent-500 hover:bg-accent-600" : "bg-primary-700 hover:bg-primary-800"
+            }`}
+          >
+            <i className={generating ? "ri-loader-4-line animate-spin" : "ri-sparkling-2-fill"} />
+            {generating
+              ? mode === "uniform" && uniformPlan ? "Refining current image…" : mode === "uniform" ? "Designing complete kit…" : "Creating artwork…"
+              : mode === "uniform" && uniformPlan ? "Refine current image" : mode === "uniform" ? "Generate full uniform" : "Generate artwork"}
+          </button>
+        </div>
+
+        <div className="overflow-hidden rounded-xl border border-background-200 bg-white">
+          <button
+            type="button"
+            onClick={() => setHistoryOpen((current) => !current)}
+            className="flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-3 text-left"
+          >
+            <span className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-background-100 text-foreground-600"><i className="ri-history-line" /></span>
+              <span>
+                <strong className="block text-[11px] text-foreground-800">Prompt history</strong>
+                <span className="block text-[9px] text-foreground-400">Saved for this design session · {promptHistory.length} {promptHistory.length === 1 ? "prompt" : "prompts"}</span>
+              </span>
+            </span>
+            <i className={`ri-arrow-down-s-line text-foreground-400 transition-transform ${historyOpen ? "rotate-180" : ""}`} />
+          </button>
+          {historyOpen && (
+            <div className="border-t border-background-200">
+              {promptHistory.length ? (
+                <>
+                  <div className="max-h-56 space-y-2 overflow-y-auto p-2.5">
+                    {promptHistory.map((entry) => (
+                      <div key={entry.id} className="rounded-lg bg-background-50 p-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="inline-flex rounded-full bg-white px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide text-foreground-500 ring-1 ring-background-200">{entry.kind}</span>
+                          <span className="text-[8px] text-foreground-400">{new Date(entry.createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+                        </div>
+                        <p className="mt-1.5 text-[10px] leading-relaxed text-foreground-700">{entry.prompt}</p>
+                        <button type="button" onClick={() => reusePrompt(entry)} className="mt-2 cursor-pointer text-[9px] font-bold text-primary-700 hover:text-primary-900">
+                          <i className="ri-corner-up-left-line mr-1" /> Use this prompt
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button type="button" onClick={clearPromptHistory} className="w-full cursor-pointer border-t border-background-200 px-3 py-2 text-[9px] font-semibold text-foreground-400 hover:bg-background-50 hover:text-red-600">
+                    Clear session history
+                  </button>
+                </>
+              ) : (
+                <div className="px-3 py-4 text-center">
+                  <i className="ri-chat-history-line text-lg text-foreground-300" />
+                  <p className="mt-1 text-[10px] text-foreground-400">Successful prompts will appear here for review and reuse.</p>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -1344,7 +1458,7 @@ export function AIArtworkPanel({
           </div>
         )}
 
-        {mode === "artwork" && preview ? (
+        {mode === "artwork" && preview && (
           <div className="grid grid-cols-[1fr_auto] gap-2">
             <button type="button" onClick={() => onPlace(preview)} className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-primary-800">
               <i className="ri-add-circle-line" /> Place on uniform
@@ -1353,17 +1467,7 @@ export function AIArtworkPanel({
               <i className="ri-delete-bin-line" />
             </button>
           </div>
-        ) : !uniformPlan || mode === "artwork" ? (
-          <button
-            type="button"
-            disabled={generating || connection !== "connected" || !brandName.trim() || !brief.trim() || (mode === "uniform" && allDesignControlsLocked)}
-            onClick={() => generate()}
-            className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 py-3.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,116,73,0.18)] transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-45"
-          >
-            <i className={generating ? "ri-loader-4-line animate-spin" : "ri-sparkling-2-fill"} />
-            {generating ? (mode === "uniform" ? "Designing complete kit…" : "Creating artwork…") : (mode === "uniform" ? "Generate full uniform design" : "Generate AI artwork")}
-          </button>
-        ) : null}
+        )}
 
         {canUndoUniform && mode === "uniform" && (
           <button type="button" onClick={onUndoUniform} className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-background-300 bg-white px-4 py-2.5 text-xs font-bold text-foreground-700 hover:bg-background-100">
