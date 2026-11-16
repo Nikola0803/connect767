@@ -955,7 +955,7 @@ export function AIArtworkPanel({
   const [refinementBrief, setRefinementBrief] = useState("");
   const [locks, setLocks] = useState({ collar: false, sleeve: false, colors: false, pattern: false, artwork: true });
   const [promptHistory, setPromptHistory] = useState([]);
-  const [historyOpen, setHistoryOpen] = useState(true);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [error, setError] = useState("");
   const allDesignControlsLocked = locks.collar && locks.sleeve && locks.colors && locks.pattern;
   const lockedControlCount = Object.values(locks).filter(Boolean).length;
@@ -1353,54 +1353,59 @@ export function AIArtworkPanel({
           )}
         </div>
 
-        {uniformPlan && preservationControls}
-        <div>
-          <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-500">Style</label>
-          <select value={style} onChange={(event) => setStyle(event.target.value)} className="w-full rounded-xl border border-background-300 bg-white px-3.5 py-3 text-sm text-foreground-950 outline-none focus:border-primary-500">
-            {AI_STYLES.map((option) => <option key={option}>{option}</option>)}
-          </select>
-        </div>
+        {preservationControls}
 
-        {mode === "uniform" && (
-          <div>
-            <div className="mb-1.5 flex items-center justify-between gap-2">
-              <label className="block text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-500">Reference image <span className="font-medium normal-case tracking-normal text-foreground-400">(optional)</span></label>
-              {reference && <button type="button" onClick={() => { setReference(null); onUniformPlanChange?.(null); }} className="cursor-pointer text-[10px] font-bold text-foreground-500 hover:text-red-600">Remove</button>}
+        <details className="group overflow-hidden rounded-xl border border-background-200 bg-white">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-3">
+            <span className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-background-100 text-foreground-600"><i className="ri-equalizer-2-line" /></span>
+              <span>
+                <strong className="block text-[11px] text-foreground-800">Creative settings</strong>
+                <span className="block text-[9px] text-foreground-400">{style}{reference ? " · Reference added" : ""}</span>
+              </span>
+            </span>
+            <i className="ri-arrow-down-s-line text-foreground-400 transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="space-y-3 border-t border-background-200 p-3">
+            <div>
+              <label className="mb-1.5 block text-[9px] font-bold uppercase tracking-[0.14em] text-foreground-500">Style</label>
+              <select value={style} onChange={(event) => setStyle(event.target.value)} className="w-full rounded-lg border border-background-300 bg-white px-3 py-2.5 text-[11px] text-foreground-950 outline-none focus:border-primary-500">
+                {AI_STYLES.map((option) => <option key={option}>{option}</option>)}
+              </select>
             </div>
-            {reference ? (
-              <div className="relative overflow-hidden rounded-xl border border-primary-200 bg-background-100">
-                <img src={reference.src} alt="Uniform design reference" className="h-36 w-full object-contain" />
-                <div className="border-t border-primary-100 bg-white px-3 py-2 text-[10px] text-foreground-600">
-                  <i className="ri-image-line mr-1 text-primary-700" /> {reference.name}
+
+            {mode === "uniform" && (
+              <div>
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <label className="block text-[9px] font-bold uppercase tracking-[0.14em] text-foreground-500">Reference image <span className="font-medium normal-case tracking-normal text-foreground-400">(optional)</span></label>
+                  {reference && <button type="button" onClick={() => { setReference(null); onUniformPlanChange?.(null); }} className="cursor-pointer text-[9px] font-bold text-foreground-500 hover:text-red-600">Remove</button>}
                 </div>
+                {reference ? (
+                  <div className="relative overflow-hidden rounded-lg border border-primary-200 bg-background-100">
+                    <img src={reference.src} alt="Uniform design reference" className="h-28 w-full object-contain" />
+                    <div className="border-t border-primary-100 bg-white px-3 py-2 text-[9px] text-foreground-600">
+                      <i className="ri-image-line mr-1 text-primary-700" /> {reference.name}
+                    </div>
+                  </div>
+                ) : (
+                  <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-background-300 bg-background-50 px-3 py-3 transition hover:border-primary-400 hover:bg-primary-50/40">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-foreground-500"><i className="ri-image-add-line" /></span>
+                    <span className="min-w-0">
+                      <strong className="block text-[10px] text-foreground-800">Add inspiration image</strong>
+                      <span className="block text-[8px] leading-relaxed text-foreground-500">Guide the next AI result.</span>
+                    </span>
+                    <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={chooseReference} />
+                  </label>
+                )}
               </div>
-            ) : (
-              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-background-300 bg-white px-3 py-3 transition hover:border-primary-400 hover:bg-primary-50/40">
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-background-100 text-lg text-foreground-500"><i className="ri-image-add-line" /></span>
-                <span className="min-w-0">
-                  <strong className="block text-[11px] text-foreground-800">Use a uniform inspiration image</strong>
-                  <span className="block text-[9px] leading-relaxed text-foreground-500">AI follows its visual direction while keeping every result editable.</span>
-                </span>
-                <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={chooseReference} />
-              </label>
             )}
           </div>
-        )}
-
-        {!uniformPlan && preservationControls}
-
-        <div className="flex items-center justify-between rounded-xl border border-background-200 bg-background-100 px-3 py-2.5">
-          <span className="text-[11px] font-semibold text-foreground-600">Uses current uniform colors</span>
-          <div className="flex items-center gap-1.5">
-            <span className="h-6 w-6 rounded-full border border-black/10" style={{ background: colors.body }} />
-            <span className="h-6 w-6 rounded-full border border-black/10" style={{ background: colors.shirtStrip }} />
-          </div>
-        </div>
+        </details>
 
         {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">{error}</p>}
 
         {mode === "uniform" && uniformPlan && (
-          <div className="space-y-3 rounded-2xl border border-primary-200 bg-white p-4 shadow-sm">
+          <div className="space-y-3 rounded-2xl border border-primary-200 bg-white p-3.5 shadow-sm">
             <div>
               <div className="flex items-center justify-between gap-2">
                 <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-primary-700">Current AI design</p>
@@ -1408,6 +1413,14 @@ export function AIArtworkPanel({
               </div>
               <h4 className="mt-1 font-heading text-lg font-semibold text-foreground-950">{uniformPlan.name}</h4>
               <p className="mt-1 text-[11px] leading-relaxed text-foreground-500">{uniformPlan.summary}</p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button type="button" onClick={applyUniform} className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-primary-700 px-3 py-2.5 text-[10px] font-bold text-white hover:bg-primary-800">
+                  <i className={applied ? "ri-check-double-line" : "ri-check-line"} /> {applied ? "Applied" : "Apply design"}
+                </button>
+                <button type="button" disabled={generating} onClick={() => generateUniform()} className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-background-300 bg-white px-3 py-2.5 text-[10px] font-bold text-foreground-700 hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-50">
+                  <i className={generating ? "ri-loader-4-line animate-spin" : "ri-refresh-line"} /> {generating ? "Designing…" : "New direction"}
+                </button>
+              </div>
             </div>
             <details className="group rounded-xl border border-background-200 bg-background-50">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 text-[10px] font-bold text-foreground-700">
@@ -1443,12 +1456,6 @@ export function AIArtworkPanel({
                 <span className="mt-1 block font-bold">Open in Transparent artwork →</span>
               </button>
             )}
-            <button type="button" onClick={applyUniform} className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 py-3 text-sm font-bold text-white hover:bg-primary-800">
-              <i className={applied ? "ri-check-double-line" : "ri-magic-line"} /> {applied ? "Design applied — apply again" : "Apply full design"}
-            </button>
-            <button type="button" disabled={generating} onClick={() => generateUniform()} className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-background-300 bg-white px-4 py-2.5 text-xs font-bold text-foreground-700 hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-50">
-              <i className={generating ? "ri-loader-4-line animate-spin" : "ri-refresh-line"} /> {generating ? "Designing…" : "Generate another direction"}
-            </button>
           </div>
         )}
 
