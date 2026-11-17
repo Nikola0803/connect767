@@ -337,6 +337,19 @@ export default function UniformStudioPage() {
     aiConceptDragRef.current = null;
   };
 
+  const switchAICanvasMode = (mode) => {
+    setAiCanvasMode(mode);
+    setStageMode("edit");
+    // The generated image can be inspected at up to 400%, while the editable
+    // production map tops out at 140%. Carrying either view's zoom into the
+    // other made the map rise underneath the fixed workspace rows. Each mode
+    // now opens fitted and owns its transform state independently.
+    setZoom(1);
+    setAiConceptRotation(0);
+    setAiConceptPan({ x: 0, y: 0 });
+    aiConceptDragRef.current = null;
+  };
+
   const setClampedZoom = (nextZoom) => {
     const maximum = showingAIConcept ? 4 : 1.4;
     const value = typeof nextZoom === "function" ? nextZoom(zoom) : nextZoom;
@@ -1643,7 +1656,7 @@ export default function UniformStudioPage() {
 
       <nav
         aria-label="Uniform order progress"
-        className="flex-shrink-0 border-b border-white/[0.06] bg-[#12130f] px-3 py-2.5 sm:px-5"
+        className="relative z-30 flex-shrink-0 border-b border-white/[0.06] bg-[#12130f] px-3 py-2.5 sm:px-5"
       >
         <div className="mx-auto flex max-w-6xl items-center gap-1.5 overflow-x-auto py-0.5">
           {studioWorkflow.map((step, index) => {
@@ -1780,7 +1793,7 @@ export default function UniformStudioPage() {
                   {/* Canvas */}
                   <div className={`flex min-w-0 flex-1 flex-col items-center overflow-hidden ${activeTool === "ai" ? "gap-2 px-2 py-2 md:px-3 xl:px-4" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
                     {/* Unified 2D workspace toolbar — view, AI state and canvas controls share one non-overlapping row. */}
-                    <div className={`relative z-10 flex w-full flex-shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-white/[0.07] bg-black/15 px-2 py-1.5 ${activeTool === "ai" ? "max-w-none" : "max-w-6xl"}`}>
+                    <div className={`relative z-20 flex w-full flex-shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-white/[0.07] bg-[#10120f] px-2 py-1.5 shadow-[0_8px_22px_rgba(0,0,0,.24)] ${activeTool === "ai" ? "max-w-none" : "max-w-6xl"}`}>
                       <div className="flex min-w-0 flex-1 items-center gap-2">
                         {activeTool !== "ai" && (
                           <div className="hidden min-w-0 items-center gap-1.5 text-background-50/55 md:flex">
@@ -1811,14 +1824,14 @@ export default function UniformStudioPage() {
                             <div className="inline-flex rounded-md border border-white/10 bg-black/20 p-0.5">
                               <button
                                 type="button"
-                                onClick={() => { setAiCanvasMode("concept"); setStageMode("edit"); }}
+                                onClick={() => switchAICanvasMode("concept")}
                                 className={`cursor-pointer rounded px-2 py-1 text-[8px] font-bold transition ${aiCanvasMode === "concept" ? "bg-accent-500 text-white" : "text-white/55 hover:text-white"}`}
                               >
                                 AI output
                               </button>
                               <button
                                 type="button"
-                                onClick={() => { setAiCanvasMode("production"); setStageMode("edit"); }}
+                                onClick={() => switchAICanvasMode("production")}
                                 className={`cursor-pointer rounded px-2 py-1 text-[8px] font-bold transition ${aiCanvasMode === "production" ? "bg-primary-500 text-white" : "text-white/55 hover:text-white"}`}
                               >
                                 Production map
@@ -1999,7 +2012,7 @@ export default function UniformStudioPage() {
                         </div>
                       </div>
                     ) : stageMode === "edit" ? (
-                      <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center gap-2">
+                      <div className="relative z-0 flex min-h-0 w-full flex-1 flex-col items-center justify-start gap-2 overflow-hidden pt-1">
                         <div
                           className={`w-full transition-transform ${activeTool === "ai" ? "max-w-[min(100%,1280px)]" : "max-w-[800px]"}`}
                           style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}
