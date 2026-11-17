@@ -15,6 +15,7 @@ import {
   isStudioHex,
 } from "./studioBackgrounds";
 import AIUniformComposer from "./AIUniformComposer";
+import CollarAttachment from "./CollarAttachment";
 
 /** #rrggbb → {r,g,b}, tolerating a missing leading hash. */
 function hexToRgb(hex) {
@@ -672,6 +673,7 @@ export function StudioBackgroundPanel({
 export function OptionsPanel({
   fitType, setFitType, kitType, setKitType, logoApplication, setLogoApplication,
   insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText,
+  insideCollarAttachment, setInsideCollarAttachment,
 }) {
   return (
     <div>
@@ -775,6 +777,7 @@ export function OptionsPanel({
           ))}
         </div>
         {insideCollarMessage && (
+          <>
           <input
             type="text"
             placeholder="Message for the inside collar"
@@ -782,6 +785,8 @@ export function OptionsPanel({
             onChange={(e) => setInsideCollarText(e.target.value)}
             className="w-full px-3 py-2 text-sm rounded-lg border border-background-300 bg-background-50 text-foreground-950 placeholder-foreground-400 focus:outline-none focus:border-primary-400 font-label"
           />
+          <CollarAttachment attachment={insideCollarAttachment} onChange={setInsideCollarAttachment} />
+          </>
         )}
       </div>
       <p className="text-[11px] text-foreground-500 font-label pt-2">

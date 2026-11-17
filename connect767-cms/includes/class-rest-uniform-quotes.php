@@ -70,6 +70,11 @@ class C767_REST_Uniform_Quotes
         }
 
         $contact = self::sanitize_contact($request->get_param('contact'));
+        $collar_attachment = rest_sanitize_boolean($request->get_param('insideCollarMessage'))
+            ? self::sanitize_collar_attachment($request->get_param('insideCollarAttachment')) : null;
+        if ($collar_attachment) {
+            update_post_meta($post_id, 'inside_collar_attachment', $collar_attachment);
+        }
 
         $payload = [
             'template' => $template,
@@ -81,6 +86,7 @@ class C767_REST_Uniform_Quotes
             'logoApplication' => sanitize_text_field((string) $request->get_param('logoApplication')),
             'insideCollarMessage' => rest_sanitize_boolean($request->get_param('insideCollarMessage')),
             'insideCollarText' => sanitize_text_field((string) $request->get_param('insideCollarText')),
+            'insideCollarAttachment' => $collar_attachment ? array_diff_key($collar_attachment, ['src' => true]) : null,
             'fanJerseyAdded' => rest_sanitize_boolean($request->get_param('fanJerseyAdded')),
             'supporterJerseys' => self::sanitize_supporter_jerseys($request->get_param('supporterJerseys')),
             'unitPrice' => round((float) $request->get_param('unitPrice'), 2),
@@ -187,6 +193,22 @@ class C767_REST_Uniform_Quotes
      * meta. Email is validated rather than merely escaped — an unusable
      * address defeats the whole point of collecting it.
      */
+    public static function sanitize_collar_attachment($value)
+    {
+        if (!is_array($value)) return null;
+        $src = (string) ($value['src'] ?? '');
+        if (strlen($src) > 2800000 || !preg_match('#^data:(image/png|image/jpeg|image/webp|application/pdf);base64,([A-Za-z0-9+/=]+)$#D', $src, $matches)) return null;
+        $bytes = base64_decode($matches[2], true);
+        if ($bytes === false || strlen($bytes) === 0 || strlen($bytes) > 2097152) return null;
+        if ($matches[1] === 'application/pdf') {
+            if (strpos($bytes, '%PDF-') !== 0) return null;
+        } else {
+            $image = @getimagesizefromstring($bytes);
+            if (!$image || ($image['mime'] ?? '') !== $matches[1]) return null;
+        }
+        return ['name' => sanitize_file_name((string) ($value['name'] ?? 'collar-artwork')), 'type' => $matches[1], 'size' => strlen($bytes), 'src' => $src];
+    }
+
     private static function sanitize_contact($value)
     {
         $in = (array) $value;

@@ -418,6 +418,7 @@ export default function UniformStudioPage() {
   const [logoApplication, setLogoApplication] = useState("Sublimated");
   const [insideCollarMessage, setInsideCollarMessage] = useState(false);
   const [insideCollarText, setInsideCollarText] = useState("");
+  const [insideCollarAttachment, setInsideCollarAttachment] = useState(null);
   const [fanJerseyAdded, setFanJerseyAdded] = useState(false);
   const [supporterJerseys, setSupporterJerseys] = useState([newSupporterJersey()]);
 
@@ -599,6 +600,7 @@ export default function UniformStudioPage() {
           logoApplication,
           insideCollarMessage,
           insideCollarText,
+          insideCollarAttachment,
           fanJerseyAdded,
           supporterJerseys,
           roster,
@@ -615,7 +617,7 @@ export default function UniformStudioPage() {
          no worse than before this existed */
     }
   }, [storageKey, layers, placements3d, colors, studioBackground, collar, sleeve, zoneModel, zoneStyles, twoTone,
-    fitType, kitType, logoApplication, insideCollarMessage, insideCollarText, fanJerseyAdded, supporterJerseys, roster, contact, shipping,
+    fitType, kitType, logoApplication, insideCollarMessage, insideCollarText, insideCollarAttachment, fanJerseyAdded, supporterJerseys, roster, contact, shipping,
     aiUniformPlan, aiWorkspaceConcept, aiDesignApplied]);
 
   const saveProgress = () => {
@@ -638,6 +640,7 @@ export default function UniformStudioPage() {
           logoApplication,
           insideCollarMessage,
           insideCollarText,
+          insideCollarAttachment,
           fanJerseyAdded,
           supporterJerseys,
           roster,
@@ -679,6 +682,7 @@ export default function UniformStudioPage() {
       if (saved.logoApplication) setLogoApplication(saved.logoApplication);
       if (typeof saved.insideCollarMessage === "boolean") setInsideCollarMessage(saved.insideCollarMessage);
       if (typeof saved.insideCollarText === "string") setInsideCollarText(saved.insideCollarText);
+      if (saved.insideCollarAttachment?.src) setInsideCollarAttachment(saved.insideCollarAttachment);
       if (typeof saved.fanJerseyAdded === "boolean") setFanJerseyAdded(saved.fanJerseyAdded);
       if (Array.isArray(saved.supporterJerseys) && saved.supporterJerseys.length) setSupporterJerseys(saved.supporterJerseys);
       if (Array.isArray(saved.roster)) setRoster(saved.roster);
@@ -1325,6 +1329,7 @@ export default function UniformStudioPage() {
       logoApplication,
       insideCollarMessage,
       insideCollarText,
+      insideCollarAttachment: insideCollarMessage ? insideCollarAttachment : null,
       fanJerseyAdded,
       supporterJerseys: fanJerseyAdded ? supporterJerseys : [],
       unitPrice,
@@ -2260,6 +2265,8 @@ export default function UniformStudioPage() {
                     setInsideCollarMessage={setInsideCollarMessage}
                     insideCollarText={insideCollarText}
                     setInsideCollarText={setInsideCollarText}
+                    insideCollarAttachment={insideCollarAttachment}
+                    setInsideCollarAttachment={setInsideCollarAttachment}
                   />
                 )}
                 {activeTool === "roster" && (
@@ -2409,6 +2416,8 @@ export default function UniformStudioPage() {
             setInsideCollarMessage={setInsideCollarMessage}
             insideCollarText={insideCollarText}
             setInsideCollarText={setInsideCollarText}
+            insideCollarAttachment={insideCollarAttachment}
+            setInsideCollarAttachment={setInsideCollarAttachment}
           />
         )}
         {activeTool === "roster" && (
