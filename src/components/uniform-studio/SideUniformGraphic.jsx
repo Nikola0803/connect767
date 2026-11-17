@@ -69,6 +69,9 @@ export default function SideUniformGraphic({
   colors = {},
   garmentPattern,
   highlightZone = null,
+  side = "right",
+  focus = "full",
+  viewKey = "side",
 }) {
   const uid = useId().replaceAll(":", "");
   const maskId = `approved-side-${uid}`;
@@ -90,15 +93,18 @@ export default function SideUniformGraphic({
       && garmentPattern.key !== "none"
       && (!garmentPattern.view || ["side", "both", "all"].includes(garmentPattern.view)),
   );
+  const sleeveCropHeight = Math.min(height, Math.max(region.bottomStart + 90, height * 0.44));
 
   return (
     <svg
-      data-uniform-view="side"
-      viewBox={`0 0 ${width} ${height}`}
+      data-uniform-view={viewKey}
+      data-sleeve-side={focus === "sleeve" ? side : undefined}
+      viewBox={focus === "sleeve" ? `0 0 ${width} ${sleeveCropHeight}` : `0 0 ${width} ${height}`}
       preserveAspectRatio="xMidYMid meet"
       className="h-full w-full overflow-hidden"
+      style={{ transform: side === "left" ? "scaleX(-1)" : undefined }}
       role="img"
-      aria-label={`${sport} complete uniform side`}
+      aria-label={focus === "sleeve" ? `${sport} ${side} sleeve` : `${sport} complete uniform side`}
     >
       <defs>
         <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width={width} height={height} style={{ maskType: "alpha" }}>
