@@ -112,17 +112,18 @@ function ColorRow({ label, value, onChange, zone, onHoverZone }) {
             <button
               key={c}
               type="button"
-              aria-label={c}
+              aria-label={`Set ${label} to ${c}`}
+              aria-pressed={value.toLowerCase() === c.toLowerCase()}
               onClick={() => {
                 setBase(c);
                 setShade(0);
                 onChange(c);
               }}
-              className="relative w-7 h-7 rounded-full cursor-pointer shadow-sm ring-1 ring-black/5 transition-transform hover:scale-110"
+              className="relative h-8 w-8 rounded-lg cursor-pointer ring-1 ring-black/10 transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-500"
               style={{ backgroundColor: c }}
             >
-              {value === c && (
-                <span className="absolute inset-0 rounded-full ring-2 ring-offset-2 ring-primary-500" />
+              {value.toLowerCase() === c.toLowerCase() && (
+                <span className="absolute inset-0 rounded-lg ring-2 ring-offset-2 ring-primary-500" />
               )}
             </button>
           ))}
@@ -186,6 +187,7 @@ function ColorRow({ label, value, onChange, zone, onHoverZone }) {
 }
 
 export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, colors, setColors, onHoverZone, twoTone, setTwoTone }) {
+  const [selectedColorZone, setSelectedColorZone] = useState(null);
   const setZone = (zone) => (color) => {
     setColors((current) => ({
       ...current,
@@ -209,11 +211,18 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
       shorts: enabled ? twoTone.colorB : current.body,
     }));
   };
-  const setLowerColour = (color) => {
-    setTwoTone((current) => ({ ...current, enabled: true, colorB: color, splitAt: 0.5, softness: 0.005 }));
-    setColors((current) => ({ ...current, shorts: color }));
-  };
   const config = sportConfigFor(sport);
+  const colorZones = [
+    { key: "body", label: "Shirt body" },
+    { key: "collar", label: "Collar" },
+    ...(config.sleeveOptions ? [{ key: "sleeve", label: "Sleeve" }] : []),
+    { key: "shorts", label: config.bottomLabel },
+    ...(config.hasSocks ? [{ key: "socks", label: "Socks" }] : []),
+    { key: "shirtStrip", label: "Shirt ends" },
+    ...(config.sleeveOptions ? [{ key: "sleeveStrip", label: "Sleeve ends" }] : []),
+    { key: "shortsStrip", label: `${config.bottomLabel} ends` },
+  ];
+  const activeColorZone = colorZones.find((zone) => zone.key === selectedColorZone);
 
   return (
     <div>
@@ -270,26 +279,7 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
 
           {twoTone.enabled && (
             <div className="mb-6 pl-1">
-              <span className="block text-xs font-semibold text-foreground-800 mb-2">
-                Shorts / lower colour
-              </span>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {zoneColorPalette.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    aria-label={`Shorts or lower colour ${c}`}
-                    onClick={() => setLowerColour(c)}
-                    className={`relative w-7 h-7 rounded-full cursor-pointer shadow-sm ring-1 ring-black/5 transition-transform hover:scale-110 ${
-                      twoTone.colorB === c ? "ring-2 ring-offset-2 ring-primary-500" : ""
-                    }`}
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-              </div>
-              <p className="rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-[11px] leading-relaxed text-primary-900">
-                Shirt: <strong>{colors.body.toUpperCase()}</strong> · {config.bottomLabel}: <strong>{colors.shorts.toUpperCase()}</strong>
-              </p>
+              <button type="button" onClick={() => setSelectedColorZone("shorts")} className="cursor-pointer text-xs font-semibold text-primary-700 hover:underline">Edit {config.bottomLabel.toLowerCase()} color below <i className="ri-arrow-down-line" aria-hidden="true" /></button>
             </div>
           )}
         </>
@@ -298,74 +288,21 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
       <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400 mb-4 pt-2 border-t border-background-200/70">
         Garment colors
       </h3>
-      <ColorRow
-        label="Collar"
-        value={colors.collar}
-        onChange={setZone("collar")}
-        zone="collar"
-        onHoverZone={onHoverZone}
-      />
-      <ColorRow
-        label="Shirt (body)"
-        value={colors.body}
-        onChange={setZone("body")}
-        zone="body"
-        onHoverZone={onHoverZone}
-      />
-      {config.sleeveOptions && (
-        <ColorRow
-          label="Sleeve"
-          value={colors.sleeve}
-          onChange={setZone("sleeve")}
-          zone="sleeve"
-          onHoverZone={onHoverZone}
-        />
-      )}
-      <ColorRow
-        label={config.bottomLabel}
-        value={colors.shorts}
-        onChange={setZone("shorts")}
-        zone="shorts"
-        onHoverZone={onHoverZone}
-      />
-      {config.hasSocks && (
-        <>
-          <ColorRow
-            label="Socks"
-            value={colors.socks}
-            onChange={setZone("socks")}
-            zone="socks"
-            onHoverZone={onHoverZone}
-          />
-        </>
-      )}
-
-      <ColorRow
-        label="Shirt ends"
-        value={colors.shirtStrip}
-        onChange={setZone("shirtStrip")}
-        zone="shirtStrip"
-        onHoverZone={onHoverZone}
-      />
-      {config.sleeveOptions && (
-        <ColorRow
-          label="Sleeve ends"
-          value={colors.sleeveStrip}
-          onChange={setZone("sleeveStrip")}
-          zone="sleeveStrip"
-          onHoverZone={onHoverZone}
-        />
-      )}
-      <ColorRow
-        label={`${config.bottomLabel} ends`}
-        value={colors.shortsStrip}
-        onChange={setZone("shortsStrip")}
-        zone="shortsStrip"
-        onHoverZone={onHoverZone}
-      />
-      <p className="text-[11px] text-foreground-500 font-label -mt-3">
-        Each color maps to one named garment part. No hidden side-panel color is applied.
-      </p>
+      <div className="grid grid-cols-2 gap-2 mb-4" role="group" aria-label="Garment part colors">
+        {colorZones.map((zone) => <button key={zone.key} type="button" aria-pressed={activeColorZone?.key === zone.key}
+          onClick={() => setSelectedColorZone(zone.key)}
+          onMouseEnter={() => onHoverZone?.(zone.key)} onMouseLeave={() => onHoverZone?.(null)}
+          onFocus={() => onHoverZone?.(zone.key)} onBlur={() => onHoverZone?.(null)}
+          className={`flex min-w-0 cursor-pointer items-center gap-2.5 rounded-xl border p-2.5 text-left transition focus-visible:outline-2 focus-visible:outline-primary-500 ${activeColorZone?.key === zone.key ? "border-primary-500 bg-primary-50" : "border-background-200 bg-background-50 hover:border-primary-300"}`}>
+          <span className="h-8 w-8 shrink-0 rounded-lg border border-black/10" style={{ backgroundColor: colors[zone.key] }} aria-hidden="true" />
+          <span className="min-w-0"><span className="block text-xs font-semibold text-foreground-800">{zone.label}</span><span className="block font-mono text-[10px] uppercase text-foreground-500">{colors[zone.key]}</span></span>
+        </button>)}
+      </div>
+      {activeColorZone && <div className="rounded-2xl border border-background-200 bg-background-50 px-4 pt-3 pb-1">
+        <div className="mb-2 flex items-center justify-between gap-2"><p className="text-[10px] font-semibold uppercase tracking-wider text-foreground-400">Editing selected part</p><button type="button" onClick={() => setSelectedColorZone(null)} aria-label="Close color palette" className="cursor-pointer rounded px-2 py-1 text-xs font-semibold text-foreground-600 hover:bg-background-100">Done</button></div>
+        <ColorRow key={activeColorZone.key} label={activeColorZone.label} value={colors[activeColorZone.key]} onChange={setZone(activeColorZone.key)} zone={activeColorZone.key} onHoverZone={onHoverZone} />
+      </div>}
+      <p className="mt-3 text-[11px] text-foreground-500 font-label">Select a part, then choose a palette or custom color.</p>
     </div>
   );
 }
