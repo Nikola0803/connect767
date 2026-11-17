@@ -948,6 +948,7 @@ export function AIArtworkPanel({
   onApplyUniform,
   onUndoUniform,
   canUndoUniform = false,
+  hasExistingArtwork = false,
   composerVariant = "unified",
 }) {
   const [mode, setMode] = useState("uniform");
@@ -960,7 +961,7 @@ export function AIArtworkPanel({
   const [reference, setReference] = useState(null);
   const [applied, setApplied] = useState(false);
   const [refinementBrief, setRefinementBrief] = useState("");
-  const [locks, setLocks] = useState({ collar: false, sleeve: false, colors: false, pattern: false, artwork: true });
+  const [locks, setLocks] = useState({ collar: false, sleeve: false, colors: false, pattern: false, artwork: hasExistingArtwork });
   const [promptHistory, setPromptHistory] = useState([]);
   const [archivedPrompts, setArchivedPrompts] = useState([]);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -971,6 +972,12 @@ export function AIArtworkPanel({
   const activePrompt = mode === "uniform" && uniformPlan ? refinementBrief : brief;
   const promptHistoryKey = `connect767-ai-prompt-history:${sport || "uniform"}`;
   const promptArchiveKey = `connect767-ai-prompt-archive:${sport || "uniform"}`;
+
+  useEffect(() => {
+    if (hasExistingArtwork) {
+      setLocks((current) => current.artwork ? current : { ...current, artwork: true });
+    }
+  }, [hasExistingArtwork]);
 
   useEffect(() => {
     try {
@@ -1123,7 +1130,8 @@ export function AIArtworkPanel({
       const data = await response.json();
       if (!response.ok || !data.plan) throw new Error(data.error || "AI uniform design failed.");
       const plan = data.plan;
-      const conceptResponse = await fetch("/api/generate-design", {
+      const artworkElement = plan.productionElements?.find((element) => element.kind === "artwork");
+      const conceptRequest = fetch("/api/generate-design", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: generationControllerRef.current.signal,
@@ -1147,12 +1155,48 @@ export function AIArtworkPanel({
           referenceImage: existingConcept,
         }),
       });
+      const artworkRequest = artworkElement
+        ? fetch("/api/generate-design", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            signal: generationControllerRef.current.signal,
+            body: JSON.stringify({
+              productType: "Jersey",
+              style,
+              brandName: effectiveBrandName,
+              primaryColor: plan.colors.body,
+              secondaryColor: plan.colors.shirtStrip,
+              generationMode: "artwork",
+              sport,
+              notes: artworkElement.content,
+            }),
+          })
+        : Promise.resolve(null);
+      const [conceptResponse, artworkResponse] = await Promise.all([conceptRequest, artworkRequest]);
       const conceptData = await conceptResponse.json();
       if (!conceptResponse.ok || !conceptData.b64) {
         throw new Error(conceptData.error || "The editable design was created, but its full-uniform preview could not be rendered.");
       }
+      let productionElements = plan.productionElements || [];
+      if (artworkResponse) {
+        const artworkData = await artworkResponse.json();
+        if (!artworkResponse.ok || !artworkData.b64) {
+          throw new Error(artworkData.error || "The uniform was created, but its editable crest could not be rendered.");
+        }
+        let artworkAttached = false;
+        productionElements = productionElements.map((element) => {
+          if (element.kind !== "artwork" || artworkAttached) return element;
+          artworkAttached = true;
+          return {
+            ...element,
+            src: `data:${artworkData.mimeType || "image/png"};base64,${artworkData.b64}`,
+            name: `${effectiveBrandName} production artwork`,
+          };
+        });
+      }
       onUniformPlanChange?.({
         ...plan,
+        productionElements,
         conceptImage: {
           src: `data:${conceptData.mimeType || "image/png"};base64,${conceptData.b64}`,
           name: `${plan.name} full uniform concept`,

@@ -51,6 +51,11 @@ const upstreamPlan = {
   },
   pattern: { enabled: true, key: "diagonal", view: "both" },
   crestSuggestion: "A circular Island FC crest with a wave and football.",
+  productionElements: [
+    { kind: "artwork", content: "A circular Island FC crest with a wave and football.", view: "front", x: 35, y: 30, size: 18, rotation: 0, color: "#FFFFFF" },
+    { kind: "text", content: "ISLAND FC", view: "front", x: 50, y: 46, size: 14, rotation: 0, color: "#FFFFFF" },
+    { kind: "text", content: "10", view: "back", x: 50, y: 44, size: 22, rotation: 0, color: "#FFFFFF" },
+  ],
 };
 
 describe("AI full-uniform design endpoint", () => {
@@ -99,6 +104,7 @@ describe("AI full-uniform design endpoint", () => {
     expect(plan.sleeve).toBe("Short");
     expect(plan.colors).toEqual(input.current.colors);
     expect(plan.crestSuggestion).toBe("");
+    expect(plan.productionElements).toEqual([]);
   });
 
   it("reports configuration without exposing the key", async () => {
@@ -115,17 +121,39 @@ describe("AI full-uniform design endpoint", () => {
       json: async () => ({ output: [{ content: [{ type: "output_text", text: JSON.stringify(upstreamPlan) }] }] }),
     }));
     const res = response();
-    await handler(request("POST", validRequest), res);
+    await handler(request("POST", {
+      ...validRequest,
+      locks: { ...validRequest.locks, artwork: false },
+    }), res);
 
     expect(res.statusCode).toBe(200);
     expect(res.payload.plan).toMatchObject({ collar: "V-Neck", sleeve: "Short" });
     expect(res.payload.plan.colors.socks).toBe("#064C35");
+    expect(res.payload.plan.productionElements).toHaveLength(3);
     const [url, options] = fetch.mock.calls[0];
     const body = JSON.parse(options.body);
     expect(url).toBe("https://api.openai.com/v1/responses");
     expect(body.text.format).toMatchObject({ type: "json_schema", name: "uniform_design_plan", strict: true });
     expect(body.safety_identifier).toMatch(/^[a-f0-9]{64}$/);
     expect(options.headers.Authorization).toBe("Bearer test-only-key");
+  });
+
+  it("normalizes editable text and artwork production elements", () => {
+    const input = normalizeUniformRequest({
+      ...validRequest,
+      locks: { ...validRequest.locks, artwork: false },
+    });
+    const plan = normalizeUniformPlan({
+      ...upstreamPlan,
+      productionElements: [
+        ...upstreamPlan.productionElements,
+        { kind: "artwork", content: "A second crest", view: "front", x: 200, y: -10, size: 100, rotation: 400, color: "invalid" },
+      ],
+    }, input);
+
+    expect(plan.productionElements).toHaveLength(3);
+    expect(plan.productionElements[0]).toMatchObject({ kind: "artwork", x: 35, y: 30, size: 18 });
+    expect(plan.productionElements[1]).toMatchObject({ kind: "text", content: "ISLAND FC" });
   });
 
   it("sends an uploaded inspiration image as multimodal model input", async () => {
