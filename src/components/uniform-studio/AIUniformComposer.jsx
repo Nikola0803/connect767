@@ -16,9 +16,9 @@ const MODE_COPY = {
 function AIBrand({ compact = false }) {
   return (
     <img
-      src="/connect767-ai-logo.png"
+      src="/connect767-ai-logo-transparent.png"
       alt="Connect767 AI"
-      className={`${compact ? "h-4" : "h-7"} w-auto rounded-md object-contain`}
+      className={`${compact ? "h-4" : "h-7"} w-auto bg-transparent object-contain`}
     />
   );
 }
@@ -43,9 +43,9 @@ function EmptyConversation({ dark }) {
   return (
     <div className="mx-auto flex h-full max-w-sm flex-col items-center justify-center px-5 py-8 text-center">
       <img
-        src="/connect767-ai-logo.png"
+        src="/connect767-ai-logo-transparent.png"
         alt="Connect767 AI"
-        className="h-16 w-16 rounded-2xl object-cover shadow-[0_12px_30px_rgba(0,116,73,.2)]"
+        className="h-16 w-16 bg-transparent object-contain"
       />
       <h3 className={`mt-4 flex items-center justify-center gap-1.5 font-heading text-xl font-semibold ${dark ? "text-white" : "text-foreground-950"}`}>
         <span>Design with</span> <AIBrand />
