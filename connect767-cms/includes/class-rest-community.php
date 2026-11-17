@@ -219,6 +219,71 @@ class C767_REST_Community
         update_post_meta($post_id, '_c767_social_reactions_migrated', 1);
     }
 
+    /** Create one in-app and email notification per mentioned listing owner. */
+    private static function notify_mentioned_owners($mentions, $post_id, $actor_user_id, $actor_listing)
+    {
+        $recipients = [];
+        $mentions_everyone = false;
+
+        foreach ((array) $mentions as $mention) {
+            if (sanitize_key((string) ($mention['slug'] ?? '')) === 'everyone') {
+                $mentions_everyone = true;
+                continue;
+            }
+            $mentioned_listing = get_post((int) ($mention['id'] ?? 0));
+            if ($mentioned_listing && $mentioned_listing->post_type === 'listing') {
+                $recipients[(int) $mentioned_listing->post_author] = (int) $mentioned_listing->ID;
+            }
+        }
+
+        if ($mentions_everyone) {
+            $listing_ids = get_posts([
+                'post_type' => 'listing',
+                'post_status' => 'publish',
+                'posts_per_page' => -1,
+                'fields' => 'ids',
+                'no_found_rows' => true,
+            ]);
+            foreach ((array) $listing_ids as $listing_id) {
+                $listing = get_post((int) $listing_id);
+                if ($listing) {
+                    $recipients[(int) $listing->post_author] = (int) $listing->ID;
+                }
+            }
+        }
+
+        unset($recipients[(int) $actor_user_id]);
+        $actor_listing_title = sanitize_text_field(get_the_title($actor_listing));
+        $everyone_email_key = 'c767_everyone_email_' . (int) $actor_user_id;
+        $send_everyone_email = !$mentions_everyone || !get_transient($everyone_email_key);
+        foreach ($recipients as $recipient_user_id => $mentioned_listing_id) {
+            C767_Social_Database::notify(
+                (int) $recipient_user_id,
+                (int) $actor_user_id,
+                'mention',
+                'post',
+                (int) $post_id,
+                [
+                    'listingId' => (int) $actor_listing->ID,
+                    'listingTitle' => $actor_listing_title,
+                    'mentionedListingId' => (int) $mentioned_listing_id,
+                    'audience' => $mentions_everyone ? 'everyone' : 'listing',
+                ]
+            );
+            if ($send_everyone_email && class_exists('C767_Notifications')) {
+                C767_Notifications::send_community_mention(
+                    (int) $recipient_user_id,
+                    (int) $actor_user_id,
+                    (int) $post_id,
+                    $actor_listing_title
+                );
+            }
+        }
+        if ($mentions_everyone && $send_everyone_email && $recipients) {
+            set_transient($everyone_email_key, 1, 12 * HOUR_IN_SECONDS);
+        }
+    }
+
     private static function serialize_post($post)
     {
         $listing_id = (int) get_post_meta($post->ID, '_community_listing_id', true);
@@ -566,6 +631,10 @@ class C767_REST_Community
         update_post_meta($post_id, '_community_link_url', $link_url);
         update_post_meta($post_id, '_community_reaction_user_ids', []);
         update_post_meta($post_id, '_community_thumb_user_ids', []);
+
+        if ($mentions) {
+            self::notify_mentioned_owners($mentions, $post_id, $user_id, $listing);
+        }
 
         return new WP_REST_Response(self::serialize_post(get_post($post_id)), 201);
     }
