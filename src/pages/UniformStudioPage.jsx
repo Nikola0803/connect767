@@ -19,6 +19,9 @@ import {
   playerRoleOptions,
   kitUnitPrice,
   mixedSleeveSurcharge,
+  SHIRT_ONLY_PRICE,
+  normalizeExtraTeamShirts,
+  extraTeamShirtCount,
   FAN_JERSEY_PRICE,
   sportConfigFor,
   sportModelUrl,
@@ -401,6 +404,7 @@ export default function UniformStudioPage() {
   // ---------- Priced options (spec §4.4/§4.5) ----------
   const [fitType, setFitType] = useState(fitTypeOptions[0]);
   const [kitType, setKitType] = useState(kitTypeOptions[0]);
+  const [extraTeamShirts, setExtraTeamShirts] = useState([{ size: "AM", quantity: 1 }]);
   const [logoApplication, setLogoApplication] = useState("Sublimated");
   const [insideCollarMessage, setInsideCollarMessage] = useState(false);
   const [insideCollarText, setInsideCollarText] = useState("");
@@ -583,6 +587,7 @@ export default function UniformStudioPage() {
           twoTone,
           fitType,
           kitType,
+          extraTeamShirts,
           logoApplication,
           insideCollarMessage,
           insideCollarText,
@@ -603,7 +608,7 @@ export default function UniformStudioPage() {
          no worse than before this existed */
     }
   }, [storageKey, layers, placements3d, colors, studioBackground, collar, sleeve, zoneModel, zoneStyles, twoTone,
-    fitType, kitType, logoApplication, insideCollarMessage, insideCollarText, insideCollarAttachment, fanJerseyAdded, supporterJerseys, roster, contact, shipping,
+    fitType, kitType, extraTeamShirts, logoApplication, insideCollarMessage, insideCollarText, insideCollarAttachment, fanJerseyAdded, supporterJerseys, roster, contact, shipping,
     aiUniformPlan, aiWorkspaceConcept, aiDesignApplied]);
 
   const saveProgress = () => {
@@ -623,6 +628,7 @@ export default function UniformStudioPage() {
           twoTone,
           fitType,
           kitType,
+          extraTeamShirts,
           logoApplication,
           insideCollarMessage,
           insideCollarText,
@@ -664,7 +670,11 @@ export default function UniformStudioPage() {
       if (saved.zoneStyles) setZoneStyles(saved.zoneStyles);
       if (saved.twoTone) setTwoTone(saved.twoTone);
       if (saved.fitType) setFitType(saved.fitType);
-      if (saved.kitType) setKitType(saved.kitType === "Shirt" ? "Shirt" : "Full");
+      if (saved.kitType) setKitType(saved.kitType === "Shirt" && normalizeExtraTeamShirts(saved.extraTeamShirts).length ? "Shirt" : "Full");
+      if (Array.isArray(saved.extraTeamShirts)) {
+        const restoredShirts = normalizeExtraTeamShirts(saved.extraTeamShirts);
+        if (restoredShirts.length) setExtraTeamShirts(restoredShirts);
+      }
       if (saved.logoApplication) setLogoApplication(saved.logoApplication);
       if (typeof saved.insideCollarMessage === "boolean") setInsideCollarMessage(saved.insideCollarMessage);
       if (typeof saved.insideCollarText === "string") setInsideCollarText(saved.insideCollarText);
@@ -1311,7 +1321,8 @@ export default function UniformStudioPage() {
       sleeve,
       colors,
       fitType,
-      kitType,
+      kitType: "Full",
+      extraTeamShirts: kitType === "Shirt" ? normalizeExtraTeamShirts(extraTeamShirts) : [],
       logoApplication,
       insideCollarMessage,
       insideCollarText,
@@ -1319,7 +1330,7 @@ export default function UniformStudioPage() {
       fanJerseyAdded,
       supporterJerseys: fanJerseyAdded ? supporterJerseys : [],
       unitPrice,
-      grandTotal: unitPrice * unitCount + mixedSleeveSurcharge(sleeve, roster) + supporterCount * FAN_JERSEY_PRICE,
+      grandTotal: unitPrice * unitCount + mixedSleeveSurcharge(sleeve, roster) + supporterCount * FAN_JERSEY_PRICE + (kitType === "Shirt" ? extraTeamShirtCount(extraTeamShirts) * SHIRT_ONLY_PRICE : 0),
       layers,
       placements3d,
       designMode: stageMode === "3d" ? "3d" : "flat",
@@ -1597,7 +1608,7 @@ export default function UniformStudioPage() {
 
   const uniformSetupPanel = <UniformSetupPanel
     designProps={{ sport: activeSport, collar, setCollar, sleeve, setSleeve, colors, setColors, onHoverZone: setHoverZone, twoTone, setTwoTone }}
-    optionsProps={{ fitType, setFitType, kitType, setKitType, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment }}
+    optionsProps={{ fitType, setFitType, kitType, setKitType, extraTeamShirts, setExtraTeamShirts, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment }}
   />;
 
   // ---------- The studio itself: one full viewport, nothing else ----------
@@ -2810,7 +2821,10 @@ function ReviewOrderTool({
   const kitsTotal = unitPrice * unitCount + sleeveSurcharge;
   const supporterCount = fanJerseyAdded ? supporterJerseyCount(supporterJerseys) : 0;
   const supporterTotal = supporterCount * FAN_JERSEY_PRICE;
-  const grandTotal = kitsTotal + supporterTotal;
+  const extraShirtCount = extraTeamShirtCount(orderPayload.extraTeamShirts || []);
+  const extraShirtTotal = extraShirtCount * SHIRT_ONLY_PRICE;
+  const extraShirtsKey = JSON.stringify(orderPayload.extraTeamShirts || []);
+  const grandTotal = kitsTotal + supporterTotal + extraShirtTotal;
   const sportLabel = sports.find((sport) => sport.slug === activeSport)?.label || activeSport;
   const [config, setConfig] = useState(null);
   const [totals, setTotals] = useState(null);
@@ -2836,7 +2850,7 @@ function ReviewOrderTool({
   useEffect(() => {
     setTotals(null);
     setCardSession(null);
-  }, [fanJerseyAdded, supporterJerseys, unitCount, unitPrice, sleeveSurcharge, roster]);
+  }, [fanJerseyAdded, supporterJerseys, unitCount, unitPrice, sleeveSurcharge, roster, extraShirtsKey]);
 
   useEffect(() => {
     if (!import.meta.env.DEV || !window.location.search.includes("preview=checkout") || !canCheckout || totals) return;
@@ -2942,7 +2956,7 @@ function ReviewOrderTool({
         <ReviewRow
           icon="ri-settings-4-line"
           title="Fit & production"
-          value={`${kitType === "Shirt" ? "Shirt Only" : "Full Kit"} · ${logoApplication}`}
+          value={`Full Kit${extraShirtCount ? ` + ${extraShirtCount} extra shirt${extraShirtCount === 1 ? "" : "s"}` : ""} · ${logoApplication}`}
           meta={`Estimated unit price $${unitPrice.toFixed(2)}`}
           onEdit={() => onEditStep("design")}
         />
@@ -3060,6 +3074,7 @@ function ReviewOrderTool({
         <div className="mt-3 space-y-1 border-t border-white/15 pt-3 text-xs text-background-50/70">
           <div className="flex justify-between"><span>{unitCount} kits × ${unitPrice.toFixed(2)}</span><span>${(unitPrice * unitCount).toFixed(2)}</span></div>
           {sleeveSurcharge > 0 && <div className="flex justify-between"><span>Long sleeves · $2.00/kit</span><span>${sleeveSurcharge.toFixed(2)}</span></div>}
+          {extraShirtCount > 0 && <div className="flex justify-between"><span>{extraShirtCount} extra shirt{extraShirtCount === 1 ? "" : "s"} × ${SHIRT_ONLY_PRICE.toFixed(2)}</span><span>${extraShirtTotal.toFixed(2)}</span></div>}
           {fanJerseyAdded && <div className="flex justify-between"><span>{supporterCount} supporter jersey{supporterCount === 1 ? "" : "s"} × ${FAN_JERSEY_PRICE.toFixed(2)}</span><span>${supporterTotal.toFixed(2)}</span></div>}
           <div className="flex justify-between"><span>Subtotal</span><span>${(totals?.subtotal ?? grandTotal).toFixed(2)}</span></div>
           <div className="flex justify-between"><span>Tax</span><span>{totals ? `$${totals.tax.toFixed(2)}` : "—"}</span></div>

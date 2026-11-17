@@ -83,6 +83,7 @@ class C767_REST_Uniform_Quotes
             'sleeve' => sanitize_text_field((string) $request->get_param('sleeve')),
             'fitType' => sanitize_text_field((string) $request->get_param('fitType')),
             'kitType' => sanitize_text_field((string) $request->get_param('kitType')),
+            'extraTeamShirts' => self::sanitize_supporter_jerseys($request->get_param('extraTeamShirts')),
             'logoApplication' => sanitize_text_field((string) $request->get_param('logoApplication')),
             'insideCollarMessage' => rest_sanitize_boolean($request->get_param('insideCollarMessage')),
             'insideCollarText' => sanitize_text_field((string) $request->get_param('insideCollarText')),
