@@ -289,7 +289,7 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
             />
             <span className="text-xs text-foreground-700 font-label">
               Use a separate lower colour for the shorts or trousers. The split follows the actual
-              waist seam in both the 2D editor and 3D preview.
+              waist seam in the 2D editor and production preview.
             </span>
           </label>
 
@@ -673,7 +673,7 @@ export function OptionsPanel({
         </button>
       </div>
       <p className="mb-6 text-[10px] text-foreground-500 font-label">
-        Saved with this design and used in both 2D and 3D preview.
+        Saved with this design and used throughout the studio preview.
       </p>
 
       <p className="text-xs text-foreground-500 font-label mb-5 -mt-1">
@@ -1164,7 +1164,7 @@ export function AIArtworkPanel({
         kind: promptKind,
         name: effectiveBrandName,
         promptStyle: style,
-        response: plan.summary || `${plan.name} is ready to review on the AI canvas.`,
+        response: plan.summary || `${plan.name} is ready to review in the 2D view.`,
       });
       if (refinement) setRefinementBrief("");
     } catch (generationError) {
