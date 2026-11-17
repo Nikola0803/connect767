@@ -56,10 +56,10 @@ describe("AI design generation endpoint", () => {
     expect(prompt).toContain("Do not show a garment");
   });
 
-  it("builds a complete front-and-back uniform concept prompt", () => {
+  it("builds a complete Front / Side / Back uniform concept prompt", () => {
     const prompt = buildPrompt(normalizeBrief({ ...validBrief, generationMode: "uniform" }));
     expect(prompt).toContain("complete Soccer uniform design concept");
-    expect(prompt).toContain("complete front view and complete back view");
+    expect(prompt).toContain("complete front view, strict 90-degree side view, and complete back view");
     expect(prompt).toContain("shorts or trousers");
     expect(prompt).toContain("socks");
   });

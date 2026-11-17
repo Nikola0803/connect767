@@ -108,11 +108,11 @@ export function buildPrompt(brief) {
         : `Create a realistic professional complete ${brief.sport || "sports"} uniform design concept.`,
       `Visual direction: ${brief.style}. ${identity}`,
       brief.referenceImage
-        ? "Preserve the same front-and-back presentation, garment type, camera, proportions, background, and every feature the customer did not explicitly ask to change."
+        ? "Preserve the same front-side-back presentation, garment type, camera, proportions, background, and every feature the customer did not explicitly ask to change."
         : "",
-      "Show two coordinated views side by side: the complete front view and complete back view of the same uniform.",
+      "Show three coordinated views side by side: the complete front view, strict 90-degree side view, and complete back view of the same uniform.",
       "Each view must include every applicable garment piece, including the jersey or dress, shorts or trousers, and socks when the sport uses socks.",
-      "Keep both uniforms fully visible, equally scaled, centred, and separated on a clean warm-white studio background.",
+      "Keep all three uniforms fully visible, equally scaled, centred, and separated on a clean warm-white studio background.",
       "Use realistic performance fabric, stitching, seams, folds, highlights, and shadows while keeping the colors, trims, pattern, and design identity clearly readable.",
       "Do not show a person, mannequin head, hands, shoes, props, watermark, colour swatches, UI, presentation board, cropped garment, or duplicate angle.",
       "This is a customer-facing full-uniform design proof, not a manufacturing pattern or technical cut file.",

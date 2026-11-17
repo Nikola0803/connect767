@@ -1058,6 +1058,11 @@ export function AIArtworkPanel({
       if (!response.ok || !data.plan) throw new Error(data.error || "AI uniform design failed.");
       const plan = data.plan;
       const artworkElement = plan.productionElements?.find((element) => element.kind === "artwork");
+      const productionPlacementSummary = (plan.productionElements || []).length
+        ? plan.productionElements.map((element) => (
+            `${element.kind} ${JSON.stringify(element.content)} on ${element.view} at ${element.x}% x ${element.y}%`
+          )).join("; ")
+        : "No text, number, crest, logo or sponsor placements.";
       const conceptRequest = fetch("/api/generate-design", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1078,6 +1083,7 @@ export function AIArtworkPanel({
             plan.pattern?.enabled
               ? `Pattern: ${plan.pattern.key}, applied to ${plan.pattern.view}.`
               : "Pattern: clean solid-color design with no decorative pattern.",
+            `Editable Front / Side / Back placement map: ${productionPlacementSummary}`,
           ].join(" "),
           referenceImage: existingConcept,
         }),
