@@ -4,7 +4,7 @@ const MODE_COPY = {
   uniform: {
     label: "Full uniform",
     icon: "ri-shirt-line",
-    placeholder: "Describe or refine this uniform…",
+    placeholder: "Ask Connect767 AI to design or refine this uniform…",
   },
   artwork: {
     label: "Transparent artwork",
@@ -12,16 +12,6 @@ const MODE_COPY = {
     placeholder: "Describe the crest, graphic or pattern you want…",
   },
 };
-
-function AIBrand({ compact = false }) {
-  return (
-    <img
-      src="/connect767-ai-logo-transparent.png"
-      alt="Connect767 AI"
-      className={`${compact ? "h-4" : "h-7"} w-auto bg-transparent object-contain`}
-    />
-  );
-}
 
 function ComposerAction({ icon, label, onClick, active = false }) {
   return (
@@ -42,14 +32,10 @@ function ComposerAction({ icon, label, onClick, active = false }) {
 function EmptyConversation({ dark }) {
   return (
     <div className="mx-auto flex h-full max-w-sm flex-col items-center justify-center px-5 py-8 text-center">
-      <img
-        src="/connect767-ai-logo-transparent.png"
-        alt="Connect767 AI"
-        className="h-16 w-16 bg-transparent object-contain"
-      />
-      <h3 className={`mt-4 flex items-center justify-center gap-1.5 font-heading text-xl font-semibold ${dark ? "text-white" : "text-foreground-950"}`}>
-        <span>Design with</span> <AIBrand />
-      </h3>
+      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-700 text-xl text-white shadow-[0_12px_30px_rgba(0,116,73,.2)]">
+        <i className="ri-sparkling-2-fill" />
+      </span>
+      <h3 className={`mt-4 font-heading text-xl font-semibold ${dark ? "text-white" : "text-foreground-950"}`}>Design with Connect767 AI</h3>
       <p className={`mt-2 text-[11px] leading-relaxed ${dark ? "text-white/55" : "text-foreground-500"}`}>
         Describe a complete kit or create transparent artwork. Your generated result stays editable in the Uniform Studio.
       </p>
@@ -173,7 +159,7 @@ export default function AIUniformComposer({
   const muted = dark ? "text-white/50" : "text-foreground-500";
 
   return (
-    <section onPointerDown={handleSurfacePointerDown} className={`relative flex h-full min-h-[620px] flex-col overflow-hidden transition-colors md:min-h-0 ${surface}`} aria-label="Connect767 AI uniform designer">
+    <section onPointerDown={handleSurfacePointerDown} className={`relative flex h-full min-h-[620px] flex-col overflow-hidden transition-colors ${surface}`} aria-label="Connect767 AI uniform designer">
       <input
         ref={fileInputRef}
         type="file"
@@ -188,9 +174,10 @@ export default function AIUniformComposer({
 
       <header className={`flex flex-shrink-0 items-center justify-between gap-3 border-b px-4 py-3 ${dark ? "border-white/10" : "border-background-200"}`}>
         <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-700 text-white shadow-sm"><i className="ri-sparkling-2-fill" /></span>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h2 className="truncate font-heading text-base font-semibold"><AIBrand /></h2>
+              <h2 className="truncate font-heading text-base font-semibold">Connect767 AI</h2>
               <span className={`h-1.5 w-1.5 rounded-full ${connection === "connected" ? "bg-emerald-500" : connection === "checking" ? "bg-amber-400" : "bg-red-400"}`} />
             </div>
             <p className={`truncate text-[9px] ${muted}`}>Uniform design assistant · {MODE_COPY[mode].label}</p>
@@ -242,7 +229,7 @@ export default function AIUniformComposer({
                   role="menuitem"
                 >
                   <i className="ri-delete-bin-6-line text-sm" />
-                  <span><strong className="block">Clear current design</strong><span className={`block text-[8px] font-normal ${muted}`}>Remove the current concept</span></span>
+                  <span><strong className="block">Clear current design</strong><span className={`block text-[8px] font-normal ${muted}`}>Remove the concept from the canvas</span></span>
                 </button>
               )}
             </div>
@@ -277,7 +264,7 @@ export default function AIUniformComposer({
                 </div>
                 {entry.response && (
                   <div className={`max-w-[92%] rounded-2xl rounded-bl-md border px-3.5 py-3 text-[11px] leading-relaxed ${card}`}>
-                    <div className="mb-1.5 flex items-center text-primary-700"><AIBrand compact /></div>
+                    <div className="mb-1.5 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-primary-700"><i className="ri-sparkling-2-fill" /> Connect767 AI</div>
                     <p className={muted}>{entry.response}</p>
                     <div className="mt-2 flex items-center gap-1 text-foreground-400">
                       <button type="button" onClick={() => copyText(entry.response)} className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg hover:bg-black/5" aria-label="Copy response"><i className="ri-file-copy-line" /></button>
@@ -300,7 +287,7 @@ export default function AIUniformComposer({
             {uniformPlan && !generating && (
               <article className={`overflow-hidden rounded-2xl border shadow-sm ${card}`}>
                 <div className="p-3.5">
-                  <div className="flex items-start justify-between gap-3"><div><p className="text-[9px] font-bold uppercase tracking-[0.14em] text-primary-700">Current AI design</p><h3 className="mt-1 font-heading text-base font-semibold">{uniformPlan.name}</h3></div><span className="rounded-full bg-primary-50 px-2 py-1 text-[8px] font-bold text-primary-800">Active design</span></div>
+                  <div className="flex items-start justify-between gap-3"><div><p className="text-[9px] font-bold uppercase tracking-[0.14em] text-primary-700">Current AI design</p><h3 className="mt-1 font-heading text-base font-semibold">{uniformPlan.name}</h3></div><span className="rounded-full bg-primary-50 px-2 py-1 text-[8px] font-bold text-primary-800">On canvas</span></div>
                   <p className={`mt-2 text-[10px] leading-relaxed ${muted}`}>{uniformPlan.summary}</p>
                   <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-current/10 pt-3">
                     <button type="button" onClick={onApplyUniform} className="inline-flex min-h-8 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-primary-700 px-3.5 py-1.5 text-[9px] font-bold text-white shadow-sm transition hover:bg-primary-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"><i className={applied ? "ri-check-double-line" : "ri-check-line"} /> {applied ? "Applied" : "Apply design"}</button>
