@@ -48,6 +48,15 @@ function renderComposer(overrides = {}) {
 }
 
 describe("AIUniformComposer", () => {
+  it("uses the transparent Connect767 AI logo instead of visible brand-name text", () => {
+    renderComposer();
+
+    const logos = screen.getAllByRole("img", { name: "Connect767 AI" });
+    expect(logos.length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByText("Connect767 AI")).not.toBeInTheDocument();
+    expect(screen.getByText("Design your uniform")).toBeInTheDocument();
+  });
+
   it("submits with Enter and preserves Shift + Enter for multiline prompts", () => {
     const props = renderComposer();
     const message = screen.getByLabelText("Message Connect767 AI");

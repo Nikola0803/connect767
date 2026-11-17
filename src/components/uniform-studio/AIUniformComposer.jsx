@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 
+const AI_LOGO_SRC = "/connect767-ai-logo-transparent.png?v=20261117";
+
 const MODE_COPY = {
   uniform: {
     label: "Full uniform",
     icon: "ri-shirt-line",
-    placeholder: "Ask Connect767 AI to design or refine this uniform…",
+    placeholder: "Describe the uniform you want to design…",
   },
   artwork: {
     label: "Transparent artwork",
@@ -16,10 +18,8 @@ const MODE_COPY = {
 function EmptyConversation({ dark }) {
   return (
     <div className="mx-auto flex h-full max-w-sm flex-col items-center justify-center px-5 py-8 text-center">
-      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-700 text-xl text-white shadow-[0_12px_30px_rgba(0,116,73,.2)]">
-        <i className="ri-sparkling-2-fill" />
-      </span>
-      <h3 className={`mt-4 font-heading text-xl font-semibold ${dark ? "text-white" : "text-foreground-950"}`}>Design with Connect767 AI</h3>
+      <img src={AI_LOGO_SRC} alt="Connect767 AI" className="h-20 w-20 object-contain drop-shadow-[0_12px_24px_rgba(0,116,73,.18)]" />
+      <h3 className={`mt-4 font-heading text-xl font-semibold ${dark ? "text-white" : "text-foreground-950"}`}>Design your uniform</h3>
       <p className={`mt-2 text-[11px] leading-relaxed ${dark ? "text-white/55" : "text-foreground-500"}`}>
         Describe a complete kit or create transparent artwork. Your generated result stays editable in the Uniform Studio.
       </p>
@@ -163,10 +163,9 @@ export default function AIUniformComposer({
 
       <header className={`flex flex-shrink-0 items-center justify-between gap-3 border-b px-4 py-3 ${dark ? "border-white/10" : "border-background-200"}`}>
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-700 text-white shadow-sm"><i className="ri-sparkling-2-fill" /></span>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h2 className="truncate font-heading text-base font-semibold">Connect767 AI</h2>
+              <img src={AI_LOGO_SRC} alt="Connect767 AI" className="h-8 w-12 shrink-0 object-contain drop-shadow-sm" />
               <span className={`h-1.5 w-1.5 rounded-full ${connection === "connected" ? "bg-emerald-500" : connection === "checking" ? "bg-amber-400" : "bg-red-400"}`} />
             </div>
             <p className={`truncate text-[9px] ${muted}`}>Uniform design assistant · {MODE_COPY[mode].label}</p>
@@ -273,7 +272,7 @@ export default function AIUniformComposer({
                 </div>
                 {entry.response && (
                   <div className={`max-w-[92%] rounded-2xl rounded-bl-md border px-3.5 py-3 text-[11px] leading-relaxed ${card}`}>
-                    <div className="mb-1.5 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-primary-700"><i className="ri-sparkling-2-fill" /> Connect767 AI</div>
+                    <div className="mb-1.5 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-primary-700"><img src={AI_LOGO_SRC} alt="Connect767 AI" className="h-5 w-5 object-contain" /> AI response</div>
                     <p className={muted}>{entry.response}</p>
                     <div className="mt-2 flex items-center gap-1 text-foreground-400">
                       <button type="button" onClick={() => copyText(entry.response)} className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg hover:bg-black/5" aria-label="Copy response"><i className="ri-file-copy-line" /></button>
