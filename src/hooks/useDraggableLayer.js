@@ -45,11 +45,13 @@ export function useDraggableLayer({
         startClientY: point.clientY,
         startX: x,
         startY: y,
+        size,
+        rotation,
       };
       startTracking();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [x, y]
+    [x, y, size, rotation]
   );
 
   const handleResizeStart = useCallback(
@@ -61,21 +63,24 @@ export function useDraggableLayer({
         startClientX: point.clientX,
         startClientY: point.clientY,
         startSize: size,
+        x,
+        y,
+        rotation,
       };
       startTracking();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [size]
+    [x, y, size, rotation]
   );
 
   const handleRotateStart = useCallback(
     (e) => {
       e.stopPropagation();
-      dragState.current = { mode: "rotate" };
+      dragState.current = { mode: "rotate", x, y, size };
       startTracking();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [x, y, size, rotation]
   );
 
   function handleMove(e) {
@@ -101,18 +106,23 @@ export function useDraggableLayer({
         snapAxis = snapAxis ? "both" : "y";
       }
       onSnap?.(snapAxis);
-      onChange({ x: nextX, y: nextY, size, rotation });
+      onChange({ x: nextX, y: nextY, size: state.size, rotation: state.rotation });
     } else if (state.mode === "resize") {
       const dx = (point.clientX - state.startClientX) / rect.width;
       const dy = (point.clientY - state.startClientY) / rect.height;
       const delta = ((dx + dy) / 2) * 100;
-      onChange({ x, y, size: clamp(state.startSize + delta, minSize, maxSize), rotation });
+      onChange({
+        x: state.x,
+        y: state.y,
+        size: clamp(state.startSize + delta, minSize, maxSize),
+        rotation: state.rotation,
+      });
     } else if (state.mode === "rotate" && layerRef?.current) {
       const box = layerRef.current.getBoundingClientRect();
       const cx = box.left + box.width / 2;
       const cy = box.top + box.height / 2;
       const angle = (Math.atan2(point.clientY - cy, point.clientX - cx) * 180) / Math.PI + 90;
-      onChange({ x, y, size, rotation: Math.round(angle) });
+      onChange({ x: state.x, y: state.y, size: state.size, rotation: Math.round(angle) });
     }
   }
 

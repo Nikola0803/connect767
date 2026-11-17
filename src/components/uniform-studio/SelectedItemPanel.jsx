@@ -88,6 +88,7 @@ export default function SelectedItemPanel({
           )}
           <button
             type="button"
+            aria-label={`Remove selected ${label.toLowerCase()}`}
             onClick={() => onDelete(layer.id)}
             className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent-600 hover:text-accent-700 cursor-pointer"
           >
@@ -233,7 +234,8 @@ export default function SelectedItemPanel({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => onRotateChange(layer.id, -1)}
+              aria-label="Rotate selected artwork left"
+              onClick={() => onRotateChange?.(layer.id, -1)}
               className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-lg border border-background-300 bg-background-50 text-xs font-semibold text-foreground-700 hover:bg-background-100 cursor-pointer"
             >
               <i className="ri-anticlockwise-line" />
@@ -241,7 +243,8 @@ export default function SelectedItemPanel({
             </button>
             <button
               type="button"
-              onClick={() => onRotateChange(layer.id, 1)}
+              aria-label="Rotate selected artwork right"
+              onClick={() => onRotateChange?.(layer.id, 1)}
               className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-lg border border-background-300 bg-background-50 text-xs font-semibold text-foreground-700 hover:bg-background-100 cursor-pointer"
             >
               <i className="ri-clockwise-line" />
