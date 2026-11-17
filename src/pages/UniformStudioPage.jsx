@@ -1936,7 +1936,7 @@ export default function UniformStudioPage() {
                     {showingAIConcept ? (
                       <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden">
                         <div
-                          className="relative inline-flex max-h-full max-w-full cursor-grab overflow-hidden rounded-2xl border border-white/10 bg-[#ece9e1] shadow-[0_26px_70px_rgba(0,0,0,.34)] outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-primary-400"
+                          className="relative flex h-full w-full cursor-grab items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white shadow-[0_26px_70px_rgba(0,0,0,.34)] outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-primary-400"
                           role="group"
                           tabIndex={0}
                           aria-label="Interactive AI uniform concept. Drag to pan, use the mouse wheel or toolbar to zoom, and use arrow keys to move the design."
@@ -1987,11 +1987,12 @@ export default function UniformStudioPage() {
                           onPointerCancel={() => { aiConceptDragRef.current = null; }}
                           style={{ touchAction: "none" }}
                         >
+                          <img src={aiWorkspaceConcept.src} alt="" aria-hidden="true" draggable="false" className="pointer-events-none absolute inset-0 h-full w-full scale-110 object-cover opacity-40 blur-3xl" />
                           <img
                             src={aiWorkspaceConcept.src}
                             alt={`${aiUniformPlan?.name || aiWorkspaceConcept?.name || "AI generated"} complete front and back uniform concept`}
                             draggable="false"
-                            className="block max-h-full max-w-full select-none object-contain will-change-transform"
+                            className="relative block max-h-full max-w-full select-none object-contain will-change-transform"
                             style={{
                               transform: `translate3d(${aiConceptPan.x}px, ${aiConceptPan.y}px, 0) rotate(${aiConceptRotation}deg) scale(${zoom})`,
                               transformOrigin: "center",
