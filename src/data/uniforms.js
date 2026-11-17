@@ -168,7 +168,7 @@ export function sportConfigFor(slug) {
   return sportConfigs[slug] || sportConfigs.soccer;
 }
 export const fitTypeOptions = ["Men", "Women", "Youth"];
-export const kitTypeOptions = ["Full", "Shirt", "Both"];
+export const kitTypeOptions = ["Full", "Shirt"];
 export const logoApplicationOptions = ["Sublimated", "Embroidery"];
 export const shirtSizeOptions = ["YS", "YM", "YL", "AS", "AM", "AL", "AXL", "A2XL"];
 export const shortSizeOptions = ["YS", "YM", "YL", "AS", "AM", "AL", "AXL", "A2XL"];

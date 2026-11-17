@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { defaultZoneColors, normalizeZoneColors } from "../../data/uniforms";
 import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
-import { DesignPanel, OptionsPanel } from "./StudioPanels";
+import { DesignPanel, OptionsPanel, StudioBackgroundPanel } from "./StudioPanels";
 
 describe("uniform design controls", () => {
   it("starts the collar in the same color as the blank shirt fabric", () => {
@@ -105,7 +105,7 @@ describe("uniform design controls", () => {
   it("offers useful studio backgrounds without changing garment controls", () => {
     const setStudioBackground = vi.fn();
     render(
-      <OptionsPanel
+      <StudioBackgroundPanel
         fitType="Regular"
         setFitType={vi.fn()}
         kitType="Full kit"
@@ -124,5 +124,15 @@ describe("uniform design controls", () => {
     fireEvent.click(screen.getByRole("button", { name: /Charcoal/i }));
     expect(setStudioBackground).toHaveBeenCalledWith("#252824");
     expect(screen.getByText(/never recolors the garment/i)).toBeInTheDocument();
+  });
+
+  it("keeps backgrounds out of kit options and offers only Full Kit and Shirt Only", () => {
+    const setKitType = vi.fn();
+    render(<OptionsPanel fitType="Men" setFitType={vi.fn()} kitType="Full" setKitType={setKitType} logoApplication="Sublimated" setLogoApplication={vi.fn()} insideCollarMessage={false} setInsideCollarMessage={vi.fn()} insideCollarText="" setInsideCollarText={vi.fn()} />);
+    expect(screen.queryByText("Studio background")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Both" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Full Kit" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Shirt Only" }));
+    expect(setKitType).toHaveBeenCalledWith("Shirt");
   });
 });
