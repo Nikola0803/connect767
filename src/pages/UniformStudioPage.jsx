@@ -1736,9 +1736,9 @@ export default function UniformStudioPage() {
                   </div>
 
                   {/* Canvas */}
-                  <div className="flex min-w-0 flex-1 flex-col items-center gap-3 overflow-hidden px-4 py-3 md:px-6 xl:px-10">
+                  <div className={`flex min-w-0 flex-1 flex-col items-center gap-3 overflow-hidden py-3 ${activeTool === "ai" ? "px-2 md:px-3 xl:px-4" : "px-4 md:px-6 xl:px-10"}`}>
                     {/* Top bar: view thumbnails + zoom/export, inline instead of a separate row above the card */}
-                    <div className="flex w-full max-w-6xl flex-shrink-0 items-center justify-between gap-2">
+                    <div className={`flex w-full flex-shrink-0 items-center justify-between gap-2 ${activeTool === "ai" ? "max-w-none" : "max-w-6xl"}`}>
                       <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
                         <div className="hidden min-w-0 md:block">
                           <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-background-50/30">Workspace</p>
@@ -1805,7 +1805,7 @@ export default function UniformStudioPage() {
                     </div>
 
                     {(aiUniformPlan || aiWorkspaceConcept) && (
-                      <div className="w-full max-w-[980px] flex-shrink-0 overflow-hidden rounded-2xl border border-primary-400/35 bg-[linear-gradient(105deg,rgba(0,116,73,.28),rgba(17,19,16,.92)_48%,rgba(239,84,53,.12))] shadow-[0_18px_50px_rgba(0,0,0,.25)]">
+                      <div className="w-full max-w-none flex-shrink-0 overflow-hidden rounded-2xl border border-primary-400/35 bg-[linear-gradient(105deg,rgba(0,116,73,.28),rgba(17,19,16,.92)_48%,rgba(239,84,53,.12))] shadow-[0_18px_50px_rgba(0,0,0,.25)]">
                         <div className="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
@@ -1874,8 +1874,8 @@ export default function UniformStudioPage() {
                     )}
 
                     {showingAIConcept ? (
-                      <div className="flex min-h-0 w-full flex-1 items-center justify-center">
-                        <div className="relative flex h-full max-h-[760px] w-full max-w-[980px] items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[#ece9e1] shadow-[0_26px_70px_rgba(0,0,0,.34)]">
+                      <div className="flex min-h-0 w-full flex-1 items-stretch justify-center">
+                        <div className="relative flex h-full w-full max-w-none items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[#ece9e1] shadow-[0_26px_70px_rgba(0,0,0,.34)]">
                           <img
                             src={aiWorkspaceConcept.src}
                             alt={`${aiUniformPlan?.name || aiWorkspaceConcept?.name || "AI generated"} complete front and back uniform concept`}
@@ -1890,15 +1890,15 @@ export default function UniformStudioPage() {
                         </div>
                       </div>
                     ) : stageMode === "edit" && activeTool === "ai" && aiDesignerMode === "uniform" && !aiWorkspaceConcept?.src ? (
-                      <div className="flex min-h-0 w-full flex-1 items-center justify-center px-4">
-                        <div className="w-full max-w-3xl rounded-[28px] border border-dashed border-primary-400/35 bg-[radial-gradient(circle_at_50%_0%,rgba(0,116,73,.2),transparent_56%),rgba(255,255,255,.025)] px-8 py-12 text-center shadow-[0_24px_70px_rgba(0,0,0,.2)]">
+                      <div className="flex min-h-0 w-full flex-1 items-stretch justify-center p-1">
+                        <div className="flex h-full w-full max-w-none flex-col justify-center rounded-[28px] border border-dashed border-primary-400/35 bg-[radial-gradient(circle_at_50%_0%,rgba(0,116,73,.2),transparent_56%),rgba(255,255,255,.025)] px-6 py-8 text-center shadow-[0_24px_70px_rgba(0,0,0,.2)] sm:px-10 lg:px-14">
                           <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-500 text-3xl text-white shadow-[0_16px_34px_rgba(239,84,53,.24)]">
                             <i className="ri-sparkling-2-fill" />
                           </span>
                           <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.2em] text-primary-300">AI-first uniform studio</p>
-                          <h2 className="mx-auto mt-2 max-w-xl font-heading text-3xl font-semibold leading-tight text-white sm:text-4xl">Your generated uniform will appear here</h2>
-                          <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-background-50/55">Add a team name and design brief in the AI Designer panel. You can also upload a reference image, lock any details you want to keep, and generate a complete front-and-back concept.</p>
-                          <div className="mx-auto mt-7 grid max-w-xl gap-3 text-left sm:grid-cols-3">
+                          <h2 className="mx-auto mt-2 max-w-3xl font-heading text-3xl font-semibold leading-tight text-white sm:text-4xl xl:text-5xl">Your generated uniform will appear here</h2>
+                          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-background-50/55">Add a team name and design brief in the AI Designer panel. You can also upload a reference image, lock any details you want to keep, and generate a complete front-and-back concept.</p>
+                          <div className="mx-auto mt-7 grid w-full max-w-3xl gap-3 text-left sm:grid-cols-3">
                             {[
                               ["ri-image-add-line", "Reference", "Optional inspiration image"],
                               ["ri-quill-pen-line", "Describe", "Colors, style and identity"],
@@ -1916,7 +1916,7 @@ export default function UniformStudioPage() {
                     ) : stageMode === "edit" ? (
                       <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center gap-2">
                         <div
-                          className={`w-full transition-transform ${activeTool === "ai" ? "max-w-[980px]" : "max-w-[800px]"}`}
+                          className={`w-full transition-transform ${activeTool === "ai" ? "max-w-[min(100%,1280px)]" : "max-w-[800px]"}`}
                           style={{ transform: `scale(${zoom})` }}
                         >
                           <JerseyStage
@@ -2021,7 +2021,7 @@ export default function UniformStudioPage() {
                   </div>
 
               {/* Docked fields panel */}
-              <aside className={`hidden w-full flex-shrink-0 border-l border-black/10 bg-[#f7f5ef] md:block ${activeTool === "ai" ? "max-w-[460px] overflow-hidden" : "max-w-[420px] overflow-y-auto"}`}>
+              <aside className={`hidden w-full flex-shrink-0 border-l border-black/10 bg-[#f7f5ef] md:block ${activeTool === "ai" ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px] overflow-hidden" : "max-w-[420px] overflow-y-auto"}`}>
                 {activeTool !== "ai" && <div className="sticky top-0 z-10 border-b border-black/[0.07] bg-[#f7f5ef]/95 px-5 py-4 backdrop-blur-xl">
                   <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary-700">Step {workflowStep.step} · {workflowStep.label}</p>
                   <div className="mt-1 flex items-center justify-between gap-3">
