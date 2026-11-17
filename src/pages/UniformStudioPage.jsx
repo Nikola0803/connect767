@@ -338,10 +338,11 @@ export default function UniformStudioPage() {
   };
 
   const setClampedZoom = (nextZoom) => {
-    const maximum = showingAIConcept ? 4 : 1.4;
+    const maximum = showingAIConcept ? 3 : 1.4;
     const value = typeof nextZoom === "function" ? nextZoom(zoom) : nextZoom;
-    const clamped = Math.max(showingAIConcept ? 0.5 : 0.7, Math.min(maximum, +value.toFixed(2)));
+    const clamped = Math.max(0.7, Math.min(maximum, +value.toFixed(2)));
     setZoom(clamped);
+    if (clamped <= 1) setAiConceptPan({ x: 0, y: 0 });
   };
 
 
@@ -1574,7 +1575,7 @@ export default function UniformStudioPage() {
                 : "border-accent-400/40 bg-accent-950/30 text-accent-200 hover:border-accent-300 hover:bg-accent-950/55"
             }`}
           >
-            <img src="/connect767-ai-logo-transparent.png" alt="" aria-hidden="true" className="h-5 w-5 bg-transparent object-contain" />
+            <i className="ri-sparkling-2-fill" />
             <span className="hidden sm:inline">AI Designer</span>
             <span className="sm:hidden">AI</span>
           </button>
@@ -1755,11 +1756,7 @@ export default function UniformStudioPage() {
                               : "border-transparent text-background-50/40 hover:border-white/[0.06] hover:bg-white/[0.045] hover:text-background-50/85"
                           }`}
                         >
-                          {t.key === "ai" ? (
-                            <img src="/connect767-ai-logo-transparent.png" alt="" aria-hidden="true" className="h-7 w-7 bg-transparent object-contain" />
-                          ) : (
-                            <i className={`${t.icon} text-lg`} />
-                          )}
+                          <i className={`${t.icon} text-lg`} />
                           <span className="text-[9px] font-semibold uppercase tracking-wide leading-none">
                             {t.label}
                           </span>
@@ -1773,10 +1770,44 @@ export default function UniformStudioPage() {
                     {/* Top bar: view thumbnails + zoom/export, inline instead of a separate row above the card */}
                     <div className={`flex w-full flex-shrink-0 items-center justify-between gap-2 ${activeTool === "ai" ? "max-w-none" : "max-w-6xl"}`}>
                       <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
-                        {activeTool !== "ai" && <div className="hidden min-w-0 items-center gap-1.5 text-background-50/55 md:flex">
+                        <div className="hidden min-w-0 items-center gap-1.5 text-background-50/55 md:flex">
                           <i className={`${activeToolConfig?.icon || workflowStep.icon} text-xs text-primary-300`} />
                           <span className="truncate text-[10px] font-bold uppercase tracking-[0.13em]">{activeToolConfig?.label || workflowStep.label}</span>
-                        </div>}
+                        </div>
+                        {ENABLE_3D && (
+                          <div
+                            className="inline-flex shrink-0 items-center rounded-lg border border-white/[0.08] bg-black/15 p-0.5"
+                            aria-label="Uniform preview mode"
+                          >
+                            <button
+                              type="button"
+                              aria-pressed={stageMode === "edit"}
+                              onClick={() => setStageMode("edit")}
+                              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer ${
+                                stageMode === "edit"
+                                  ? "bg-background-50 text-foreground-950 shadow-sm"
+                                  : "text-background-50/55 hover:bg-white/[0.06] hover:text-background-50"
+                              }`}
+                            >
+                              <i className="ri-edit-2-line" />
+                              AI canvas
+                            </button>
+                            <button
+                              type="button"
+                              aria-pressed={stageMode === "3d"}
+                              onClick={() => setStageMode("3d")}
+                              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer ${
+                                stageMode === "3d"
+                                  ? "bg-primary-600 text-white shadow-[0_6px_16px_rgba(0,116,73,0.28)]"
+                                  : "text-background-50/55 hover:bg-white/[0.06] hover:text-background-50"
+                              }`}
+                            >
+                              <i className="ri-3d-cube-sphere-line" />
+                              3D preview
+                            </button>
+                          </div>
+                        )}
+
                       </div>
                       {stageMode === "edit" && (
                         <div className="inline-flex items-center rounded-lg border border-white/[0.07] bg-black/15 p-0.5">
@@ -1846,7 +1877,7 @@ export default function UniformStudioPage() {
                     </div>
 
                     {(aiUniformPlan || aiWorkspaceConcept) && (
-                      <div className="w-full max-w-5xl flex-shrink-0 self-center overflow-hidden rounded-xl border border-primary-400/30 bg-[linear-gradient(105deg,rgba(0,116,73,.24),rgba(17,19,16,.94)_48%,rgba(239,84,53,.1))] shadow-[0_12px_32px_rgba(0,0,0,.2)]">
+                      <div className="w-full max-w-none flex-shrink-0 overflow-hidden rounded-xl border border-primary-400/30 bg-[linear-gradient(105deg,rgba(0,116,73,.24),rgba(17,19,16,.94)_48%,rgba(239,84,53,.1))] shadow-[0_12px_32px_rgba(0,0,0,.2)]">
                         <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
                           <div className="min-w-0 flex-1">
                             <div className="flex min-w-0 items-center gap-2">
@@ -1920,30 +1951,16 @@ export default function UniformStudioPage() {
                     {showingAIConcept ? (
                       <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden">
                         <div
-                          className="relative inline-flex max-h-full max-w-full cursor-grab overflow-hidden rounded-2xl border border-white/10 bg-[#ece9e1] shadow-[0_26px_70px_rgba(0,0,0,.34)] outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-primary-400"
+                          className={`relative inline-flex max-h-full max-w-full overflow-hidden rounded-2xl border border-white/10 bg-[#ece9e1] shadow-[0_26px_70px_rgba(0,0,0,.34)] ${zoom > 1 ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
                           role="group"
-                          tabIndex={0}
-                          aria-label="Interactive AI uniform concept. Drag to pan, use the mouse wheel or toolbar to zoom, and use arrow keys to move the design."
+                          aria-label="Interactive AI uniform concept. Use the toolbar to zoom or rotate, and drag while zoomed to inspect details."
                           onWheel={(event) => {
                             event.preventDefault();
                             setClampedZoom((value) => value + (event.deltaY < 0 ? 0.15 : -0.15));
                           }}
-                          onKeyDown={(event) => {
-                            const step = event.shiftKey ? 40 : 16;
-                            const movement = {
-                              ArrowLeft: { x: -step, y: 0 },
-                              ArrowRight: { x: step, y: 0 },
-                              ArrowUp: { x: 0, y: -step },
-                              ArrowDown: { x: 0, y: step },
-                            }[event.key];
-                            if (!movement) return;
-                            event.preventDefault();
-                            setAiConceptPan((current) => ({ x: current.x + movement.x, y: current.y + movement.y }));
-                          }}
                           onDoubleClick={resetAIConceptView}
                           onPointerDown={(event) => {
-                            if (event.button !== 0) return;
-                            event.preventDefault();
+                            if (zoom <= 1) return;
                             event.currentTarget.setPointerCapture(event.pointerId);
                             aiConceptDragRef.current = {
                               pointerId: event.pointerId,
@@ -1964,12 +1981,10 @@ export default function UniformStudioPage() {
                           onPointerUp={(event) => {
                             if (aiConceptDragRef.current?.pointerId !== event.pointerId) return;
                             aiConceptDragRef.current = null;
-                            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-                              event.currentTarget.releasePointerCapture(event.pointerId);
-                            }
+                            event.currentTarget.releasePointerCapture(event.pointerId);
                           }}
                           onPointerCancel={() => { aiConceptDragRef.current = null; }}
-                          style={{ touchAction: "none" }}
+                          style={{ touchAction: zoom > 1 ? "none" : "auto" }}
                         >
                           <img
                             src={aiWorkspaceConcept.src}
@@ -1985,7 +2000,31 @@ export default function UniformStudioPage() {
                             <i className="ri-sparkling-2-fill text-accent-500" /> Complete AI uniform · front and back
                           </div>
                           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-foreground-950/75 px-4 py-2 text-center text-[10px] text-white/80 backdrop-blur">
-                            Drag to pan · scroll to zoom · double-click to fit
+                            {zoom > 1 ? "Drag to pan · double-click to reset" : "Scroll or use + to inspect details"} · Production map for precise adjustments
+                          </div>
+                        </div>
+                      </div>
+                    ) : stageMode === "edit" && activeTool === "ai" && aiDesignerMode === "uniform" && !aiWorkspaceConcept?.src ? (
+                      <div className="flex min-h-0 w-full flex-1 items-stretch justify-center p-1">
+                        <div className="flex h-full w-full max-w-none flex-col justify-center rounded-[28px] border border-dashed border-primary-400/35 bg-[radial-gradient(circle_at_50%_0%,rgba(0,116,73,.2),transparent_56%),rgba(255,255,255,.025)] px-6 py-8 text-center shadow-[0_24px_70px_rgba(0,0,0,.2)] sm:px-10 lg:px-14">
+                          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-500 text-3xl text-white shadow-[0_16px_34px_rgba(239,84,53,.24)]">
+                            <i className="ri-sparkling-2-fill" />
+                          </span>
+                          <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.2em] text-primary-300">AI-first uniform studio</p>
+                          <h2 className="mx-auto mt-2 max-w-3xl font-heading text-3xl font-semibold leading-tight text-white sm:text-4xl xl:text-5xl">Your generated uniform will appear here</h2>
+                          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-background-50/55">Add a team name and design brief in the AI Designer panel. You can also upload a reference image, lock any details you want to keep, and generate a complete front-and-back concept.</p>
+                          <div className="mx-auto mt-7 grid w-full max-w-3xl gap-3 text-left sm:grid-cols-3">
+                            {[
+                              ["ri-image-add-line", "Reference", "Optional inspiration image"],
+                              ["ri-quill-pen-line", "Describe", "Colors, style and identity"],
+                              ["ri-magic-line", "Generate", "Complete front and back kit"],
+                            ].map(([icon, title, copy]) => (
+                              <div key={title} className="rounded-2xl border border-white/[0.07] bg-black/15 p-4">
+                                <i className={`${icon} text-lg text-primary-300`} />
+                                <strong className="mt-2 block text-xs text-white">{title}</strong>
+                                <span className="mt-1 block text-[10px] leading-relaxed text-white/40">{copy}</span>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </div>
@@ -2089,11 +2128,7 @@ export default function UniformStudioPage() {
                               : "bg-white/5 text-background-50/70 border-white/10 hover:bg-white/10 hover:text-background-50"
                           }`}
                         >
-                          {t.key === "ai" ? (
-                            <img src="/connect767-ai-logo-transparent.png" alt="" aria-hidden="true" className="h-5 w-5 bg-transparent object-contain" />
-                          ) : (
-                            <i className={t.icon} />
-                          )}
+                          <i className={t.icon} />
                           {t.label}
                         </button>
                       ))}
@@ -2101,7 +2136,7 @@ export default function UniformStudioPage() {
                   </div>
 
               {/* Docked fields panel */}
-              <aside className={`hidden min-h-0 w-full flex-shrink-0 flex-col border-l border-black/10 bg-[#f7f5ef] md:flex ${activeTool === "ai" ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px] overflow-hidden" : "max-w-[420px] overflow-y-auto"}`}>
+              <aside className={`hidden w-full flex-shrink-0 border-l border-black/10 bg-[#f7f5ef] md:block ${activeTool === "ai" ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px] overflow-hidden" : "max-w-[420px] overflow-y-auto"}`}>
                 {activeTool !== "ai" && <div className="sticky top-0 z-10 border-b border-black/[0.07] bg-[#f7f5ef]/95 px-5 py-4 backdrop-blur-xl">
                   <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary-700">Step {workflowStep.step} · {workflowStep.label}</p>
                   <div className="mt-1 flex items-center justify-between gap-3">
@@ -2110,8 +2145,8 @@ export default function UniformStudioPage() {
                   </div>
                   <p className="mt-1 text-xs text-foreground-500">{activeToolConfig?.hint || workflowStep.description}</p>
                 </div>}
-                <div className={activeTool === "ai" ? "min-h-0 flex-1 overflow-hidden" : "p-5"}>
-                {selectedLayer && activeTool !== "ai" && <SelectedItemPanel
+                <div className={activeTool === "ai" ? "h-full" : "p-5"}>
+                {selectedLayer && <SelectedItemPanel
                   layer={selectedLayer}
                   placement={selectedLayerId ? placements3d[selectedLayerId] : null}
                   onTextChange={(id, text) => updateLayer(id, { text })}
@@ -2260,7 +2295,7 @@ export default function UniformStudioPage() {
 
       {/* Mobile: the fields panel docks to the bottom instead of the side */}
       <div className={`md:hidden flex-shrink-0 overflow-y-auto overscroll-contain border-t border-background-200/60 bg-background-50 ${activeTool === "ai" ? "max-h-[72dvh] p-0" : "max-h-[42dvh] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"}`}>
-        {activeTool !== "ai" && <SelectedItemPanel
+        <SelectedItemPanel
           layer={selectedLayer}
           placement={selectedLayerId ? placements3d[selectedLayerId] : null}
           onTextChange={(id, text) => updateLayer(id, { text })}
@@ -2268,7 +2303,7 @@ export default function UniformStudioPage() {
           onScaleChange={stageMode === "3d" ? setLayerScale : setLayerSize2d}
           onRotateChange={stageMode === "3d" ? rotateLayer : rotateLayer2d}
           onDelete={removeLayer}
-        />}
+        />
 
         {activeTool === "design" && (
           <DesignPanel
