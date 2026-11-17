@@ -53,6 +53,7 @@ describe("AIUniformComposer", () => {
 
     const logos = screen.getAllByRole("img", { name: "Connect767 AI" });
     expect(logos.length).toBeGreaterThanOrEqual(2);
+    expect(logos.some((logo) => logo.getAttribute("src")?.includes("connect767-ai-command-logo.png"))).toBe(true);
     expect(screen.queryByText("Connect767 AI")).not.toBeInTheDocument();
     expect(screen.getByText("Design your uniform")).toBeInTheDocument();
   });

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 const AI_LOGO_SRC = "/connect767-ai-logo-transparent.png?v=20261117";
+const AI_COMMAND_LOGO_SRC = "/connect767-ai-command-logo.png?v=20261117";
 
 const MODE_COPY = {
   uniform: {
@@ -18,7 +19,7 @@ const MODE_COPY = {
 function EmptyConversation({ dark }) {
   return (
     <div className="mx-auto flex h-full max-w-sm flex-col items-center justify-center px-5 py-8 text-center">
-      <img src={AI_LOGO_SRC} alt="Connect767 AI" className="h-20 w-20 object-contain drop-shadow-[0_12px_24px_rgba(0,116,73,.18)]" />
+      <img src={AI_COMMAND_LOGO_SRC} alt="Connect767 AI" className="h-28 w-44 object-contain drop-shadow-[0_12px_24px_rgba(0,116,73,.18)]" />
       <h3 className={`mt-4 font-heading text-xl font-semibold ${dark ? "text-white" : "text-foreground-950"}`}>Design your uniform</h3>
       <p className={`mt-2 text-[11px] leading-relaxed ${dark ? "text-white/55" : "text-foreground-500"}`}>
         Describe a complete kit or create transparent artwork. Your generated result stays editable in the Uniform Studio.
