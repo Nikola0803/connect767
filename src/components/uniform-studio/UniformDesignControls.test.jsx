@@ -5,6 +5,25 @@ import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
 import { DesignPanel, OptionsPanel, StudioBackgroundPanel } from "./StudioPanels";
 
 describe("uniform design controls", () => {
+  it("uses one palette and changes only the selected garment part", () => {
+    const setColors = vi.fn();
+    const onHoverZone = vi.fn();
+    render(<DesignPanel sport="soccer" collar="Crew" setCollar={vi.fn()} sleeve="Short" setSleeve={vi.fn()} colors={defaultZoneColors} setColors={setColors} onHoverZone={onHoverZone} />);
+    fireEvent.click(screen.getByRole("button", { name: /Sleeve ends #/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Set Sleeve ends to #0c8a57" }));
+    const updated = setColors.mock.calls[0][0](defaultZoneColors);
+    expect(updated).toEqual({ ...defaultZoneColors, sleeveStrip: "#0c8a57" });
+    fireEvent.click(screen.getByRole("button", { name: /Shirt body #/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Set Shirt body to #086b44" }));
+    expect(setColors.mock.calls.at(-1)[0](defaultZoneColors)).toEqual({ ...defaultZoneColors, body: "#086b44" });
+    fireEvent.click(screen.getByRole("button", { name: /Sleeve ends #/i }));
+    expect(screen.queryByRole("button", { name: /Set Collar to/ })).not.toBeInTheDocument();
+    fireEvent.mouseEnter(screen.getByRole("button", { name: /Collar #/i }));
+    expect(onHoverZone).toHaveBeenCalledWith("collar");
+    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
+    fireEvent.change(screen.getByLabelText("Sleeve ends hex value"), { target: { value: "#123456" } });
+    expect(setColors.mock.calls.at(-1)[0](defaultZoneColors).sleeveStrip).toBe("#123456");
+  });
   it("offers optional Polo and mixed sleeves without Crew, V-Neck or Sleeveless buttons", () => {
     const setSleeve = vi.fn();
     const props = { sport: "soccer", collar: "Crew", setCollar: vi.fn(), sleeve: "Short", setSleeve, colors: defaultZoneColors, setColors: vi.fn() };
