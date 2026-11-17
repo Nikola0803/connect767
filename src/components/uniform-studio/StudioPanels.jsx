@@ -190,6 +190,7 @@ function ColorRow({ label, value, onChange, zone, onHoverZone }) {
 }
 
 export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, colors, setColors, onHoverZone, twoTone, setTwoTone }) {
+  useEffect(() => () => onHoverZone?.(null), [onHoverZone]);
   const setZone = (zone) => (color) => {
     setColors((current) => ({
       ...current,
@@ -274,14 +275,15 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
       <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400 mb-2 pt-2 border-t border-background-200/70">
         Garment colors
       </h3>
-      <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="Garment part colors">
+      <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="Garment part colors" onMouseLeave={() => onHoverZone?.(null)}>
         {colorZones.map((zone) => <label key={zone.key}
           onMouseEnter={() => onHoverZone?.(zone.key)} onMouseLeave={() => onHoverZone?.(null)}
-          onFocus={() => onHoverZone?.(zone.key)} onBlur={() => onHoverZone?.(null)}
+          onFocus={() => onHoverZone?.(null)} onBlur={() => onHoverZone?.(null)}
+          onPointerCancel={() => onHoverZone?.(null)}
           className="relative flex min-h-11 min-w-0 cursor-pointer items-center gap-1.5 rounded-lg border border-background-200 bg-background-50 px-2 py-1.5 text-left transition hover:border-primary-300 focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20">
           <span className="h-6 w-6 shrink-0 rounded-md border border-black/10" style={{ backgroundColor: colors[zone.key] }} aria-hidden="true" />
           <span className="min-w-0 text-[11px] font-semibold leading-tight text-foreground-800">{zone.label}</span>
-          <input type="color" aria-label={`${zone.label} color`} value={colors[zone.key]} onChange={(event) => setZone(zone.key)(event.target.value)} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
+          <input type="color" aria-label={`${zone.label} color`} value={colors[zone.key]} onClick={() => onHoverZone?.(null)} onChange={(event) => { setZone(zone.key)(event.target.value); onHoverZone?.(null); }} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
         </label>)}
       </div>
     </div>
