@@ -242,7 +242,7 @@ export default function AIUniformComposer({
                   role="menuitem"
                 >
                   <i className="ri-delete-bin-6-line text-sm" />
-                  <span><strong className="block">Clear current design</strong><span className={`block text-[8px] font-normal ${muted}`}>Remove the concept from the canvas</span></span>
+                  <span><strong className="block">Clear current design</strong><span className={`block text-[8px] font-normal ${muted}`}>Remove the current concept</span></span>
                 </button>
               )}
             </div>
@@ -300,7 +300,7 @@ export default function AIUniformComposer({
             {uniformPlan && !generating && (
               <article className={`overflow-hidden rounded-2xl border shadow-sm ${card}`}>
                 <div className="p-3.5">
-                  <div className="flex items-start justify-between gap-3"><div><p className="text-[9px] font-bold uppercase tracking-[0.14em] text-primary-700">Current AI design</p><h3 className="mt-1 font-heading text-base font-semibold">{uniformPlan.name}</h3></div><span className="rounded-full bg-primary-50 px-2 py-1 text-[8px] font-bold text-primary-800">On canvas</span></div>
+                  <div className="flex items-start justify-between gap-3"><div><p className="text-[9px] font-bold uppercase tracking-[0.14em] text-primary-700">Current AI design</p><h3 className="mt-1 font-heading text-base font-semibold">{uniformPlan.name}</h3></div><span className="rounded-full bg-primary-50 px-2 py-1 text-[8px] font-bold text-primary-800">Active design</span></div>
                   <p className={`mt-2 text-[10px] leading-relaxed ${muted}`}>{uniformPlan.summary}</p>
                   <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-current/10 pt-3">
                     <button type="button" onClick={onApplyUniform} className="inline-flex min-h-8 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-primary-700 px-3.5 py-1.5 text-[9px] font-bold text-white shadow-sm transition hover:bg-primary-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"><i className={applied ? "ri-check-double-line" : "ri-check-line"} /> {applied ? "Applied" : "Apply design"}</button>

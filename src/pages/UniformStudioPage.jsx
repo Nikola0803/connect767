@@ -1773,48 +1773,10 @@ export default function UniformStudioPage() {
                     {/* Top bar: view thumbnails + zoom/export, inline instead of a separate row above the card */}
                     <div className={`flex w-full flex-shrink-0 items-center justify-between gap-2 ${activeTool === "ai" ? "max-w-none" : "max-w-6xl"}`}>
                       <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
-                        <div className="hidden min-w-0 items-center gap-1.5 text-background-50/55 md:flex">
-                          {activeTool === "ai" ? (
-                            <img src="/connect767-ai-logo-transparent.png" alt="" aria-hidden="true" className="h-4 w-4 bg-transparent object-contain" />
-                          ) : (
-                            <i className={`${activeToolConfig?.icon || workflowStep.icon} text-xs text-primary-300`} />
-                          )}
+                        {activeTool !== "ai" && <div className="hidden min-w-0 items-center gap-1.5 text-background-50/55 md:flex">
+                          <i className={`${activeToolConfig?.icon || workflowStep.icon} text-xs text-primary-300`} />
                           <span className="truncate text-[10px] font-bold uppercase tracking-[0.13em]">{activeToolConfig?.label || workflowStep.label}</span>
-                        </div>
-                        {ENABLE_3D && (
-                          <div
-                            className="inline-flex shrink-0 items-center rounded-lg border border-white/[0.08] bg-black/15 p-0.5"
-                            aria-label="Uniform preview mode"
-                          >
-                            <button
-                              type="button"
-                              aria-pressed={stageMode === "edit"}
-                              onClick={() => setStageMode("edit")}
-                              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer ${
-                                stageMode === "edit"
-                                  ? "bg-background-50 text-foreground-950 shadow-sm"
-                                  : "text-background-50/55 hover:bg-white/[0.06] hover:text-background-50"
-                              }`}
-                            >
-                              <i className="ri-edit-2-line" />
-                              AI canvas
-                            </button>
-                            <button
-                              type="button"
-                              aria-pressed={stageMode === "3d"}
-                              onClick={() => setStageMode("3d")}
-                              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer ${
-                                stageMode === "3d"
-                                  ? "bg-primary-600 text-white shadow-[0_6px_16px_rgba(0,116,73,0.28)]"
-                                  : "text-background-50/55 hover:bg-white/[0.06] hover:text-background-50"
-                              }`}
-                            >
-                              <i className="ri-3d-cube-sphere-line" />
-                              3D preview
-                            </button>
-                          </div>
-                        )}
-
+                        </div>}
                       </div>
                       {stageMode === "edit" && (
                         <div className="inline-flex items-center rounded-lg border border-white/[0.07] bg-black/15 p-0.5">
@@ -2027,32 +1989,6 @@ export default function UniformStudioPage() {
                           </div>
                         </div>
                       </div>
-                    ) : stageMode === "edit" && activeTool === "ai" && aiDesignerMode === "uniform" && !aiWorkspaceConcept?.src ? (
-                      <div className="flex min-h-0 w-full flex-1 items-stretch justify-center p-1">
-                        <div className="flex h-full w-full max-w-none flex-col justify-center rounded-[28px] border border-dashed border-primary-400/35 bg-[radial-gradient(circle_at_50%_0%,rgba(0,116,73,.2),transparent_56%),rgba(255,255,255,.025)] px-6 py-8 text-center shadow-[0_24px_70px_rgba(0,0,0,.2)] sm:px-10 lg:px-14">
-                          <img
-                            src="/connect767-ai-logo-transparent.png"
-                            alt="Connect767 AI"
-                            className="mx-auto h-20 w-20 bg-transparent object-contain"
-                          />
-                          <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.2em] text-primary-300">AI-first uniform studio</p>
-                          <h2 className="mx-auto mt-2 max-w-3xl font-heading text-3xl font-semibold leading-tight text-white sm:text-4xl xl:text-5xl">Your generated uniform will appear here</h2>
-                          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-background-50/55">Add a team name and design brief in the AI Designer panel. You can also upload a reference image, lock any details you want to keep, and generate a complete front-and-back concept.</p>
-                          <div className="mx-auto mt-7 grid w-full max-w-3xl gap-3 text-left sm:grid-cols-3">
-                            {[
-                              ["ri-image-add-line", "Reference", "Optional inspiration image"],
-                              ["ri-quill-pen-line", "Describe", "Colors, style and identity"],
-                              ["ri-magic-line", "Generate", "Complete front and back kit"],
-                            ].map(([icon, title, copy]) => (
-                              <div key={title} className="rounded-2xl border border-white/[0.07] bg-black/15 p-4">
-                                <i className={`${icon} text-lg text-primary-300`} />
-                                <strong className="mt-2 block text-xs text-white">{title}</strong>
-                                <span className="mt-1 block text-[10px] leading-relaxed text-white/40">{copy}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
                     ) : stageMode === "edit" ? (
                       <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center gap-2">
                         <div
@@ -2165,7 +2101,7 @@ export default function UniformStudioPage() {
                   </div>
 
               {/* Docked fields panel */}
-              <aside className={`hidden min-h-0 w-full flex-shrink-0 flex-col border-l border-black/10 bg-[#f7f5ef] md:flex ${activeTool === "ai" ? "md:w-[340px] md:max-w-[340px] lg:w-[400px] lg:max-w-[400px] 2xl:w-[440px] 2xl:max-w-[440px] overflow-hidden" : "max-w-[420px] overflow-y-auto"}`}>
+              <aside className={`hidden min-h-0 w-full flex-shrink-0 flex-col border-l border-black/10 bg-[#f7f5ef] md:flex ${activeTool === "ai" ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px] overflow-hidden" : "max-w-[420px] overflow-y-auto"}`}>
                 {activeTool !== "ai" && <div className="sticky top-0 z-10 border-b border-black/[0.07] bg-[#f7f5ef]/95 px-5 py-4 backdrop-blur-xl">
                   <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary-700">Step {workflowStep.step} · {workflowStep.label}</p>
                   <div className="mt-1 flex items-center justify-between gap-3">
