@@ -867,7 +867,8 @@ export function LogoPanel({ onUpload, armed }) {
       </ol>
       <p className="text-[11px] text-foreground-500 font-label">
         Transparent PNG or SVG prints cleanest — a white box behind the artwork will be printed
-        too. Around 1000&nbsp;&times;&nbsp;1000px or larger keeps it sharp.
+        too. Around 1000&nbsp;&times;&nbsp;1000px or larger keeps it sharp. Upload again or duplicate
+        a selected layer to add as many logos and artwork elements as needed.
       </p>
     </div>
   );

@@ -21,6 +21,16 @@ export default function DraggableLayer({ layer, stageRef, selected, onSelect, on
   });
 
   const fontSize = 10 + layer.size * 1.1; // px, scales with size %
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+  const resizeBy = (delta) => {
+    onChange(layer.id, {
+      x: layer.x,
+      y: layer.y,
+      size: clamp((layer.size ?? 16) + delta, 6, 120),
+      rotation: layer.rotation || 0,
+    });
+  };
 
   return (
     <>
@@ -42,6 +52,9 @@ export default function DraggableLayer({ layer, stageRef, selected, onSelect, on
           cursor: "grab",
           touchAction: "none",
         }}
+        role="group"
+        tabIndex={selected ? 0 : -1}
+        aria-label={`Selected ${layer.type === "text" ? "text" : "artwork"}. Drag to move, use the green handle or mouse wheel to resize.`}
         onMouseDown={(e) => {
           e.stopPropagation();
           onSelect(layer.id);
@@ -51,6 +64,38 @@ export default function DraggableLayer({ layer, stageRef, selected, onSelect, on
           e.stopPropagation();
           onSelect(layer.id);
           handleMoveStart(e);
+        }}
+        onWheel={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onSelect(layer.id);
+          resizeBy(e.deltaY < 0 ? 2 : -2);
+        }}
+        onKeyDown={(e) => {
+          if (e.target !== e.currentTarget) return;
+          const movement = {
+            ArrowLeft: { x: -1, y: 0 },
+            ArrowRight: { x: 1, y: 0 },
+            ArrowUp: { x: 0, y: -1 },
+            ArrowDown: { x: 0, y: 1 },
+          }[e.key];
+          if (movement) {
+            e.preventDefault();
+            onChange(layer.id, {
+              x: clamp(layer.x + movement.x, 0, 100),
+              y: clamp(layer.y + movement.y, 0, 100),
+              size: layer.size,
+              rotation: layer.rotation || 0,
+            });
+          }
+          if (e.key === "+" || e.key === "=") {
+            e.preventDefault();
+            resizeBy(2);
+          }
+          if (e.key === "-" || e.key === "_") {
+            e.preventDefault();
+            resizeBy(-2);
+          }
         }}
       >
         <div
@@ -134,7 +179,7 @@ export default function DraggableLayer({ layer, stageRef, selected, onSelect, on
               </button>
               <button
                 type="button"
-                aria-label="Resize"
+                aria-label="Resize artwork"
                 onMouseDown={(e) => {
                   e.stopPropagation();
                   handleResizeStart(e);
@@ -143,7 +188,7 @@ export default function DraggableLayer({ layer, stageRef, selected, onSelect, on
                   e.stopPropagation();
                   handleResizeStart(e);
                 }}
-                className="absolute -bottom-3 -right-3 w-6 h-6 rounded-full bg-primary-500 text-background-50 flex items-center justify-center cursor-nwse-resize shadow-sm"
+                className="absolute -bottom-3 -right-3 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-primary-500 text-background-50 shadow-md cursor-nwse-resize"
                 style={{ touchAction: "none" }}
               >
                 <i className="ri-expand-diagonal-line text-xs" />

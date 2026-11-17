@@ -1102,6 +1102,17 @@ export default function UniformStudioPage() {
       ...ls,
       { ...source, id: newId, x: Math.min(90, source.x + 6), y: Math.min(90, source.y + 6) },
     ]);
+    const sourcePlacement = placements3d[id];
+    if (sourcePlacement) {
+      setPlacements3d((current) => ({
+        ...current,
+        [newId]: {
+          ...sourcePlacement,
+          position: sourcePlacement.position ? [...sourcePlacement.position] : sourcePlacement.position,
+          orientation: sourcePlacement.orientation ? [...sourcePlacement.orientation] : sourcePlacement.orientation,
+        },
+      }));
+    }
     setSelectedLayerId(newId);
   };
 
@@ -2167,6 +2178,7 @@ export default function UniformStudioPage() {
                   onGradientChange={(id, patch) => updateLayer(id, patch)}
                   onScaleChange={stageMode === "3d" ? setLayerScale : setLayerSize2d}
                   onRotateChange={stageMode === "3d" ? rotateLayer : rotateLayer2d}
+                  onDuplicate={duplicateLayer}
                   onDelete={removeLayer}
                 />}
 
@@ -2314,6 +2326,7 @@ export default function UniformStudioPage() {
           onColorChange={(id, color) => updateLayer(id, { color })}
           onScaleChange={stageMode === "3d" ? setLayerScale : setLayerSize2d}
           onRotateChange={stageMode === "3d" ? rotateLayer : rotateLayer2d}
+          onDuplicate={duplicateLayer}
           onDelete={removeLayer}
         />
 
