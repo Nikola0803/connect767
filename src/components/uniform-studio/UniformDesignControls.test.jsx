@@ -5,10 +5,22 @@ import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
 import { DesignPanel, OptionsPanel, StudioBackgroundPanel, UniformSetupPanel } from "./StudioPanels";
 
 describe("uniform design controls", () => {
+  it("keeps Full Kit selected when adding extra shirts and allows sizes and quantities", () => {
+    const setKitType = vi.fn();
+    const setExtraTeamShirts = vi.fn();
+    const options = { fitType: "Men", setFitType: vi.fn(), kitType: "Shirt", setKitType, extraTeamShirts: [{ size: "AM", quantity: 1 }], setExtraTeamShirts, logoApplication: "Sublimated", setLogoApplication: vi.fn(), insideCollarMessage: false, setInsideCollarMessage: vi.fn(), insideCollarText: "", setInsideCollarText: vi.fn() };
+    render(<OptionsPanel {...options} section="fit" />);
+    expect(screen.getByRole("button", { name: /^Full Kit/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /^Shirt Only/ })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.change(screen.getByLabelText("Extra shirt quantity 1"), { target: { value: "3" } });
+    expect(setExtraTeamShirts.mock.calls.at(-1)[0](options.extraTeamShirts)).toEqual([{ size: "AM", quantity: 3 }]);
+    fireEvent.click(screen.getByRole("button", { name: "Remove extra shirt size 1" }));
+    expect(setKitType).toHaveBeenCalledWith("Full");
+  });
   it("combines fit, colors and functioning production extras in uniform setup", () => {
     const setInsideCollarMessage = vi.fn();
     render(<UniformSetupPanel designProps={{ sport: "soccer", collar: "Crew", setCollar: vi.fn(), sleeve: "Short", setSleeve: vi.fn(), colors: defaultZoneColors, setColors: vi.fn() }} optionsProps={{ fitType: "Men", setFitType: vi.fn(), kitType: "Full", setKitType: vi.fn(), logoApplication: "Sublimated", setLogoApplication: vi.fn(), insideCollarMessage: false, setInsideCollarMessage, insideCollarText: "", setInsideCollarText: vi.fn() }} />);
-    expect(screen.getByRole("button", { name: "Full Kit" })).toBeVisible();
+    expect(screen.getByRole("button", { name: /^Full Kit/ })).toBeVisible();
     expect(screen.getByLabelText("Shirt body color")).toBeInTheDocument();
     const summary = screen.getByText("Production extras");
     expect(summary.closest("details")).not.toHaveAttribute("open");
@@ -171,8 +183,9 @@ describe("uniform design controls", () => {
     render(<OptionsPanel fitType="Men" setFitType={vi.fn()} kitType="Full" setKitType={setKitType} logoApplication="Sublimated" setLogoApplication={vi.fn()} insideCollarMessage={false} setInsideCollarMessage={vi.fn()} insideCollarText="" setInsideCollarText={vi.fn()} />);
     expect(screen.queryByText("Studio background")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Both" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Full Kit" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Shirt Only" }));
+    expect(screen.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent("$30.00");
+    expect(screen.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("$12.00");
+    fireEvent.click(screen.getByRole("button", { name: /^Shirt Only/ }));
     expect(setKitType).toHaveBeenCalledWith("Shirt");
   });
 });

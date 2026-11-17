@@ -15,7 +15,8 @@ if (!defined('ABSPATH')) {
 class C767_Uniform_Checkout
 {
     const NAMESPACE_ = 'connect767/v1';
-    const BASE_KIT_PRICE = 25.00;
+    const BASE_KIT_PRICE = 30.00;
+    const EXTRA_TEAM_SHIRT_PRICE = 12.00;
     const FAN_JERSEY_PRICE = 34.00;
 
     public static function init()
@@ -293,6 +294,11 @@ class C767_Uniform_Checkout
             }
         }
         $kits_total = round($unit_price * $unit_count + $long_sleeve_count * 2.00, 2);
+        // Extra shirts are added only after a valid full-kit roster exists.
+        $extra_team_shirts = self::sanitize_supporter_jerseys($payload['extraTeamShirts'] ?? []);
+        $extra_shirt_count = array_reduce($extra_team_shirts, function ($total, $row) {
+            return $total + $row['quantity'];
+        }, 0);
         $fan_added = rest_sanitize_boolean($payload['fanJerseyAdded'] ?? false);
         $supporter_jerseys = $fan_added ? self::sanitize_supporter_jerseys($payload['supporterJerseys'] ?? []) : [];
         if ($fan_added && empty($supporter_jerseys)) {
@@ -326,6 +332,20 @@ class C767_Uniform_Checkout
                 $kit_item->add_meta_data('Long sleeve upgrades', $long_sleeve_count . ' × ' . wc_price(2.00), true);
             }
             $kit_item->save();
+        }
+
+        if ($extra_shirt_count > 0) {
+            $extra_shirt_total = round(self::EXTRA_TEAM_SHIRT_PRICE * $extra_shirt_count, 2);
+            $extra_item_id = $order->add_product($product, $extra_shirt_count, ['subtotal' => $extra_shirt_total, 'total' => $extra_shirt_total]);
+            $extra_item = $order->get_item($extra_item_id);
+            if ($extra_item) {
+                $extra_item->set_name($template . ' extra team shirt');
+                $extra_item->add_meta_data('Unit price', wc_price(self::EXTRA_TEAM_SHIRT_PRICE), true);
+                $extra_item->add_meta_data('Sizes', implode(', ', array_map(function ($row) {
+                    return $row['size'] . ' × ' . $row['quantity'];
+                }, $extra_team_shirts)), true);
+                $extra_item->save();
+            }
         }
 
         if ($supporter_count > 0) {
@@ -376,6 +396,8 @@ class C767_Uniform_Checkout
         $order->update_meta_data('_c767_uniform_supporter_count', $supporter_count);
 
         $design_payload = $payload;
+        $design_payload['kitType'] = 'Full';
+        $design_payload['extraTeamShirts'] = $extra_team_shirts;
         $collar_attachment = rest_sanitize_boolean($payload['insideCollarMessage'] ?? false)
             ? C767_REST_Uniform_Quotes::sanitize_collar_attachment($payload['insideCollarAttachment'] ?? null) : null;
         if ($collar_attachment) {

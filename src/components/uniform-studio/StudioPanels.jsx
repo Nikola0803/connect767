@@ -6,6 +6,9 @@ import {
   kitTypeOptions,
   logoApplicationOptions,
   ADD_ON_PRICES,
+  BASE_KIT_PRICE,
+  SHIRT_ONLY_PRICE,
+  shirtSizeOptions,
   sportConfigFor,
 } from "../../data/uniforms";
 import { NO_DETECTED_SOURCE_ELEMENTS, zoneOverlapWarnings, zoneValidation } from "./uniformZoneModel";
@@ -569,6 +572,7 @@ export function OptionsPanel({
   fitType, setFitType, kitType, setKitType, logoApplication, setLogoApplication,
   insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText,
   insideCollarAttachment, setInsideCollarAttachment,
+  extraTeamShirts = [{ size: "AM", quantity: 1 }], setExtraTeamShirts,
   section = "all",
 }) {
   return (
@@ -598,22 +602,34 @@ export function OptionsPanel({
       </div>
       <div className="mb-3">
         <span className="text-xs font-semibold text-foreground-800 block mb-2">Kit type</span>
-        <div className="flex gap-2 flex-wrap">
+        <div className="grid grid-cols-2 gap-2">
           {kitTypeOptions.map((k) => (
             <button
               key={k}
               type="button"
-              onClick={() => setKitType(k)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border cursor-pointer transition-all ${
-                kitType === k
-                  ? "bg-primary-500 text-background-50 border-primary-500 shadow-sm shadow-primary-500/20"
+              aria-pressed={k === "Full" || kitType === "Shirt"}
+              onClick={() => setKitType(k === "Shirt" && kitType !== "Shirt" ? "Shirt" : "Full")}
+              className={`min-w-0 px-3 py-2.5 text-left text-xs rounded-xl border cursor-pointer transition-all ${
+                (k === "Full" || kitType === "Shirt")
+                  ? "bg-primary-50 text-primary-900 border-primary-500"
                   : "bg-background-50 text-foreground-700 border-background-300 hover:bg-background-100"
               }`}
             >
-              {k === "Full" ? "Full Kit" : "Shirt Only"}
+              <span className="flex items-center justify-between gap-1 font-semibold">{k === "Full" ? "Full Kit" : "Shirt Only"}{(k === "Full" || kitType === "Shirt") && <i className="ri-check-line" aria-hidden="true" />}</span>
+              <span className="mt-1 block"><strong className="text-base font-semibold">${(k === "Full" ? BASE_KIT_PRICE : SHIRT_ONLY_PRICE).toFixed(2)}</strong><span className="ml-1 text-[11px] font-normal opacity-80">{k === "Full" ? "per kit" : "per shirt"}</span></span>
+              <span className="mt-1 block text-[10px] font-normal leading-snug opacity-80">{k === "Full" ? "Team order" : "Extra shirts with a Full Kit order"}</span>
             </button>
           ))}
         </div>
+        {kitType === "Shirt" && <div className="mt-3 space-y-2">
+          <p className="text-xs text-foreground-600">Add extra shirts to your full-kit team order.</p>
+          {extraTeamShirts.map((row, index) => <div key={index} className="flex items-end gap-2">
+            <label className="min-w-0 flex-1 text-[11px] text-foreground-600">Size<select aria-label={`Extra shirt size ${index + 1}`} value={row.size} onChange={(event) => { const size = event.target.value; setExtraTeamShirts?.((rows) => rows.map((item, i) => i === index ? { ...item, size } : item)); }} className="mt-1 block w-full rounded-lg border border-background-300 bg-background-50 p-2 text-xs text-foreground-900">{shirtSizeOptions.map((size) => <option key={size} value={size} disabled={extraTeamShirts.some((item, i) => i !== index && item.size === size)}>{size}</option>)}</select></label>
+            <label className="w-20 text-[11px] text-foreground-600">Quantity<input type="number" min="1" max="99" aria-label={`Extra shirt quantity ${index + 1}`} value={row.quantity} onChange={(event) => { const quantity = Math.max(1, Math.min(99, parseInt(event.target.value, 10) || 1)); setExtraTeamShirts?.((rows) => rows.map((item, i) => i === index ? { ...item, quantity } : item)); }} className="mt-1 block w-full rounded-lg border border-background-300 bg-background-50 p-2 text-xs text-foreground-900" /></label>
+            <button type="button" aria-label={`Remove extra shirt size ${index + 1}`} onClick={() => { if (extraTeamShirts.length === 1) setKitType("Full"); else setExtraTeamShirts?.((rows) => rows.filter((_, i) => i !== index)); }} className="cursor-pointer p-2 text-foreground-500"><i className="ri-close-line" aria-hidden="true" /></button>
+          </div>)}
+          {extraTeamShirts.length < shirtSizeOptions.length && <button type="button" onClick={() => setExtraTeamShirts?.((rows) => [...rows, { size: shirtSizeOptions.find((size) => !rows.some((row) => row.size === size)), quantity: 1 }])} className="cursor-pointer text-xs font-semibold text-primary-700">+ Add another size</button>}
+        </div>}
       </div>
 
       </>}

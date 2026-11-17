@@ -184,7 +184,19 @@ export const playerRoleOptions = ["Player", "Goalkeeper", "Coach / Staff"];
  * component) so the numbers are a one-place edit once the client confirms
  * pricing for the other sports.
  */
-export const BASE_KIT_PRICE = 25;
+export const BASE_KIT_PRICE = 30;
+export const SHIRT_ONLY_PRICE = 12;
+export function normalizeExtraTeamShirts(rows = []) {
+  if (!Array.isArray(rows)) return [];
+  const quantities = new Map();
+  for (const row of rows) {
+    if (!row || !shirtSizeOptions.includes(row.size)) continue;
+    const quantity = Math.max(1, Math.min(99, parseInt(row.quantity, 10) || 1));
+    quantities.set(row.size, Math.min(99, (quantities.get(row.size) || 0) + quantity));
+  }
+  return [...quantities].map(([size, quantity]) => ({ size, quantity }));
+}
+export const extraTeamShirtCount = (rows) => normalizeExtraTeamShirts(rows).reduce((sum, row) => sum + row.quantity, 0);
 export const ADD_ON_PRICES = {
   // Short sleeves are included; mixed orders charge only long-sleeve kits.
   sleeveLong: 2,
