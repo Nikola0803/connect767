@@ -1,10 +1,49 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { defaultZoneColors, normalizeZoneColors } from "../../data/uniforms";
 import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
 import { DesignPanel, OptionsPanel, StudioBackgroundPanel, UniformSetupPanel } from "./StudioPanels";
 
 describe("uniform design controls", () => {
+  it("restores full garment colors after leaving a picker, including focus restored by a native color dialog", () => {
+    function Preview() {
+      const [highlightZone, setHighlightZone] = useState(null);
+      return <>
+        <DesignPanel sport="soccer" collar="Crew" sleeve="Short" colors={defaultZoneColors} setColors={vi.fn()} onHoverZone={setHighlightZone} />
+        {["front", "side", "back"].map((view) => <ApprovedUniformGraphic key={view} sport="soccer" view={view} colors={defaultZoneColors} highlightZone={highlightZone} />)}
+      </>;
+    }
+    const { container } = render(<Preview />);
+    const input = screen.getByLabelText("Shirt body color");
+    const tile = input.closest("label");
+    const expectFullColors = () => {
+      for (const tint of container.querySelectorAll('[data-garment-tint="fabric-multiply"]')) {
+        expect([null, "1"]).toContain(tint.getAttribute("opacity"));
+      }
+      for (const zone of container.querySelectorAll('[data-uniform-view="side"] [data-garment-zone]')) expect(zone.getAttribute("opacity")).toBe("1");
+    };
+    fireEvent.mouseEnter(tile);
+    expect(container.querySelector('[data-uniform-view="side"] [data-garment-zone="sleeve"]').getAttribute("opacity")).toBe("0.24");
+    fireEvent.mouseLeave(tile);
+    fireEvent.focus(input);
+    expectFullColors();
+    fireEvent.mouseEnter(tile);
+    fireEvent.click(input);
+    expectFullColors();
+    fireEvent.mouseEnter(tile);
+    fireEvent.change(input, { target: { value: "#123456" } });
+    expectFullColors();
+  });
+
+  it("clears the hover highlight when the color controls unmount", () => {
+    const onHoverZone = vi.fn();
+    const { unmount } = render(<DesignPanel sport="soccer" collar="Crew" sleeve="Short" colors={defaultZoneColors} setColors={vi.fn()} onHoverZone={onHoverZone} />);
+    fireEvent.mouseEnter(screen.getByLabelText("Collar color").closest("label"));
+    expect(onHoverZone).toHaveBeenLastCalledWith("collar");
+    unmount();
+    expect(onHoverZone).toHaveBeenLastCalledWith(null);
+  });
   it.each([["soccer", 22], ["basketball", 10], ["cricket", 15], ["netball", 10]])("shows the %s minimum beside Full Kit pricing", (sport, minimum) => {
     render(<OptionsPanel sport={sport} section="fit" fitType="Men" kitType="Full" />);
     expect(screen.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent(`Team order · Min Qnty ${minimum}`);
