@@ -573,13 +573,18 @@ export function OptionsPanel({
   return (
     <div>
       {section !== "production" && <>
+      {!fitTypeOptions.includes(fitType) && <div role="alert" className="mb-2 flex items-start gap-2 rounded-lg border-2 border-accent-400 bg-accent-50 px-3 py-2 text-accent-950">
+        <i className="ri-error-warning-fill mt-0.5 text-lg text-accent-600" aria-hidden="true" />
+        <div><p className="text-xs font-bold">Fit selection required</p><p className="mt-0.5 text-xs leading-snug">Choose Men, Women or Youth to unlock Step 2.</p></div>
+      </div>}
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold text-foreground-800">Fit type</span>
-        <div className="flex gap-2 flex-wrap">
+        <span className="text-xs font-semibold text-foreground-800">Fit type <span className="ml-1 text-[10px] font-normal text-accent-700">Required</span></span>
+        <div className="flex gap-2 flex-wrap" role="group" aria-label="Fit type (required)">
           {fitTypeOptions.map((f) => (
             <button
               key={f}
               type="button"
+              aria-pressed={fitType === f}
               onClick={() => setFitType(f)}
               className={`px-3 py-1.5 text-xs font-semibold rounded-lg border cursor-pointer transition-all ${
                 fitType === f

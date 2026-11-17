@@ -288,6 +288,8 @@ export default function UniformStudioPage() {
   const [selectedCategory, setSelectedCategory] = useState(null);
 
   // ---------- Design state ----------
+  const [fitType, setFitType] = useState("");
+  const hasSelectedFit = fitTypeOptions.includes(fitType);
   const [collar, setCollar] = useState("Crew");
   const [sleeve, setSleeve] = useState("Short");
   const [colors, setColors] = useState(defaultZoneColors);
@@ -295,11 +297,13 @@ export default function UniformStudioPage() {
   const [view, setView] = useState("front");
   const [layers, setLayers] = useState([]);
   const [selectedLayerId, setSelectedLayerId] = useState(null);
-  const [activeTool, setActiveTool] = useState(
+  const [selectedTool, setActiveTool] = useState(
     tools.some((tool) => tool.key === initialWorkflowStep)
       ? initialWorkflowStep
       : studioWorkflow.find((step) => step.key === initialWorkflowStep)?.defaultTool || "design"
   );
+  // Gate every entry path, including saved links and artwork selection.
+  const activeTool = hasSelectedFit || ["design", "zones"].includes(selectedTool) ? selectedTool : "design";
   const [zoom, setZoom] = useState(1);
   const [aiConceptRotation, setAiConceptRotation] = useState(0);
   const [aiConceptPan, setAiConceptPan] = useState({ x: 0, y: 0 });
@@ -413,7 +417,6 @@ export default function UniformStudioPage() {
   );
 
   // ---------- Priced options (spec §4.4/§4.5) ----------
-  const [fitType, setFitType] = useState(fitTypeOptions[0]);
   const [kitType, setKitType] = useState(kitTypeOptions[0]);
   const [extraTeamShirts, setExtraTeamShirts] = useState([{ size: "AM", quantity: 1 }]);
   const [logoApplication, setLogoApplication] = useState("Sublimated");
@@ -497,6 +500,7 @@ export default function UniformStudioPage() {
 
   const openWorkflowStep = (index) => {
     const nextStep = studioWorkflow[Math.max(0, Math.min(studioWorkflow.length - 1, index))];
+    if (nextStep.step > 1 && !hasSelectedFit) return;
     if (nextStep.key === "review" && !minimumKitsMet) return;
     setPendingLayer(null);
     setSelectedLayerId(null);
@@ -504,6 +508,7 @@ export default function UniformStudioPage() {
   };
 
   const openAIDesigner = () => {
+    if (!hasSelectedFit) return;
     setPendingLayer(null);
     setSelectedLayerId(null);
     setStageMode("edit");
@@ -600,6 +605,7 @@ export default function UniformStudioPage() {
           zoneStyles,
           twoTone,
           fitType,
+          fitTypeConfirmed: hasSelectedFit,
           kitType,
           extraTeamShirts,
           logoApplication,
@@ -622,7 +628,7 @@ export default function UniformStudioPage() {
          no worse than before this existed */
     }
   }, [storageKey, layers, placements3d, colors, studioBackground, collar, sleeve, zoneModel, zoneStyles, twoTone,
-    fitType, kitType, extraTeamShirts, logoApplication, insideCollarMessage, insideCollarText, insideCollarAttachment, fanJerseyAdded, supporterJerseys, roster, contact, shipping,
+    fitType, hasSelectedFit, kitType, extraTeamShirts, logoApplication, insideCollarMessage, insideCollarText, insideCollarAttachment, fanJerseyAdded, supporterJerseys, roster, contact, shipping,
     aiUniformPlan, aiWorkspaceConcept, aiDesignApplied]);
 
   const saveProgress = () => {
@@ -641,6 +647,7 @@ export default function UniformStudioPage() {
           zoneStyles,
           twoTone,
           fitType,
+          fitTypeConfirmed: hasSelectedFit,
           kitType,
           extraTeamShirts,
           logoApplication,
@@ -683,7 +690,7 @@ export default function UniformStudioPage() {
       if (saved.zoneModel?.front && saved.zoneModel?.back) setZoneModel(saved.zoneModel);
       if (saved.zoneStyles) setZoneStyles(saved.zoneStyles);
       if (saved.twoTone) setTwoTone(saved.twoTone);
-      if (saved.fitType) setFitType(saved.fitType);
+      setFitType(saved.fitTypeConfirmed === true && fitTypeOptions.includes(saved.fitType) ? saved.fitType : "");
       if (saved.kitType) setKitType(saved.kitType === "Shirt" && normalizeExtraTeamShirts(saved.extraTeamShirts).length ? "Shirt" : "Full");
       if (Array.isArray(saved.extraTeamShirts)) {
         const restoredShirts = normalizeExtraTeamShirts(saved.extraTeamShirts);
@@ -820,6 +827,7 @@ export default function UniformStudioPage() {
       return next;
     });
     setSelectedTemplate(t.slug);
+    setFitType("");
     setCollar(t.defaultCollar || nextSportConfig.collarOptions[0]);
     setSleeve(t.defaultSleeve || nextSportConfig.sleeveOptions?.[0] || "Sleeveless");
     // A stock image demonstrates the cut only. New designs always enter on
@@ -1360,6 +1368,10 @@ export default function UniformStudioPage() {
   };
 
   const handleRequestQuote = async () => {
+    if (!hasSelectedFit) {
+      setQuoteError("Select Men, Women or Youth in Uniform setup before continuing.");
+      return;
+    }
     if (!minimumKitsMet) {
       setQuoteError(`Minimum order: ${minimumKits} full kits. Extra shirts do not count toward this minimum.`);
       return;
@@ -1629,7 +1641,7 @@ export default function UniformStudioPage() {
 
   const uniformSetupPanel = <UniformSetupPanel
     designProps={{ sport: activeSport, collar, setCollar, sleeve, setSleeve, colors: stageColors, setColors: updateGarmentColors, onHoverZone: setHoverZone, twoTone, setTwoTone }}
-    optionsProps={{ sport: activeSport, fitType, setFitType, kitType, setKitType, extraTeamShirts, setExtraTeamShirts, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment }}
+    optionsProps={{ sport: activeSport, fitType, setFitType: (value) => { setFitType(value); if (!hasSelectedFit) setActiveTool("design"); }, kitType, setKitType, extraTeamShirts, setExtraTeamShirts, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment }}
   />;
 
   // ---------- The studio itself: one full viewport, nothing else ----------
@@ -1660,7 +1672,9 @@ export default function UniformStudioPage() {
           <button
             type="button"
             onClick={openAIDesigner}
-            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition ${
+            disabled={!hasSelectedFit}
+            title={!hasSelectedFit ? "Select a fit in Step 1 first" : undefined}
+            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-45 ${
               activeTool === "ai"
                 ? "border-accent-400 bg-accent-500 text-white shadow-[0_8px_20px_rgba(239,84,53,0.22)]"
                 : "border-accent-400/40 bg-accent-950/30 text-accent-200 hover:border-accent-300 hover:bg-accent-950/55"
@@ -1743,7 +1757,7 @@ export default function UniformStudioPage() {
           {studioWorkflow.map((step, index) => {
             const active = index === workflowIndex;
             const complete = index < workflowIndex;
-            const locked = step.key === "review" && !minimumKitsMet;
+            const locked = (index > 0 && !hasSelectedFit) || (step.key === "review" && !minimumKitsMet);
             return (
               <div key={step.key} className="flex min-w-0 flex-1 items-center gap-1.5">
                 <button
@@ -2452,7 +2466,8 @@ export default function UniformStudioPage() {
           <button
             type="button"
             onClick={continueWorkflow}
-            disabled={workflowStep.key === "roster" && !minimumKitsMet}
+            disabled={!hasSelectedFit || (workflowStep.key === "roster" && !minimumKitsMet)}
+            title={!hasSelectedFit ? "Select Men, Women or Youth to continue" : undefined}
             className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,116,73,0.22)] transition hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer"
           >
             Continue to {studioWorkflow[workflowIndex + 1].label}
