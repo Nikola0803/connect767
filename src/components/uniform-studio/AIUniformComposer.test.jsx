@@ -133,4 +133,24 @@ describe("AIUniformComposer", () => {
     fireEvent.click(within(screen.getByLabelText("AI design conversation history")).getByRole("button", { name: "Clear" }));
     expect(props.onClearHistory).toHaveBeenCalledTimes(1);
   });
+
+  it("dismisses open popovers when the user clicks the command area", () => {
+    renderComposer();
+    const message = screen.getByLabelText("Message Connect767 AI");
+
+    fireEvent.click(screen.getByLabelText("Open design reset options"));
+    expect(screen.getByRole("menu", { name: "Design reset options" })).toBeInTheDocument();
+    fireEvent.pointerDown(message);
+    expect(screen.queryByRole("menu", { name: "Design reset options" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Add attachment or AI tool"));
+    expect(screen.getByRole("menu", { name: "AI composer tools" })).toBeInTheDocument();
+    fireEvent.pointerDown(message);
+    expect(screen.queryByRole("menu", { name: "AI composer tools" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Controls"));
+    expect(screen.getByText("Design controls")).toBeInTheDocument();
+    fireEvent.pointerDown(message);
+    expect(screen.queryByText("Design controls")).not.toBeInTheDocument();
+  });
 });
