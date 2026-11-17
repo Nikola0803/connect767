@@ -591,17 +591,7 @@ export function ZoneEditorPanel({
  * next to each option, same as the legacy prototype surfaced "(+$2.00/pr
  * kit)" directly in each dropdown.
  */
-export function OptionsPanel({
-  fitType,
-  setFitType,
-  kitType,
-  setKitType,
-  logoApplication,
-  setLogoApplication,
-  insideCollarMessage,
-  setInsideCollarMessage,
-  insideCollarText,
-  setInsideCollarText,
+export function StudioBackgroundPanel({
   studioBackground = DEFAULT_STUDIO_BACKGROUND,
   setStudioBackground,
 }) {
@@ -675,7 +665,16 @@ export function OptionsPanel({
       <p className="mb-6 text-[10px] text-foreground-500 font-label">
         Saved with this design and used throughout the studio preview.
       </p>
+    </div>
+  );
+}
 
+export function OptionsPanel({
+  fitType, setFitType, kitType, setKitType, logoApplication, setLogoApplication,
+  insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText,
+}) {
+  return (
+    <div>
       <p className="text-xs text-foreground-500 font-label mb-5 -mt-1">
         These choices don't change the shirt's colors or shape, but every one that adds a cost is
         marked right on the button.
@@ -716,7 +715,7 @@ export function OptionsPanel({
                   : "bg-background-50 text-foreground-700 border-background-300 hover:bg-background-100"
               }`}
             >
-              {k}
+              {k === "Full" ? "Full Kit" : "Shirt Only"}
             </button>
           ))}
         </div>

@@ -32,6 +32,7 @@ import {
   AIArtworkPanel,
   LayersPanel,
   OptionsPanel,
+  StudioBackgroundPanel,
   SkinsPanel,
 } from "../components/uniform-studio/StudioPanels";
 import { cloneZoneModel, SOCCER_ZONE_MODEL } from "../components/uniform-studio/uniformZoneModel";
@@ -674,7 +675,7 @@ export default function UniformStudioPage() {
       if (saved.zoneStyles) setZoneStyles(saved.zoneStyles);
       if (saved.twoTone) setTwoTone(saved.twoTone);
       if (saved.fitType) setFitType(saved.fitType);
-      if (saved.kitType) setKitType(saved.kitType);
+      if (saved.kitType) setKitType(saved.kitType === "Shirt" ? "Shirt" : "Full");
       if (saved.logoApplication) setLogoApplication(saved.logoApplication);
       if (typeof saved.insideCollarMessage === "boolean") setInsideCollarMessage(saved.insideCollarMessage);
       if (typeof saved.insideCollarText === "string") setInsideCollarText(saved.insideCollarText);
@@ -1606,7 +1607,7 @@ export default function UniformStudioPage() {
   // ---------- The studio itself: one full viewport, nothing else ----------
   return (
     <div className="h-[100dvh] flex flex-col overflow-hidden bg-[#10110f] text-background-50">
-      <div className="flex min-h-14 flex-shrink-0 items-center justify-between gap-3 border-b border-white/[0.07] bg-[#0c0d0b]/95 px-3 py-2.5 pt-[max(.625rem,env(safe-area-inset-top))] sm:px-4 md:px-5">
+      <div className="relative z-40 flex min-h-14 flex-shrink-0 items-center justify-between gap-3 border-b border-white/[0.07] bg-[#0c0d0b]/95 px-3 py-2.5 pt-[max(.625rem,env(safe-area-inset-top))] sm:px-4 md:px-5">
         <button
           type="button"
           onClick={handleExit}
@@ -1690,6 +1691,19 @@ export default function UniformStudioPage() {
             <i className="ri-download-2-line" />
             <span className="hidden sm:inline">{exporting ? "Exporting…" : "Download"}</span>
           </button>
+          <details className="group relative" onKeyDown={(event) => {
+            if (event.key === "Escape") event.currentTarget.open = false;
+          }} onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false;
+          }}>
+            <summary aria-label="Studio settings" className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-background-50/75 hover:bg-white/10 [&::-webkit-details-marker]:hidden">
+              <i className="ri-settings-3-line" aria-hidden="true" />
+              <span className="hidden sm:inline">Settings</span>
+            </summary>
+            <div className="absolute right-0 top-full z-50 mt-2 max-h-[70dvh] w-[min(340px,calc(100vw-24px))] overflow-y-auto rounded-2xl border border-background-300 bg-background-50 p-4 text-foreground-900 shadow-2xl">
+              <StudioBackgroundPanel studioBackground={studioBackground} setStudioBackground={setStudioBackground} />
+            </div>
+          </details>
         </div>
       </div>
 
@@ -2246,8 +2260,6 @@ export default function UniformStudioPage() {
                     setInsideCollarMessage={setInsideCollarMessage}
                     insideCollarText={insideCollarText}
                     setInsideCollarText={setInsideCollarText}
-                    studioBackground={studioBackground}
-                    setStudioBackground={setStudioBackground}
                   />
                 )}
                 {activeTool === "roster" && (
@@ -2397,8 +2409,6 @@ export default function UniformStudioPage() {
             setInsideCollarMessage={setInsideCollarMessage}
             insideCollarText={insideCollarText}
             setInsideCollarText={setInsideCollarText}
-            studioBackground={studioBackground}
-            setStudioBackground={setStudioBackground}
           />
         )}
         {activeTool === "roster" && (
