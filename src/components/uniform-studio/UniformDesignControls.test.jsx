@@ -2,9 +2,21 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { defaultZoneColors, normalizeZoneColors } from "../../data/uniforms";
 import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
-import { DesignPanel, OptionsPanel, StudioBackgroundPanel } from "./StudioPanels";
+import { DesignPanel, OptionsPanel, StudioBackgroundPanel, UniformSetupPanel } from "./StudioPanels";
 
 describe("uniform design controls", () => {
+  it("combines fit, colors and functioning production extras in uniform setup", () => {
+    const setInsideCollarMessage = vi.fn();
+    render(<UniformSetupPanel designProps={{ sport: "soccer", collar: "Crew", setCollar: vi.fn(), sleeve: "Short", setSleeve: vi.fn(), colors: defaultZoneColors, setColors: vi.fn() }} optionsProps={{ fitType: "Men", setFitType: vi.fn(), kitType: "Full", setKitType: vi.fn(), logoApplication: "Sublimated", setLogoApplication: vi.fn(), insideCollarMessage: false, setInsideCollarMessage, insideCollarText: "", setInsideCollarText: vi.fn() }} />);
+    expect(screen.getByRole("button", { name: "Full Kit" })).toBeVisible();
+    expect(screen.getByLabelText("Shirt body color")).toBeInTheDocument();
+    const summary = screen.getByText("Production extras");
+    expect(summary.closest("details")).not.toHaveAttribute("open");
+    fireEvent.click(summary.closest("summary"));
+    expect(screen.getByRole("button", { name: /Embroidery/ })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+    expect(setInsideCollarMessage).toHaveBeenCalledWith(true);
+  });
   it("picks colors directly on garment tiles without a separate editor", () => {
     const setColors = vi.fn();
     const onHoverZone = vi.fn();
@@ -83,7 +95,7 @@ describe("uniform design controls", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("checkbox", { name: /Use a separate lower colour/i }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Different shirt and shorts colors/i }));
     const colorUpdater = setColors.mock.calls[0][0];
     const toneUpdater = setTwoTone.mock.calls[0][0];
     expect(colorUpdater(defaultZoneColors).shorts).toBe("#1b1a16");

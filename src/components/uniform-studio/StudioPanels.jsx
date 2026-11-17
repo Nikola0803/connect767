@@ -224,13 +224,10 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
 
   return (
     <div>
-      <p className="text-xs text-foreground-500 font-label mb-5 -mt-1">
-        Hover any color below to see exactly which part of the shirt it changes.
-      </p>
       <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400 mb-4">
-        Shape
+        Collar &amp; sleeves
       </h3>
-      <div className="mb-6">
+      <div className="mb-4">
         {config.collarOptions.includes("Polo") && <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-foreground-800">
           <input type="checkbox" checked={collar === "Polo"} onChange={(event) => setCollar(event.target.checked ? "Polo" : "Crew")} className="accent-primary-600" />
           Polo collar (+${ADD_ON_PRICES.collarPolo.toFixed(2)}/kit)
@@ -238,7 +235,7 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
         <p className="mt-2 text-xs text-foreground-500">Standard crew or V-Neck collar included in the base price.</p>
       </div>
       {config.sleeveOptions && (
-        <div className="mb-6">
+        <div className="mb-4">
           <span className="text-xs font-semibold text-foreground-800 block mb-2">
             Sleeve length
           </span>
@@ -260,7 +257,7 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
       {twoTone && (
         <>
           <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400 mb-3 pt-2 border-t border-background-200/70">
-            Two-tone garment
+            Color pairing
           </h3>
           <label className="flex items-start gap-2.5 mb-3 cursor-pointer">
             <input
@@ -270,16 +267,10 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
               onChange={(e) => toggleTwoTone(e.target.checked)}
             />
             <span className="text-xs text-foreground-700 font-label">
-              Use a separate lower colour for the shorts or trousers. The split follows the actual
-              waist seam in the 2D editor and production preview.
+              Different shirt and {config.bottomLabel.toLowerCase()} colors
             </span>
           </label>
 
-          {twoTone.enabled && (
-            <div className="mb-6 pl-1">
-              <p className="text-xs text-primary-700">Choose the {config.bottomLabel.toLowerCase()} color directly below.</p>
-            </div>
-          )}
         </>
       )}
 
@@ -296,7 +287,6 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
           <input type="color" aria-label={`${zone.label} color`} value={colors[zone.key]} onChange={(event) => setZone(zone.key)(event.target.value)} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
         </label>)}
       </div>
-      <p className="mt-3 text-[11px] text-foreground-500 font-label">Click any garment color to choose its new color.</p>
     </div>
   );
 }
@@ -579,17 +569,15 @@ export function OptionsPanel({
   fitType, setFitType, kitType, setKitType, logoApplication, setLogoApplication,
   insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText,
   insideCollarAttachment, setInsideCollarAttachment,
+  section = "all",
 }) {
   return (
     <div>
-      <p className="text-xs text-foreground-500 font-label mb-5 -mt-1">
-        These choices don't change the shirt's colors or shape, but every one that adds a cost is
-        marked right on the button.
-      </p>
+      {section !== "production" && <>
       <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400 mb-4">
         Fit &amp; kit type
       </h3>
-      <div className="mb-6">
+      <div className="mb-3">
         <span className="text-xs font-semibold text-foreground-800 block mb-2">Fit type</span>
         <div className="flex gap-2 flex-wrap">
           {fitTypeOptions.map((f) => (
@@ -597,7 +585,7 @@ export function OptionsPanel({
               key={f}
               type="button"
               onClick={() => setFitType(f)}
-              className={`px-3.5 py-2 text-xs font-semibold rounded-lg border cursor-pointer transition-all ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border cursor-pointer transition-all ${
                 fitType === f
                   ? "bg-primary-500 text-background-50 border-primary-500 shadow-sm shadow-primary-500/20"
                   : "bg-background-50 text-foreground-700 border-background-300 hover:bg-background-100"
@@ -608,7 +596,7 @@ export function OptionsPanel({
           ))}
         </div>
       </div>
-      <div className="mb-6">
+      <div className="mb-3">
         <span className="text-xs font-semibold text-foreground-800 block mb-2">Kit type</span>
         <div className="flex gap-2 flex-wrap">
           {kitTypeOptions.map((k) => (
@@ -616,7 +604,7 @@ export function OptionsPanel({
               key={k}
               type="button"
               onClick={() => setKitType(k)}
-              className={`px-3.5 py-2 text-xs font-semibold rounded-lg border cursor-pointer transition-all ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border cursor-pointer transition-all ${
                 kitType === k
                   ? "bg-primary-500 text-background-50 border-primary-500 shadow-sm shadow-primary-500/20"
                   : "bg-background-50 text-foreground-700 border-background-300 hover:bg-background-100"
@@ -628,10 +616,10 @@ export function OptionsPanel({
         </div>
       </div>
 
-      <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400 mb-4 pt-2 border-t border-background-200/70">
-        Priced add-ons
-      </h3>
-      <div className="mb-6">
+      </>}
+      {section !== "fit" && <>
+      {section === "all" && <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400 mb-3 pt-2 border-t border-background-200/70">Production extras</h3>}
+      <div className="mb-3">
         <span className="text-xs font-semibold text-foreground-800 block mb-2">
           Team logo application
         </span>
@@ -641,7 +629,7 @@ export function OptionsPanel({
               key={opt}
               type="button"
               onClick={() => setLogoApplication(opt)}
-              className={`px-3.5 py-2 text-xs font-semibold rounded-lg border cursor-pointer transition-all ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border cursor-pointer transition-all ${
                 logoApplication === opt
                   ? "bg-primary-500 text-background-50 border-primary-500 shadow-sm shadow-primary-500/20"
                   : "bg-background-50 text-foreground-700 border-background-300 hover:bg-background-100"
@@ -660,9 +648,9 @@ export function OptionsPanel({
 
       <div className="mb-2">
         <span className="text-xs font-semibold text-foreground-800 block mb-2">
-          Custom Logo/Message in Collar
+          Inside-collar logo or message
           <span className="ml-1 font-normal text-foreground-500">
-            (+${ADD_ON_PRICES.insideCollarMessage.toFixed(2)}/kit if added)
+            (+${ADD_ON_PRICES.insideCollarMessage.toFixed(2)}/kit)
           </span>
         </span>
         <div className="flex gap-2 flex-wrap mb-3">
@@ -671,7 +659,7 @@ export function OptionsPanel({
               key={opt}
               type="button"
               onClick={() => setInsideCollarMessage(opt === "Yes")}
-              className={`px-3.5 py-2 text-xs font-semibold rounded-lg border cursor-pointer transition-all ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border cursor-pointer transition-all ${
                 (opt === "Yes") === insideCollarMessage
                   ? "bg-primary-500 text-background-50 border-primary-500 shadow-sm shadow-primary-500/20"
                   : "bg-background-50 text-foreground-700 border-background-300 hover:bg-background-100"
@@ -694,11 +682,23 @@ export function OptionsPanel({
           </>
         )}
       </div>
-      <p className="text-[11px] text-foreground-500 font-label pt-2">
-        Sleeve length and collar type also affect price — see the Shape section for those.
-      </p>
+      </>}
     </div>
   );
+}
+
+export function UniformSetupPanel({ designProps, optionsProps }) {
+  return <div className="space-y-4">
+    <OptionsPanel {...optionsProps} section="fit" />
+    <DesignPanel {...designProps} />
+    <details className="group rounded-xl border border-background-200 bg-background-50">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-xs font-semibold text-foreground-800 [&::-webkit-details-marker]:hidden">
+        <span>Production extras<span className="mt-0.5 block text-[11px] font-normal text-foreground-500">{optionsProps.logoApplication === "Embroidery" ? "Embroidery" : "Sublimated logo included"}{optionsProps.insideCollarMessage ? " · Collar customization" : ""}</span></span>
+        <i className="ri-arrow-down-s-line transition-transform group-open:rotate-180" aria-hidden="true" />
+      </summary>
+      <div className="border-t border-background-200 p-3"><OptionsPanel {...optionsProps} section="production" /></div>
+    </details>
+  </div>;
 }
 
 /**

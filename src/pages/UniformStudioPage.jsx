@@ -26,13 +26,12 @@ import {
 import JerseyStage from "../components/uniform-studio/JerseyStage";
 import FloatingToolbar from "../components/uniform-studio/FloatingToolbar";
 import {
-  DesignPanel,
+  UniformSetupPanel,
   ZoneEditorPanel,
   TextPanel,
   LogoPanel,
   AIArtworkPanel,
   LayersPanel,
-  OptionsPanel,
   StudioBackgroundPanel,
   SkinsPanel,
 } from "../components/uniform-studio/StudioPanels";
@@ -73,9 +72,9 @@ const getUniformStripe = (key) => {
 const tools = [
   {
     key: "design",
-    label: "Design",
+    label: "Uniform setup",
     icon: "ri-palette-line",
-    hint: "Collar, sleeve length and the color of each garment part. Hover a color to highlight exactly what it changes.",
+    hint: "Choose your fit, colors and production extras.",
   },
   {
     key: "zones",
@@ -114,12 +113,6 @@ const tools = [
     hint: "Everything you've added, front and back. Reorder, select or delete items here.",
   },
   {
-    key: "options",
-    label: "Options",
-    icon: "ri-settings-4-line",
-    hint: "Fit, kit type and priced extras like embroidery or an inside-collar message.",
-  },
-  {
     key: "roster",
     label: "Roster",
     icon: "ri-team-line",
@@ -137,7 +130,7 @@ const studioWorkflow = [
   {
     key: "uniform",
     label: "Uniform",
-    description: "Style, colors & zones",
+    description: "Fit, colors & extras",
     icon: "ri-shirt-line",
     step: 1,
     defaultTool: "design",
@@ -153,20 +146,11 @@ const studioWorkflow = [
     tools: ["ai", "text", "logo", "skins", "layers"],
   },
   {
-    key: "options",
-    label: "Kit options",
-    description: "Fit & production choices",
-    icon: "ri-settings-4-line",
-    step: 3,
-    defaultTool: "options",
-    tools: ["options"],
-  },
-  {
     key: "roster",
     label: "Team roster",
     description: "Names, numbers & sizes",
     icon: "ri-team-line",
-    step: 4,
+    step: 3,
     defaultTool: "roster",
     tools: ["roster"],
   },
@@ -175,7 +159,7 @@ const studioWorkflow = [
     label: "Review & quote",
     description: "Confirm and submit",
     icon: "ri-shopping-bag-3-line",
-    step: 5,
+    step: 4,
     defaultTool: "review",
     tools: ["review"],
   },
@@ -278,7 +262,8 @@ export default function UniformStudioPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSport = searchParams.get("sport") || "soccer";
   const scratch = searchParams.get("mode") === "scratch";
-  const initialWorkflowStep = searchParams.get("step") || "ai";
+  const requestedWorkflowStep = searchParams.get("step") || "ai";
+  const initialWorkflowStep = requestedWorkflowStep === "options" ? "design" : requestedWorkflowStep;
 
   const [activeSport, setActiveSport] = useState(
     sports.some((s) => s.slug === initialSport) ? initialSport : "soccer"
@@ -1610,6 +1595,11 @@ export default function UniformStudioPage() {
     );
   }
 
+  const uniformSetupPanel = <UniformSetupPanel
+    designProps={{ sport: activeSport, collar, setCollar, sleeve, setSleeve, colors, setColors, onHoverZone: setHoverZone, twoTone, setTwoTone }}
+    optionsProps={{ fitType, setFitType, kitType, setKitType, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment }}
+  />;
+
   // ---------- The studio itself: one full viewport, nothing else ----------
   return (
     <div className="h-[100dvh] flex flex-col overflow-hidden bg-[#10110f] text-background-50">
@@ -2158,8 +2148,7 @@ export default function UniformStudioPage() {
                 {activeTool !== "ai" && <div className="sticky top-0 z-10 border-b border-black/[0.07] bg-[#f7f5ef]/95 px-5 py-4 backdrop-blur-xl">
                   <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary-700">Step {workflowStep.step} · {workflowStep.label}</p>
                   <div className="mt-1 flex items-center justify-between gap-3">
-                    <h2 className="font-heading text-xl font-medium text-foreground-950">{activeToolConfig?.label || workflowStep.label}</h2>
-                    <span className="rounded-full border border-background-300 bg-white px-2.5 py-1 text-[10px] font-semibold text-foreground-500">Live preview</span>
+                    <h2 className="font-heading text-lg font-medium text-foreground-950">{activeToolConfig?.label || workflowStep.label}</h2>
                   </div>
                   <p className="mt-1 text-xs text-foreground-500">{activeToolConfig?.hint || workflowStep.description}</p>
                 </div>}
@@ -2177,20 +2166,7 @@ export default function UniformStudioPage() {
                   onDelete={removeLayer}
                 />}
 
-                {activeTool === "design" && (
-                  <DesignPanel
-                    sport={activeSport}
-                    collar={collar}
-                    setCollar={setCollar}
-                    sleeve={sleeve}
-                    setSleeve={setSleeve}
-                    colors={colors}
-                    setColors={setColors}
-                    onHoverZone={setHoverZone}
-                    twoTone={twoTone}
-                    setTwoTone={setTwoTone}
-                  />
-                )}
+                {activeTool === "design" && uniformSetupPanel}
                 {activeTool === "zones" && (
                   <ZoneEditorPanel
                     view={view}
@@ -2254,22 +2230,6 @@ export default function UniformStudioPage() {
                     onApplyColourway={applyColourway}
                   />
                 )}
-                {activeTool === "options" && (
-                  <OptionsPanel
-                    fitType={fitType}
-                    setFitType={setFitType}
-                    kitType={kitType}
-                    setKitType={setKitType}
-                    logoApplication={logoApplication}
-                    setLogoApplication={setLogoApplication}
-                    insideCollarMessage={insideCollarMessage}
-                    setInsideCollarMessage={setInsideCollarMessage}
-                    insideCollarText={insideCollarText}
-                    setInsideCollarText={setInsideCollarText}
-                    insideCollarAttachment={insideCollarAttachment}
-                    setInsideCollarAttachment={setInsideCollarAttachment}
-                  />
-                )}
                 {activeTool === "roster" && (
                   <RosterTool
                     mixedSleeves={sleeve === "Mixed"}
@@ -2330,20 +2290,7 @@ export default function UniformStudioPage() {
           onDelete={removeLayer}
         />
 
-        {activeTool === "design" && (
-          <DesignPanel
-            sport={activeSport}
-            collar={collar}
-            setCollar={setCollar}
-            sleeve={sleeve}
-            setSleeve={setSleeve}
-            colors={colors}
-            setColors={setColors}
-            onHoverZone={setHoverZone}
-            twoTone={twoTone}
-            setTwoTone={setTwoTone}
-          />
-        )}
+        {activeTool === "design" && uniformSetupPanel}
         {activeTool === "zones" && (
           <ZoneEditorPanel
             view={view}
@@ -2405,22 +2352,6 @@ export default function UniformStudioPage() {
             onRemove={removeLayer}
             onReorder={reorderLayer}
             onApplyColourway={applyColourway}
-          />
-        )}
-        {activeTool === "options" && (
-          <OptionsPanel
-            fitType={fitType}
-            setFitType={setFitType}
-            kitType={kitType}
-            setKitType={setKitType}
-            logoApplication={logoApplication}
-            setLogoApplication={setLogoApplication}
-            insideCollarMessage={insideCollarMessage}
-            setInsideCollarMessage={setInsideCollarMessage}
-            insideCollarText={insideCollarText}
-            setInsideCollarText={setInsideCollarText}
-            insideCollarAttachment={insideCollarAttachment}
-            setInsideCollarAttachment={setInsideCollarAttachment}
           />
         )}
         {activeTool === "roster" && (
@@ -3010,10 +2941,10 @@ function ReviewOrderTool({
         />
         <ReviewRow
           icon="ri-settings-4-line"
-          title="Kit options"
-          value={`${kitType} kit · ${logoApplication}`}
+          title="Fit & production"
+          value={`${kitType === "Shirt" ? "Shirt Only" : "Full Kit"} · ${logoApplication}`}
           meta={`Estimated unit price $${unitPrice.toFixed(2)}`}
-          onEdit={() => onEditStep("options")}
+          onEdit={() => onEditStep("design")}
         />
         <ReviewRow
           icon="ri-team-line"
