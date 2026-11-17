@@ -15,6 +15,7 @@ const PATTERN_KEYS = ["none", "bands-h", "bands-v", "diagonal", "chevron", "sash
 const PATTERN_VIEWS = ["front", "side", "back", "both", "all"];
 const ELEMENT_KINDS = ["text", "artwork"];
 const ELEMENT_VIEWS = ["front", "side", "back"];
+const TEXT_LAYOUTS = ["single-line", "stacked"];
 const REFERENCE_IMAGE_PATTERN = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/;
 const MAX_REFERENCE_IMAGE_BYTES = 3 * 1024 * 1024;
 
@@ -139,8 +140,9 @@ export const uniformDesignSchema = {
           size: { type: "number" },
           rotation: { type: "number" },
           color: { type: "string", pattern: "^#[0-9A-Fa-f]{6}$" },
+          layout: { type: "string", enum: TEXT_LAYOUTS },
         },
-        required: ["kind", "content", "view", "x", "y", "size", "rotation", "color"],
+        required: ["kind", "content", "view", "x", "y", "size", "rotation", "color", "layout"],
         additionalProperties: false,
       },
     },
@@ -159,7 +161,7 @@ export function buildUniformPrompt(input) {
     "Socks must be one solid color. Do not invent side panels, shoulder panels, gradients outside the named pattern, or unsupported garment parts.",
     `Choose pattern.key only from ${PATTERN_KEYS.join(", ")}. Use none when a clean solid kit is better.`,
     "Design all three editable surfaces: front, side, and back. Use pattern.view all when a pattern should wrap consistently across every surface; both remains available for legacy front-and-back-only designs.",
-    "productionElements must describe every requested team name, word, number, sponsor, crest, logo or visual mark as editable production artwork. Use kind text for exact printable wording or numbers and kind artwork for a visual crest/logo prompt. Set view to front, side, or back for the surface where each element belongs. Positions are percentages of the printable SHIRT panel (not the surrounding canvas or full kit). For shirt artwork, y 20 means upper chest, y 40 means center chest, and y 65 means lower chest; never calculate y from the shorts or socks. Keep important elements inside x 20-80 and y 20-65. Use side for sleeve marks, side-panel wording, or other details the brief places on the uniform profile. Use at most one artwork element and up to five text elements. Do not repeat garment patterns as artwork.",
+    "productionElements must describe every requested team name, word, number, sponsor, crest, logo or visual mark as editable production artwork. Use kind text for exact printable wording or numbers and kind artwork for a visual crest/logo prompt. Set layout to stacked when the concept should display text on two lines, otherwise single-line; use single-line for artwork because its layout value is ignored. The concept image and production map must use the same text layout. Set view to front, side, or back for the surface where each element belongs. Positions are percentages of the printable SHIRT panel (not the surrounding canvas or full kit). Use x 50 for horizontally centered chest artwork. For shirt artwork, y 20 means upper chest, y 40 center chest, and y 65 lower chest; never use shorts/socks coordinates. Keep important elements inside x 20-80 and y 20-65. Use side for sleeve marks, side-panel wording, or other details the brief places on the uniform profile. Use at most one artwork element and up to five text elements. Do not repeat garment patterns as artwork.",
     input.locks.artwork
       ? "Artwork is locked: return an empty productionElements array and an empty crestSuggestion."
       : "Artwork is unlocked: include the requested identity elements in productionElements so the editable map matches the AI concept. crestSuggestion should repeat the artwork element prompt when one is present.",
@@ -193,6 +195,7 @@ export function normalizeUniformPlan(plan, input) {
           size: number(element?.size, element?.kind === "artwork" ? 20 : 14, 6, 60),
           rotation: number(element?.rotation, 0, -180, 180),
           color: hex(element?.color, nextColors.body === "#FFFFFF" ? "#1B1A16" : "#FFFFFF"),
+          layout: TEXT_LAYOUTS.includes(element?.layout) ? element.layout : "single-line",
         }))
         .filter((element) => element.content)
         .filter((element, index, elements) => element.kind !== "artwork" || elements.findIndex((candidate) => candidate.kind === "artwork") === index)

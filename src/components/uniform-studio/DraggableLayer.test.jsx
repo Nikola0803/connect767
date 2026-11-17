@@ -13,6 +13,26 @@ const layer = {
 };
 
 describe("DraggableLayer", () => {
+  it("renders stacked AI text and keeps its line breaks editable", () => {
+    const onChange = vi.fn();
+    render(
+      <DraggableLayer
+        layer={{ ...layer, id: "text-1", type: "text", text: "TEAM\nUNIFORM", textLayout: "stacked", color: "#fff" }}
+        stageRef={{ current: document.createElement("div") }}
+        selected
+        onSelect={vi.fn()}
+        onChange={onChange}
+      />,
+    );
+
+    fireEvent.doubleClick(screen.getByText(/TEAM/));
+    const editor = screen.getByRole("textbox", { name: "Edit uniform text" });
+    expect(editor.tagName).toBe("TEXTAREA");
+    expect(editor.value).toBe("TEAM\nUNIFORM");
+    fireEvent.change(editor, { target: { value: "CONNECT\n767" } });
+    expect(onChange).toHaveBeenCalledWith("text-1", { text: "CONNECT\n767" });
+  });
+
   it("resizes selected artwork with the mouse wheel", () => {
     const onChange = vi.fn();
     const onSelect = vi.fn();

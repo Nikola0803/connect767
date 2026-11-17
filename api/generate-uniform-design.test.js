@@ -52,9 +52,9 @@ const upstreamPlan = {
   pattern: { enabled: true, key: "diagonal", view: "both" },
   crestSuggestion: "A circular Island FC crest with a wave and football.",
   productionElements: [
-    { kind: "artwork", content: "A circular Island FC crest with a wave and football.", view: "front", x: 35, y: 30, size: 18, rotation: 0, color: "#FFFFFF" },
-    { kind: "text", content: "ISLAND FC", view: "front", x: 50, y: 46, size: 14, rotation: 0, color: "#FFFFFF" },
-    { kind: "text", content: "10", view: "back", x: 50, y: 44, size: 22, rotation: 0, color: "#FFFFFF" },
+    { kind: "artwork", content: "A circular Island FC crest with a wave and football.", view: "front", x: 35, y: 30, size: 18, rotation: 0, color: "#FFFFFF", layout: "single-line" },
+    { kind: "text", content: "ISLAND FC", view: "front", x: 50, y: 46, size: 14, rotation: 0, color: "#FFFFFF", layout: "stacked" },
+    { kind: "text", content: "10", view: "back", x: 50, y: 44, size: 22, rotation: 0, color: "#FFFFFF", layout: "single-line" },
   ],
 };
 
@@ -94,6 +94,8 @@ describe("AI full-uniform design endpoint", () => {
     expect(prompt).toContain("Allowed collars");
     expect(prompt).toContain("all three editable surfaces: front, side, and back");
     expect(prompt).toContain("Set view to front, side, or back");
+    expect(prompt).toContain("The concept image and production map must use the same text layout");
+    expect(prompt).toContain("Use x 50 for horizontally centered chest artwork");
   });
 
   it("preserves Side artwork and all-surface patterns in the normalized AI plan", () => {
@@ -105,7 +107,7 @@ describe("AI full-uniform design endpoint", () => {
       ...upstreamPlan,
       pattern: { enabled: true, key: "diagonal", view: "all" },
       productionElements: [
-        { kind: "text", content: "ISLAND", view: "side", x: 50, y: 42, size: 14, rotation: 0, color: "#FFFFFF" },
+        { kind: "text", content: "ISLAND", view: "side", x: 50, y: 42, size: 14, rotation: 0, color: "#FFFFFF", layout: "single-line" },
       ],
     }, input);
 
@@ -168,13 +170,14 @@ describe("AI full-uniform design endpoint", () => {
       ...upstreamPlan,
       productionElements: [
         ...upstreamPlan.productionElements,
-        { kind: "artwork", content: "A second crest", view: "front", x: 200, y: -10, size: 100, rotation: 400, color: "invalid" },
+        { kind: "artwork", content: "A second crest", view: "front", x: 200, y: -10, size: 100, rotation: 400, color: "invalid", layout: "single-line" },
       ],
     }, input);
 
     expect(plan.productionElements).toHaveLength(3);
     expect(plan.productionElements[0]).toMatchObject({ kind: "artwork", x: 35, y: 30, size: 18 });
     expect(plan.productionElements[1]).toMatchObject({ kind: "text", content: "ISLAND FC" });
+    expect(plan.productionElements[1].layout).toBe("stacked");
   });
 
   it("sends an uploaded inspiration image as multimodal model input", async () => {

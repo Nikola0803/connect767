@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { mapProductionElementToGarment, normalizeStoredProductionLayer } from "./productionPlacement";
+import {
+  formatProductionText,
+  mapProductionElementToGarment,
+  normalizeStoredProductionLayer,
+} from "./productionPlacement";
 
 describe("AI production artwork placement", () => {
   it("maps front artwork from canvas percentages into the printable torso", () => {
@@ -17,17 +21,18 @@ describe("AI production artwork placement", () => {
   it("shrinks long team wording without shrinking player numbers", () => {
     const wording = mapProductionElementToGarment({ kind: "text", content: "TEAM UNIFORM", size: 18 });
     const number = mapProductionElementToGarment({ kind: "text", content: "24", size: 18 });
-    expect(wording.size).toBeCloseTo(31 / 12);
+    expect(wording.size).toBeCloseTo(31 / 7);
     expect(number.size).toBe(18);
   });
 
   it("migrates previously saved AI layers but leaves corrected and manual layers unchanged", () => {
     const legacy = { id: "old", source: "ai-uniform-element", type: "text", view: "front", x: 35, y: 30, size: 18, text: "TEAM UNIFORM" };
     const migrated = normalizeStoredProductionLayer(legacy);
-    expect(migrated.placementSpace).toBe("garment-v2");
+    expect(migrated.placementSpace).toBe("garment-v3");
     expect(migrated.x).toBeCloseTo(45.8);
     expect(migrated.y).toBeCloseTo(19.6);
-    expect(migrated.size).toBeCloseTo(31 / 12);
+    expect(migrated.size).toBeCloseTo(31 / 7);
+    expect(migrated.text).toBe("TEAM\nUNIFORM");
     expect(normalizeStoredProductionLayer(migrated)).toBe(migrated);
 
     const manual = { id: "manual", type: "text", x: 10, y: 10 };
@@ -47,10 +52,41 @@ describe("AI production artwork placement", () => {
       text: "TEAM UNIFORM",
     };
     const migrated = normalizeStoredProductionLayer(oldPlacement, "soccer");
-    expect(migrated.placementSpace).toBe("garment-v2");
+    expect(migrated.placementSpace).toBe("garment-v3");
     expect(migrated.y).toBeCloseTo(25.1224);
     expect(migrated.x).toBe(50);
     expect(migrated.size).toBe(2.5);
+  });
+
+  it("keeps stacked concept wording stacked and editable in production", () => {
+    expect(formatProductionText("TEAM UNIFORM", "stacked")).toBe("TEAM\nUNIFORM");
+    expect(formatProductionText("TEAM\nUNIFORM", "stacked")).toBe("TEAM\nUNIFORM");
+    expect(formatProductionText("TEAM UNIFORM", "single-line")).toBe("TEAM UNIFORM");
+  });
+
+  it("snaps center-chest artwork to the exact horizontal center", () => {
+    expect(mapProductionElementToGarment({ kind: "text", content: "10", x: 54 }).x).toBe(50);
+    expect(mapProductionElementToGarment({ kind: "text", content: "10", x: 70 }).x).toBeCloseTo(55.6);
+  });
+
+  it("upgrades version-two wording to the stacked editable layout", () => {
+    const migrated = normalizeStoredProductionLayer({
+      id: "saved-v2",
+      source: "ai-uniform-element",
+      placementSpace: "garment-v2",
+      type: "text",
+      view: "front",
+      x: 51.4,
+      y: 23,
+      size: 3,
+      text: "TEAM UNIFORM",
+    });
+    expect(migrated).toMatchObject({
+      placementSpace: "garment-v3",
+      x: 50,
+      textLayout: "stacked",
+      text: "TEAM\nUNIFORM",
+    });
   });
 
   it("uses the taller basketball shirt panel while keeping wording on the chest", () => {

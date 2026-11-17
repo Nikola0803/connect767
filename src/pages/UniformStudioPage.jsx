@@ -31,8 +31,10 @@ import {
 import JerseyStage from "../components/uniform-studio/JerseyStage";
 import useGarmentColors from "../components/uniform-studio/useGarmentColors";
 import {
+  formatProductionText,
   mapProductionElementToGarment,
   normalizeStoredProductionLayer,
+  productionTextLayout,
 } from "../components/uniform-studio/productionPlacement";
 import FloatingToolbar from "../components/uniform-studio/FloatingToolbar";
 import {
@@ -245,7 +247,7 @@ const productionLayersFromPlan = (plan, { preview = false, sport = "soccer" } = 
       const common = {
         id: preview ? `ai-production-preview-${index}` : nextLayerId(),
         source: "ai-uniform-element",
-        placementSpace: "garment-v2",
+        placementSpace: "garment-v3",
         name: element.name || `${plan?.name || "AI uniform"} ${element.kind}`,
         view: placement.view,
         x: placement.x,
@@ -259,7 +261,8 @@ const productionLayersFromPlan = (plan, { preview = false, sport = "soccer" } = 
       return {
         ...common,
         type: "text",
-        text: element.content || "TEAM",
+        textLayout: productionTextLayout(element),
+        text: formatProductionText(element.content || "TEAM", productionTextLayout(element)),
         color: element.color || "#FFFFFF",
         fontFamily: "'Oswald', sans-serif",
       };
