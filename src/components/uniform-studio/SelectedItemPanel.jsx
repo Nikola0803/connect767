@@ -230,9 +230,9 @@ export default function SelectedItemPanel({
       {(() => {
         const in3d = Boolean(placement);
         const sizeValue = in3d ? placement.scale : (layer.size ?? 16);
-        const sizeMin = in3d ? MIN_SCALE : 4;
+        const sizeMin = in3d ? MIN_SCALE : (isText ? 0.5 : 3);
         const sizeMax = in3d ? MAX_SCALE : 120;
-        const sizeStep = in3d ? 0.005 : 1;
+        const sizeStep = in3d ? 0.005 : (isText ? 0.5 : 1);
         return (
         <>
           <div className="flex items-center justify-between mb-1">
@@ -240,7 +240,7 @@ export default function SelectedItemPanel({
               Size
             </label>
             <span className="text-[11px] text-foreground-500 font-label">
-              {Math.round((sizeValue / sizeMax) * 100)}%
+              {Math.max(1, Math.round((sizeValue / sizeMax) * 100))}%
             </span>
           </div>
           <input

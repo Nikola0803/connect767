@@ -44,7 +44,9 @@ export default function FloatingToolbar({ layer, onUpdate, onDuplicate, onDelete
         <button
           type="button"
           aria-label="Smaller"
-          onClick={() => onUpdate(layer.id, { size: Math.max(6, layer.size - 2) })}
+          onClick={() => onUpdate(layer.id, {
+            size: Math.max(layer.type === "text" ? 0.5 : 3, layer.size - (layer.type === "text" && layer.size <= 6 ? 0.5 : 2)),
+          })}
           className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-background-50/10 cursor-pointer"
         >
           <i className="ri-subtract-line text-sm" />
