@@ -159,7 +159,7 @@ export default function AIUniformComposer({
   const muted = dark ? "text-white/50" : "text-foreground-500";
 
   return (
-    <section onPointerDown={handleSurfacePointerDown} className={`relative flex h-full min-h-[620px] flex-col overflow-hidden transition-colors ${surface}`} aria-label="Connect767 AI uniform designer">
+    <section onPointerDown={handleSurfacePointerDown} className={`relative flex h-full min-h-[620px] flex-col overflow-hidden transition-colors md:min-h-0 ${surface}`} aria-label="Connect767 AI uniform designer">
       <input
         ref={fileInputRef}
         type="file"
