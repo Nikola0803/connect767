@@ -273,6 +273,10 @@ export default function UniformStudioPage() {
       ? initialWorkflowStep
       : studioWorkflow.find((step) => step.key === initialWorkflowStep)?.defaultTool || "design"
   );
+  const [projectName, setProjectName] = useState("Untitled uniform");
+  const [inspectorOpen, setInspectorOpen] = useState(true);
+  const [previewMode, setPreviewMode] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [aiConceptRotation, setAiConceptRotation] = useState(0);
   const [aiConceptPan, setAiConceptPan] = useState({ x: 0, y: 0 });
@@ -285,6 +289,7 @@ export default function UniformStudioPage() {
   const [correctionMode, setCorrectionMode] = useState(false);
   const [zoneHistory, setZoneHistory] = useState([]);
   const stageRef = useRef(null);
+  const studioRootRef = useRef(null);
   // Set by Product3DStage's CaptureBridge while the 3D view is mounted.
   const capture3dRef = useRef(null);
 
@@ -319,6 +324,8 @@ export default function UniformStudioPage() {
   // different things — a layer can legitimately have both, and writing the
   // 3D transform into the layer would invalidate the flat editor's geometry.
   const [placements3d, setPlacements3d] = useState({});
+  const visualHistoryRef = useRef({ past: [], future: [], current: null, applying: false });
+  const [visualHistoryVersion, setVisualHistoryVersion] = useState(0);
   const [aiUndoSnapshot, setAiUndoSnapshot] = useState(null);
   const [aiUniformPlan, setAiUniformPlan] = useState(null);
   const [aiWorkspaceConcept, setAiWorkspaceConcept] = useState(null);
@@ -345,6 +352,21 @@ export default function UniformStudioPage() {
     if (clamped <= 1) setAiConceptPan({ x: 0, y: 0 });
   };
 
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await studioRootRef.current?.requestFullscreen();
+    } catch {
+      /* Fullscreen can be blocked by browser or embedded-preview policy. */
+    }
+  };
+
+  useEffect(() => {
+    const syncFullscreen = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", syncFullscreen);
+    return () => document.removeEventListener("fullscreenchange", syncFullscreen);
+  }, []);
+
 
   // A deleted layer must not leave an orphaned decal behind.
   useEffect(() => {
@@ -359,6 +381,74 @@ export default function UniformStudioPage() {
       return changed ? next : prev;
     });
   }, [layers]);
+
+  const visualSnapshot = useMemo(() => ({
+    collar,
+    sleeve,
+    colors,
+    studioBackground,
+    view,
+    layers,
+    placements3d,
+    zoneModel,
+    zoneStyles,
+    twoTone,
+  }), [collar, sleeve, colors, studioBackground, view, layers, placements3d, zoneModel, zoneStyles, twoTone]);
+
+  useEffect(() => {
+    const history = visualHistoryRef.current;
+    if (history.applying) {
+      history.applying = false;
+      history.current = visualSnapshot;
+      return;
+    }
+    if (!history.current) {
+      history.current = visualSnapshot;
+      return;
+    }
+    history.past = [...history.past.slice(-39), history.current];
+    history.future = [];
+    history.current = visualSnapshot;
+    setVisualHistoryVersion((version) => version + 1);
+  }, [visualSnapshot]);
+
+  const applyVisualSnapshot = (snapshot) => {
+    setCollar(snapshot.collar);
+    setSleeve(snapshot.sleeve);
+    setColors(snapshot.colors);
+    setStudioBackground(snapshot.studioBackground);
+    setView(snapshot.view);
+    setLayers(snapshot.layers);
+    setPlacements3d(snapshot.placements3d);
+    setZoneModel(snapshot.zoneModel);
+    setZoneStyles(snapshot.zoneStyles);
+    setTwoTone(snapshot.twoTone);
+  };
+
+  const undoVisualChange = () => {
+    const history = visualHistoryRef.current;
+    const previous = history.past.pop();
+    if (!previous) return;
+    history.future = [history.current, ...history.future].filter(Boolean).slice(0, 40);
+    history.current = previous;
+    history.applying = true;
+    applyVisualSnapshot(previous);
+    setVisualHistoryVersion((version) => version + 1);
+  };
+
+  const redoVisualChange = () => {
+    const history = visualHistoryRef.current;
+    const next = history.future.shift();
+    if (!next) return;
+    history.past = [...history.past.slice(-39), history.current].filter(Boolean);
+    history.current = next;
+    history.applying = true;
+    applyVisualSnapshot(next);
+    setVisualHistoryVersion((version) => version + 1);
+  };
+
+  const canUndoVisual = visualHistoryVersion >= 0 && visualHistoryRef.current.past.length > 0;
+  const canRedoVisual = visualHistoryVersion >= 0 && visualHistoryRef.current.future.length > 0;
   const jerseyPlacements = useMemo(() => [{ key: "front", label: "Front" }, { key: "back", label: "Back" }], []);
   // Was hardcoded to slug "jersey", so every sport — soccer, basketball,
   // netball, cricket — rendered the same GLB. Keyed off the active sport
@@ -441,6 +531,7 @@ export default function UniformStudioPage() {
       ]);
       setSelectedLayerId(id);
       setActiveTool("logo");
+      setInspectorOpen(true);
       window.sessionStorage.removeItem(AI_TRANSFER_KEY);
       setSearchParams((previous) => {
         const next = new URLSearchParams(previous);
@@ -457,13 +548,19 @@ export default function UniformStudioPage() {
     setPendingLayer(null);
     setSelectedLayerId(null);
     setActiveTool(nextStep.defaultTool);
+    setInspectorOpen(true);
+    setPreviewMode(false);
   };
 
-  const openAIDesigner = () => {
+  const openStudioTool = (toolKey) => {
     setPendingLayer(null);
-    setSelectedLayerId(null);
-    setStageMode("edit");
-    setActiveTool("ai");
+    setPreviewMode(false);
+    if (activeTool === toolKey) {
+      setInspectorOpen((open) => !open);
+      return;
+    }
+    setActiveTool(toolKey);
+    setInspectorOpen(true);
   };
 
   const continueWorkflow = () => {
@@ -546,6 +643,7 @@ export default function UniformStudioPage() {
       window.localStorage.setItem(
         storageKey,
         JSON.stringify({
+          projectName,
           layers,
           placements3d,
           colors,
@@ -575,7 +673,7 @@ export default function UniformStudioPage() {
       /* private browsing / quota — the design just won't persist, which is
          no worse than before this existed */
     }
-  }, [storageKey, layers, placements3d, colors, studioBackground, collar, sleeve, zoneModel, zoneStyles, twoTone,
+  }, [storageKey, projectName, layers, placements3d, colors, studioBackground, collar, sleeve, zoneModel, zoneStyles, twoTone,
     fitType, kitType, logoApplication, insideCollarMessage, insideCollarText, fanJerseyAdded, supporterJerseys, roster, contact, shipping,
     aiUniformPlan, aiWorkspaceConcept, aiDesignApplied]);
 
@@ -585,6 +683,7 @@ export default function UniformStudioPage() {
       window.localStorage.setItem(
         storageKey,
         JSON.stringify({
+          projectName,
           layers,
           placements3d,
           colors,
@@ -626,6 +725,7 @@ export default function UniformStudioPage() {
       if (!raw) return false;
       const saved = JSON.parse(raw);
       if (!saved?.layers?.length && !Object.keys(saved?.placements3d || {}).length && !saved?.zoneModel) return false;
+      if (typeof saved.projectName === "string" && saved.projectName.trim()) setProjectName(saved.projectName);
       setLayers(saved.layers || []);
       setPlacements3d(saved.placements3d || {});
       if (saved.colors) setColors(normalizeZoneColors(saved.colors));
@@ -686,6 +786,27 @@ export default function UniformStudioPage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [pendingLayer]);
+
+  useEffect(() => {
+    const onStudioShortcut = (event) => {
+      const tag = event.target?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || event.target?.isContentEditable) return;
+      const modifier = event.ctrlKey || event.metaKey;
+      if (modifier && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        if (event.shiftKey) redoVisualChange();
+        else undoVisualChange();
+      } else if (modifier && event.key.toLowerCase() === "y") {
+        event.preventDefault();
+        redoVisualChange();
+      } else if (modifier && event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        saveProgress();
+      }
+    };
+    window.addEventListener("keydown", onStudioShortcut);
+    return () => window.removeEventListener("keydown", onStudioShortcut);
+  });
 
   /** Flat-editor size: layers store it as a percentage of the stage. */
   const setLayerSize2d = (id, size) => updateLayer(id, { size });
@@ -760,6 +881,7 @@ export default function UniformStudioPage() {
 
   const selectTemplate = (t, sportSlug = activeSport) => {
     const nextSportConfig = sportConfigFor(sportSlug);
+    const sportLabel = sports.find((item) => item.slug === sportSlug)?.label || "Team";
     setActiveSport(sportSlug);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
@@ -767,6 +889,7 @@ export default function UniformStudioPage() {
       return next;
     });
     setSelectedTemplate(t.slug);
+    setProjectName(`${sportLabel} Uniform`);
     setCollar(t.defaultCollar || nextSportConfig.collarOptions[0]);
     setSleeve(t.defaultSleeve || nextSportConfig.sleeveOptions?.[0] || "Sleeveless");
     // A stock image demonstrates the cut only. New designs always enter on
@@ -777,6 +900,8 @@ export default function UniformStudioPage() {
     setSelectedLayerId(null);
     setPendingLayer(null);
     setActiveTool("ai");
+    setInspectorOpen(true);
+    setPreviewMode(false);
     setAiDesignerMode("uniform");
     setAiCanvasMode("concept");
     // Pick up where they left off on this exact kit, if they were here before.
@@ -787,6 +912,8 @@ export default function UniformStudioPage() {
 
   const selectLayer = (id) => {
     setSelectedLayerId(id);
+    setInspectorOpen(true);
+    setPreviewMode(false);
     const layer = layers.find((l) => l.id === id);
     // Selecting artwork opens the panel that edits that kind of artwork.
     // Skins previously fell through to "logo", which showed an upload box for
@@ -1252,6 +1379,7 @@ export default function UniformStudioPage() {
     const unitCount = rosterUnitCount(roster);
     const supporterCount = fanJerseyAdded ? supporterJerseyCount(supporterJerseys) : 0;
     return {
+      projectName,
       template: template?.name || "Blank Canvas",
       sport: activeSport,
       collar,
@@ -1543,46 +1671,67 @@ export default function UniformStudioPage() {
 
   // ---------- The studio itself: one full viewport, nothing else ----------
   return (
-    <div className="h-[100dvh] flex flex-col overflow-hidden bg-[#10110f] text-background-50">
-      <div className="flex min-h-14 flex-shrink-0 items-center justify-between gap-3 border-b border-white/[0.07] bg-[#0c0d0b]/95 px-3 py-2.5 pt-[max(.625rem,env(safe-area-inset-top))] sm:px-4 md:px-5">
+    <div ref={studioRootRef} className="h-[100dvh] flex flex-col overflow-hidden bg-[#10110f] text-background-50">
+      <header className="flex min-h-14 flex-shrink-0 items-center gap-2 border-b border-white/[0.07] bg-[#0c0d0b]/95 px-2.5 py-2 pt-[max(.5rem,env(safe-area-inset-top))] backdrop-blur-xl sm:px-4">
         <button
           type="button"
           onClick={handleExit}
-          className="inline-flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-background-50/60 transition hover:bg-white/[0.06] hover:text-background-50"
+          aria-label="Back to uniform selection"
+          title="Back"
+          className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-background-50/55 transition hover:bg-white/[0.07] hover:text-background-50"
         >
           <i className="ri-arrow-left-line" />
-          Back
         </button>
-        <div className="hidden min-w-0 items-center gap-2 sm:flex">
-          <span className="truncate text-sm font-semibold text-background-50/85">
-            {aiUniformPlan?.name || (template?.slug === "blank-canvas" ? "AI Uniform" : template?.name) || "AI Uniform"}
-          </span>
-          <span className="text-background-50/20">/</span>
-          <span className="truncate text-xs font-medium text-background-50/45">
-            {sports.find((s) => s.slug === activeSport)?.label}
-          </span>
-          <span className="ml-2 inline-flex shrink-0 items-center gap-1.5 rounded-full border border-primary-500/20 bg-primary-950/35 px-2.5 py-1 text-[10px] font-semibold text-primary-200/90">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary-400" /> Auto-saved
-          </span>
+        <div className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-700 text-sm text-white shadow-[0_8px_22px_rgba(0,116,73,.22)] sm:flex">
+          <i className="ri-t-shirt-air-line" />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="hidden min-w-0 shrink-0 sm:block">
+          <strong className="block text-[11px] font-bold leading-none text-white">Connect767 Design Studio</strong>
+          <span className="mt-1 block text-[8px] uppercase tracking-[0.13em] text-white/35">Create · Customize · Bring it to life</span>
+        </div>
+        <div className="mx-1 h-6 w-px shrink-0 bg-white/[0.08] sm:mx-2" />
+        <label className="min-w-0 flex-1 sm:max-w-[250px]">
+          <span className="sr-only">Project name</span>
+          <input
+            value={projectName}
+            onChange={(event) => setProjectName(event.target.value)}
+            onBlur={() => { if (!projectName.trim()) setProjectName("Untitled uniform"); }}
+            className="h-9 w-full rounded-xl border border-transparent bg-transparent px-2 text-xs font-semibold text-white/85 outline-none transition placeholder:text-white/25 hover:border-white/[0.07] hover:bg-white/[0.03] focus:border-primary-500/45 focus:bg-white/[0.045]"
+            placeholder="Untitled uniform"
+          />
+        </label>
+        <span className="hidden shrink-0 items-center gap-1.5 text-[9px] font-semibold text-primary-200/70 lg:inline-flex">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary-400" /> Auto-saved
+        </span>
+
+        <div className="ml-auto flex items-center gap-1">
+          <div className="hidden items-center rounded-xl border border-white/[0.07] bg-white/[0.025] p-0.5 md:flex">
+            <button type="button" title="Undo (Ctrl+Z)" aria-label="Undo" disabled={!canUndoVisual} onClick={undoVisualChange} className="flex h-8 w-8 items-center justify-center rounded-lg text-white/55 transition hover:bg-white/[0.07] hover:text-white disabled:cursor-not-allowed disabled:opacity-25"><i className="ri-arrow-go-back-line" /></button>
+            <button type="button" title="Redo (Ctrl+Shift+Z)" aria-label="Redo" disabled={!canRedoVisual} onClick={redoVisualChange} className="flex h-8 w-8 items-center justify-center rounded-lg text-white/55 transition hover:bg-white/[0.07] hover:text-white disabled:cursor-not-allowed disabled:opacity-25"><i className="ri-arrow-go-forward-line" /></button>
+          </div>
+          <div className="hidden items-center rounded-xl border border-white/[0.07] bg-white/[0.025] p-0.5 lg:flex">
+            <button type="button" aria-pressed={view === "front"} onClick={() => setView("front")} className={`h-8 rounded-lg px-2.5 text-[10px] font-bold transition ${view === "front" ? "bg-white text-foreground-950" : "text-white/50 hover:text-white"}`}>Front</button>
+            <button type="button" aria-pressed={view === "back"} onClick={() => setView("back")} className={`h-8 rounded-lg px-2.5 text-[10px] font-bold transition ${view === "back" ? "bg-white text-foreground-950" : "text-white/50 hover:text-white"}`}>Back</button>
+          </div>
+          <div className="hidden items-center rounded-xl border border-white/[0.07] bg-white/[0.025] p-0.5 sm:flex">
+            <button type="button" aria-pressed={stageMode === "edit"} onClick={() => setStageMode("edit")} className={`h-8 rounded-lg px-2.5 text-[10px] font-bold transition ${stageMode === "edit" ? "bg-white text-foreground-950" : "text-white/50 hover:text-white"}`}>2D</button>
+            <button type="button" aria-pressed={stageMode === "3d"} onClick={() => setStageMode("3d")} className={`h-8 rounded-lg px-2.5 text-[10px] font-bold transition ${stageMode === "3d" ? "bg-white text-foreground-950" : "text-white/50 hover:text-white"}`}>3D</button>
+          </div>
           <button
             type="button"
-            onClick={openAIDesigner}
-            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition ${
-              activeTool === "ai"
-                ? "border-accent-400 bg-accent-500 text-white shadow-[0_8px_20px_rgba(239,84,53,0.22)]"
-                : "border-accent-400/40 bg-accent-950/30 text-accent-200 hover:border-accent-300 hover:bg-accent-950/55"
-            }`}
+            onClick={() => setPreviewMode((enabled) => !enabled)}
+            aria-pressed={previewMode}
+            title="Distraction-free preview"
+            className={`hidden h-9 cursor-pointer items-center gap-1.5 rounded-xl border px-2.5 text-[10px] font-bold transition xl:inline-flex ${previewMode ? "border-primary-400 bg-primary-700 text-white" : "border-white/[0.08] bg-white/[0.03] text-white/60 hover:bg-white/[0.07] hover:text-white"}`}
           >
-            <i className="ri-sparkling-2-fill" />
-            <span className="hidden sm:inline">AI Designer</span>
-            <span className="sm:hidden">AI</span>
+            <i className="ri-eye-line" /> Preview
           </button>
           <button
             type="button"
             onClick={saveProgress}
-            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+            title="Save progress (Ctrl+S)"
+            aria-label="Save progress"
+            className={`inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border text-xs transition ${
               manualSaveStatus === "saved"
                 ? "border-primary-400/55 bg-primary-700 text-white"
                 : manualSaveStatus === "error"
@@ -1592,60 +1741,48 @@ export default function UniformStudioPage() {
             aria-live="polite"
           >
             <i className={manualSaveStatus === "saved" ? "ri-check-line" : "ri-save-3-line"} />
-            <span className="hidden sm:inline">
-              {manualSaveStatus === "saved" ? "Progress saved" : manualSaveStatus === "error" ? "Save failed" : "Save progress"}
-            </span>
-          </button>
-          <button
-            type="button"
-            aria-pressed={stageMode === "3d"}
-            onClick={() => setStageMode((mode) => (mode === "3d" ? "edit" : "3d"))}
-            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
-              stageMode === "3d"
-                ? "border-primary-500 bg-primary-600 text-white shadow-[0_8px_18px_rgba(0,116,73,0.28)]"
-                : "border-primary-500/45 bg-primary-950/55 text-primary-100 hover:border-primary-400 hover:bg-primary-900"
-            }`}
-          >
-            <i className={stageMode === "3d" ? "ri-edit-2-line" : "ri-3d-cube-sphere-line"} />
-            {stageMode === "3d" ? "Return to 2D" : "View in 3D"}
           </button>
           <button
             type="button"
             onClick={handleDownloadSvg}
             disabled={stageMode !== "edit" || showingAIConcept}
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer bg-white/5 text-background-50/70 hover:bg-white/10 hover:text-background-50 disabled:opacity-40"
+            title="Export SVG"
+            aria-label="Export SVG"
+            className="hidden h-9 w-9 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-xs text-white/60 transition hover:bg-white/[0.07] hover:text-white disabled:opacity-30 sm:inline-flex"
           >
-            <i className="ri-file-code-line" /> SVG
+            <i className="ri-file-code-line" />
           </button>
           <button
             type="button"
             onClick={handleDownload}
             disabled={exporting || stageMode !== "edit"}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer bg-white/5 text-background-50/70 hover:bg-white/10 hover:text-background-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Export PNG"
+            aria-label="Export PNG"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-xs text-white/60 transition hover:bg-white/[0.07] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
           >
-            <i className="ri-download-2-line" />
-            <span className="hidden sm:inline">{exporting ? "Exporting…" : "Download"}</span>
+            <i className={exporting ? "ri-loader-4-line animate-spin" : "ri-download-2-line"} />
           </button>
+          <button type="button" onClick={toggleFullscreen} title={isFullscreen ? "Exit fullscreen" : "Fullscreen"} aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"} className="hidden h-9 w-9 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-xs text-white/60 transition hover:bg-white/[0.07] hover:text-white md:inline-flex"><i className={isFullscreen ? "ri-fullscreen-exit-line" : "ri-fullscreen-line"} /></button>
         </div>
-      </div>
+      </header>
 
       <nav
         aria-label="Uniform order progress"
-        className="flex-shrink-0 border-b border-white/[0.06] bg-[#12130f] px-3 py-2.5 sm:px-5"
+        className={`${previewMode ? "hidden" : "flex-shrink-0"} border-b border-white/[0.06] bg-[#12130f] px-3 py-1.5 sm:px-5`}
       >
-        <div className="mx-auto flex max-w-6xl items-center gap-1.5 overflow-x-auto py-0.5">
+        <div className="mx-auto flex max-w-4xl items-center justify-center gap-1 overflow-x-auto">
           {studioWorkflow.map((step, index) => {
             const active = index === workflowIndex;
             const complete = index < workflowIndex;
             const locked = step.key === "review" && roster.length === 0;
             return (
-              <div key={step.key} className="flex min-w-0 flex-1 items-center gap-1.5">
+              <div key={step.key} className="flex shrink-0 items-center gap-1">
                 <button
                   type="button"
                   aria-current={active ? "step" : undefined}
                   disabled={locked}
                   onClick={() => openWorkflowStep(index)}
-                  className={`group flex min-w-[156px] flex-1 items-center gap-2.5 rounded-xl border px-3 py-2 text-left transition ${
+                  className={`group flex h-9 items-center gap-2 rounded-xl border px-2.5 text-left transition ${
                     active
                       ? "cursor-pointer border-primary-400/45 bg-primary-700 text-white shadow-[0_8px_22px_rgba(0,116,73,0.2)]"
                       : complete
@@ -1655,7 +1792,7 @@ export default function UniformStudioPage() {
                           : "cursor-pointer border-white/[0.07] bg-white/[0.025] text-background-50/55 hover:border-white/[0.14] hover:bg-white/[0.06] hover:text-background-50/80"
                   }`}
                 >
-                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${
+                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[9px] font-bold ${
                     active
                       ? "border-white/20 bg-white/15"
                       : complete
@@ -1665,19 +1802,16 @@ export default function UniformStudioPage() {
                     {complete ? <i className="ri-check-line" /> : locked ? <i className="ri-lock-line" /> : step.step}
                   </span>
                   <span className="min-w-0">
-                    <span className="flex items-center gap-1.5 whitespace-nowrap text-[11px] font-bold">
+                    <span className="flex items-center gap-1 whitespace-nowrap text-[10px] font-bold">
                       <i className={`${step.icon} text-xs opacity-70`} />
                       {step.label}
-                    </span>
-                    <span className={`mt-0.5 hidden whitespace-nowrap text-[9px] xl:block ${active ? "text-white/65" : "text-current opacity-55"}`}>
-                      {step.description}
                     </span>
                   </span>
                 </button>
                 {index < studioWorkflow.length - 1 && (
                   <span
                     aria-hidden="true"
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-sm transition ${
+                    className={`hidden h-5 w-5 shrink-0 items-center justify-center text-[10px] transition sm:flex ${
                       complete
                         ? "border-primary-500/35 bg-primary-950/50 text-primary-300"
                         : "border-white/[0.07] bg-white/[0.025] text-background-50/30"
@@ -1741,32 +1875,30 @@ export default function UniformStudioPage() {
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 bg-[radial-gradient(circle_at_48%_42%,rgba(36,45,36,0.32),transparent_38%),linear-gradient(135deg,#10110f_0%,#151610_52%,#10110f_100%)]">
+      <div className="relative flex min-h-0 flex-1 bg-[radial-gradient(circle_at_48%_42%,rgba(36,45,36,0.32),transparent_38%),linear-gradient(135deg,#10110f_0%,#151610_52%,#10110f_100%)]">
                   {/* Icon rail — desktop only; mobile gets the pill row below the canvas */}
-                  <div className="hidden w-[76px] flex-shrink-0 flex-col items-center gap-2 overflow-y-auto border-r border-white/[0.055] bg-black/10 px-2 py-4 lg:flex">
-                    {visibleTools.map((t) => (
+                  <div className={`${previewMode ? "hidden" : "hidden md:flex"} w-14 flex-shrink-0 flex-col items-center gap-1 overflow-y-auto border-r border-white/[0.055] bg-black/10 px-1.5 py-3`}>
+                    {tools.map((t) => (
                       <Tooltip key={t.key} label={t.label} description={t.hint} placement="right">
                         <button
                           type="button"
                           aria-label={t.label}
-                          onClick={() => setActiveTool(t.key)}
-                          className={`flex w-14 flex-shrink-0 cursor-pointer flex-col items-center gap-1 rounded-xl border py-2.5 transition-all ${
-                            activeTool === t.key
+                          aria-pressed={activeTool === t.key && inspectorOpen}
+                          onClick={() => openStudioTool(t.key)}
+                          className={`flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-xl border transition-all ${
+                            activeTool === t.key && inspectorOpen
                               ? "border-accent-400/50 bg-accent-500 text-background-50 shadow-[0_8px_22px_rgba(239,84,53,0.2)]"
                               : "border-transparent text-background-50/40 hover:border-white/[0.06] hover:bg-white/[0.045] hover:text-background-50/85"
                           }`}
                         >
-                          <i className={`${t.icon} text-lg`} />
-                          <span className="text-[9px] font-semibold uppercase tracking-wide leading-none">
-                            {t.label}
-                          </span>
+                          <i className={`${t.icon} text-base`} />
                         </button>
                       </Tooltip>
                     ))}
                   </div>
 
                   {/* Canvas */}
-                  <div className={`flex min-w-0 flex-1 flex-col items-center overflow-hidden ${activeTool === "ai" ? "gap-2 px-2 py-2 md:px-3 xl:px-4" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
+                  <div className={`flex min-w-0 flex-1 flex-col items-center overflow-hidden ${activeTool === "ai" ? "gap-2 px-2 py-2 md:px-3 xl:px-4" : "gap-3 px-3 py-3 md:px-5 xl:px-8"}`}>
                     {/* Top bar: view thumbnails + zoom/export, inline instead of a separate row above the card */}
                     <div className={`flex w-full flex-shrink-0 items-center justify-between gap-2 ${activeTool === "ai" ? "max-w-none" : "max-w-6xl"}`}>
                       <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
@@ -2116,12 +2248,12 @@ export default function UniformStudioPage() {
                     )}
 
                     {/* Mobile tool tabs — the icon rail is hidden below lg */}
-                    <div className="lg:hidden w-full flex items-center gap-2 overflow-x-auto pb-1">
-                      {visibleTools.map((t) => (
+                    <div className={`${previewMode ? "hidden" : "flex"} md:hidden w-full items-center gap-2 overflow-x-auto pb-1`}>
+                      {tools.map((t) => (
                         <button
                           key={t.key}
                           type="button"
-                          onClick={() => setActiveTool(t.key)}
+                          onClick={() => openStudioTool(t.key)}
                           className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold cursor-pointer whitespace-nowrap transition-colors flex-shrink-0 border ${
                             activeTool === t.key
                               ? "bg-accent-500 text-background-50 border-accent-500"
@@ -2135,8 +2267,12 @@ export default function UniformStudioPage() {
                     </div>
                   </div>
 
-              {/* Docked fields panel */}
-              <aside className={`hidden w-full flex-shrink-0 border-l border-black/10 bg-[#f7f5ef] md:block ${activeTool === "ai" ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px] overflow-hidden" : "max-w-[420px] overflow-y-auto"}`}>
+              {/* Floating properties inspector: the canvas keeps the full workspace width. */}
+              <aside
+                aria-label={`${activeToolConfig?.label || "Design"} properties`}
+                className={`absolute bottom-3 right-3 top-3 z-30 hidden w-[min(390px,calc(100%-5rem))] rounded-2xl border border-black/10 bg-[#f7f5ef] text-foreground-950 shadow-[0_28px_80px_rgba(0,0,0,.42)] transition duration-200 md:block ${activeTool === "ai" ? "overflow-hidden" : "overflow-y-auto"} ${inspectorOpen && !previewMode ? "translate-x-0 opacity-100" : "pointer-events-none translate-x-[calc(100%+1rem)] opacity-0"}`}
+              >
+                <button type="button" onClick={() => setInspectorOpen(false)} title="Close properties" aria-label="Close properties" className="absolute right-2.5 top-2.5 z-30 flex h-8 w-8 items-center justify-center rounded-lg border border-black/[0.07] bg-white/90 text-sm text-foreground-500 shadow-sm transition hover:bg-white hover:text-foreground-950"><i className="ri-close-line" /></button>
                 {activeTool !== "ai" && <div className="sticky top-0 z-10 border-b border-black/[0.07] bg-[#f7f5ef]/95 px-5 py-4 backdrop-blur-xl">
                   <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary-700">Step {workflowStep.step} · {workflowStep.label}</p>
                   <div className="mt-1 flex items-center justify-between gap-3">
@@ -2285,7 +2421,7 @@ export default function UniformStudioPage() {
                     onRequestQuote={handleRequestQuote}
                     submitting={submittingQuote}
                     error={quoteError}
-                    onEditStep={(tool) => setActiveTool(tool)}
+                    onEditStep={(tool) => { setActiveTool(tool); setInspectorOpen(true); }}
                     onView3d={() => setStageMode("3d")}
                   />
                 )}
@@ -2294,7 +2430,7 @@ export default function UniformStudioPage() {
       </div>
 
       {/* Mobile: the fields panel docks to the bottom instead of the side */}
-      <div className={`md:hidden flex-shrink-0 overflow-y-auto overscroll-contain border-t border-background-200/60 bg-background-50 ${activeTool === "ai" ? "max-h-[72dvh] p-0" : "max-h-[42dvh] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"}`}>
+      <div className={`${inspectorOpen && !previewMode ? "block" : "hidden"} md:hidden flex-shrink-0 overflow-y-auto overscroll-contain border-t border-background-200/60 bg-background-50 ${activeTool === "ai" ? "max-h-[72dvh] p-0" : "max-h-[42dvh] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"}`}>
         <SelectedItemPanel
           layer={selectedLayer}
           placement={selectedLayerId ? placements3d[selectedLayerId] : null}
