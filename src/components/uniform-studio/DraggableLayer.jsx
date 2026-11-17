@@ -104,14 +104,15 @@ export default function DraggableLayer({ layer, stageRef, selected, onSelect, on
         >
           {layer.type === "text" ? (
             editing ? (
-              <input
+              <textarea
                 autoFocus
                 // Placeholder text is selected on entry so typing replaces it
                 // outright — otherwise every new layer starts with the user
                 // deleting "YOUR TEXT" a character at a time.
                 onFocus={(e) => e.currentTarget.select()}
                 value={layer.text}
-                maxLength={14}
+                rows={layer.textLayout === "stacked" || layer.text?.includes("\n") ? 2 : 1}
+                maxLength={30}
                 onMouseDown={(e) => e.stopPropagation()}
                 onChange={(e) => onChange(layer.id, { text: e.target.value.toUpperCase() })}
                 onBlur={() => {
@@ -119,18 +120,22 @@ export default function DraggableLayer({ layer, stageRef, selected, onSelect, on
                   if (layer.autoEdit) onChange(layer.id, { autoEdit: false });
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === "Escape") e.currentTarget.blur();
+                  if (e.key === "Escape" || (e.key === "Enter" && (e.ctrlKey || e.metaKey))) e.currentTarget.blur();
                 }}
                 style={{
                   color: layer.color,
                   fontSize: `${fontSize}px`,
                   fontFamily: layer.fontFamily || "'Oswald', sans-serif",
+                  lineHeight: 1.05,
+                  resize: "none",
+                  textAlign: "center",
                 }}
-                className="font-bold uppercase tracking-wide bg-background-50/90 rounded px-1 outline-none border border-primary-400"
+                aria-label="Edit uniform text"
+                className="overflow-hidden font-bold uppercase tracking-wide bg-background-50/90 rounded px-1 outline-none border border-primary-400"
               />
             ) : (
               <span
-                className="font-bold uppercase tracking-wide whitespace-nowrap"
+                className="font-bold uppercase tracking-wide whitespace-pre-line text-center"
                 onDoubleClick={(e) => {
                   e.stopPropagation();
                   setEditing(true);

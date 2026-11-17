@@ -21,6 +21,29 @@ const LEGACY_VIEW_PRINT_AREAS = {
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
+export function productionTextLayout(element = {}) {
+  if (element.layout === "stacked" || element.textLayout === "stacked") return "stacked";
+  if (element.layout === "single-line" || element.textLayout === "single-line") return "single-line";
+  const words = String(element.content || element.text || "").trim().split(/\s+/).filter(Boolean);
+  return words.length === 2 && words.join(" ").length >= 10 ? "stacked" : "single-line";
+}
+
+export function formatProductionText(content = "", layout = "single-line") {
+  const explicitLines = String(content)
+    .trim()
+    .split(/\r?\n/)
+    .map((line) => line.trim().replace(/\s+/g, " "))
+    .filter(Boolean);
+  if (explicitLines.length > 1) return explicitLines.join("\n");
+  const normalized = explicitLines[0] || "";
+  if (layout !== "stacked") return normalized;
+  const words = normalized.split(" ");
+  if (words.length < 2) return normalized;
+  if (words.length === 2) return words.join("\n");
+  const midpoint = Math.ceil(words.length / 2);
+  return `${words.slice(0, midpoint).join(" ")}\n${words.slice(midpoint).join(" ")}`;
+}
+
 /** Convert AI printable-surface percentages into the editor card coordinates. */
 const printAreaFor = (view, sport) => {
   const area = BASE_VIEW_PRINT_AREAS[view];
@@ -39,25 +62,41 @@ export function mapProductionElementToGarment(element = {}, sport = "soccer") {
     120,
   );
   const content = String(element.content || "TEAM").trim();
+  const textLayout = productionTextLayout(element);
+  const formattedText = formatProductionText(content, textLayout);
+  const longestLine = Math.max(...formattedText.split("\n").map((line) => line.length));
 
   let size = requestedSize;
   if (element.kind === "artwork") {
     size = clamp(requestedSize * area.artworkScale, 3, view === "side" ? 12 : 18);
-  } else if (content.length > 3) {
+  } else if (longestLine > 3) {
     // Prevent team and sponsor names from extending over the armholes.
-    size = Math.min(requestedSize, Math.max(1, 31 / content.length));
+    size = Math.min(requestedSize, Math.max(1, 31 / longestLine));
   }
 
   return {
     view,
-    x: area.left + ((area.right - area.left) * sourceX) / 100,
+    x: Math.abs(sourceX - 50) <= 5
+      ? 50
+      : area.left + ((area.right - area.left) * sourceX) / 100,
     y: area.top + ((area.bottom - area.top) * sourceY) / 100,
     size,
   };
 }
 
 export function normalizeStoredProductionLayer(layer = {}, sport = "soccer") {
-  if (layer.source !== "ai-uniform-element" || layer.placementSpace === "garment-v2") return layer;
+  if (layer.source !== "ai-uniform-element" || layer.placementSpace === "garment-v3") return layer;
+  const textLayout = layer.type === "text" ? productionTextLayout(layer) : layer.textLayout;
+  const text = layer.type === "text" ? formatProductionText(layer.text, textLayout) : layer.text;
+  if (layer.placementSpace === "garment-v2") {
+    return {
+      ...layer,
+      x: Math.abs(Number(layer.x) - 50) <= 3 ? 50 : layer.x,
+      text,
+      textLayout,
+      placementSpace: "garment-v3",
+    };
+  }
   if (layer.placementSpace === "garment-v1") {
     const view = ["front", "side", "back"].includes(layer.view) ? layer.view : "front";
     const legacyArea = LEGACY_VIEW_PRINT_AREAS[view];
@@ -66,7 +105,10 @@ export function normalizeStoredProductionLayer(layer = {}, sport = "soccer") {
     return {
       ...layer,
       y: area.top + ((area.bottom - area.top) * sourceY) / 100,
-      placementSpace: "garment-v2",
+      x: Math.abs(Number(layer.x) - 50) <= 3 ? 50 : layer.x,
+      text,
+      textLayout,
+      placementSpace: "garment-v3",
     };
   }
   const placement = mapProductionElementToGarment({
@@ -77,7 +119,7 @@ export function normalizeStoredProductionLayer(layer = {}, sport = "soccer") {
     size: layer.size,
     content: layer.text,
   }, sport);
-  return { ...layer, ...placement, placementSpace: "garment-v2" };
+  return { ...layer, ...placement, text, textLayout, placementSpace: "garment-v3" };
 }
 
 export { BASE_VIEW_PRINT_AREAS as VIEW_PRINT_AREAS, SPORT_VERTICAL_PRINT_AREAS };
