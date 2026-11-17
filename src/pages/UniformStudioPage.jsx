@@ -1680,7 +1680,10 @@ export default function UniformStudioPage() {
                 : "border-accent-400/40 bg-accent-950/30 text-accent-200 hover:border-accent-300 hover:bg-accent-950/55"
             }`}
           >
-            <i className="ri-sparkling-2-fill" />
+            <span className="relative block h-5 w-5 shrink-0" aria-hidden="true">
+              <img src={`${import.meta.env.BASE_URL}connect767-ai-logo-transparent.png?v=20261117`} alt="" className="h-full w-full object-contain brightness-0 invert" />
+              <i className="ri-sparkling-2-fill absolute -right-0.5 -top-0.5 text-[8px] leading-none text-white" />
+            </span>
             <span className="hidden sm:inline">AI Designer</span>
             <span className="sm:hidden">AI</span>
           </button>
@@ -1876,7 +1879,12 @@ export default function UniformStudioPage() {
                               : "border-transparent text-background-50/40 hover:border-white/[0.06] hover:bg-white/[0.045] hover:text-background-50/85"
                           }`}
                         >
-                          <i className={`${t.icon} text-lg`} />
+                          {t.key === "ai"
+                            ? <span className="relative block h-7 w-7" aria-hidden="true">
+                                <img src={`${import.meta.env.BASE_URL}connect767-ai-logo-transparent.png?v=20261117`} alt="" className="h-full w-full object-contain brightness-0 invert" />
+                                <i className="ri-sparkling-2-fill absolute -right-1 -top-1 text-[10px] leading-none text-white" />
+                              </span>
+                            : <i className={`${t.icon} text-lg`} />}
                           <span className="text-[9px] font-semibold uppercase tracking-wide leading-none">
                             {t.label}
                           </span>
