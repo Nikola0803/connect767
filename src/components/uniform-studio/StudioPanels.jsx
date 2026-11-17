@@ -1331,7 +1331,6 @@ export function AIArtworkPanel({
         uniformPlan={uniformPlan}
         applied={applied}
         onApplyUniform={applyUniform}
-        onNewDirection={() => generateUniform()}
         artworkPreview={preview}
         onPlaceArtwork={onPlace}
         onClearArtwork={() => setPreview(null)}
