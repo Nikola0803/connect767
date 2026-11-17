@@ -850,6 +850,7 @@ export function AIArtworkPanel({
   currentPatternKey = "none",
   uniformPlan,
   onUniformPlanChange,
+  onReferenceChange,
   onModeChange,
   onPlace,
   onApplyUniform,
@@ -1145,7 +1146,9 @@ export function AIArtworkPanel({
     if (!file) return;
     setError("");
     try {
-      setReference(await prepareAIReferenceImage(file));
+      const preparedReference = await prepareAIReferenceImage(file);
+      setReference(preparedReference);
+      onReferenceChange?.(preparedReference);
       onUniformPlanChange?.(null);
       setApplied(false);
     } catch (referenceError) {
@@ -1278,7 +1281,7 @@ export function AIArtworkPanel({
         onStyleChange={setStyle}
         reference={reference}
         onReferenceFile={acceptReferenceFile}
-        onRemoveReference={() => { setReference(null); onUniformPlanChange?.(null); }}
+        onRemoveReference={() => { setReference(null); onReferenceChange?.(null); onUniformPlanChange?.(null); }}
         promptHistory={promptHistory}
         historyEntries={[...promptHistory, ...archivedPrompts]}
         onReusePrompt={reusePrompt}
@@ -1467,7 +1470,7 @@ export function AIArtworkPanel({
               <div>
                 <div className="mb-1.5 flex items-center justify-between gap-2">
                   <label className="block text-[9px] font-bold uppercase tracking-[0.14em] text-foreground-500">Reference image <span className="font-medium normal-case tracking-normal text-foreground-400">(optional)</span></label>
-                  {reference && <button type="button" onClick={() => { setReference(null); onUniformPlanChange?.(null); }} className="cursor-pointer text-[9px] font-bold text-foreground-500 hover:text-red-600">Remove</button>}
+                  {reference && <button type="button" onClick={() => { setReference(null); onReferenceChange?.(null); onUniformPlanChange?.(null); }} className="cursor-pointer text-[9px] font-bold text-foreground-500 hover:text-red-600">Remove</button>}
                 </div>
                 {reference ? (
                   <div className="relative overflow-hidden rounded-lg border border-primary-200 bg-background-100">
