@@ -238,14 +238,14 @@ function parseCsv(text) {
 let layerIdCounter = 0;
 const nextLayerId = () => `layer-${Date.now()}-${layerIdCounter++}`;
 
-const productionLayersFromPlan = (plan, { preview = false } = {}) =>
+const productionLayersFromPlan = (plan, { preview = false, sport = "soccer" } = {}) =>
   (Array.isArray(plan?.productionElements) ? plan.productionElements : [])
     .map((element, index) => {
-      const placement = mapProductionElementToGarment(element);
+      const placement = mapProductionElementToGarment(element, sport);
       const common = {
         id: preview ? `ai-production-preview-${index}` : nextLayerId(),
         source: "ai-uniform-element",
-        placementSpace: "garment-v1",
+        placementSpace: "garment-v2",
         name: element.name || `${plan?.name || "AI uniform"} ${element.kind}`,
         view: placement.view,
         x: placement.x,
@@ -681,7 +681,7 @@ export default function UniformStudioPage() {
       if (!raw) return false;
       const saved = JSON.parse(raw);
       if (!saved?.layers?.length && !Object.keys(saved?.placements3d || {}).length && !saved?.zoneModel) return false;
-      setLayers((saved.layers || []).map(normalizeStoredProductionLayer));
+      setLayers((saved.layers || []).map((layer) => normalizeStoredProductionLayer(layer, activeSport)));
       setPlacements3d(saved.placements3d || {});
       if (saved.colors) setColors(normalizeZoneColors(saved.colors));
       if (saved.studioBackground) setStudioBackground(normalizeStudioBackground(saved.studioBackground));
@@ -1045,8 +1045,8 @@ export default function UniformStudioPage() {
   const stageCollar = showingAIUniformPreview ? aiUniformPlan.collar : collar;
   const stageSleeve = showingAIUniformPreview ? aiUniformPlan.sleeve : sleeve;
   const previewProductionLayers = useMemo(
-    () => productionLayersFromPlan(aiUniformPlan, { preview: true }),
-    [aiUniformPlan],
+    () => productionLayersFromPlan(aiUniformPlan, { preview: true, sport: activeSport }),
+    [aiUniformPlan, activeSport],
   );
   const stageLayers = showingAIUniformPreview
     ? [
@@ -1105,7 +1105,7 @@ export default function UniformStudioPage() {
             rotation: 0,
             src: skinDataUri(plan.pattern.key, nextColors.body, nextColors.shirtStrip),
           }));
-      return [...retained, ...patternAdditions, ...productionLayersFromPlan(plan)];
+      return [...retained, ...patternAdditions, ...productionLayersFromPlan(plan, { sport: activeSport })];
     });
     setSelectedLayerId(null);
     setPendingLayer(null);
