@@ -68,4 +68,113 @@ describe("DraggableLayer", () => {
       rotation: 0,
     });
   });
+
+  it("preserves the current resized dimensions when artwork is dragged", () => {
+    const onChange = vi.fn();
+    const stage = document.createElement("div");
+    stage.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      width: 100,
+      height: 100,
+      right: 100,
+      bottom: 100,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    const { rerender } = render(
+      <DraggableLayer
+        layer={layer}
+        stageRef={{ current: stage }}
+        selected
+        onSelect={vi.fn()}
+        onChange={onChange}
+      />,
+    );
+
+    const resizedLayer = { ...layer, size: 40, rotation: 15 };
+    rerender(
+      <DraggableLayer
+        layer={resizedLayer}
+        stageRef={{ current: stage }}
+        selected
+        onSelect={vi.fn()}
+        onChange={onChange}
+      />,
+    );
+
+    fireEvent.mouseDown(screen.getByRole("group"), { clientX: 50, clientY: 45 });
+    fireEvent.mouseMove(window, { clientX: 60, clientY: 50 });
+    fireEvent.mouseUp(window);
+
+    expect(onChange).toHaveBeenLastCalledWith("logo-1", {
+      x: 60,
+      y: 50,
+      size: 40,
+      rotation: 15,
+    });
+  });
+
+  it("rotates artwork without restoring stale position or size values", () => {
+    const onChange = vi.fn();
+    const stage = document.createElement("div");
+    stage.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      width: 200,
+      height: 200,
+      right: 200,
+      bottom: 200,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    const { rerender } = render(
+      <DraggableLayer
+        layer={layer}
+        stageRef={{ current: stage }}
+        selected
+        onSelect={vi.fn()}
+        onChange={onChange}
+      />,
+    );
+
+    const transformedLayer = { ...layer, x: 60, y: 55, size: 40, rotation: 15 };
+    rerender(
+      <DraggableLayer
+        layer={transformedLayer}
+        stageRef={{ current: stage }}
+        selected
+        onSelect={vi.fn()}
+        onChange={onChange}
+      />,
+    );
+
+    const artwork = screen.getByRole("group");
+    artwork.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      width: 100,
+      height: 100,
+      right: 100,
+      bottom: 100,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    fireEvent.mouseDown(screen.getByRole("button", { name: "Rotate" }), { clientX: 50, clientY: 0 });
+    fireEvent.mouseMove(window, { clientX: 100, clientY: 50 });
+    fireEvent.mouseUp(window);
+
+    expect(onChange).toHaveBeenLastCalledWith("logo-1", {
+      x: 60,
+      y: 55,
+      size: 40,
+      rotation: 90,
+    });
+  });
 });

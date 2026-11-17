@@ -2002,7 +2002,7 @@ export default function UniformStudioPage() {
                       <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center gap-2">
                         <div
                           className={`w-full transition-transform ${activeTool === "ai" ? "max-w-[min(100%,1280px)]" : "max-w-[800px]"}`}
-                          style={{ transform: `scale(${zoom})` }}
+                          style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}
                         >
                           <JerseyStage
                             ref={stageRef}
@@ -2118,7 +2118,7 @@ export default function UniformStudioPage() {
                 <div className={activeTool === "ai" ? "h-full" : "p-5"}>
                 {selectedLayer && <SelectedItemPanel
                   layer={selectedLayer}
-                  placement={selectedLayerId ? placements3d[selectedLayerId] : null}
+                  placement={stageMode === "3d" && selectedLayerId ? placements3d[selectedLayerId] : null}
                   onTextChange={(id, text) => updateLayer(id, { text })}
                   onColorChange={(id, color) => updateLayer(id, { color })}
                   onFontChange={(id, fontFamily) => updateLayer(id, { fontFamily })}
@@ -2268,7 +2268,7 @@ export default function UniformStudioPage() {
       <div className={`md:hidden flex-shrink-0 overflow-y-auto overscroll-contain border-t border-background-200/60 bg-background-50 ${activeTool === "ai" ? "max-h-[72dvh] p-0" : "max-h-[42dvh] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"}`}>
         <SelectedItemPanel
           layer={selectedLayer}
-          placement={selectedLayerId ? placements3d[selectedLayerId] : null}
+          placement={stageMode === "3d" && selectedLayerId ? placements3d[selectedLayerId] : null}
           onTextChange={(id, text) => updateLayer(id, { text })}
           onColorChange={(id, color) => updateLayer(id, { color })}
           onScaleChange={stageMode === "3d" ? setLayerScale : setLayerSize2d}
