@@ -247,9 +247,9 @@ export default function AIUniformComposer({
                 <div className="p-3.5">
                   <div className="flex items-start justify-between gap-3"><div><p className="text-[9px] font-bold uppercase tracking-[0.14em] text-primary-700">Current AI design</p><h3 className="mt-1 font-heading text-base font-semibold">{uniformPlan.name}</h3></div><span className="rounded-full bg-primary-50 px-2 py-1 text-[8px] font-bold text-primary-800">On canvas</span></div>
                   <p className={`mt-2 text-[10px] leading-relaxed ${muted}`}>{uniformPlan.summary}</p>
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    <button type="button" onClick={onApplyUniform} className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-primary-700 px-3 py-2.5 text-[10px] font-bold text-white hover:bg-primary-800"><i className={applied ? "ri-check-double-line" : "ri-magic-line"} /> {applied ? "Applied" : "Apply design"}</button>
-                    <button type="button" onClick={onNewDirection} className={`inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-[10px] font-bold transition ${dark ? "border-white/15 hover:bg-white/10" : "border-background-300 hover:bg-background-100"}`}><i className="ri-refresh-line" /> New direction</button>
+                  <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-current/10 pt-3">
+                    <button type="button" onClick={onApplyUniform} className="inline-flex min-h-8 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-primary-700 px-3.5 py-1.5 text-[9px] font-bold text-white shadow-sm transition hover:bg-primary-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"><i className={applied ? "ri-check-double-line" : "ri-check-line"} /> {applied ? "Applied" : "Apply design"}</button>
+                    <button type="button" onClick={onNewDirection} className={`inline-flex min-h-8 cursor-pointer items-center justify-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[9px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 ${dark ? "border-white/15 text-white/75 hover:bg-white/10 hover:text-white" : "border-background-300 bg-background-50 text-foreground-600 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-800"}`}><i className="ri-refresh-line" /> New direction</button>
                   </div>
                 </div>
               </article>
