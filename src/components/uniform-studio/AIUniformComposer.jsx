@@ -98,9 +98,11 @@ export default function AIUniformComposer({
   canUndo,
   onUndo,
   onNewChat,
+  onClearCurrentDesign,
 }) {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [resetMenuOpen, setResetMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -138,6 +140,7 @@ export default function AIUniformComposer({
     if (event.key === "Escape") {
       setToolsOpen(false);
       setSettingsOpen(false);
+      setResetMenuOpen(false);
     }
   };
 
@@ -188,10 +191,52 @@ export default function AIUniformComposer({
             <p className={`truncate text-[9px] ${muted}`}>Uniform design assistant · {MODE_COPY[mode].label}</p>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="relative flex items-center gap-1">
           <button type="button" onClick={() => setHistoryOpen((value) => !value)} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl transition hover:bg-black/5 dark:hover:bg-white/10" aria-label="Open conversation history" aria-expanded={historyOpen}><i className="ri-history-line" /></button>
           <button type="button" onClick={() => setDark((value) => !value)} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl transition hover:bg-black/5" aria-label={dark ? "Use light mode" : "Use dark mode"}><i className={dark ? "ri-sun-line" : "ri-moon-line"} /></button>
-          <button type="button" onClick={onNewChat} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl bg-primary-700 text-white transition hover:bg-primary-800" aria-label="Start a new AI design chat"><i className="ri-chat-new-line" /></button>
+          <div className="flex h-9 overflow-hidden rounded-xl bg-primary-700 text-white shadow-sm">
+            <button
+              type="button"
+              onClick={() => { setResetMenuOpen(false); onNewChat(); }}
+              className="inline-flex cursor-pointer items-center gap-1.5 px-3 text-[10px] font-bold transition hover:bg-primary-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/70"
+            >
+              <i className="ri-chat-new-line" /> New design
+            </button>
+            <button
+              type="button"
+              onClick={() => setResetMenuOpen((value) => !value)}
+              className="flex w-8 cursor-pointer items-center justify-center border-l border-white/20 transition hover:bg-primary-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/70"
+              aria-label="Open design reset options"
+              aria-expanded={resetMenuOpen}
+              aria-haspopup="menu"
+            >
+              <i className="ri-arrow-down-s-line" />
+            </button>
+          </div>
+
+          {resetMenuOpen && (
+            <div className={`absolute right-0 top-11 z-40 w-52 overflow-hidden rounded-xl border p-1.5 shadow-2xl ${card}`} role="menu" aria-label="Design reset options">
+              <button
+                type="button"
+                onClick={() => { setResetMenuOpen(false); onClearCurrentDesign(); }}
+                className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[10px] font-semibold transition hover:bg-red-50 hover:text-red-700"
+                role="menuitem"
+              >
+                <i className="ri-delete-bin-6-line text-sm" />
+                <span><strong className="block">Clear current design</strong><span className={`block text-[8px] font-normal ${muted}`}>Remove the concept from the canvas</span></span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setResetMenuOpen(false); onClearHistory(); }}
+                disabled={!historyEntries.length}
+                className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[10px] font-semibold transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-40"
+                role="menuitem"
+              >
+                <i className="ri-history-line text-sm" />
+                <span><strong className="block">Clear prompt history</strong><span className={`block text-[8px] font-normal ${muted}`}>Delete saved prompts for this sport</span></span>
+              </button>
+            </div>
+          )}
         </div>
       </header>
 

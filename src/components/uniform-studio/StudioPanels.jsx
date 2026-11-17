@@ -1228,6 +1228,16 @@ export function AIArtworkPanel({
     onUniformPlanChange?.(null);
   };
 
+  const clearCurrentDesign = () => {
+    stopGenerating();
+    setRefinementBrief("");
+    setReference(null);
+    setPreview(null);
+    setApplied(false);
+    setError("");
+    onUniformPlanChange?.(null);
+  };
+
   const preservationControls = mode === "uniform" ? (
     <details className="group overflow-hidden rounded-xl border border-background-200 bg-white">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-3">
@@ -1328,6 +1338,7 @@ export function AIArtworkPanel({
         canUndo={canUndoUniform}
         onUndo={onUndoUniform}
         onNewChat={startNewChat}
+        onClearCurrentDesign={clearCurrentDesign}
       />
     );
   }
