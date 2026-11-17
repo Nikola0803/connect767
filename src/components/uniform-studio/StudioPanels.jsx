@@ -187,7 +187,6 @@ function ColorRow({ label, value, onChange, zone, onHoverZone }) {
 }
 
 export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, colors, setColors, onHoverZone, twoTone, setTwoTone }) {
-  const [selectedColorZone, setSelectedColorZone] = useState(null);
   const setZone = (zone) => (color) => {
     setColors((current) => ({
       ...current,
@@ -222,7 +221,6 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
     ...(config.sleeveOptions ? [{ key: "sleeveStrip", label: "Sleeve ends" }] : []),
     { key: "shortsStrip", label: `${config.bottomLabel} ends` },
   ];
-  const activeColorZone = colorZones.find((zone) => zone.key === selectedColorZone);
 
   return (
     <div>
@@ -279,7 +277,7 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
 
           {twoTone.enabled && (
             <div className="mb-6 pl-1">
-              <button type="button" onClick={() => setSelectedColorZone("shorts")} className="cursor-pointer text-xs font-semibold text-primary-700 hover:underline">Edit {config.bottomLabel.toLowerCase()} color below <i className="ri-arrow-down-line" aria-hidden="true" /></button>
+              <p className="text-xs text-primary-700">Choose the {config.bottomLabel.toLowerCase()} color directly below.</p>
             </div>
           )}
         </>
@@ -289,20 +287,16 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
         Garment colors
       </h3>
       <div className="grid grid-cols-2 gap-2 mb-4" role="group" aria-label="Garment part colors">
-        {colorZones.map((zone) => <button key={zone.key} type="button" aria-pressed={activeColorZone?.key === zone.key}
-          onClick={() => setSelectedColorZone(zone.key)}
+        {colorZones.map((zone) => <label key={zone.key}
           onMouseEnter={() => onHoverZone?.(zone.key)} onMouseLeave={() => onHoverZone?.(null)}
           onFocus={() => onHoverZone?.(zone.key)} onBlur={() => onHoverZone?.(null)}
-          className={`flex min-w-0 cursor-pointer items-center gap-2.5 rounded-xl border p-2.5 text-left transition focus-visible:outline-2 focus-visible:outline-primary-500 ${activeColorZone?.key === zone.key ? "border-primary-500 bg-primary-50" : "border-background-200 bg-background-50 hover:border-primary-300"}`}>
+          className="relative flex min-w-0 cursor-pointer items-center gap-2.5 rounded-xl border border-background-200 bg-background-50 p-2.5 text-left transition hover:border-primary-300 focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20">
           <span className="h-8 w-8 shrink-0 rounded-lg border border-black/10" style={{ backgroundColor: colors[zone.key] }} aria-hidden="true" />
           <span className="min-w-0"><span className="block text-xs font-semibold text-foreground-800">{zone.label}</span><span className="block font-mono text-[10px] uppercase text-foreground-500">{colors[zone.key]}</span></span>
-        </button>)}
+          <input type="color" aria-label={`${zone.label} color`} value={colors[zone.key]} onChange={(event) => setZone(zone.key)(event.target.value)} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
+        </label>)}
       </div>
-      {activeColorZone && <div className="rounded-2xl border border-background-200 bg-background-50 px-4 pt-3 pb-1">
-        <div className="mb-2 flex items-center justify-between gap-2"><p className="text-[10px] font-semibold uppercase tracking-wider text-foreground-400">Editing selected part</p><button type="button" onClick={() => setSelectedColorZone(null)} aria-label="Close color palette" className="cursor-pointer rounded px-2 py-1 text-xs font-semibold text-foreground-600 hover:bg-background-100">Done</button></div>
-        <ColorRow key={activeColorZone.key} label={activeColorZone.label} value={colors[activeColorZone.key]} onChange={setZone(activeColorZone.key)} zone={activeColorZone.key} onHoverZone={onHoverZone} />
-      </div>}
-      <p className="mt-3 text-[11px] text-foreground-500 font-label">Select a part, then choose a palette or custom color.</p>
+      <p className="mt-3 text-[11px] text-foreground-500 font-label">Click any garment color to choose its new color.</p>
     </div>
   );
 }

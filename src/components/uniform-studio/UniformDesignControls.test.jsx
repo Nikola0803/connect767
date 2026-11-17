@@ -5,23 +5,19 @@ import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
 import { DesignPanel, OptionsPanel, StudioBackgroundPanel } from "./StudioPanels";
 
 describe("uniform design controls", () => {
-  it("uses one palette and changes only the selected garment part", () => {
+  it("picks colors directly on garment tiles without a separate editor", () => {
     const setColors = vi.fn();
     const onHoverZone = vi.fn();
     render(<DesignPanel sport="soccer" collar="Crew" setCollar={vi.fn()} sleeve="Short" setSleeve={vi.fn()} colors={defaultZoneColors} setColors={setColors} onHoverZone={onHoverZone} />);
-    fireEvent.click(screen.getByRole("button", { name: /Sleeve ends #/i }));
-    fireEvent.click(screen.getByRole("button", { name: "Set Sleeve ends to #0c8a57" }));
+    fireEvent.change(screen.getByLabelText("Sleeve ends color"), { target: { value: "#0c8a57" } });
     const updated = setColors.mock.calls[0][0](defaultZoneColors);
     expect(updated).toEqual({ ...defaultZoneColors, sleeveStrip: "#0c8a57" });
-    fireEvent.click(screen.getByRole("button", { name: /Shirt body #/i }));
-    fireEvent.click(screen.getByRole("button", { name: "Set Shirt body to #086b44" }));
+    fireEvent.change(screen.getByLabelText("Shirt body color"), { target: { value: "#086b44" } });
     expect(setColors.mock.calls.at(-1)[0](defaultZoneColors)).toEqual({ ...defaultZoneColors, body: "#086b44" });
-    fireEvent.click(screen.getByRole("button", { name: /Sleeve ends #/i }));
-    expect(screen.queryByRole("button", { name: /Set Collar to/ })).not.toBeInTheDocument();
-    fireEvent.mouseEnter(screen.getByRole("button", { name: /Collar #/i }));
+    expect(screen.queryByText("Editing selected part")).not.toBeInTheDocument();
+    fireEvent.mouseEnter(screen.getByLabelText("Collar color").closest("label"));
     expect(onHoverZone).toHaveBeenCalledWith("collar");
-    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
-    fireEvent.change(screen.getByLabelText("Sleeve ends hex value"), { target: { value: "#123456" } });
+    fireEvent.change(screen.getByLabelText("Sleeve ends color"), { target: { value: "#123456" } });
     expect(setColors.mock.calls.at(-1)[0](defaultZoneColors).sleeveStrip).toBe("#123456");
   });
   it("offers optional Polo and mixed sleeves without Crew, V-Neck or Sleeveless buttons", () => {
