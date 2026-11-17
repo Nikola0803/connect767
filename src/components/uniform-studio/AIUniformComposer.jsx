@@ -114,15 +114,25 @@ export default function AIUniformComposer({
     if (canSend && !generating) onSend();
   };
 
+  const closePopovers = () => {
+    setToolsOpen(false);
+    setHistoryOpen(false);
+    setResetMenuOpen(false);
+    setSettingsOpen(false);
+  };
+
+  const handleSurfacePointerDown = (event) => {
+    if (event.target.closest("[data-ai-popover], [data-ai-popover-trigger]")) return;
+    closePopovers();
+  };
+
   const handleKeyDown = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       submit();
     }
     if (event.key === "Escape") {
-      setToolsOpen(false);
-      setSettingsOpen(false);
-      setResetMenuOpen(false);
+      closePopovers();
     }
   };
 
@@ -149,7 +159,7 @@ export default function AIUniformComposer({
   const muted = dark ? "text-white/50" : "text-foreground-500";
 
   return (
-    <section className={`relative flex h-full min-h-[620px] flex-col overflow-hidden transition-colors ${surface}`} aria-label="Connect767 AI uniform designer">
+    <section onPointerDown={handleSurfacePointerDown} className={`relative flex h-full min-h-[620px] flex-col overflow-hidden transition-colors ${surface}`} aria-label="Connect767 AI uniform designer">
       <input
         ref={fileInputRef}
         type="file"
@@ -177,25 +187,31 @@ export default function AIUniformComposer({
           <div className="flex h-9 overflow-hidden rounded-xl bg-primary-700 text-white shadow-sm">
             <button
               type="button"
-              onClick={() => { setResetMenuOpen(false); onNewChat(); }}
+              onClick={() => { closePopovers(); onNewChat(); }}
               className="inline-flex cursor-pointer items-center gap-1.5 px-3 text-[10px] font-bold transition hover:bg-primary-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/70"
             >
               <i className="ri-chat-new-line" /> New design
             </button>
             <button
               type="button"
-              onClick={() => setResetMenuOpen((value) => !value)}
+              onClick={() => {
+                setResetMenuOpen((value) => !value);
+                setHistoryOpen(false);
+                setToolsOpen(false);
+                setSettingsOpen(false);
+              }}
               className="flex w-8 cursor-pointer items-center justify-center border-l border-white/20 transition hover:bg-primary-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/70"
               aria-label="Open design reset options"
               aria-expanded={resetMenuOpen}
               aria-haspopup="menu"
+              data-ai-popover-trigger
             >
               <i className="ri-arrow-down-s-line" />
             </button>
           </div>
 
           {resetMenuOpen && (
-            <div className={`absolute right-0 top-11 z-40 w-52 overflow-hidden rounded-xl border p-1.5 shadow-2xl ${card}`} role="menu" aria-label="Design reset options">
+            <div data-ai-popover className={`absolute right-0 top-11 z-40 w-52 overflow-hidden rounded-xl border p-1.5 shadow-2xl ${card}`} role="menu" aria-label="Design reset options">
               <button
                 type="button"
                 onClick={() => { setResetMenuOpen(false); setHistoryOpen(true); }}
@@ -222,7 +238,7 @@ export default function AIUniformComposer({
       </header>
 
       {historyOpen && (
-        <aside className={`absolute inset-x-3 top-[68px] z-30 max-h-[60%] overflow-hidden rounded-2xl border shadow-2xl ${card}`} aria-label="AI design conversation history">
+        <aside data-ai-popover className={`absolute inset-x-3 top-[68px] z-30 max-h-[60%] overflow-hidden rounded-2xl border shadow-2xl ${card}`} aria-label="AI design conversation history">
           <div className="flex items-center justify-between border-b border-current/10 px-3 py-2.5">
               <div><strong className="block text-xs">Design history</strong><span className={`text-[9px] ${muted}`}>{historyEntries.length} saved {historyEntries.length === 1 ? "prompt" : "prompts"}</span></div>
             <button type="button" onClick={onClearHistory} disabled={!historyEntries.length} className="cursor-pointer text-[9px] font-bold text-foreground-400 hover:text-red-600 disabled:opacity-40">Clear</button>
@@ -295,7 +311,7 @@ export default function AIUniformComposer({
         {error && <div role="alert" className="mb-2 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[10px] text-red-700"><span>{error}</span><button type="button" onClick={onRetry} className="shrink-0 cursor-pointer font-bold underline">Retry</button></div>}
 
         {settingsOpen && (
-          <div className={`absolute bottom-[calc(100%-4px)] left-3 right-3 z-20 max-h-72 overflow-y-auto rounded-2xl border p-3 shadow-2xl ${card}`}>
+          <div data-ai-popover className={`absolute bottom-[calc(100%-4px)] left-3 right-3 z-20 max-h-72 overflow-y-auto rounded-2xl border p-3 shadow-2xl ${card}`}>
             <div className="flex items-center justify-between"><strong className="text-xs">Design controls</strong><button type="button" onClick={() => setSettingsOpen(false)} className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg hover:bg-black/5" aria-label="Close design controls"><i className="ri-close-line" /></button></div>
             <label className={`mt-3 block text-[9px] font-bold uppercase tracking-wide ${muted}`}>Team or brand</label>
             <input value={brandName} onChange={(event) => onBrandNameChange(event.target.value)} placeholder="e.g. Riverside FC" maxLength={80} className="mt-1 w-full rounded-xl border border-background-300 bg-white px-3 py-2.5 text-xs text-foreground-950 outline-none focus:border-primary-500" />
@@ -307,7 +323,7 @@ export default function AIUniformComposer({
         )}
 
         {toolsOpen && (
-          <div className={`absolute bottom-[calc(100%-4px)] left-3 z-30 w-64 overflow-hidden rounded-2xl border p-2 shadow-2xl ${card}`} role="menu" aria-label="AI composer tools">
+          <div data-ai-popover className={`absolute bottom-[calc(100%-4px)] left-3 z-30 w-64 overflow-hidden rounded-2xl border p-2 shadow-2xl ${card}`} role="menu" aria-label="AI composer tools">
             <button type="button" onClick={() => { fileInputRef.current?.click(); setToolsOpen(false); }} className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-700"><i className="ri-image-add-line" /></span><span><strong className="block text-[10px]">Upload inspiration image</strong><span className={`text-[8px] ${muted}`}>PNG, JPG or WebP · up to 10 MB</span></span></button>
             {mode === "artwork" && <button type="button" onClick={() => { onModeChange("uniform"); setToolsOpen(false); }} className="mt-1 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-700"><i className="ri-shirt-line" /></span><span><strong className="block text-[10px]">Design full uniform</strong><span className={`text-[8px] ${muted}`}>Return to the complete kit designer</span></span></button>}
             {mode === "uniform" && <button type="button" onClick={() => { onModeChange("artwork"); setToolsOpen(false); }} className="mt-1 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-50 text-accent-600"><i className="ri-image-edit-line" /></span><span><strong className="block text-[10px]">Create transparent artwork</strong><span className={`text-[8px] ${muted}`}>Generate artwork to place on the kit</span></span></button>}
@@ -336,9 +352,9 @@ export default function AIUniformComposer({
           />
           <div className="flex items-center justify-between gap-2 px-2.5 pb-2.5">
             <div className="flex min-w-0 items-center gap-1.5">
-              <button type="button" onClick={() => setToolsOpen((value) => !value)} className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-background-200 bg-background-50 text-foreground-700 transition hover:bg-background-100" aria-label="Add attachment or AI tool" aria-expanded={toolsOpen}><i className={toolsOpen ? "ri-close-line" : "ri-add-line"} /></button>
+              <button type="button" onClick={() => { setToolsOpen((value) => !value); setHistoryOpen(false); setResetMenuOpen(false); setSettingsOpen(false); }} className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-background-200 bg-background-50 text-foreground-700 transition hover:bg-background-100" aria-label="Add attachment or AI tool" aria-expanded={toolsOpen} data-ai-popover-trigger><i className={toolsOpen ? "ri-close-line" : "ri-add-line"} /></button>
               <ComposerAction icon={MODE_COPY[mode].icon} label={MODE_COPY[mode].label} onClick={() => onModeChange(mode === "uniform" ? "artwork" : "uniform")} active />
-              <button type="button" onClick={() => setSettingsOpen((value) => !value)} className="inline-flex h-9 w-9 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-background-200 bg-background-50 text-[10px] font-bold text-foreground-600 hover:bg-background-100 sm:w-auto sm:px-3"><i className="ri-equalizer-2-line" /><span className="hidden sm:inline">Controls</span></button>
+              <button type="button" onClick={() => { setSettingsOpen((value) => !value); setHistoryOpen(false); setResetMenuOpen(false); setToolsOpen(false); }} className="inline-flex h-9 w-9 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-background-200 bg-background-50 text-[10px] font-bold text-foreground-600 hover:bg-background-100 sm:w-auto sm:px-3" data-ai-popover-trigger><i className="ri-equalizer-2-line" /><span className="hidden sm:inline">Controls</span></button>
             </div>
             {generating ? (
               <button type="button" onClick={onStop} className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-foreground-950 text-white transition hover:bg-red-600" aria-label="Stop generating"><i className="ri-stop-fill" /></button>
