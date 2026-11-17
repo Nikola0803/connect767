@@ -1574,7 +1574,7 @@ export default function UniformStudioPage() {
                 : "border-accent-400/40 bg-accent-950/30 text-accent-200 hover:border-accent-300 hover:bg-accent-950/55"
             }`}
           >
-            <img src="/connect767-ai-logo.png" alt="" aria-hidden="true" className="h-5 w-5 rounded object-cover" />
+            <img src="/connect767-ai-logo-transparent.png" alt="" aria-hidden="true" className="h-5 w-5 bg-transparent object-contain" />
             <span className="hidden sm:inline">AI Designer</span>
             <span className="sm:hidden">AI</span>
           </button>
@@ -1756,7 +1756,7 @@ export default function UniformStudioPage() {
                           }`}
                         >
                           {t.key === "ai" ? (
-                            <img src="/connect767-ai-logo.png" alt="" aria-hidden="true" className="h-7 w-7 rounded-md object-cover" />
+                            <img src="/connect767-ai-logo-transparent.png" alt="" aria-hidden="true" className="h-7 w-7 bg-transparent object-contain" />
                           ) : (
                             <i className={`${t.icon} text-lg`} />
                           )}
@@ -1775,7 +1775,7 @@ export default function UniformStudioPage() {
                       <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
                         <div className="hidden min-w-0 items-center gap-1.5 text-background-50/55 md:flex">
                           {activeTool === "ai" ? (
-                            <img src="/connect767-ai-logo.png" alt="" aria-hidden="true" className="h-4 w-4 rounded object-cover" />
+                            <img src="/connect767-ai-logo-transparent.png" alt="" aria-hidden="true" className="h-4 w-4 bg-transparent object-contain" />
                           ) : (
                             <i className={`${activeToolConfig?.icon || workflowStep.icon} text-xs text-primary-300`} />
                           )}
@@ -2031,9 +2031,9 @@ export default function UniformStudioPage() {
                       <div className="flex min-h-0 w-full flex-1 items-stretch justify-center p-1">
                         <div className="flex h-full w-full max-w-none flex-col justify-center rounded-[28px] border border-dashed border-primary-400/35 bg-[radial-gradient(circle_at_50%_0%,rgba(0,116,73,.2),transparent_56%),rgba(255,255,255,.025)] px-6 py-8 text-center shadow-[0_24px_70px_rgba(0,0,0,.2)] sm:px-10 lg:px-14">
                           <img
-                            src="/connect767-ai-logo.png"
+                            src="/connect767-ai-logo-transparent.png"
                             alt="Connect767 AI"
-                            className="mx-auto h-20 w-20 rounded-2xl object-cover shadow-[0_16px_34px_rgba(0,116,73,.24)]"
+                            className="mx-auto h-20 w-20 bg-transparent object-contain"
                           />
                           <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.2em] text-primary-300">AI-first uniform studio</p>
                           <h2 className="mx-auto mt-2 max-w-3xl font-heading text-3xl font-semibold leading-tight text-white sm:text-4xl xl:text-5xl">Your generated uniform will appear here</h2>
@@ -2154,7 +2154,7 @@ export default function UniformStudioPage() {
                           }`}
                         >
                           {t.key === "ai" ? (
-                            <img src="/connect767-ai-logo.png" alt="" aria-hidden="true" className="h-5 w-5 rounded object-cover" />
+                            <img src="/connect767-ai-logo-transparent.png" alt="" aria-hidden="true" className="h-5 w-5 bg-transparent object-contain" />
                           ) : (
                             <i className={t.icon} />
                           )}
