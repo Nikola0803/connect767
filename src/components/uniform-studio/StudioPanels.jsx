@@ -277,11 +277,11 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
       <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400 mb-4 pt-2 border-t border-background-200/70">
         Garment colors
       </h3>
-      <div className="grid grid-cols-2 gap-2 mb-4" role="group" aria-label="Garment part colors">
+      <div className="grid grid-cols-3 gap-2 mb-4" role="group" aria-label="Garment part colors">
         {colorZones.map((zone) => <label key={zone.key}
           onMouseEnter={() => onHoverZone?.(zone.key)} onMouseLeave={() => onHoverZone?.(null)}
           onFocus={() => onHoverZone?.(zone.key)} onBlur={() => onHoverZone?.(null)}
-          className="relative flex min-w-0 cursor-pointer items-center gap-2.5 rounded-xl border border-background-200 bg-background-50 p-2.5 text-left transition hover:border-primary-300 focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20">
+          className="relative flex min-w-0 cursor-pointer flex-col items-start gap-1.5 rounded-xl border border-background-200 bg-background-50 p-2 text-left transition hover:border-primary-300 focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20">
           <span className="h-8 w-8 shrink-0 rounded-lg border border-black/10" style={{ backgroundColor: colors[zone.key] }} aria-hidden="true" />
           <span className="min-w-0"><span className="block text-xs font-semibold text-foreground-800">{zone.label}</span><span className="block font-mono text-[10px] uppercase text-foreground-500">{colors[zone.key]}</span></span>
           <input type="color" aria-label={`${zone.label} color`} value={colors[zone.key]} onChange={(event) => setZone(zone.key)(event.target.value)} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
@@ -691,12 +691,12 @@ export function UniformSetupPanel({ designProps, optionsProps }) {
   return <div className="space-y-4">
     <OptionsPanel {...optionsProps} section="fit" />
     <DesignPanel {...designProps} />
-    <details className="group rounded-xl border border-background-200 bg-background-50">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-xs font-semibold text-foreground-800 [&::-webkit-details-marker]:hidden">
-        <span>Production extras<span className="mt-0.5 block text-[11px] font-normal text-foreground-500">{optionsProps.logoApplication === "Embroidery" ? "Embroidery" : "Sublimated logo included"}{optionsProps.insideCollarMessage ? " · Collar customization" : ""}</span></span>
-        <i className="ri-arrow-down-s-line transition-transform group-open:rotate-180" aria-hidden="true" />
+    <details className="group rounded-xl border border-primary-300 bg-primary-50 shadow-sm">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-3 text-sm font-bold text-primary-900 [&::-webkit-details-marker]:hidden">
+        <span className="flex min-w-0 items-center gap-2.5"><i className="ri-settings-4-line text-lg text-primary-700" aria-hidden="true" /><span>Production extras<span className="mt-0.5 block text-[11px] font-normal text-primary-800">{optionsProps.logoApplication === "Embroidery" ? "Embroidery" : "Sublimated logo included"}{optionsProps.insideCollarMessage ? " · Collar customization" : ""}</span></span></span>
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-800"><i className="ri-arrow-down-s-line transition-transform group-open:rotate-180" aria-hidden="true" /></span>
       </summary>
-      <div className="border-t border-background-200 p-3"><OptionsPanel {...optionsProps} section="production" /></div>
+      <div className="rounded-b-xl border-t border-primary-200 bg-background-50 p-3"><OptionsPanel {...optionsProps} section="production" /></div>
     </details>
   </div>;
 }
