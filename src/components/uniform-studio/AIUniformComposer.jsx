@@ -244,7 +244,6 @@ export default function AIUniformComposer({
 
             {uniformPlan && !generating && (
               <article className={`overflow-hidden rounded-2xl border shadow-sm ${card}`}>
-                {uniformPlan.conceptImage?.src && <img src={uniformPlan.conceptImage.src} alt={`${uniformPlan.name} AI uniform concept`} className="max-h-56 w-full bg-[#ece9e1] object-contain" />}
                 <div className="p-3.5">
                   <div className="flex items-start justify-between gap-3"><div><p className="text-[9px] font-bold uppercase tracking-[0.14em] text-primary-700">Current AI design</p><h3 className="mt-1 font-heading text-base font-semibold">{uniformPlan.name}</h3></div><span className="rounded-full bg-primary-50 px-2 py-1 text-[8px] font-bold text-primary-800">On canvas</span></div>
                   <p className={`mt-2 text-[10px] leading-relaxed ${muted}`}>{uniformPlan.summary}</p>
