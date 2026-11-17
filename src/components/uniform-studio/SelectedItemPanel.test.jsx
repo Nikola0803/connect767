@@ -13,6 +13,34 @@ const logo = {
 };
 
 describe("SelectedItemPanel", () => {
+  it("edits, reflows, and deletes selected multiline text", () => {
+    const onTextChange = vi.fn();
+    const onLayoutChange = vi.fn();
+    const onDelete = vi.fn();
+    render(
+      <SelectedItemPanel
+        layer={{ id: "text-1", type: "text", text: "TEAM\nUNIFORM", textLayout: "stacked", size: 12, color: "#ffffff" }}
+        placement={null}
+        onTextChange={onTextChange}
+        onLayoutChange={onLayoutChange}
+        onColorChange={vi.fn()}
+        onFontChange={vi.fn()}
+        onGradientChange={vi.fn()}
+        onScaleChange={vi.fn()}
+        onRotateChange={vi.fn()}
+        onDelete={onDelete}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Wording"), { target: { value: "CONNECT\n767" } });
+    fireEvent.click(screen.getByRole("button", { name: "Use single line text" }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove selected text" }));
+
+    expect(onTextChange).toHaveBeenCalledWith("text-1", "CONNECT\n767");
+    expect(onLayoutChange).toHaveBeenCalledWith("text-1", "single-line");
+    expect(onDelete).toHaveBeenCalledWith("text-1");
+  });
+
   it("connects all selected-logo controls to the active 2D layer", () => {
     const onScaleChange = vi.fn();
     const onRotateChange = vi.fn();

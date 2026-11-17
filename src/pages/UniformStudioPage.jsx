@@ -372,6 +372,10 @@ export default function UniformStudioPage() {
   };
 
   const switchAICanvasMode = (mode) => {
+    if (mode === "production" && aiUniformPlan && !aiDesignApplied) {
+      applyAIUniformDesign(aiUniformPlan, { canvasMode: "production" });
+      return;
+    }
     setAiCanvasMode(mode);
     setStageMode("edit");
     // The generated image can be inspected at up to 400%, while the editable
@@ -1009,7 +1013,7 @@ export default function UniformStudioPage() {
     }
   };
 
-  const showingAIUniformPreview = Boolean(aiUniformPlan && aiCanvasMode === "production");
+  const showingAIUniformPreview = Boolean(aiUniformPlan && aiCanvasMode === "production" && !aiDesignApplied);
   const showingAIConcept = Boolean(
     stageMode === "edit"
     && aiWorkspaceConcept?.src
@@ -1059,7 +1063,7 @@ export default function UniformStudioPage() {
     : layers;
   const stageGarmentPattern = showingAIUniformPreview ? aiUniformPlan.pattern : appliedAiPattern;
 
-  const applyAIUniformDesign = (plan) => {
+  const applyAIUniformDesign = (plan, { canvasMode = "concept" } = {}) => {
     if (!plan?.colors) return;
     setAiUndoSnapshot({
       collar,
@@ -1115,7 +1119,7 @@ export default function UniformStudioPage() {
     setView("front");
     if (plan.conceptImage?.src) setAiWorkspaceConcept(plan.conceptImage);
     setAiDesignApplied(true);
-    setAiCanvasMode("concept");
+    setAiCanvasMode(canvasMode);
   };
 
   const undoAIUniformDesign = () => {
@@ -1135,6 +1139,13 @@ export default function UniformStudioPage() {
 
   const updateLayer = (id, patch) =>
     setLayers((ls) => ls.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+
+  const updateTextLayout = (id, textLayout) =>
+    setLayers((current) => current.map((layer) => (
+      layer.id === id
+        ? { ...layer, textLayout, text: formatProductionText(layer.text || "", textLayout) }
+        : layer
+    )));
 
   /**
    * Skins are stored by key, not as a baked image, so they re-render whenever
@@ -2121,8 +2132,8 @@ export default function UniformStudioPage() {
                             }}
                             onMoveZonePoint={moveZonePoint}
                             layers={stageLayers.filter((layer) => layer.source !== "ai-uniform-pattern")}
-                            selectedId={showingAIUniformPreview ? null : selectedLayerId}
-                            onSelect={showingAIUniformPreview ? () => {} : selectLayer}
+                            selectedId={selectedLayerId}
+                            onSelect={selectLayer}
                             onLayerChange={(id, patch) => updateLayer(id, patch)}
                             onBackgroundClick={() => setSelectedLayerId(null)}
                             pendingLayer={pendingLayer}
@@ -2214,6 +2225,7 @@ export default function UniformStudioPage() {
                   layer={selectedLayer}
                   placement={stageMode === "3d" && selectedLayerId ? placements3d[selectedLayerId] : null}
                   onTextChange={(id, text) => updateLayer(id, { text })}
+                  onLayoutChange={updateTextLayout}
                   onColorChange={(id, color) => updateLayer(id, { color })}
                   onFontChange={(id, fontFamily) => updateLayer(id, { fontFamily })}
                   onGradientChange={(id, patch) => updateLayer(id, patch)}
@@ -2341,7 +2353,10 @@ export default function UniformStudioPage() {
           layer={selectedLayer}
           placement={stageMode === "3d" && selectedLayerId ? placements3d[selectedLayerId] : null}
           onTextChange={(id, text) => updateLayer(id, { text })}
+          onLayoutChange={updateTextLayout}
           onColorChange={(id, color) => updateLayer(id, { color })}
+          onFontChange={(id, fontFamily) => updateLayer(id, { fontFamily })}
+          onGradientChange={(id, patch) => updateLayer(id, patch)}
           onScaleChange={stageMode === "3d" ? setLayerScale : setLayerSize2d}
           onRotateChange={stageMode === "3d" ? rotateLayer : rotateLayer2d}
           onDuplicate={duplicateLayer}
