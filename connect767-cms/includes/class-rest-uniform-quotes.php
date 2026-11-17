@@ -15,6 +15,25 @@ class C767_REST_Uniform_Quotes
 {
     const NAMESPACE_ = 'connect767/v1';
 
+    public static function minimum_full_kits($sport)
+    {
+        $minimums = ['soccer' => 22, 'basketball' => 10, 'cricket' => 15, 'netball' => 10];
+        return $minimums[sanitize_key((string) $sport)] ?? 1;
+    }
+
+    public static function validate_full_kit_minimum($sport, $unit_count)
+    {
+        $minimum = self::minimum_full_kits($sport);
+        if ($unit_count < $minimum) {
+            return new WP_Error('c767_kit_minimum', sprintf(
+                'Minimum order: %d full kits for %s. Extra shirts do not count toward this minimum.',
+                $minimum,
+                sanitize_key((string) $sport) ?: 'this sport'
+            ), ['status' => 400, 'minimumKits' => $minimum, 'kitCount' => $unit_count]);
+        }
+        return true;
+    }
+
     public static function init()
     {
         add_action('rest_api_init', [__CLASS__, 'register_routes']);
@@ -51,6 +70,10 @@ class C767_REST_Uniform_Quotes
         }
 
         $unit_count = self::roster_unit_count($roster);
+        $minimum_check = self::validate_full_kit_minimum($request->get_param('sport'), $unit_count);
+        if (is_wp_error($minimum_check)) {
+            return $minimum_check;
+        }
         $title = sprintf(
             '%s — %d kit%s — %s',
             $template ?: 'Custom design',

@@ -186,6 +186,13 @@ export const playerRoleOptions = ["Player", "Goalkeeper", "Coach / Staff"];
  */
 export const BASE_KIT_PRICE = 30;
 export const SHIRT_ONLY_PRICE = 12;
+export function minimumFullKitsFor(sport) {
+  return { soccer: 22, basketball: 10, cricket: 15, netball: 10 }[sport] || 1;
+}
+
+export const fullKitCount = (roster = []) => roster.reduce((total, entry) =>
+  total + (entry?.name?.trim() ? Math.max(1, Math.min(99, Number.parseInt(entry.quantity, 10) || 1)) : 0), 0);
+
 export function normalizeExtraTeamShirts(rows = []) {
   if (!Array.isArray(rows)) return [];
   const quantities = new Map();
@@ -303,9 +310,9 @@ export const pricingTiers = [
   },
   {
     name: "Team Kit",
-    price: "$26",
-    unit: "per shirt · 12+ team",
-    description: "Full team orders with roster management.",
+    price: "$30",
+    unit: "per full kit",
+    description: "Minimum full kits: Soccer 22 · Basketball 10 · Cricket 15 · Netball 10.",
     highlight: true,
     features: [
       "In-house production, faster turnaround",
@@ -335,7 +342,7 @@ export const faqs = [
   },
   {
     q: "Can I mix fan jerseys and team kits in one order?",
-    a: "Yes. Team kit pricing applies automatically once your roster hits 12 shirts of the same design — fan jerseys ordered separately (or added on top) are priced individually and shipped separately since they route through print-on-demand rather than in-house production.",
+    a: "Yes. Full-kit minimums are 22 for soccer, 10 for basketball, 15 for cricket and 10 for netball. Extra team shirts and fan jerseys are priced separately and do not count toward those minimums.",
   },
   {
     q: "What file formats can I upload for a logo?",

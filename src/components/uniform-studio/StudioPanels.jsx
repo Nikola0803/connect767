@@ -8,6 +8,7 @@ import {
   ADD_ON_PRICES,
   BASE_KIT_PRICE,
   SHIRT_ONLY_PRICE,
+  minimumFullKitsFor,
   shirtSizeOptions,
   sportConfigFor,
 } from "../../data/uniforms";
@@ -569,6 +570,7 @@ export function StudioBackgroundPanel({
 }
 
 export function OptionsPanel({
+  sport,
   fitType, setFitType, kitType, setKitType, logoApplication, setLogoApplication,
   insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText,
   insideCollarAttachment, setInsideCollarAttachment,
@@ -617,7 +619,7 @@ export function OptionsPanel({
             >
               <span className="flex items-center justify-between gap-1 font-semibold">{k === "Full" ? "Full Kit" : "Shirt Only"}{(k === "Full" || kitType === "Shirt") && <i className="ri-check-line" aria-hidden="true" />}</span>
               <span className="mt-1 block"><strong className="text-base font-semibold">${(k === "Full" ? BASE_KIT_PRICE : SHIRT_ONLY_PRICE).toFixed(2)}</strong><span className="ml-1 text-[11px] font-normal opacity-80">{k === "Full" ? "per kit" : "per shirt"}</span></span>
-              <span className="mt-1 block text-[10px] font-normal leading-snug opacity-80">{k === "Full" ? "Team order" : "Extra shirts with a Full Kit order"}</span>
+              <span className="mt-1 block text-[10px] font-normal leading-snug opacity-80">{k === "Full" ? `Team order · Min Qnty ${minimumFullKitsFor(sport)}` : "Extra shirts with a Full Kit order"}</span>
             </button>
           ))}
         </div>
