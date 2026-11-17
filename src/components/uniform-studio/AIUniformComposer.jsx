@@ -29,15 +29,9 @@ function ComposerAction({ icon, label, onClick, active = false }) {
   );
 }
 
-function EmptyConversation({ sport, onExample, dark }) {
-  const examples = [
-    `Create a premium ${sport.toLowerCase()} kit in forest green, cream and coral with a clean modern pattern.`,
-    "Keep the current shape, add a bold diagonal chest graphic and matching shorts trim.",
-    "Create a minimalist island-inspired uniform with subtle wave details and strong contrast.",
-  ];
-
+function EmptyConversation({ dark }) {
   return (
-    <div className="mx-auto flex max-w-sm flex-col items-center px-5 py-8 text-center">
+    <div className="mx-auto flex h-full max-w-sm flex-col items-center justify-center px-5 py-8 text-center">
       <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-700 text-xl text-white shadow-[0_12px_30px_rgba(0,116,73,.2)]">
         <i className="ri-sparkling-2-fill" />
       </span>
@@ -45,18 +39,6 @@ function EmptyConversation({ sport, onExample, dark }) {
       <p className={`mt-2 text-[11px] leading-relaxed ${dark ? "text-white/55" : "text-foreground-500"}`}>
         Describe a complete kit or create transparent artwork. Your generated result stays editable in the Uniform Studio.
       </p>
-      <div className="mt-5 grid w-full gap-2 text-left">
-        {examples.map((example) => (
-          <button
-            key={example}
-            type="button"
-            onClick={() => onExample(example)}
-            className={`cursor-pointer rounded-xl border px-3 py-2.5 text-[10px] leading-relaxed transition ${dark ? "border-white/10 bg-white/[0.055] text-white/70 hover:border-primary-400 hover:bg-primary-950/50" : "border-background-200 bg-white text-foreground-600 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-900"}`}
-          >
-            {example}
-          </button>
-        ))}
-      </div>
     </div>
   );
 }
@@ -104,7 +86,7 @@ export default function AIUniformComposer({
   const [historyOpen, setHistoryOpen] = useState(false);
   const [resetMenuOpen, setResetMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [dark, setDark] = useState(false);
+  const dark = false;
   const [dragging, setDragging] = useState(false);
   const [feedback, setFeedback] = useState("");
   const textareaRef = useRef(null);
@@ -191,9 +173,7 @@ export default function AIUniformComposer({
             <p className={`truncate text-[9px] ${muted}`}>Uniform design assistant · {MODE_COPY[mode].label}</p>
           </div>
         </div>
-        <div className="relative flex items-center gap-1">
-          <button type="button" onClick={() => setHistoryOpen((value) => !value)} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl transition hover:bg-black/5 dark:hover:bg-white/10" aria-label="Open conversation history" aria-expanded={historyOpen}><i className="ri-history-line" /></button>
-          <button type="button" onClick={() => setDark((value) => !value)} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl transition hover:bg-black/5" aria-label={dark ? "Use light mode" : "Use dark mode"}><i className={dark ? "ri-sun-line" : "ri-moon-line"} /></button>
+        <div className="relative flex items-center">
           <div className="flex h-9 overflow-hidden rounded-xl bg-primary-700 text-white shadow-sm">
             <button
               type="button"
@@ -218,23 +198,24 @@ export default function AIUniformComposer({
             <div className={`absolute right-0 top-11 z-40 w-52 overflow-hidden rounded-xl border p-1.5 shadow-2xl ${card}`} role="menu" aria-label="Design reset options">
               <button
                 type="button"
-                onClick={() => { setResetMenuOpen(false); onClearCurrentDesign(); }}
-                className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[10px] font-semibold transition hover:bg-red-50 hover:text-red-700"
-                role="menuitem"
-              >
-                <i className="ri-delete-bin-6-line text-sm" />
-                <span><strong className="block">Clear current design</strong><span className={`block text-[8px] font-normal ${muted}`}>Remove the concept from the canvas</span></span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { setResetMenuOpen(false); onClearHistory(); }}
-                disabled={!historyEntries.length}
-                className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[10px] font-semibold transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-40"
+                onClick={() => { setResetMenuOpen(false); setHistoryOpen(true); }}
+                className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[10px] font-semibold transition hover:bg-primary-50 hover:text-primary-800"
                 role="menuitem"
               >
                 <i className="ri-history-line text-sm" />
-                <span><strong className="block">Clear prompt history</strong><span className={`block text-[8px] font-normal ${muted}`}>Delete saved prompts for this sport</span></span>
+                <span><strong className="block">Design history</strong><span className={`block text-[8px] font-normal ${muted}`}>Review and reuse saved prompts</span></span>
               </button>
+              {(uniformPlan || artworkPreview) && (
+                <button
+                  type="button"
+                  onClick={() => { setResetMenuOpen(false); onClearCurrentDesign(); }}
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[10px] font-semibold transition hover:bg-red-50 hover:text-red-700"
+                  role="menuitem"
+                >
+                  <i className="ri-delete-bin-6-line text-sm" />
+                  <span><strong className="block">Clear current design</strong><span className={`block text-[8px] font-normal ${muted}`}>Remove the concept from the canvas</span></span>
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -258,7 +239,7 @@ export default function AIUniformComposer({
       )}
 
       <div ref={conversationRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4" aria-live="polite">
-        {!hasConversation ? <EmptyConversation sport={sport} onExample={onPromptChange} dark={dark} /> : (
+        {!hasConversation ? <EmptyConversation dark={dark} /> : (
           <div className="mx-auto max-w-xl space-y-4">
             {[...promptHistory].reverse().map((entry) => (
               <div key={entry.id} className="space-y-2">
@@ -328,8 +309,8 @@ export default function AIUniformComposer({
         {toolsOpen && (
           <div className={`absolute bottom-[calc(100%-4px)] left-3 z-30 w-64 overflow-hidden rounded-2xl border p-2 shadow-2xl ${card}`} role="menu" aria-label="AI composer tools">
             <button type="button" onClick={() => { fileInputRef.current?.click(); setToolsOpen(false); }} className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-700"><i className="ri-image-add-line" /></span><span><strong className="block text-[10px]">Upload inspiration image</strong><span className={`text-[8px] ${muted}`}>PNG, JPG or WebP · up to 10 MB</span></span></button>
-            <button type="button" onClick={() => { onModeChange("uniform"); setToolsOpen(false); }} className="mt-1 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-700"><i className="ri-shirt-line" /></span><span><strong className="block text-[10px]">Design full uniform</strong><span className={`text-[8px] ${muted}`}>Generate an editable kit concept</span></span></button>
-            <button type="button" onClick={() => { onModeChange("artwork"); setToolsOpen(false); }} className="mt-1 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-50 text-accent-600"><i className="ri-image-edit-line" /></span><span><strong className="block text-[10px]">Create transparent artwork</strong><span className={`text-[8px] ${muted}`}>Generate artwork to place on the kit</span></span></button>
+            {mode === "artwork" && <button type="button" onClick={() => { onModeChange("uniform"); setToolsOpen(false); }} className="mt-1 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-700"><i className="ri-shirt-line" /></span><span><strong className="block text-[10px]">Design full uniform</strong><span className={`text-[8px] ${muted}`}>Return to the complete kit designer</span></span></button>}
+            {mode === "uniform" && <button type="button" onClick={() => { onModeChange("artwork"); setToolsOpen(false); }} className="mt-1 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-50 text-accent-600"><i className="ri-image-edit-line" /></span><span><strong className="block text-[10px]">Create transparent artwork</strong><span className={`text-[8px] ${muted}`}>Generate artwork to place on the kit</span></span></button>}
           </div>
         )}
 

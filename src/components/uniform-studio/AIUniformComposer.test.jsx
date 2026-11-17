@@ -65,7 +65,7 @@ describe("AIUniformComposer", () => {
     fireEvent.click(screen.getByLabelText("Add attachment or AI tool"));
 
     expect(screen.getByText("Upload inspiration image")).toBeInTheDocument();
-    expect(screen.getByText("Design full uniform")).toBeInTheDocument();
+    expect(screen.queryByText("Design full uniform")).not.toBeInTheDocument();
     expect(screen.getByText("Create transparent artwork")).toBeInTheDocument();
     expect(screen.queryByText("Search the Web")).not.toBeInTheDocument();
     expect(screen.queryByText("Analyze Document")).not.toBeInTheDocument();
@@ -89,7 +89,8 @@ describe("AIUniformComposer", () => {
       createdAt: new Date("2026-11-16T12:00:00Z").toISOString(),
     };
     const props = renderComposer({ promptHistory: [entry] });
-    fireEvent.click(screen.getByLabelText("Open conversation history"));
+    fireEvent.click(screen.getByLabelText("Open design reset options"));
+    fireEvent.click(screen.getByRole("menuitem", { name: /design history/i }));
     fireEvent.click(within(screen.getByLabelText("AI design conversation history")).getByText("Make the shorts black"));
     expect(props.onReusePrompt).toHaveBeenCalledWith(entry);
   });
@@ -115,7 +116,10 @@ describe("AIUniformComposer", () => {
       prompt: "Create a green kit",
       createdAt: new Date("2026-11-16T12:00:00Z").toISOString(),
     };
-    const props = renderComposer({ promptHistory: [entry] });
+    const props = renderComposer({
+      promptHistory: [entry],
+      uniformPlan: { name: "Green kit", summary: "A green uniform concept." },
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "New design" }));
     expect(props.onNewChat).toHaveBeenCalledTimes(1);
@@ -125,7 +129,8 @@ describe("AIUniformComposer", () => {
     expect(props.onClearCurrentDesign).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByLabelText("Open design reset options"));
-    fireEvent.click(screen.getByRole("menuitem", { name: /clear prompt history/i }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /design history/i }));
+    fireEvent.click(within(screen.getByLabelText("AI design conversation history")).getByRole("button", { name: "Clear" }));
     expect(props.onClearHistory).toHaveBeenCalledTimes(1);
   });
 });
