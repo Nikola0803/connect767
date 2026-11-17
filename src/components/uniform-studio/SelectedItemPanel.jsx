@@ -31,6 +31,7 @@ export default function SelectedItemPanel({
   layer,
   placement,
   onTextChange,
+  onLayoutChange,
   onColorChange,
   onFontChange,
   onGradientChange,
@@ -103,14 +104,37 @@ export default function SelectedItemPanel({
           <label className="block text-xs font-semibold text-foreground-800 mb-1.5" htmlFor="sel-text">
             Wording
           </label>
-          <input
+          <textarea
             id="sel-text"
             ref={inputRef}
             value={layer.text ?? ""}
             onChange={(e) => onTextChange(layer.id, e.target.value)}
             placeholder="Type your text"
-            className="w-full px-3 py-2.5 text-sm rounded-lg border-2 border-primary-300 bg-background-50 text-foreground-950 placeholder-foreground-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-200 font-label mb-4"
+            rows={layer.textLayout === "stacked" || layer.text?.includes("\n") ? 2 : 1}
+            className="w-full resize-none px-3 py-2.5 text-sm rounded-lg border-2 border-primary-300 bg-background-50 text-foreground-950 placeholder-foreground-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-200 font-label mb-4"
           />
+
+          <span className="block text-xs font-semibold text-foreground-800 mb-1.5">Text layout</span>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {[
+              { value: "single-line", label: "Single line" },
+              { value: "stacked", label: "Two lines" },
+            ].map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                aria-label={`Use ${option.label.toLowerCase()} text`}
+                onClick={() => onLayoutChange?.(layer.id, option.value)}
+                className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                  (layer.textLayout || (layer.text?.includes("\n") ? "stacked" : "single-line")) === option.value
+                    ? "border-primary-500 bg-primary-500 text-white"
+                    : "border-background-300 bg-background-50 text-foreground-700 hover:border-primary-300"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
 
           <label className="block text-xs font-semibold text-foreground-800 mb-1.5" htmlFor="sel-font">
             Font
