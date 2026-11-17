@@ -138,6 +138,21 @@ describe("AIUniformComposer", () => {
     expect(props.onClearHistory).toHaveBeenCalledTimes(1);
   });
 
+  it("starts full-uniform and transparent-artwork designs from the New design menu", () => {
+    const props = renderComposer();
+
+    expect(screen.queryByRole("button", { name: "Full uniform" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Open design reset options"));
+    fireEvent.click(screen.getByRole("menuitem", { name: /transparent artwork/i }));
+    expect(props.onModeChange).toHaveBeenCalledWith("artwork");
+    expect(props.onNewChat).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByLabelText("Open design reset options"));
+    fireEvent.click(screen.getByRole("menuitem", { name: /full uniform/i }));
+    expect(props.onModeChange).toHaveBeenCalledWith("uniform");
+    expect(props.onNewChat).toHaveBeenCalledTimes(2);
+  });
+
   it("dismisses open popovers when the user clicks the command area", () => {
     renderComposer();
     const message = screen.getByLabelText("Message Connect767 AI");
