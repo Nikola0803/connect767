@@ -5,6 +5,19 @@ import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
 import { DesignPanel, OptionsPanel, StudioBackgroundPanel } from "./StudioPanels";
 
 describe("uniform design controls", () => {
+  it("offers optional Polo and mixed sleeves without Crew, V-Neck or Sleeveless buttons", () => {
+    const setSleeve = vi.fn();
+    const props = { sport: "soccer", collar: "Crew", setCollar: vi.fn(), sleeve: "Short", setSleeve, colors: defaultZoneColors, setColors: vi.fn() };
+    const { rerender } = render(<DesignPanel {...props} />);
+    expect(screen.queryByRole("button", { name: /Crew|V-Neck|Sleeveless/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Mixed sleeve lengths" }));
+    expect(setSleeve).toHaveBeenCalledWith("Mixed");
+    rerender(<DesignPanel {...props} sleeve="Mixed" />);
+    expect(screen.getByText(/Only long-sleeve kits add/)).toBeInTheDocument();
+    expect(screen.queryByRole("checkbox", { name: /Long sleeves/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Mixed sleeve lengths" }));
+    expect(setSleeve).toHaveBeenLastCalledWith("Short");
+  });
   it("starts the collar in the same color as the blank shirt fabric", () => {
     expect(defaultZoneColors.collar).toBe(defaultZoneColors.body);
   });
@@ -55,7 +68,7 @@ describe("uniform design controls", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Use a separate lower colour/i }));
     const colorUpdater = setColors.mock.calls[0][0];
     const toneUpdater = setTwoTone.mock.calls[0][0];
     expect(colorUpdater(defaultZoneColors).shorts).toBe("#1b1a16");
@@ -80,8 +93,8 @@ describe("uniform design controls", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /Polo/ }));
-    fireEvent.click(screen.getByRole("button", { name: /Long/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Polo/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Long sleeves/ }));
     expect(setCollar).toHaveBeenCalledWith("Polo");
     expect(setSleeve).toHaveBeenCalledWith("Long");
 

@@ -224,54 +224,28 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
         Shape
       </h3>
       <div className="mb-6">
-        <span className="text-xs font-semibold text-foreground-800 block mb-2">Collar type</span>
-        <div className="flex gap-2 flex-wrap">
-          {config.collarOptions.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setCollar(c)}
-              className={`px-3.5 py-2 text-xs font-semibold rounded-lg border cursor-pointer transition-all ${
-                collar === c
-                  ? "bg-primary-500 text-background-50 border-primary-500 shadow-sm shadow-primary-500/20"
-                  : "bg-background-50 text-foreground-700 border-background-300 hover:bg-background-100"
-              }`}
-            >
-              {c}
-              {c === "Polo" && (
-                <span className="ml-1 font-normal opacity-80">
-                  (+${ADD_ON_PRICES.collarPolo.toFixed(2)}/kit)
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+        {config.collarOptions.includes("Polo") && <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-foreground-800">
+          <input type="checkbox" checked={collar === "Polo"} onChange={(event) => setCollar(event.target.checked ? "Polo" : "Crew")} className="accent-primary-600" />
+          Polo collar (+${ADD_ON_PRICES.collarPolo.toFixed(2)}/kit)
+        </label>}
+        <p className="mt-2 text-xs text-foreground-500">Standard collar included in the base price.</p>
       </div>
       {config.sleeveOptions && (
         <div className="mb-6">
           <span className="text-xs font-semibold text-foreground-800 block mb-2">
             Sleeve length
           </span>
-          <div className="flex gap-2 flex-wrap">
-            {config.sleeveOptions.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setSleeve(s)}
-                className={`px-3.5 py-2 text-xs font-semibold rounded-lg border cursor-pointer transition-all ${
-                  sleeve === s
-                    ? "bg-primary-500 text-background-50 border-primary-500 shadow-sm shadow-primary-500/20"
-                    : "bg-background-50 text-foreground-700 border-background-300 hover:bg-background-100"
-                }`}
-              >
-                {s}
-                {(s === "Long" || s === "Mixed") && (
-                  <span className="ml-1 font-normal opacity-80">
-                    (+${ADD_ON_PRICES.sleeveLong.toFixed(2)}/kit)
-                  </span>
-                )}
-              </button>
-            ))}
+          <p className="mb-3 text-xs text-foreground-500">Short sleeves included in the base price.</p>
+          <div className="space-y-3">
+            {sleeve !== "Mixed" && <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-foreground-800">
+              <input type="checkbox" checked={sleeve === "Long"} onChange={(event) => setSleeve(event.target.checked ? "Long" : "Short")} className="accent-primary-600" />
+              Long sleeves (+${ADD_ON_PRICES.sleeveLong.toFixed(2)}/kit)
+            </label>}
+            <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-foreground-800">
+              <input type="checkbox" checked={sleeve === "Mixed"} onChange={(event) => setSleeve(event.target.checked ? "Mixed" : "Short")} className="accent-primary-600" />
+              Mixed sleeve lengths
+            </label>
+            {sleeve === "Mixed" && <p className="text-xs text-foreground-500">Choose Short or Long for each player in Team roster. Only long-sleeve kits add $2.00 each.</p>}
           </div>
         </div>
       )}
