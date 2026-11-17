@@ -1831,32 +1831,8 @@ export default function UniformStudioPage() {
 
                   {/* Canvas */}
                   <div className={`flex min-w-0 flex-1 flex-col items-center overflow-hidden ${activeTool === "ai" ? "gap-2 px-2 py-2 md:px-3 xl:px-4" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
-                    {/* Unified 2D workspace toolbar — view, AI state and canvas controls share one non-overlapping row. */}
-                    <div className={`relative z-20 flex w-full flex-shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-white/[0.07] bg-[#10120f] px-2 py-1.5 shadow-[0_8px_22px_rgba(0,0,0,.24)] ${activeTool === "ai" ? "max-w-none" : "max-w-6xl"}`}>
-                      <div className="flex min-w-0 flex-1 items-center gap-2">
-                        {activeTool !== "ai" && (
-                          <div className="hidden min-w-0 items-center gap-1.5 text-background-50/55 md:flex">
-                            <i className={`${activeToolConfig?.icon || workflowStep.icon} text-xs text-primary-300`} />
-                            <span className="truncate text-[10px] font-bold uppercase tracking-[0.13em]">{activeToolConfig?.label || workflowStep.label}</span>
-                          </div>
-                        )}
-                        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-background-50 px-2.5 py-1 text-[10px] font-semibold text-foreground-950 shadow-sm" aria-current="true">
-                          <i className="ri-layout-2-line" /> 2D view
-                        </span>
-                        {(aiUniformPlan || aiWorkspaceConcept) && (
-                          <>
-                            <span aria-hidden="true" className="h-4 w-px shrink-0 bg-white/10" />
-                            <span className="hidden shrink-0 items-center gap-1 text-[8px] font-bold uppercase tracking-[0.13em] text-primary-200 sm:inline-flex">
-                              <i className="ri-sparkling-2-fill" /> AI design
-                            </span>
-                            <div className="min-w-0">
-                              <h3 className="truncate font-heading text-xs font-semibold text-white">{aiUniformPlan?.name || aiWorkspaceConcept?.name || "AI uniform concept"}</h3>
-                              <p className="hidden truncate text-[8px] text-background-50/45 xl:block">{aiUniformPlan?.summary || "Generated concept ready for review."}</p>
-                            </div>
-                          </>
-                        )}
-                      </div>
-
+                    {/* Functional canvas controls only; descriptive labels live in the AI panel. */}
+                    <div className={`relative z-20 flex w-full flex-shrink-0 flex-wrap items-center justify-end gap-2 rounded-xl border border-white/[0.07] bg-[#10120f] px-2 py-1.5 shadow-[0_8px_22px_rgba(0,0,0,.24)] ${activeTool === "ai" ? "max-w-none" : "max-w-6xl"}`}>
                       <div className="ml-auto flex shrink-0 items-center gap-1.5">
                         {(aiUniformPlan || aiWorkspaceConcept) && (
                           <>
