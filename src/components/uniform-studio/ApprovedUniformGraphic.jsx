@@ -257,7 +257,9 @@ export default function ApprovedUniformGraphic({
       aria-label={`${sport} complete uniform ${view}`}
     >
       <defs>
-        <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width={spriteWidth} height={spriteHeight}>
+        {/* Match the side view's alpha mask. A luminance mask weakens the
+            tint over photographed folds and makes dark sleeves look gray. */}
+        <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width={spriteWidth} height={spriteHeight} style={{ maskType: "alpha" }}>
           <image href={asset} x="0" y="0" width={spriteWidth} height={spriteHeight} />
         </mask>
         <clipPath id={jerseyClipId} clipPathUnits="userSpaceOnUse">
@@ -338,7 +340,7 @@ export default function ApprovedUniformGraphic({
             clipPath={`url(#${socksClipId})`}
           />
         </mask>
-        <mask id={shapeMaskId} maskUnits="userSpaceOnUse" x={offset} y="0" width={halfWidth} height={spriteHeight}>
+        <mask id={shapeMaskId} maskUnits="userSpaceOnUse" x={offset} y="0" width={halfWidth} height={spriteHeight} style={{ maskType: "luminance" }}>
           <rect x={offset} y="0" width={halfWidth} height={spriteHeight} fill="white" />
           {isSleeveless && !nativeSleeveless && (
             <>

@@ -5,6 +5,21 @@ import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
 import { SIDE_ASSET_BY_SPORT, SIDE_REGIONS } from "./SideUniformGraphic";
 
 describe("ApprovedUniformGraphic trim isolation", () => {
+  it.each(["front", "side", "back"])("uses the same full-strength sleeve tint on the %s view", (view) => {
+    const { container } = render(<ApprovedUniformGraphic sport="soccer" view={view} colors={{ body: "#8888ff", sleeve: "#111111" }} />);
+    const sleeveTint = [...container.querySelectorAll('[data-garment-tint="fabric-multiply"]')]
+      .find((group) => group.querySelector('path[fill="#111111"]'));
+    expect(sleeveTint).toBeDefined();
+    const maskId = sleeveTint.getAttribute("mask").slice(5, -1);
+    const mask = container.querySelector(`mask[id="${maskId}"]`);
+    expect(mask.style.maskType).toBe("alpha");
+    expect([null, "1"]).toContain(sleeveTint.getAttribute("opacity"));
+    expect(sleeveTint.style.mixBlendMode).toBe("multiply");
+    if (view !== "side") {
+      // Shape cuts still need black to hide fabric, rather than using alpha.
+      expect(container.querySelector('mask[id^="approved-kit-shape-"]').style.maskType).toBe("luminance");
+    }
+  });
   it("aligns the basketball V-neck to the actual front and back garment centers", () => {
     const { container, rerender } = render(
       <ApprovedUniformGraphic sport="basketball" view="front" collar="V-Neck" />,
