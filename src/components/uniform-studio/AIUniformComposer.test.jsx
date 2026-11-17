@@ -32,7 +32,6 @@ function renderComposer(overrides = {}) {
     uniformPlan: null,
     applied: false,
     onApplyUniform: vi.fn(),
-    onNewDirection: vi.fn(),
     artworkPreview: null,
     onPlaceArtwork: vi.fn(),
     onClearArtwork: vi.fn(),
@@ -95,8 +94,8 @@ describe("AIUniformComposer", () => {
     expect(props.onReusePrompt).toHaveBeenCalledWith(entry);
   });
 
-  it("keeps the full AI concept image on the Studio canvas instead of duplicating it in the side panel", () => {
-    renderComposer({
+  it("keeps the design card off the side panel and exposes Apply design in the composer", () => {
+    const props = renderComposer({
       uniformPlan: {
         name: "Riverside FC — Modern & Bold",
         summary: "A clean white soccer kit.",
@@ -104,9 +103,14 @@ describe("AIUniformComposer", () => {
       },
     });
 
-    expect(screen.getByText("Riverside FC — Modern & Bold")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /apply design/i })).toBeInTheDocument();
+    expect(screen.queryByText("Current AI design")).not.toBeInTheDocument();
+    expect(screen.queryByText("Riverside FC — Modern & Bold")).not.toBeInTheDocument();
+    expect(screen.queryByText("A clean white soccer kit.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /new direction/i })).not.toBeInTheDocument();
     expect(screen.queryByAltText(/AI uniform concept/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /apply design/i }));
+    expect(props.onApplyUniform).toHaveBeenCalledTimes(1);
   });
 
   it("provides explicit controls for starting over and clearing saved AI state", () => {

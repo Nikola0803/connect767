@@ -72,7 +72,6 @@ export default function AIUniformComposer({
   uniformPlan,
   applied,
   onApplyUniform,
-  onNewDirection,
   artworkPreview,
   onPlaceArtwork,
   onClearArtwork,
@@ -284,19 +283,6 @@ export default function AIUniformComposer({
               </div>
             )}
 
-            {uniformPlan && !generating && (
-              <article className={`overflow-hidden rounded-2xl border shadow-sm ${card}`}>
-                <div className="p-3.5">
-                  <div className="flex items-start justify-between gap-3"><div><p className="text-[9px] font-bold uppercase tracking-[0.14em] text-primary-700">Current AI design</p><h3 className="mt-1 font-heading text-base font-semibold">{uniformPlan.name}</h3></div><span className="rounded-full bg-primary-50 px-2 py-1 text-[8px] font-bold text-primary-800">On canvas</span></div>
-                  <p className={`mt-2 text-[10px] leading-relaxed ${muted}`}>{uniformPlan.summary}</p>
-                  <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-current/10 pt-3">
-                    <button type="button" onClick={onApplyUniform} className="inline-flex min-h-8 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-primary-700 px-3.5 py-1.5 text-[9px] font-bold text-white shadow-sm transition hover:bg-primary-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"><i className={applied ? "ri-check-double-line" : "ri-check-line"} /> {applied ? "Applied" : "Apply design"}</button>
-                    <button type="button" onClick={onNewDirection} className={`inline-flex min-h-8 cursor-pointer items-center justify-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[9px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 ${dark ? "border-white/15 text-white/75 hover:bg-white/10 hover:text-white" : "border-background-300 bg-background-50 text-foreground-600 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-800"}`}><i className="ri-refresh-line" /> New direction</button>
-                  </div>
-                </div>
-              </article>
-            )}
-
             {artworkPreview && !generating && (
               <article className={`rounded-2xl border p-3 shadow-sm ${card}`}>
                 <div className="rounded-xl bg-[linear-gradient(45deg,#ece9e1_25%,transparent_25%),linear-gradient(-45deg,#ece9e1_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#ece9e1_75%),linear-gradient(-45deg,transparent_75%,#ece9e1_75%)] bg-[length:18px_18px] p-2"><img src={artworkPreview.src} alt="Generated transparent uniform artwork" className="mx-auto max-h-52 w-full object-contain" /></div>
@@ -354,6 +340,20 @@ export default function AIUniformComposer({
             <div className="flex min-w-0 items-center gap-1.5">
               <button type="button" onClick={() => { setToolsOpen((value) => !value); setHistoryOpen(false); setResetMenuOpen(false); setSettingsOpen(false); }} className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-background-200 bg-background-50 text-foreground-700 transition hover:bg-background-100" aria-label="Add attachment or AI tool" aria-expanded={toolsOpen} data-ai-popover-trigger><i className={toolsOpen ? "ri-close-line" : "ri-add-line"} /></button>
               <ComposerAction icon={MODE_COPY[mode].icon} label={MODE_COPY[mode].label} onClick={() => onModeChange(mode === "uniform" ? "artwork" : "uniform")} active />
+              {mode === "uniform" && uniformPlan && !generating && (
+                <button
+                  type="button"
+                  onClick={onApplyUniform}
+                  className={`inline-flex h-9 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 text-[10px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${
+                    applied
+                      ? "border border-primary-200 bg-primary-50 text-primary-800 hover:bg-primary-100"
+                      : "bg-primary-700 text-white shadow-sm hover:bg-primary-800"
+                  }`}
+                >
+                  <i className={applied ? "ri-check-double-line" : "ri-check-line"} />
+                  {applied ? "Applied" : "Apply design"}
+                </button>
+              )}
               <button type="button" onClick={() => { setSettingsOpen((value) => !value); setHistoryOpen(false); setResetMenuOpen(false); setToolsOpen(false); }} className="inline-flex h-9 w-9 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-background-200 bg-background-50 text-[10px] font-bold text-foreground-600 hover:bg-background-100 sm:w-auto sm:px-3" data-ai-popover-trigger><i className="ri-equalizer-2-line" /><span className="hidden sm:inline">Controls</span></button>
             </div>
             {generating ? (
