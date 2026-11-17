@@ -939,7 +939,7 @@ export default function CommunityPage() {
         </div>
 
         <div className="mt-5 grid items-start gap-5 sm:mt-6 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_19rem]">
-          <main className="space-y-5">
+          <main className="space-y-4 sm:space-y-5">
             <section className="rounded-[1.75rem] border border-background-200/80 bg-white/95 p-4 shadow-[0_18px_55px_rgba(24,48,36,0.08)] backdrop-blur sm:p-5">
               <div className="mb-3 flex justify-end">
                 <section aria-label="Community feed filters" className="grid w-full min-w-0 grid-cols-2 gap-2 sm:w-auto sm:shrink-0">
@@ -1001,7 +1001,7 @@ export default function CommunityPage() {
                 </form>
               ) : isAuthenticated ? <div className="text-sm text-foreground-600">Publish a directory listing before posting to the community. <Link to="/listings/submit" className="font-bold text-primary-700">Create your listing</Link></div> : <div className="flex items-center justify-between gap-4"><p className="text-sm text-foreground-600">Sign in as a listing owner to share business updates.</p><Link to="/auth/login" className="shrink-0 rounded-xl bg-primary-700 px-4 py-2.5 text-xs font-bold text-white">Sign in</Link></div>}
             </section>
-            <div id="community-feed-updates" className="scroll-mt-24 flex items-end justify-between px-1 pt-1"><div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-700">Community feed</p><h2 className="mt-1 text-2xl font-extrabold tracking-[-0.03em] text-foreground-950">Latest updates</h2></div><span className="rounded-full border border-background-200 bg-white/80 px-3 py-1.5 text-[10px] font-bold text-foreground-500 shadow-sm">{visiblePosts.length} post{visiblePosts.length === 1 ? "" : "s"}</span></div>
+            <div id="community-feed-updates" className="scroll-mt-24" aria-hidden="true" />
             {loading && !posts.length && <div className="py-16 text-center text-sm text-foreground-500">Loading community updates…</div>}
             {error && !posts.length && <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">The community feed could not load. <button onClick={reload} className="font-bold underline">Try again</button></div>}
             {!loading && !error && !visiblePosts.length && <div className="rounded-2xl border border-background-200 bg-background-50 p-8 text-center text-sm text-foreground-500">No posts are available in this feed yet.</div>}

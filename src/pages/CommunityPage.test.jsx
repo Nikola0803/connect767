@@ -124,6 +124,14 @@ describe("CommunityPage composer menus", () => {
     expect(screen.getByRole("button", { name: "Post type: All Posts" })).toBeInTheDocument();
   });
 
+  it("starts the post cards directly below the composer without a redundant feed heading", async () => {
+    render(<MemoryRouter><CommunityPage /></MemoryRouter>);
+
+    await screen.findByLabelText("Status update. Type @ to mention a business.");
+    expect(screen.queryByRole("heading", { name: "Latest updates" })).not.toBeInTheDocument();
+    expect(document.getElementById("community-feed-updates")).toBeInTheDocument();
+  });
+
   it("shows feed images in their entirety instead of cropping them", async () => {
     render(<MemoryRouter><CommunityPage /></MemoryRouter>);
     const image = await screen.findByAltText("Update from James Local Fruits");
