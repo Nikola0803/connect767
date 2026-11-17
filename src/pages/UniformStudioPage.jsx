@@ -244,6 +244,32 @@ function parseCsv(text) {
 
 let layerIdCounter = 0;
 const nextLayerId = () => `layer-${Date.now()}-${layerIdCounter++}`;
+
+const productionLayersFromPlan = (plan, { preview = false } = {}) =>
+  (Array.isArray(plan?.productionElements) ? plan.productionElements : [])
+    .map((element, index) => {
+      const common = {
+        id: preview ? `ai-production-preview-${index}` : nextLayerId(),
+        source: "ai-uniform-element",
+        name: element.name || `${plan?.name || "AI uniform"} ${element.kind}`,
+        view: element.view === "back" ? "back" : "front",
+        x: Number(element.x) || 50,
+        y: Number(element.y) || 35,
+        size: Number(element.size) || (element.kind === "artwork" ? 20 : 14),
+        rotation: Number(element.rotation) || 0,
+      };
+      if (element.kind === "artwork") {
+        return element.src ? { ...common, type: "logo", src: element.src } : null;
+      }
+      return {
+        ...common,
+        type: "text",
+        text: element.content || "TEAM",
+        color: element.color || "#FFFFFF",
+        fontFamily: "'Oswald', sans-serif",
+      };
+    })
+    .filter(Boolean);
 const AI_TRANSFER_KEY = "connect767-ai-design-transfer";
 
 export default function UniformStudioPage() {
@@ -992,7 +1018,16 @@ export default function UniformStudioPage() {
   const stageColors = showingAIUniformPreview ? aiPreviewColors : colors;
   const stageCollar = showingAIUniformPreview ? aiUniformPlan.collar : collar;
   const stageSleeve = showingAIUniformPreview ? aiUniformPlan.sleeve : sleeve;
-  const stageLayers = layers;
+  const previewProductionLayers = useMemo(
+    () => productionLayersFromPlan(aiUniformPlan, { preview: true }),
+    [aiUniformPlan],
+  );
+  const stageLayers = showingAIUniformPreview
+    ? [
+        ...layers.filter((layer) => layer.source !== "ai-uniform-element"),
+        ...previewProductionLayers,
+      ]
+    : layers;
   const stageGarmentPattern = showingAIUniformPreview ? aiUniformPlan.pattern : appliedAiPattern;
 
   const applyAIUniformDesign = (plan) => {
@@ -1017,30 +1052,34 @@ export default function UniformStudioPage() {
       colorB: nextColors.shorts,
     }));
 
-    const priorAiPatternIds = new Set(
-      layers.filter((layer) => layer.source === "ai-uniform-pattern").map((layer) => layer.id),
+    const priorAiLayerIds = new Set(
+      layers
+        .filter((layer) => layer.source === "ai-uniform-pattern" || layer.source === "ai-uniform-element")
+        .map((layer) => layer.id),
     );
     setPlacements3d((current) => Object.fromEntries(
-      Object.entries(current).filter(([id]) => !priorAiPatternIds.has(id)),
+      Object.entries(current).filter(([id]) => !priorAiLayerIds.has(id)),
     ));
     setLayers((current) => {
-      const retained = current.filter((layer) => layer.source !== "ai-uniform-pattern");
-      if (!plan.pattern?.enabled || plan.pattern.key === "none") return retained;
-      const views = plan.pattern.view === "both" ? ["front", "back"] : [plan.pattern.view || "front"];
-      const additions = views.map((patternView) => ({
-        id: nextLayerId(),
-        type: "skin",
-        skinKey: plan.pattern.key,
-        source: "ai-uniform-pattern",
-        name: `${plan.name || "AI uniform"} pattern`,
-        view: patternView,
-        x: 50,
-        y: 43,
-        size: 58,
-        rotation: 0,
-        src: skinDataUri(plan.pattern.key, nextColors.body, nextColors.shirtStrip),
-      }));
-      return [...retained, ...additions];
+      const retained = current.filter(
+        (layer) => layer.source !== "ai-uniform-pattern" && layer.source !== "ai-uniform-element",
+      );
+      const patternAdditions = !plan.pattern?.enabled || plan.pattern.key === "none"
+        ? []
+        : (plan.pattern.view === "both" ? ["front", "back"] : [plan.pattern.view || "front"]).map((patternView) => ({
+            id: nextLayerId(),
+            type: "skin",
+            skinKey: plan.pattern.key,
+            source: "ai-uniform-pattern",
+            name: `${plan.name || "AI uniform"} pattern`,
+            view: patternView,
+            x: 50,
+            y: 43,
+            size: 58,
+            rotation: 0,
+            src: skinDataUri(plan.pattern.key, nextColors.body, nextColors.shirtStrip),
+          }));
+      return [...retained, ...patternAdditions, ...productionLayersFromPlan(plan)];
     });
     setSelectedLayerId(null);
     setPendingLayer(null);
@@ -2194,6 +2233,9 @@ export default function UniformStudioPage() {
                     onApplyUniform={applyAIUniformDesign}
                     onUndoUniform={undoAIUniformDesign}
                     canUndoUniform={Boolean(aiUndoSnapshot)}
+                    hasExistingArtwork={layers.some(
+                      (layer) => ["text", "logo", "clipart"].includes(layer.type) && !layer.source?.startsWith("ai-uniform"),
+                    )}
                   />
                 )}
                 {activeTool === "logo" && <LogoPanel onUpload={armLogoPlacement} armed={pendingLayer?.type === "logo"} />}
@@ -2342,6 +2384,9 @@ export default function UniformStudioPage() {
             onApplyUniform={applyAIUniformDesign}
             onUndoUniform={undoAIUniformDesign}
             canUndoUniform={Boolean(aiUndoSnapshot)}
+            hasExistingArtwork={layers.some(
+              (layer) => ["text", "logo", "clipart"].includes(layer.type) && !layer.source?.startsWith("ai-uniform"),
+            )}
           />
         )}
         {activeTool === "logo" && <LogoPanel onUpload={armLogoPlacement} armed={pendingLayer?.type === "logo"} />}

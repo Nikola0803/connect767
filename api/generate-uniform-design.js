@@ -13,6 +13,8 @@ const STYLES = new Set(["Modern & Bold", "Classic & Clean", "Minimal & Elegant",
 const COLOR_KEYS = ["body", "sleeve", "collar", "shorts", "socks", "shirtStrip", "sleeveStrip", "shortsStrip"];
 const PATTERN_KEYS = ["none", "bands-h", "bands-v", "diagonal", "chevron", "sash", "halves", "shield", "star", "tricolour", "cross", "quarters", "camo", "splash", "fade"];
 const PATTERN_VIEWS = ["front", "back", "both"];
+const ELEMENT_KINDS = ["text", "artwork"];
+const ELEMENT_VIEWS = ["front", "back"];
 const REFERENCE_IMAGE_PATTERN = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/;
 const MAX_REFERENCE_IMAGE_BYTES = 3 * 1024 * 1024;
 
@@ -124,8 +126,26 @@ export const uniformDesignSchema = {
       additionalProperties: false,
     },
     crestSuggestion: { type: "string" },
+    productionElements: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          kind: { type: "string", enum: ELEMENT_KINDS },
+          content: { type: "string" },
+          view: { type: "string", enum: ELEMENT_VIEWS },
+          x: { type: "number" },
+          y: { type: "number" },
+          size: { type: "number" },
+          rotation: { type: "number" },
+          color: { type: "string", pattern: "^#[0-9A-Fa-f]{6}$" },
+        },
+        required: ["kind", "content", "view", "x", "y", "size", "rotation", "color"],
+        additionalProperties: false,
+      },
+    },
   },
-  required: ["name", "summary", "collar", "sleeve", "colors", "pattern", "crestSuggestion"],
+  required: ["name", "summary", "collar", "sleeve", "colors", "pattern", "crestSuggestion", "productionElements"],
   additionalProperties: false,
 };
 
@@ -138,7 +158,10 @@ export function buildUniformPrompt(input) {
     "Return a cohesive production-friendly palette for only these zones: shirt body, sleeves, collar, shorts or trousers, socks, shirt ends, sleeve ends, and shorts ends.",
     "Socks must be one solid color. Do not invent side panels, shoulder panels, gradients outside the named pattern, or unsupported garment parts.",
     `Choose pattern.key only from ${PATTERN_KEYS.join(", ")}. Use none when a clean solid kit is better.`,
-    "crestSuggestion is a short prompt for an optional separate transparent crest; do not bake it into the garment design.",
+    "productionElements must describe every requested team name, word, number, sponsor, crest, logo or visual mark as editable production artwork. Use kind text for exact printable wording or numbers and kind artwork for a visual crest/logo prompt. Positions are percentages of the selected front or back canvas. Keep important elements inside x 20-80 and y 20-65. Use at most one artwork element and up to five text elements. Do not repeat garment patterns as artwork.",
+    input.locks.artwork
+      ? "Artwork is locked: return an empty productionElements array and an empty crestSuggestion."
+      : "Artwork is unlocked: include the requested identity elements in productionElements so the editable map matches the AI concept. crestSuggestion should repeat the artwork element prompt when one is present.",
     input.referenceImage
       ? "An inspiration image is attached. Use its visual direction, panel rhythm and proportions as a reference, but translate it only into supported editable studio zones. Do not copy logos, words, numbers, people, backgrounds or protected brand marks."
       : "No inspiration image is attached; follow the written brief.",
@@ -153,6 +176,26 @@ export function normalizeUniformPlan(plan, input) {
   ]));
   const patternKey = PATTERN_KEYS.includes(plan?.pattern?.key) ? plan.pattern.key : "none";
   const patternEnabled = Boolean(plan?.pattern?.enabled) && patternKey !== "none";
+  const number = (value, fallback, min, max) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+  };
+  const productionElements = input.locks.artwork
+    ? []
+    : (Array.isArray(plan?.productionElements) ? plan.productionElements : [])
+        .map((element) => ({
+          kind: ELEMENT_KINDS.includes(element?.kind) ? element.kind : "text",
+          content: text(element?.content, 180),
+          view: ELEMENT_VIEWS.includes(element?.view) ? element.view : "front",
+          x: number(element?.x, 50, 5, 95),
+          y: number(element?.y, 35, 5, 95),
+          size: number(element?.size, element?.kind === "artwork" ? 20 : 14, 6, 60),
+          rotation: number(element?.rotation, 0, -180, 180),
+          color: hex(element?.color, nextColors.body === "#FFFFFF" ? "#1B1A16" : "#FFFFFF"),
+        }))
+        .filter((element) => element.content)
+        .filter((element, index, elements) => element.kind !== "artwork" || elements.findIndex((candidate) => candidate.kind === "artwork") === index)
+        .slice(0, 6);
 
   return {
     name: text(plan?.name, 80) || `${input.brandName} AI kit`,
@@ -172,6 +215,7 @@ export function normalizeUniformPlan(plan, input) {
           view: PATTERN_VIEWS.includes(plan?.pattern?.view) ? plan.pattern.view : "both",
         },
     crestSuggestion: input.locks.artwork ? "" : text(plan?.crestSuggestion, 300),
+    productionElements,
   };
 }
 
