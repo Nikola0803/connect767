@@ -274,6 +274,9 @@ export default function UniformStudioPage() {
       : studioWorkflow.find((step) => step.key === initialWorkflowStep)?.defaultTool || "design"
   );
   const [zoom, setZoom] = useState(1);
+  const [aiConceptRotation, setAiConceptRotation] = useState(0);
+  const [aiConceptPan, setAiConceptPan] = useState({ x: 0, y: 0 });
+  const aiConceptDragRef = useRef(null);
   const [hoverZone, setHoverZone] = useState(null);
   const [zoneModel, setZoneModel] = useState(() => cloneZoneModel());
   const [zoneStyles, setZoneStyles] = useState({ front: {}, back: {} });
@@ -326,6 +329,21 @@ export default function UniformStudioPage() {
   const [exitPrompt, setExitPrompt] = useState(false);
   const placeLayer3d = (layerId, placement) =>
     setPlacements3d((prev) => ({ ...prev, [layerId]: placement }));
+
+  const resetAIConceptView = () => {
+    setZoom(1);
+    setAiConceptRotation(0);
+    setAiConceptPan({ x: 0, y: 0 });
+    aiConceptDragRef.current = null;
+  };
+
+  const setClampedZoom = (nextZoom) => {
+    const maximum = showingAIConcept ? 3 : 1.4;
+    const value = typeof nextZoom === "function" ? nextZoom(zoom) : nextZoom;
+    const clamped = Math.max(0.7, Math.min(maximum, +value.toFixed(2)));
+    setZoom(clamped);
+    if (clamped <= 1) setAiConceptPan({ x: 0, y: 0 });
+  };
 
 
   // A deleted layer must not leave an orphaned decal behind.
@@ -933,6 +951,18 @@ export default function UniformStudioPage() {
     && aiWorkspaceConcept?.src
     && aiCanvasMode === "concept",
   );
+  useEffect(() => {
+    setZoom(1);
+    setAiConceptRotation(0);
+    setAiConceptPan({ x: 0, y: 0 });
+    aiConceptDragRef.current = null;
+  }, [aiWorkspaceConcept?.src]);
+  useEffect(() => {
+    if (showingAIConcept) return;
+    setZoom((current) => Math.min(current, 1.4));
+    setAiConceptPan({ x: 0, y: 0 });
+    aiConceptDragRef.current = null;
+  }, [showingAIConcept]);
   const aiPreviewColors = useMemo(
     () => aiUniformPlan?.colors ? normalizeZoneColors(aiUniformPlan.colors) : colors,
     [aiUniformPlan, colors],
@@ -1781,10 +1811,40 @@ export default function UniformStudioPage() {
                       </div>
                       {stageMode === "edit" && (
                         <div className="inline-flex items-center gap-1 rounded-xl border border-white/[0.07] bg-black/15 px-1 py-1">
+                          {showingAIConcept && (
+                            <>
+                              <button
+                                type="button"
+                                aria-label="Rotate design left"
+                                title="Rotate left"
+                                onClick={() => {
+                                  setAiConceptRotation((angle) => angle - 90);
+                                  setAiConceptPan({ x: 0, y: 0 });
+                                }}
+                                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"
+                              >
+                                <i className="ri-anticlockwise-2-line text-xs" />
+                              </button>
+                              <button
+                                type="button"
+                                aria-label="Rotate design right"
+                                title="Rotate right"
+                                onClick={() => {
+                                  setAiConceptRotation((angle) => angle + 90);
+                                  setAiConceptPan({ x: 0, y: 0 });
+                                }}
+                                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"
+                              >
+                                <i className="ri-clockwise-2-line text-xs" />
+                              </button>
+                              <span aria-hidden="true" className="mx-0.5 h-4 w-px bg-white/10" />
+                            </>
+                          )}
                           <button
                             type="button"
                             aria-label="Zoom out"
-                            onClick={() => setZoom((z) => Math.max(0.7, +(z - 0.1).toFixed(1)))}
+                            title="Zoom out"
+                            onClick={() => setClampedZoom((value) => value - 0.1)}
                             className="w-7 h-7 flex items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50 cursor-pointer"
                           >
                             <i className="ri-subtract-line text-xs" />
@@ -1795,11 +1855,23 @@ export default function UniformStudioPage() {
                           <button
                             type="button"
                             aria-label="Zoom in"
-                            onClick={() => setZoom((z) => Math.min(1.4, +(z + 0.1).toFixed(1)))}
+                            title="Zoom in"
+                            onClick={() => setClampedZoom((value) => value + 0.1)}
                             className="w-7 h-7 flex items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50 cursor-pointer"
                           >
                             <i className="ri-add-line text-xs" />
                           </button>
+                          {showingAIConcept && (
+                            <button
+                              type="button"
+                              aria-label="Reset design view"
+                              title="Reset view"
+                              onClick={resetAIConceptView}
+                              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"
+                            >
+                              <i className="ri-focus-3-line text-xs" />
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1875,17 +1947,57 @@ export default function UniformStudioPage() {
 
                     {showingAIConcept ? (
                       <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden">
-                        <div className="relative inline-flex max-h-full max-w-full overflow-hidden rounded-2xl border border-white/10 bg-[#ece9e1] shadow-[0_26px_70px_rgba(0,0,0,.34)]">
+                        <div
+                          className={`relative inline-flex max-h-full max-w-full overflow-hidden rounded-2xl border border-white/10 bg-[#ece9e1] shadow-[0_26px_70px_rgba(0,0,0,.34)] ${zoom > 1 ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
+                          role="group"
+                          aria-label="Interactive AI uniform concept. Use the toolbar to zoom or rotate, and drag while zoomed to inspect details."
+                          onWheel={(event) => {
+                            event.preventDefault();
+                            setClampedZoom((value) => value + (event.deltaY < 0 ? 0.15 : -0.15));
+                          }}
+                          onDoubleClick={resetAIConceptView}
+                          onPointerDown={(event) => {
+                            if (zoom <= 1) return;
+                            event.currentTarget.setPointerCapture(event.pointerId);
+                            aiConceptDragRef.current = {
+                              pointerId: event.pointerId,
+                              startX: event.clientX,
+                              startY: event.clientY,
+                              panX: aiConceptPan.x,
+                              panY: aiConceptPan.y,
+                            };
+                          }}
+                          onPointerMove={(event) => {
+                            const drag = aiConceptDragRef.current;
+                            if (!drag || drag.pointerId !== event.pointerId) return;
+                            setAiConceptPan({
+                              x: drag.panX + event.clientX - drag.startX,
+                              y: drag.panY + event.clientY - drag.startY,
+                            });
+                          }}
+                          onPointerUp={(event) => {
+                            if (aiConceptDragRef.current?.pointerId !== event.pointerId) return;
+                            aiConceptDragRef.current = null;
+                            event.currentTarget.releasePointerCapture(event.pointerId);
+                          }}
+                          onPointerCancel={() => { aiConceptDragRef.current = null; }}
+                          style={{ touchAction: zoom > 1 ? "none" : "auto" }}
+                        >
                           <img
                             src={aiWorkspaceConcept.src}
                             alt={`${aiUniformPlan?.name || aiWorkspaceConcept?.name || "AI generated"} complete front and back uniform concept`}
-                            className="block max-h-full max-w-full object-contain"
+                            draggable="false"
+                            className="block max-h-full max-w-full select-none object-contain will-change-transform"
+                            style={{
+                              transform: `translate3d(${aiConceptPan.x}px, ${aiConceptPan.y}px, 0) rotate(${aiConceptRotation}deg) scale(${zoom})`,
+                              transformOrigin: "center",
+                            }}
                           />
                           <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.13em] text-primary-800 shadow-sm backdrop-blur">
                             <i className="ri-sparkling-2-fill text-accent-500" /> Complete AI uniform · front and back
                           </div>
                           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-foreground-950/75 px-4 py-2 text-center text-[10px] text-white/80 backdrop-blur">
-                            Primary AI design · use Production map only for precise manufacturing adjustments
+                            {zoom > 1 ? "Drag to pan · double-click to reset" : "Scroll or use + to inspect details"} · Production map for precise adjustments
                           </div>
                         </div>
                       </div>
