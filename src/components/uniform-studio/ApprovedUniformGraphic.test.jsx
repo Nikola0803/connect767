@@ -1,8 +1,53 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { sports, templates } from "../../data/uniforms";
 import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
+import { SIDE_ASSET_BY_SPORT } from "./SideUniformGraphic";
 
 describe("ApprovedUniformGraphic trim isolation", () => {
+  it("provides a side-view asset for every sport category and template", () => {
+    for (const sport of sports) {
+      expect(SIDE_ASSET_BY_SPORT[sport.slug], `${sport.label} side asset`).toBeTruthy();
+    }
+
+    for (const template of templates) {
+      expect(
+        SIDE_ASSET_BY_SPORT[template.sportSlug],
+        `${template.name} side asset`,
+      ).toBeTruthy();
+    }
+  });
+
+  it("uses the dedicated Netball dress silhouette for the Court Dress template", () => {
+    const { container } = render(
+      <ApprovedUniformGraphic
+        sport="netball"
+        view="side"
+        colors={{ body: "#f6f1e7", shorts: "#086B44" }}
+      />,
+    );
+
+    expect(container.querySelector('image[href*="approved-netball-side.png"]')).not.toBeNull();
+  });
+
+  it("renders a dedicated side asset with the same workspace contract", () => {
+    const { container } = render(
+      <ApprovedUniformGraphic
+        sport="soccer"
+        view="side"
+        colors={{ body: "#1B1A16", shorts: "#086B44", socks: "#E4553D" }}
+      />,
+    );
+
+    const side = container.querySelector('svg[data-uniform-view="side"]');
+    expect(side).not.toBeNull();
+    expect(side.getAttribute("aria-label")).toBe("soccer complete uniform side");
+    expect(side.querySelector('image[href*="approved-soccer-side.png"]')).not.toBeNull();
+    expect(side.querySelector('rect[fill="#1B1A16"]')).not.toBeNull();
+    expect(side.querySelector('rect[fill="#086B44"]')).not.toBeNull();
+    expect(side.querySelector('rect[fill="#E4553D"]')).not.toBeNull();
+  });
+
   it("uses the selected colors as deep base tones while retaining fabric shading", () => {
     const { container } = render(
       <ApprovedUniformGraphic

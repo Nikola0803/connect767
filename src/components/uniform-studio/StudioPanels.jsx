@@ -1732,7 +1732,7 @@ export function LayersPanel({
       </div>
 
       <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400 mb-4 pt-2 border-t border-background-200/70">
-        On this design — {view === "front" ? "Front" : "Back"}
+        On this design — {view === "front" ? "Front" : view === "side" ? "Side" : "Back"}
       </h3>
       {viewLayers.length === 0 ? (
         <p className="text-xs text-foreground-500 font-label">

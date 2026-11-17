@@ -50,6 +50,7 @@ const JerseyStage = forwardRef(function JerseyStage(
   stageRef
 ) {
   const frontStageRef = useRef(null);
+  const sideStageRef = useRef(null);
   const backStageRef = useRef(null);
   const darkBackground = isDarkStudioBackground(studioBackground);
 
@@ -73,12 +74,12 @@ const JerseyStage = forwardRef(function JerseyStage(
 
   return (
     <div ref={stageRef} className="w-full py-2">
-      {/* Front and back stay visible together. Each side remains its own
+      {/* Front, side and back stay visible together. Each orientation remains its own
           editing surface so artwork coordinates and drag bounds never leak
           from one face of the garment onto the other. */}
-      <div className="grid w-full grid-cols-2 gap-3 md:gap-4">
-        {["front", "back"].map((side) => {
-          const sideRef = side === "front" ? frontStageRef : backStageRef;
+      <div className="grid w-full grid-cols-3 gap-2 md:gap-3">
+        {["front", "side", "back"].map((side) => {
+          const sideRef = side === "front" ? frontStageRef : side === "side" ? sideStageRef : backStageRef;
           const active = view === side;
           return (
             <div key={side} className="min-w-0">

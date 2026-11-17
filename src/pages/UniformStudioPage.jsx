@@ -241,7 +241,7 @@ const productionLayersFromPlan = (plan, { preview = false } = {}) =>
         id: preview ? `ai-production-preview-${index}` : nextLayerId(),
         source: "ai-uniform-element",
         name: element.name || `${plan?.name || "AI uniform"} ${element.kind}`,
-        view: element.view === "back" ? "back" : "front",
+        view: ["front", "side", "back"].includes(element.view) ? element.view : "front",
         x: Number(element.x) || 50,
         y: Number(element.y) || 35,
         size: Number(element.size) || (element.kind === "artwork" ? 20 : 14),
@@ -1255,7 +1255,7 @@ export default function UniformStudioPage() {
     try {
       const dataUrl = await toPng(stageRef.current, { pixelRatio: 2, skipFonts: true });
       const link = document.createElement("a");
-      link.download = `${template?.name || "jersey"}-front-back.png`;
+      link.download = `${template?.name || "jersey"}-front-side-back.png`;
       link.href = dataUrl;
       link.click();
     } catch {
@@ -1610,7 +1610,6 @@ export default function UniformStudioPage() {
     designProps={{ sport: activeSport, collar, setCollar, sleeve, setSleeve, colors, setColors, onHoverZone: setHoverZone, twoTone, setTwoTone }}
     optionsProps={{ fitType, setFitType, kitType, setKitType, extraTeamShirts, setExtraTeamShirts, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment }}
   />;
-
   // ---------- The studio itself: one full viewport, nothing else ----------
   return (
     <div className="h-[100dvh] flex flex-col overflow-hidden bg-[#10110f] text-background-50">

@@ -1,6 +1,7 @@
 import { useId } from "react";
 import ZoneCorrectionOverlay from "./ZoneCorrectionOverlay";
 import { SOCCER_ZONE_MODEL } from "./uniformZoneModel";
+import SideUniformGraphic from "./SideUniformGraphic";
 
 const SPRITE_WIDTH = 1159;
 const SPRITE_HEIGHT = 1358;
@@ -130,6 +131,16 @@ export default function ApprovedUniformGraphic({
   onMoveZonePoint,
 }) {
   const uid = useId().replaceAll(":", "");
+  if (view === "side") {
+    return (
+      <SideUniformGraphic
+        sport={sport}
+        colors={colors}
+        garmentPattern={garmentPattern}
+        highlightZone={highlightZone}
+      />
+    );
+  }
   const maskId = `approved-kit-${uid}`;
   const jerseyMaskId = `approved-jersey-${uid}`;
   const jerseyClipId = `approved-jersey-clip-${uid}`;
