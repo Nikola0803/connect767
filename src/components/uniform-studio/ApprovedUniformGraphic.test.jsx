@@ -5,6 +5,23 @@ import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
 import { SIDE_ASSET_BY_SPORT, SIDE_REGIONS } from "./SideUniformGraphic";
 
 describe("ApprovedUniformGraphic trim isolation", () => {
+  it("aligns the basketball V-neck to the actual front and back garment centers", () => {
+    const { container, rerender } = render(
+      <ApprovedUniformGraphic sport="basketball" view="front" collar="V-Neck" />,
+    );
+
+    const frontPatch = container.querySelector('[data-collar-patch="source-cleanup"]');
+    const frontOpening = container.querySelector('[data-collar-part="v-neck-opening"]');
+    expect(frontPatch.getAttribute("cx")).toBe("334");
+    expect(frontOpening.getAttribute("d")).toBe("M282,187 L334,242 L386,187");
+
+    rerender(<ApprovedUniformGraphic sport="basketball" view="back" collar="V-Neck" />);
+    const backPatch = container.querySelector('[data-collar-patch="source-cleanup"]');
+    const backOpening = container.querySelector('[data-collar-part="v-neck-opening"]');
+    expect(backPatch.getAttribute("cx")).toBe("836.5");
+    expect(backOpening.getAttribute("d")).toBe("M787.5,173 L836.5,222 L885.5,173");
+  });
+
   it("aligns side color boundaries with each image's native dimensions", () => {
     const { container, rerender } = render(<ApprovedUniformGraphic sport="soccer" view="side" />);
     for (const [sport, region] of Object.entries(SIDE_REGIONS)) {
