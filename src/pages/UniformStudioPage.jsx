@@ -2171,14 +2171,14 @@ export default function UniformStudioPage() {
 
               {/* Docked fields panel */}
               <aside className={`hidden w-full flex-shrink-0 border-l border-black/10 bg-[#f7f5ef] md:block ${activeTool === "ai" ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px] overflow-hidden" : "max-w-[420px] overflow-y-auto"}`}>
-                {activeTool !== "ai" && <div className="sticky top-0 z-10 border-b border-black/[0.07] bg-[#f7f5ef]/95 px-5 py-4 backdrop-blur-xl">
+                {activeTool !== "ai" && <div className={`sticky top-0 z-10 border-b border-black/[0.07] bg-[#f7f5ef]/95 backdrop-blur-xl ${activeTool === "design" ? "px-4 py-3" : "px-5 py-4"}`}>
                   <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary-700">Step {workflowStep.step} · {workflowStep.label}</p>
                   <div className="mt-1 flex items-center justify-between gap-3">
                     <h2 className="font-heading text-lg font-medium text-foreground-950">{activeToolConfig?.label || workflowStep.label}</h2>
                   </div>
                   <p className="mt-1 text-xs text-foreground-500">{activeToolConfig?.hint || workflowStep.description}</p>
                 </div>}
-                <div className={activeTool === "ai" ? "h-full" : "p-5"}>
+                <div className={activeTool === "ai" ? "h-full" : activeTool === "design" ? "p-3" : "p-5"}>
                 {selectedLayer && <SelectedItemPanel
                   layer={selectedLayer}
                   placement={stageMode === "3d" && selectedLayerId ? placements3d[selectedLayerId] : null}
