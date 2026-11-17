@@ -29,6 +29,7 @@ import {
   sportModelUrl,
 } from "../data/uniforms";
 import JerseyStage from "../components/uniform-studio/JerseyStage";
+import useGarmentColors from "../components/uniform-studio/useGarmentColors";
 import FloatingToolbar from "../components/uniform-studio/FloatingToolbar";
 import {
   UniformSetupPanel,
@@ -1004,10 +1005,10 @@ export default function UniformStudioPage() {
     setAiConceptPan({ x: 0, y: 0 });
     aiConceptDragRef.current = null;
   }, [showingAIConcept]);
-  const aiPreviewColors = useMemo(
-    () => aiUniformPlan?.colors ? normalizeZoneColors(aiUniformPlan.colors) : colors,
-    [aiUniformPlan, colors],
-  );
+  const [stageColors, updateGarmentColors] = useGarmentColors({
+    colors, setColors, previewPlan: showingAIUniformPreview ? aiUniformPlan : null,
+    setPreviewPlan: setAiUniformPlan, zoneModel, setZoneStyles,
+  });
   const appliedAiPattern = useMemo(() => {
     const patternLayers = layers.filter((layer) => layer.source === "ai-uniform-pattern");
     if (!patternLayers.length) return { enabled: false, key: "none", view: "both" };
@@ -1018,7 +1019,6 @@ export default function UniformStudioPage() {
       view: patternViews.has("front") && patternViews.has("back") ? "both" : patternLayers[0].view,
     };
   }, [layers]);
-  const stageColors = showingAIUniformPreview ? aiPreviewColors : colors;
   const stageCollar = showingAIUniformPreview ? aiUniformPlan.collar : collar;
   const stageSleeve = showingAIUniformPreview ? aiUniformPlan.sleeve : sleeve;
   const previewProductionLayers = useMemo(
@@ -1613,7 +1613,7 @@ export default function UniformStudioPage() {
   }
 
   const uniformSetupPanel = <UniformSetupPanel
-    designProps={{ sport: activeSport, collar, setCollar, sleeve, setSleeve, colors, setColors, onHoverZone: setHoverZone, twoTone, setTwoTone }}
+    designProps={{ sport: activeSport, collar, setCollar, sleeve, setSleeve, colors: stageColors, setColors: updateGarmentColors, onHoverZone: setHoverZone, twoTone, setTwoTone }}
     optionsProps={{ sport: activeSport, fitType, setFitType, kitType, setKitType, extraTeamShirts, setExtraTeamShirts, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment }}
   />;
 
@@ -2201,8 +2201,8 @@ export default function UniformStudioPage() {
                     canUndo={zoneHistory.length > 0}
                     onResetZone={resetZone}
                     onResetAll={resetAllZones}
-                    sockColor={colors.socks}
-                    onSockColorChange={(color) => setColors((current) => ({ ...current, socks: color }))}
+                    sockColor={stageColors.socks}
+                    onSockColorChange={(color) => updateGarmentColors((current) => ({ ...current, socks: color }))}
                   />
                 )}
                 {activeTool === "text" && <TextPanel onAdd={armTextPlacement} armed={pendingLayer?.type === "text"} />}
@@ -2326,8 +2326,8 @@ export default function UniformStudioPage() {
             canUndo={zoneHistory.length > 0}
             onResetZone={resetZone}
             onResetAll={resetAllZones}
-            sockColor={colors.socks}
-            onSockColorChange={(color) => setColors((current) => ({ ...current, socks: color }))}
+            sockColor={stageColors.socks}
+            onSockColorChange={(color) => updateGarmentColors((current) => ({ ...current, socks: color }))}
           />
         )}
         {activeTool === "text" && <TextPanel onAdd={armTextPlacement} armed={pendingLayer?.type === "text"} />}

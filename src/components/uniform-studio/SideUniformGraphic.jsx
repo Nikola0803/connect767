@@ -1,8 +1,6 @@
 import { useId } from "react";
 
 const ASSET_BASE = import.meta.env.BASE_URL;
-const WIDTH = 1024;
-const HEIGHT = 1536;
 
 export const SIDE_ASSET_BY_SPORT = {
   soccer: `${ASSET_BASE}uploads/uniform-editor/approved-soccer-side.png`,
@@ -14,25 +12,49 @@ export const SIDE_ASSET_BY_SPORT = {
   other: `${ASSET_BASE}uploads/uniform-editor/approved-other-side.png`,
 };
 
-// The generated assets share a fixed 1024 x 1536 production canvas. These
-// cut lines isolate the same garment groups used by the front/back editor so
-// colour changes remain visible from the new side orientation.
-const SIDE_REGIONS = {
-  soccer: { bottomStart: 708, socksStart: 1114, shirtHem: 695, bottomHem: 1081, sleeve: "M244 86 C330 46 515 52 607 136 L604 466 C516 470 427 458 334 429 Z" },
-  basketball: { bottomStart: 754, socksStart: HEIGHT, shirtHem: 742, bottomHem: 1262 },
+// Coordinates are native image pixels. The source images have different
+// dimensions; fitting them into a guessed canvas misaligns every color zone.
+export const SIDE_REGIONS = {
+  soccer: {
+    width: 887, height: 1774, bottomStart: 754, socksStart: 1125, shirtHem: 730, bottomHem: 1080,
+    sleeve: "M369 38 C297 68 252 149 253 240 L281 363 C325 391 380 390 430 368 C441 284 441 212 423 158 C414 105 389 63 369 38 Z",
+    sleeveEnd: "M302 337 C338 329 395 332 434 346 L430 369 C391 389 337 381 303 363 Z",
+    collar: "M370 17 C424 27 481 70 515 115 L500 136 C461 92 407 58 353 46 Z",
+  },
+  basketball: { width: 1159, height: 1358, bottomStart: 766, shirtHem: 742, bottomHem: 1232 },
   // Netball is a one-piece court dress. Only the concealed fitted shorts at
   // the bottom use the shorts colour; the full dress remains the body colour.
-  netball: { bottomStart: 1422, socksStart: HEIGHT, shirtHem: 1406, bottomHem: 1500 },
-  baseball: { bottomStart: 606, socksStart: HEIGHT, shirtHem: 594, bottomHem: 1458, sleeve: "M229 78 C319 42 517 46 610 143 L603 451 C510 454 413 445 323 412 Z" },
-  cricket: { bottomStart: 706, socksStart: HEIGHT, shirtHem: 694, bottomHem: 1454, sleeve: "M245 70 C350 33 534 45 621 142 L610 738 C520 744 428 733 339 694 Z" },
-  goalkeeper: { bottomStart: 716, socksStart: 1120, shirtHem: 704, bottomHem: 1090, sleeve: "M230 57 C330 25 525 40 620 145 L612 733 C517 739 421 725 326 684 Z" },
-  other: { bottomStart: 808, socksStart: HEIGHT, shirtHem: 796, bottomHem: 1320, sleeve: "M246 93 C338 52 531 59 620 157 L610 486 C517 490 424 478 333 444 Z" },
+  netball: { width: 1024, height: 1536, bottomStart: 1446, shirtHem: 1406, bottomHem: 1500 },
+  baseball: {
+    width: 819, height: 1920, bottomStart: 704, shirtHem: 680, bottomHem: 1798,
+    sleeve: "M333 122 C263 155 225 232 232 322 L275 442 C315 473 392 480 438 445 C450 356 456 274 429 208 C411 168 368 133 333 122 Z",
+    sleeveEnd: "M275 414 C323 391 396 398 439 426 L438 449 C391 478 319 474 277 448 Z",
+    collar: "M334 80 C403 90 479 140 516 196 L491 211 C449 155 386 122 319 116 Z",
+  },
+  cricket: {
+    width: 887, height: 1774, bottomStart: 754, shirtHem: 724, bottomHem: 1737,
+    sleeve: "M367 73 C312 110 281 177 294 269 L327 467 C353 580 388 665 438 722 L509 712 C488 635 471 551 466 460 L467 264 C473 174 433 105 367 73 Z",
+    sleeveEnd: "M429 697 L500 676 L514 722 L447 744 Z",
+    collar: "M368 27 C423 34 495 82 534 120 L509 142 C467 103 411 76 360 68 Z",
+  },
+  goalkeeper: {
+    width: 819, height: 1920, bottomStart: 803, socksStart: 1190, shirtHem: 777, bottomHem: 1148,
+    sleeve: "M312 52 C244 88 221 166 229 278 L257 470 C291 605 350 718 418 790 L495 771 C472 676 444 590 434 481 L444 263 C453 160 398 83 312 52 Z",
+    sleeveEnd: "M406 756 L478 733 L501 782 L431 805 Z",
+    collar: "M307 17 C375 25 451 75 493 135 L475 151 C430 99 365 61 300 50 Z",
+  },
+  other: {
+    width: 1159, height: 1358, bottomStart: 857, shirtHem: 831, bottomHem: 1232,
+    sleeve: "M475 122 C416 162 392 226 402 308 L440 445 C475 477 555 480 600 451 C613 375 618 292 596 226 C572 174 525 139 475 122 Z",
+    sleeveEnd: "M447 423 C489 409 559 412 601 432 L596 457 C552 480 490 476 450 453 Z",
+    collar: "M479 71 C548 77 628 130 671 187 L645 211 C600 162 534 131 468 118 Z",
+  },
 };
 
-function Tint({ maskId, fill, opacity = 0.92, children }) {
+function Tint({ maskId, children }) {
   return (
-    <g mask={`url(#${maskId})`} opacity={opacity} style={{ mixBlendMode: "multiply" }}>
-      {children(fill)}
+    <g data-garment-tint="fabric-multiply" mask={`url(#${maskId})`} style={{ mixBlendMode: "multiply" }}>
+      {children}
     </g>
   );
 }
@@ -52,65 +74,62 @@ export default function SideUniformGraphic({
   const maskId = `approved-side-${uid}`;
   const asset = SIDE_ASSET_BY_SPORT[sport] || SIDE_ASSET_BY_SPORT.other;
   const region = SIDE_REGIONS[sport] || SIDE_REGIONS.other;
+  const { width, height } = region;
+  const socksStart = region.socksStart || height;
   const body = colors.body || "#f6f1e7";
   const sleeve = colors.sleeve || body;
   const bottom = colors.shorts || body;
   const socks = colors.socks || body;
+  const collar = colors.collar || body;
+  const sleeveEnd = colors.sleeveStrip || colors.trim || collar;
   const shirtEnd = colors.shirtStrip || colors.trim || body;
   const shortsEnd = colors.shortsStrip || colors.trim || bottom;
   const opacityFor = (zone, base = 1) => (highlightZone && highlightZone !== zone ? base * 0.24 : base);
   const patternApplies = Boolean(
     garmentPattern?.enabled
       && garmentPattern.key !== "none"
-      && (!garmentPattern.view || garmentPattern.view === "both" || garmentPattern.view === "side"),
+      && (!garmentPattern.view || ["side", "both", "all"].includes(garmentPattern.view)),
   );
 
   return (
     <svg
       data-uniform-view="side"
-      viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+      viewBox={`0 0 ${width} ${height}`}
       preserveAspectRatio="xMidYMid meet"
       className="h-full w-full overflow-hidden"
       role="img"
       aria-label={`${sport} complete uniform side`}
     >
       <defs>
-        <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width={WIDTH} height={HEIGHT} style={{ maskType: "alpha" }}>
-          <image href={asset} x="0" y="0" width={WIDTH} height={HEIGHT} />
+        <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width={width} height={height} style={{ maskType: "alpha" }}>
+          <image href={asset} x="0" y="0" width={width} height={height} />
         </mask>
       </defs>
 
-      <image href={asset} x="0" y="0" width={WIDTH} height={HEIGHT} />
+      <image href={asset} x="0" y="0" width={width} height={height} />
 
-      <Tint maskId={maskId} fill={body} opacity={opacityFor("body", 0.94)}>
-        {(fill) => <rect x="0" y="0" width={WIDTH} height={region.bottomStart} fill={fill} />}
+      {/* Composite the zone fills first, then multiply the resulting palette
+          onto the photograph once. Separate multiply groups mix sleeve and
+          body colors together instead of replacing the sleeve color. */}
+      <Tint maskId={maskId}>
+        <rect data-garment-zone="body" x="0" y="0" width={width} height={region.bottomStart} fill={body} opacity={opacityFor("body")} />
+        <rect data-garment-zone="shorts" x="0" y={region.bottomStart} width={width} height={socksStart - region.bottomStart} fill={bottom} opacity={opacityFor("shorts")} />
+        {socksStart < height && <rect data-garment-zone="socks" x="0" y={socksStart} width={width} height={height - socksStart} fill={socks} opacity={opacityFor("socks")} />}
+        <rect data-garment-zone="shirtStrip" x="0" y={region.shirtHem} width={width} height={region.bottomStart - region.shirtHem} fill={shirtEnd} opacity={opacityFor("shirtStrip")} />
+        <rect data-garment-zone="shortsStrip" x="0" y={region.bottomHem} width={width} height="24" fill={shortsEnd} opacity={opacityFor("shortsStrip")} />
+        {region.sleeve && <path data-garment-zone="sleeve" d={region.sleeve} fill={sleeve} opacity={opacityFor("sleeve")} />}
+        {region.sleeveEnd && <path data-garment-zone="sleeveStrip" d={region.sleeveEnd} fill={sleeveEnd} opacity={opacityFor("sleeveStrip")} />}
+        {region.collar && <path data-garment-zone="collar" d={region.collar} fill={collar} opacity={opacityFor("collar")} />}
       </Tint>
-      <Tint maskId={maskId} fill={bottom} opacity={opacityFor("shorts", 0.94)}>
-        {(fill) => <rect x="0" y={region.bottomStart} width={WIDTH} height={region.socksStart - region.bottomStart} fill={fill} />}
-      </Tint>
-      {region.socksStart < HEIGHT && (
-        <Tint maskId={maskId} fill={socks} opacity={opacityFor("socks", 0.94)}>
-          {(fill) => <rect x="0" y={region.socksStart} width={WIDTH} height={HEIGHT - region.socksStart} fill={fill} />}
-        </Tint>
-      )}
-      {region.sleeve && (
-        <Tint maskId={maskId} fill={sleeve} opacity={opacityFor("sleeve", 0.96)}>
-          {(fill) => <path d={region.sleeve} fill={fill} />}
-        </Tint>
-      )}
 
       {patternApplies && (
         <g mask={`url(#${maskId})`} opacity="0.76" data-ai-garment-pattern={garmentPattern.key}>
-          {garmentPattern.key === "bands-h" && <rect x="0" y="360" width={WIDTH} height="54" fill={shirtEnd} />}
-          {garmentPattern.key === "bands-v" && <rect x="500" y="0" width="58" height={region.bottomStart} fill={shirtEnd} />}
-          {garmentPattern.key === "gradient" && <rect x="0" y="0" width={WIDTH} height={region.bottomStart} fill={shirtEnd} opacity="0.32" />}
+          {garmentPattern.key === "bands-h" && <rect x="0" y={region.bottomStart * 0.5} width={width} height="54" fill={shirtEnd} />}
+          {garmentPattern.key === "bands-v" && <rect x={width * 0.5} y="0" width="58" height={region.bottomStart} fill={shirtEnd} />}
+          {garmentPattern.key === "gradient" && <rect x="0" y="0" width={width} height={region.bottomStart} fill={shirtEnd} opacity="0.32" />}
         </g>
       )}
 
-      <g mask={`url(#${maskId})`} style={{ mixBlendMode: "normal" }}>
-        <rect x="0" y={region.shirtHem} width={WIDTH} height="16" fill={shirtEnd} opacity={opacityFor("shirtStrip", 0.9)} />
-        <rect x="0" y={region.bottomHem} width={WIDTH} height="16" fill={shortsEnd} opacity={opacityFor("shortsStrip", 0.9)} />
-      </g>
     </svg>
   );
 }
