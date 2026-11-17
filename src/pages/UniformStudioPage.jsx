@@ -2136,7 +2136,7 @@ export default function UniformStudioPage() {
                   </div>
 
               {/* Docked fields panel */}
-              <aside className={`hidden w-full flex-shrink-0 border-l border-black/10 bg-[#f7f5ef] md:block ${activeTool === "ai" ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px] overflow-hidden" : "max-w-[420px] overflow-y-auto"}`}>
+              <aside className={`hidden min-h-0 w-full flex-shrink-0 flex-col border-l border-black/10 bg-[#f7f5ef] md:flex ${activeTool === "ai" ? "md:w-[340px] md:max-w-[340px] lg:w-[400px] lg:max-w-[400px] 2xl:w-[440px] 2xl:max-w-[440px] overflow-hidden" : "max-w-[420px] overflow-y-auto"}`}>
                 {activeTool !== "ai" && <div className="sticky top-0 z-10 border-b border-black/[0.07] bg-[#f7f5ef]/95 px-5 py-4 backdrop-blur-xl">
                   <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary-700">Step {workflowStep.step} · {workflowStep.label}</p>
                   <div className="mt-1 flex items-center justify-between gap-3">
@@ -2145,8 +2145,8 @@ export default function UniformStudioPage() {
                   </div>
                   <p className="mt-1 text-xs text-foreground-500">{activeToolConfig?.hint || workflowStep.description}</p>
                 </div>}
-                <div className={activeTool === "ai" ? "h-full" : "p-5"}>
-                {selectedLayer && <SelectedItemPanel
+                <div className={activeTool === "ai" ? "min-h-0 flex-1 overflow-hidden" : "p-5"}>
+                {selectedLayer && activeTool !== "ai" && <SelectedItemPanel
                   layer={selectedLayer}
                   placement={selectedLayerId ? placements3d[selectedLayerId] : null}
                   onTextChange={(id, text) => updateLayer(id, { text })}
@@ -2295,7 +2295,7 @@ export default function UniformStudioPage() {
 
       {/* Mobile: the fields panel docks to the bottom instead of the side */}
       <div className={`md:hidden flex-shrink-0 overflow-y-auto overscroll-contain border-t border-background-200/60 bg-background-50 ${activeTool === "ai" ? "max-h-[72dvh] p-0" : "max-h-[42dvh] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"}`}>
-        <SelectedItemPanel
+        {activeTool !== "ai" && <SelectedItemPanel
           layer={selectedLayer}
           placement={selectedLayerId ? placements3d[selectedLayerId] : null}
           onTextChange={(id, text) => updateLayer(id, { text })}
@@ -2303,7 +2303,7 @@ export default function UniformStudioPage() {
           onScaleChange={stageMode === "3d" ? setLayerScale : setLayerSize2d}
           onRotateChange={stageMode === "3d" ? rotateLayer : rotateLayer2d}
           onDelete={removeLayer}
-        />
+        />}
 
         {activeTool === "design" && (
           <DesignPanel
