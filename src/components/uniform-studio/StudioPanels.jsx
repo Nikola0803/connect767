@@ -228,7 +228,7 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
           <input type="checkbox" checked={collar === "Polo"} onChange={(event) => setCollar(event.target.checked ? "Polo" : "Crew")} className="accent-primary-600" />
           Polo collar (+${ADD_ON_PRICES.collarPolo.toFixed(2)}/kit)
         </label>}
-        <p className="mt-2 text-xs text-foreground-500">Standard collar included in the base price.</p>
+        <p className="mt-2 text-xs text-foreground-500">Standard crew or V-Neck collar included in the base price.</p>
       </div>
       {config.sleeveOptions && (
         <div className="mb-6">
