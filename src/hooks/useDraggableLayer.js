@@ -22,7 +22,7 @@ export function useDraggableLayer({
   onChange,
   onSnap,
   minSize = 6,
-  maxSize = 60,
+  maxSize = 120,
 }) {
   const dragState = useRef(null);
 
@@ -103,7 +103,9 @@ export function useDraggableLayer({
       onSnap?.(snapAxis);
       onChange({ x: nextX, y: nextY, size, rotation });
     } else if (state.mode === "resize") {
-      const delta = ((point.clientX - state.startClientX) / rect.width) * 100;
+      const dx = (point.clientX - state.startClientX) / rect.width;
+      const dy = (point.clientY - state.startClientY) / rect.height;
+      const delta = ((dx + dy) / 2) * 100;
       onChange({ x, y, size: clamp(state.startSize + delta, minSize, maxSize), rotation });
     } else if (state.mode === "rotate" && layerRef?.current) {
       const box = layerRef.current.getBoundingClientRect();

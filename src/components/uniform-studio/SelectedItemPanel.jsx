@@ -36,6 +36,7 @@ export default function SelectedItemPanel({
   onGradientChange,
   onScaleChange,
   onRotateChange,
+  onDuplicate,
   onDelete,
 }) {
   const inputRef = useRef(null);
@@ -74,14 +75,26 @@ export default function SelectedItemPanel({
         <span className="text-[11px] font-semibold uppercase tracking-wide text-primary-800">
           Selected · {label}
         </span>
-        <button
-          type="button"
-          onClick={() => onDelete(layer.id)}
-          className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent-600 hover:text-accent-700 cursor-pointer"
-        >
-          <i className="ri-delete-bin-line" />
-          Remove
-        </button>
+        <div className="flex items-center gap-2">
+          {onDuplicate && (
+            <button
+              type="button"
+              onClick={() => onDuplicate(layer.id)}
+              className="inline-flex cursor-pointer items-center gap-1 text-[11px] font-semibold text-primary-700 hover:text-primary-900"
+            >
+              <i className="ri-file-copy-line" />
+              Duplicate
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => onDelete(layer.id)}
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent-600 hover:text-accent-700 cursor-pointer"
+          >
+            <i className="ri-delete-bin-line" />
+            Remove
+          </button>
+        </div>
       </div>
 
       {isText && (
@@ -193,7 +206,7 @@ export default function SelectedItemPanel({
         const in3d = Boolean(placement);
         const sizeValue = in3d ? placement.scale : (layer.size ?? 16);
         const sizeMin = in3d ? MIN_SCALE : 4;
-        const sizeMax = in3d ? MAX_SCALE : 60;
+        const sizeMax = in3d ? MAX_SCALE : 120;
         const sizeStep = in3d ? 0.005 : 1;
         return (
         <>
@@ -237,7 +250,7 @@ export default function SelectedItemPanel({
           </div>
 
           <p className="text-[11px] text-foreground-500 font-label mt-3">
-            Drag it on the design to move it.
+            Drag to move · pull the green corner or scroll to resize · use +/− when focused.
           </p>
         </>
         );
