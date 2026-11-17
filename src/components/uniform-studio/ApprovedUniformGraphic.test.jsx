@@ -109,6 +109,25 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     expect(side.querySelector('rect[fill="#E4553D"]')).not.toBeNull();
   });
 
+  it("provides independent mirrored left and right sleeve artwork surfaces", () => {
+    const { container, rerender } = render(
+      <ApprovedUniformGraphic sport="soccer" view="sleeve-left" colors={{ sleeve: "#12aa66" }} />,
+    );
+
+    const leftSleeve = container.querySelector('svg[data-uniform-view="sleeve-left"]');
+    expect(leftSleeve).not.toBeNull();
+    expect(leftSleeve.getAttribute("data-sleeve-side")).toBe("left");
+    expect(leftSleeve.style.transform).toBe("scaleX(-1)");
+    expect(leftSleeve.getAttribute("aria-label")).toBe("soccer left sleeve");
+
+    rerender(<ApprovedUniformGraphic sport="soccer" view="sleeve-right" colors={{ sleeve: "#12aa66" }} />);
+    const rightSleeve = container.querySelector('svg[data-uniform-view="sleeve-right"]');
+    expect(rightSleeve).not.toBeNull();
+    expect(rightSleeve.getAttribute("data-sleeve-side")).toBe("right");
+    expect(rightSleeve.style.transform).toBe("");
+    expect(rightSleeve.getAttribute("aria-label")).toBe("soccer right sleeve");
+  });
+
   it("uses the selected colors as deep base tones while retaining fabric shading", () => {
     const { container } = render(
       <ApprovedUniformGraphic

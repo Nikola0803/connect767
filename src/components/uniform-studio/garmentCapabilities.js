@@ -89,7 +89,12 @@ export function detectGarmentCapabilities({
 } = {}) {
   const profile = profiles[sport] || profiles.other;
   const previewOnly = canvasMode === "concept" && hasConceptImage;
-  const visibleZones = profile.zones.filter((item) => item.views.includes(view));
+  const sleeveView = view === "sleeve-left" || view === "sleeve-right";
+  const capabilityView = sleeveView ? "side" : view;
+  const visibleZones = profile.zones.filter((item) =>
+    item.views.includes(capabilityView)
+    && (!sleeveView || item.id === "sleeves")
+  );
   // Setup, AI generation and order steps operate on the garment definition,
   // rather than painting pixels onto the current canvas, so they remain valid
   // while a generated/reference image is being shown as a preview.
@@ -114,7 +119,9 @@ export function detectGarmentCapabilities({
     },
     status: previewOnly
       ? "Preview image detected. Apply its production layout to unlock zone editing."
-      : `${visibleZones.length} editable ${view} zones verified.`,
+      : sleeveView
+        ? `${view === "sleeve-left" ? "Left" : "Right"} sleeve placement verified for text and logos.`
+        : `${visibleZones.length} editable ${view} zones verified.`,
   };
 }
 

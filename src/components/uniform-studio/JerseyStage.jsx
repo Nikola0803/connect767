@@ -52,6 +52,8 @@ const JerseyStage = forwardRef(function JerseyStage(
   const frontStageRef = useRef(null);
   const sideStageRef = useRef(null);
   const backStageRef = useRef(null);
+  const leftSleeveStageRef = useRef(null);
+  const rightSleeveStageRef = useRef(null);
   const darkBackground = isDarkStudioBackground(studioBackground);
 
   const handleStageDown = (e, side) => {
@@ -151,6 +153,79 @@ const JerseyStage = forwardRef(function JerseyStage(
                     />
                   ))}
               </div>
+
+              {side === "side" && sleeve !== "Sleeveless" && (
+                <div className="mt-2 grid grid-cols-2 gap-2" aria-label="Sleeve artwork windows">
+                  {[
+                    { key: "sleeve-left", label: "Left sleeve", ref: leftSleeveStageRef },
+                    { key: "sleeve-right", label: "Right sleeve", ref: rightSleeveStageRef },
+                  ].map((sleeveSurface) => {
+                    const sleeveActive = view === sleeveSurface.key;
+                    return (
+                      <div key={sleeveSurface.key} className="min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onViewChange?.(sleeveSurface.key);
+                            onBackgroundClick?.();
+                          }}
+                          className={`mb-1.5 w-full rounded-full px-2 py-1 text-[8px] font-bold uppercase tracking-[0.12em] transition cursor-pointer ${
+                            sleeveActive
+                              ? "bg-primary-600 text-white"
+                              : "bg-white/[0.06] text-background-50/50 hover:bg-white/10 hover:text-background-50"
+                          }`}
+                        >
+                          {sleeveSurface.label}
+                        </button>
+                        <div
+                          ref={sleeveSurface.ref}
+                          role="group"
+                          aria-label={`${sleeveSurface.label} artwork surface`}
+                          onMouseDown={(event) => handleStageDown(event, sleeveSurface.key)}
+                          onTouchStart={(event) => handleStageDown(event, sleeveSurface.key)}
+                          style={{
+                            cursor: pendingLayer ? "copy" : undefined,
+                            background: studioBackgroundGradient(studioBackground),
+                          }}
+                          className={`relative aspect-[5/4] w-full overflow-hidden rounded-xl shadow-[0_12px_32px_-12px_rgba(0,0,0,0.6)] transition ${
+                            sleeveActive ? "ring-2 ring-primary-500" : "ring-1 ring-white/10"
+                          }`}
+                        >
+                          <div className="absolute inset-2">
+                            <ApprovedUniformGraphic
+                              sport={sport}
+                              view={sleeveSurface.key}
+                              collar={collar}
+                              sleeve={sleeve}
+                              colors={colors}
+                              garmentPattern={garmentPattern}
+                              highlightZone={highlightZone}
+                            />
+                          </div>
+
+                          <SafeAreaGuide dark={darkBackground} />
+
+                          {layers
+                            .filter((layer) => layer.view === sleeveSurface.key && layer.source !== "ai-uniform-pattern" && layer.source !== "ai-concept-preview")
+                            .map((layer) => (
+                              <DraggableLayer
+                                key={layer.id}
+                                layer={layer}
+                                stageRef={sleeveSurface.ref}
+                                selected={layer.id === selectedId}
+                                onSelect={(id) => {
+                                  onViewChange?.(sleeveSurface.key);
+                                  onSelect(id);
+                                }}
+                                onChange={onLayerChange}
+                              />
+                            ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}

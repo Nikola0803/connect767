@@ -39,6 +39,20 @@ describe("garment capability detection", () => {
     expect(firstSupportedTool(["zones", "design"], result)).toBe("zones");
   });
 
+  it.each(["sleeve-left", "sleeve-right"])("exposes placement tools for the verified %s zone", (view) => {
+    const result = detectGarmentCapabilities({
+      sport: "soccer",
+      view,
+      canvasMode: "production",
+      zoneModel: tracedZones,
+    });
+
+    expect(result.zones.map((item) => item.id)).toEqual(["sleeves"]);
+    expect(result.canUse("text")).toBe(true);
+    expect(result.canUse("logo")).toBe(true);
+    expect(result.status).toMatch(/sleeve placement verified/i);
+  });
+
   it("does not advertise manual zone correction for an untraced category", () => {
     const result = detectGarmentCapabilities({ sport: "basketball", zoneModel: tracedZones });
     expect(result.garment).toBe("Basketball kit");

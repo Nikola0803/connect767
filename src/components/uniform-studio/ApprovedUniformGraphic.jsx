@@ -145,13 +145,16 @@ export default function ApprovedUniformGraphic({
   onMoveZonePoint,
 }) {
   const uid = useId().replaceAll(":", "");
-  if (view === "side") {
+  if (["side", "sleeve-left", "sleeve-right"].includes(view)) {
     return (
       <SideUniformGraphic
         sport={sport}
         colors={colors}
         garmentPattern={garmentPattern}
         highlightZone={highlightZone}
+        side={view === "sleeve-left" ? "left" : "right"}
+        focus={view.startsWith("sleeve-") ? "sleeve" : "full"}
+        viewKey={view}
       />
     );
   }

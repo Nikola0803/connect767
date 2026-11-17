@@ -18,6 +18,11 @@ describe("AI production artwork placement", () => {
     expect(placement.size).toBeCloseTo(11.2);
   });
 
+  it.each(["sleeve-left", "sleeve-right"])("keeps %s artwork on its independent sleeve surface", (view) => {
+    const placement = mapProductionElementToGarment({ kind: "artwork", view, x: 50, y: 50, size: 20 });
+    expect(placement).toMatchObject({ view, x: 50, y: 50, size: 4.8 });
+  });
+
   it("shrinks long team wording without shrinking player numbers", () => {
     const wording = mapProductionElementToGarment({ kind: "text", content: "TEAM UNIFORM", size: 18 });
     const number = mapProductionElementToGarment({ kind: "text", content: "24", size: 18 });

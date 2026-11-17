@@ -1,8 +1,12 @@
 const BASE_VIEW_PRINT_AREAS = {
   front: { left: 36, right: 64, top: 13, bottom: 35, artworkScale: 0.42 },
   side: { left: 43, right: 57, top: 13, bottom: 36, artworkScale: 0.28 },
+  "sleeve-left": { left: 18, right: 82, top: 18, bottom: 82, artworkScale: 0.24 },
+  "sleeve-right": { left: 18, right: 82, top: 18, bottom: 82, artworkScale: 0.24 },
   back: { left: 36, right: 64, top: 13, bottom: 35, artworkScale: 0.42 },
 };
+
+const PRODUCTION_VIEWS = ["front", "side", "sleeve-left", "sleeve-right", "back"];
 
 const SPORT_VERTICAL_PRINT_AREAS = {
   soccer: { front: [13, 35], side: [13, 36], back: [13, 35] },
@@ -52,7 +56,7 @@ const printAreaFor = (view, sport) => {
 };
 
 export function mapProductionElementToGarment(element = {}, sport = "soccer") {
-  const view = ["front", "side", "back"].includes(element.view) ? element.view : "front";
+  const view = PRODUCTION_VIEWS.includes(element.view) ? element.view : "front";
   const area = printAreaFor(view, sport);
   const sourceX = clamp(Number(element.x) || 50, 0, 100);
   const sourceY = clamp(Number(element.y) || 35, 0, 100);
@@ -68,7 +72,7 @@ export function mapProductionElementToGarment(element = {}, sport = "soccer") {
 
   let size = requestedSize;
   if (element.kind === "artwork") {
-    size = clamp(requestedSize * area.artworkScale, 3, view === "side" ? 12 : 18);
+    size = clamp(requestedSize * area.artworkScale, 3, view.includes("side") || view.startsWith("sleeve-") ? 12 : 18);
   } else if (longestLine > 3) {
     // Prevent team and sponsor names from extending over the armholes.
     size = Math.min(requestedSize, Math.max(1, 31 / longestLine));
@@ -98,8 +102,8 @@ export function normalizeStoredProductionLayer(layer = {}, sport = "soccer") {
     };
   }
   if (layer.placementSpace === "garment-v1") {
-    const view = ["front", "side", "back"].includes(layer.view) ? layer.view : "front";
-    const legacyArea = LEGACY_VIEW_PRINT_AREAS[view];
+    const view = PRODUCTION_VIEWS.includes(layer.view) ? layer.view : "front";
+    const legacyArea = LEGACY_VIEW_PRINT_AREAS[view] || LEGACY_VIEW_PRINT_AREAS.side;
     const area = printAreaFor(view, sport);
     const sourceY = clamp(((Number(layer.y) - legacyArea.top) / (legacyArea.bottom - legacyArea.top)) * 100, 0, 100);
     return {
