@@ -30,9 +30,24 @@ describe("uniform design controls", () => {
     const summary = screen.getByText("Production extras");
     expect(summary.closest("details")).not.toHaveAttribute("open");
     fireEvent.click(summary.closest("summary"));
-    expect(screen.getByRole("button", { name: /Embroidery/ })).toBeVisible();
+    expect(screen.getByRole("checkbox", { name: /Embroidered team logo/ })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Yes" }));
     expect(setInsideCollarMessage).toHaveBeenCalledWith(true);
+  });
+  it("includes sublimation by default and allows the embroidery upgrade to be added or removed", () => {
+    const setLogoApplication = vi.fn();
+    const props = { section: "production", logoApplication: "Sublimated", setLogoApplication, insideCollarMessage: false };
+    const { rerender } = render(<OptionsPanel {...props} />);
+    expect(screen.getByText("All uniform prints, including logos, are sublimated and included in the base price.")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Sublimated" })).not.toBeInTheDocument();
+    const upgrade = screen.getByRole("checkbox", { name: "Embroidered team logo (+$1.50/kit)" });
+    expect(upgrade).not.toBeChecked();
+    fireEvent.click(upgrade);
+    expect(setLogoApplication).toHaveBeenLastCalledWith("Embroidery");
+    rerender(<OptionsPanel {...props} logoApplication="Embroidery" />);
+    expect(upgrade).toBeChecked();
+    fireEvent.click(upgrade);
+    expect(setLogoApplication).toHaveBeenLastCalledWith("Sublimated");
   });
   it("picks colors directly on garment tiles without a separate editor", () => {
     const setColors = vi.fn();

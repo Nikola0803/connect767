@@ -4,7 +4,6 @@ import {
   zoneColorPalette,
   fitTypeOptions,
   kitTypeOptions,
-  logoApplicationOptions,
   ADD_ON_PRICES,
   BASE_KIT_PRICE,
   SHIRT_ONLY_PRICE,
@@ -638,30 +637,13 @@ export function OptionsPanel({
       {section !== "fit" && <>
       {section === "all" && <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400 mb-3 pt-2 border-t border-background-200/70">Production extras</h3>}
       <div className="mb-3">
-        <span className="text-xs font-semibold text-foreground-800 block mb-2">
-          Team logo application
-        </span>
-        <div className="flex gap-2 flex-wrap">
-          {logoApplicationOptions.map((opt) => (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => setLogoApplication(opt)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border cursor-pointer transition-all ${
-                logoApplication === opt
-                  ? "bg-primary-500 text-background-50 border-primary-500 shadow-sm shadow-primary-500/20"
-                  : "bg-background-50 text-foreground-700 border-background-300 hover:bg-background-100"
-              }`}
-            >
-              {opt}
-              {opt === "Embroidery" && (
-                <span className="ml-1 font-normal opacity-80">
-                  (+${ADD_ON_PRICES.logoEmbroidery.toFixed(2)}/kit)
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+        <p className="mb-3 text-xs leading-relaxed text-foreground-600">
+          All uniform prints, including logos, are sublimated and included in the base price.
+        </p>
+        <label className="flex cursor-pointer items-start gap-2 text-xs font-semibold text-foreground-800">
+          <input type="checkbox" checked={logoApplication === "Embroidery"} onChange={(event) => setLogoApplication(event.target.checked ? "Embroidery" : "Sublimated")} className="mt-0.5 accent-primary-600" />
+          <span>Embroidered team logo <span className="font-normal text-foreground-500">(+${ADD_ON_PRICES.logoEmbroidery.toFixed(2)}/kit)</span></span>
+        </label>
       </div>
 
       <div className="mb-2">
