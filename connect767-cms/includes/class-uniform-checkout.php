@@ -364,6 +364,12 @@ class C767_Uniform_Checkout
         $order->update_meta_data('_c767_uniform_supporter_count', $supporter_count);
 
         $design_payload = $payload;
+        $collar_attachment = rest_sanitize_boolean($payload['insideCollarMessage'] ?? false)
+            ? C767_REST_Uniform_Quotes::sanitize_collar_attachment($payload['insideCollarAttachment'] ?? null) : null;
+        if ($collar_attachment) {
+            $order->update_meta_data('_c767_uniform_collar_attachment', $collar_attachment);
+        }
+        $design_payload['insideCollarAttachment'] = $collar_attachment ? array_diff_key($collar_attachment, ['src' => true]) : null;
         unset($design_payload['previewImage']);
         $encoded = wp_json_encode($design_payload);
         if ($encoded && strlen($encoded) <= 524288) {
