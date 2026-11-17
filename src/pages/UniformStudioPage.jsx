@@ -338,11 +338,10 @@ export default function UniformStudioPage() {
   };
 
   const setClampedZoom = (nextZoom) => {
-    const maximum = showingAIConcept ? 3 : 1.4;
+    const maximum = showingAIConcept ? 4 : 1.4;
     const value = typeof nextZoom === "function" ? nextZoom(zoom) : nextZoom;
-    const clamped = Math.max(0.7, Math.min(maximum, +value.toFixed(2)));
+    const clamped = Math.max(showingAIConcept ? 0.5 : 0.7, Math.min(maximum, +value.toFixed(2)));
     setZoom(clamped);
-    if (clamped <= 1) setAiConceptPan({ x: 0, y: 0 });
   };
 
 
@@ -1951,16 +1950,30 @@ export default function UniformStudioPage() {
                     {showingAIConcept ? (
                       <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden">
                         <div
-                          className={`relative inline-flex max-h-full max-w-full overflow-hidden rounded-2xl border border-white/10 bg-[#ece9e1] shadow-[0_26px_70px_rgba(0,0,0,.34)] ${zoom > 1 ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
+                          className="relative inline-flex max-h-full max-w-full cursor-grab overflow-hidden rounded-2xl border border-white/10 bg-[#ece9e1] shadow-[0_26px_70px_rgba(0,0,0,.34)] outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-primary-400"
                           role="group"
-                          aria-label="Interactive AI uniform concept. Use the toolbar to zoom or rotate, and drag while zoomed to inspect details."
+                          tabIndex={0}
+                          aria-label="Interactive AI uniform concept. Drag to pan, use the mouse wheel or toolbar to zoom, and use arrow keys to move the design."
                           onWheel={(event) => {
                             event.preventDefault();
                             setClampedZoom((value) => value + (event.deltaY < 0 ? 0.15 : -0.15));
                           }}
+                          onKeyDown={(event) => {
+                            const step = event.shiftKey ? 40 : 16;
+                            const movement = {
+                              ArrowLeft: { x: -step, y: 0 },
+                              ArrowRight: { x: step, y: 0 },
+                              ArrowUp: { x: 0, y: -step },
+                              ArrowDown: { x: 0, y: step },
+                            }[event.key];
+                            if (!movement) return;
+                            event.preventDefault();
+                            setAiConceptPan((current) => ({ x: current.x + movement.x, y: current.y + movement.y }));
+                          }}
                           onDoubleClick={resetAIConceptView}
                           onPointerDown={(event) => {
-                            if (zoom <= 1) return;
+                            if (event.button !== 0) return;
+                            event.preventDefault();
                             event.currentTarget.setPointerCapture(event.pointerId);
                             aiConceptDragRef.current = {
                               pointerId: event.pointerId,
@@ -1981,10 +1994,12 @@ export default function UniformStudioPage() {
                           onPointerUp={(event) => {
                             if (aiConceptDragRef.current?.pointerId !== event.pointerId) return;
                             aiConceptDragRef.current = null;
-                            event.currentTarget.releasePointerCapture(event.pointerId);
+                            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                              event.currentTarget.releasePointerCapture(event.pointerId);
+                            }
                           }}
                           onPointerCancel={() => { aiConceptDragRef.current = null; }}
-                          style={{ touchAction: zoom > 1 ? "none" : "auto" }}
+                          style={{ touchAction: "none" }}
                         >
                           <img
                             src={aiWorkspaceConcept.src}
@@ -1996,11 +2011,8 @@ export default function UniformStudioPage() {
                               transformOrigin: "center",
                             }}
                           />
-                          <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.13em] text-primary-800 shadow-sm backdrop-blur">
-                            <i className="ri-sparkling-2-fill text-accent-500" /> Complete AI uniform · front and back
-                          </div>
                           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-foreground-950/75 px-4 py-2 text-center text-[10px] text-white/80 backdrop-blur">
-                            {zoom > 1 ? "Drag to pan · double-click to reset" : "Scroll or use + to inspect details"} · Production map for precise adjustments
+                            Drag to pan · scroll to zoom · double-click to fit
                           </div>
                         </div>
                       </div>
