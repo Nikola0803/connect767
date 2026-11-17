@@ -385,6 +385,24 @@ function PostOptionsMenu({ post, authenticated, canManage, onDelete, onEdit, onH
   );
 }
 
+function CommunityBrandLink() {
+  return (
+    <Link
+      to="/community"
+      aria-label="Connect767 Community Feed"
+      title="Connect767 Community Feed"
+      className="grid h-10 w-8 shrink-0 place-items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 sm:h-11 sm:w-9"
+    >
+      <img
+        src="/connect767-favicon.png"
+        alt=""
+        aria-hidden="true"
+        className="h-5 w-5 object-contain sm:h-6 sm:w-6"
+      />
+    </Link>
+  );
+}
+
 function CommunityPost({ post, authenticated, canManage, onReact, onComment, onDelete, onEdit, onHide, onMute, onReport, onBookmark, onRepost, onFollow }) {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [reactionsOpen, setReactionsOpen] = useState(false);
@@ -500,7 +518,10 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
           </div>
           <p className="mt-0.5 text-[11px] text-foreground-500 sm:mt-1 sm:text-xs">{headerLocationLabel} · {relativeTime(post.createdAt)}</p>
         </div>
-        <PostOptionsMenu post={post} authenticated={authenticated} canManage={canManage} onDelete={onDelete} onEdit={onEdit} onHide={onHide} onMute={onMute} onReport={onReport} onBookmark={onBookmark} onFollow={onFollow} />
+        <div className="flex shrink-0 items-start gap-0.5">
+          <CommunityBrandLink />
+          <PostOptionsMenu post={post} authenticated={authenticated} canManage={canManage} onDelete={onDelete} onEdit={onEdit} onHide={onHide} onMute={onMute} onReport={onReport} onBookmark={onBookmark} onFollow={onFollow} />
+        </div>
       </header>
 
       {(emotion || activity) && <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-accent-50 px-2.5 py-1 text-[11px] font-semibold text-foreground-700 sm:mt-4 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-xs"><span className="text-sm sm:text-base" aria-hidden="true">{emotion?.emoji || activity?.emoji}</span>{emotion ? `Feeling ${emotion.label.toLowerCase()}` : activity.label}</div>}

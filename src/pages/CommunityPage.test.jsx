@@ -131,6 +131,16 @@ describe("CommunityPage composer menus", () => {
     expect(image).not.toHaveClass("object-cover");
   });
 
+  it("brands every shared post header with the official community favicon link", async () => {
+    render(<MemoryRouter><CommunityPage /></MemoryRouter>);
+    const brandLink = await screen.findByRole("link", { name: "Connect767 Community Feed" });
+    expect(brandLink).toHaveAttribute("href", "/community");
+    expect(brandLink).toHaveClass("focus-visible:ring-2");
+    const favicon = brandLink.querySelector("img");
+    expect(favicon).toHaveAttribute("src", "/connect767-favicon.png");
+    expect(favicon).toHaveClass("h-5", "w-5", "sm:h-6", "sm:w-6");
+  });
+
   it("adds emojis and attachments when replying to a comment", async () => {
     Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:comment-photo") });
     Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
