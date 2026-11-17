@@ -13,22 +13,6 @@ const MODE_COPY = {
   },
 };
 
-function ComposerAction({ icon, label, onClick, active = false }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full px-3 text-[10px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${
-        active
-          ? "bg-primary-700 text-white"
-          : "border border-current/10 bg-white/70 text-foreground-600 hover:bg-white hover:text-foreground-900"
-      }`}
-    >
-      <i className={icon} /> {label}
-    </button>
-  );
-}
-
 function EmptyConversation({ dark }) {
   return (
     <div className="mx-auto flex h-full max-w-sm flex-col items-center justify-center px-5 py-8 text-center">
@@ -96,7 +80,7 @@ export default function AIUniformComposer({
     const textarea = textareaRef.current;
     if (!textarea) return;
     textarea.style.height = "0px";
-    textarea.style.height = `${Math.min(176, Math.max(52, textarea.scrollHeight))}px`;
+    textarea.style.height = `${Math.min(176, Math.max(48, textarea.scrollHeight))}px`;
   }, [prompt]);
 
   useEffect(() => {
@@ -146,6 +130,12 @@ export default function AIUniformComposer({
     onReusePrompt(entry);
     setHistoryOpen(false);
     textareaRef.current?.focus();
+  };
+
+  const startDesign = (nextMode) => {
+    closePopovers();
+    onModeChange(nextMode);
+    onNewChat();
   };
 
   const copyText = async (text) => {
@@ -211,6 +201,26 @@ export default function AIUniformComposer({
 
           {resetMenuOpen && (
             <div data-ai-popover className={`absolute right-0 top-11 z-40 w-52 overflow-hidden rounded-xl border p-1.5 shadow-2xl ${card}`} role="menu" aria-label="Design reset options">
+              <p className={`px-3 pb-1 pt-1.5 text-[8px] font-bold uppercase tracking-[0.14em] ${muted}`}>Create new</p>
+              <button
+                type="button"
+                onClick={() => startDesign("uniform")}
+                className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold transition hover:bg-primary-50 hover:text-primary-800"
+                role="menuitem"
+              >
+                <i className="ri-shirt-line text-sm" />
+                <span className="flex min-w-0 flex-1 items-center justify-between gap-2"><span>Full uniform</span>{mode === "uniform" && <i className="ri-check-line text-primary-700" />}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => startDesign("artwork")}
+                className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold transition hover:bg-primary-50 hover:text-primary-800"
+                role="menuitem"
+              >
+                <i className="ri-image-edit-line text-sm" />
+                <span className="flex min-w-0 flex-1 items-center justify-between gap-2"><span>Transparent artwork</span>{mode === "artwork" && <i className="ri-check-line text-primary-700" />}</span>
+              </button>
+              <div className="my-1 border-t border-current/10" />
               <button
                 type="button"
                 onClick={() => { setResetMenuOpen(false); setHistoryOpen(true); }}
@@ -333,18 +343,17 @@ export default function AIUniformComposer({
             placeholder={isRefinement ? "Describe only what should change…" : MODE_COPY[mode].placeholder}
             maxLength={mode === "uniform" ? 900 : 600}
             rows={2}
-            className="block min-h-[52px] w-full resize-none overflow-y-auto rounded-t-[22px] bg-transparent px-4 pb-2 pt-3.5 text-sm leading-relaxed text-foreground-950 outline-none placeholder:text-foreground-400"
+            className="block min-h-[48px] w-full resize-none overflow-y-auto rounded-t-[22px] bg-transparent px-4 pb-1.5 pt-3 text-xs leading-relaxed text-foreground-950 outline-none placeholder:text-foreground-400"
             aria-label="Message Connect767 AI"
           />
-          <div className="flex items-center justify-between gap-2 px-2.5 pb-2.5">
+          <div className="flex items-center justify-between gap-2 px-2 pb-2">
             <div className="flex min-w-0 items-center gap-1.5">
-              <button type="button" onClick={() => { setToolsOpen((value) => !value); setHistoryOpen(false); setResetMenuOpen(false); setSettingsOpen(false); }} className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-background-200 bg-background-50 text-foreground-700 transition hover:bg-background-100" aria-label="Add attachment or AI tool" aria-expanded={toolsOpen} data-ai-popover-trigger><i className={toolsOpen ? "ri-close-line" : "ri-add-line"} /></button>
-              <ComposerAction icon={MODE_COPY[mode].icon} label={MODE_COPY[mode].label} onClick={() => onModeChange(mode === "uniform" ? "artwork" : "uniform")} active />
+              <button type="button" onClick={() => { setToolsOpen((value) => !value); setHistoryOpen(false); setResetMenuOpen(false); setSettingsOpen(false); }} className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-background-200 bg-background-50 text-sm text-foreground-700 transition hover:bg-background-100" aria-label="Add attachment or AI tool" aria-expanded={toolsOpen} data-ai-popover-trigger><i className={toolsOpen ? "ri-close-line" : "ri-add-line"} /></button>
               {mode === "uniform" && uniformPlan && !generating && (
                 <button
                   type="button"
                   onClick={onApplyUniform}
-                  className={`inline-flex h-9 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 text-[10px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${
+                  className={`inline-flex h-8 shrink-0 cursor-pointer items-center justify-center gap-1 rounded-full px-2.5 text-[9px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${
                     applied
                       ? "border border-primary-200 bg-primary-50 text-primary-800 hover:bg-primary-100"
                       : "bg-primary-700 text-white shadow-sm hover:bg-primary-800"
@@ -354,12 +363,12 @@ export default function AIUniformComposer({
                   {applied ? "Applied" : "Apply design"}
                 </button>
               )}
-              <button type="button" onClick={() => { setSettingsOpen((value) => !value); setHistoryOpen(false); setResetMenuOpen(false); setToolsOpen(false); }} className="inline-flex h-9 w-9 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-background-200 bg-background-50 text-[10px] font-bold text-foreground-600 hover:bg-background-100 sm:w-auto sm:px-3" data-ai-popover-trigger><i className="ri-equalizer-2-line" /><span className="hidden sm:inline">Controls</span></button>
+              <button type="button" onClick={() => { setSettingsOpen((value) => !value); setHistoryOpen(false); setResetMenuOpen(false); setToolsOpen(false); }} className="inline-flex h-8 w-8 cursor-pointer items-center justify-center gap-1 rounded-full border border-background-200 bg-background-50 text-[9px] font-bold text-foreground-600 hover:bg-background-100 sm:w-auto sm:px-2.5" data-ai-popover-trigger><i className="ri-equalizer-2-line" /><span className="hidden sm:inline">Controls</span></button>
             </div>
             {generating ? (
-              <button type="button" onClick={onStop} className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-foreground-950 text-white transition hover:bg-red-600" aria-label="Stop generating"><i className="ri-stop-fill" /></button>
+              <button type="button" onClick={onStop} className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-foreground-950 text-white transition hover:bg-red-600" aria-label="Stop generating"><i className="ri-stop-fill" /></button>
             ) : (
-              <button type="button" onClick={submit} disabled={!canSend} className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary-700 text-white shadow-sm transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:bg-background-300 disabled:text-foreground-400" aria-label="Send message"><i className="ri-arrow-up-line" /></button>
+              <button type="button" onClick={submit} disabled={!canSend} className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary-700 text-white shadow-sm transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:bg-background-300 disabled:text-foreground-400" aria-label="Send message"><i className="ri-arrow-up-line" /></button>
             )}
           </div>
         </div>
