@@ -9,6 +9,7 @@ export default function DraggableLayer({ layer, stageRef, selected, onSelect, on
   // that double-clicking it was the way in.
   const [editing, setEditing] = useState(Boolean(layer.autoEdit));
 
+  const minimumSize = layer.type === "text" ? 0.5 : 3;
   const { handleMoveStart, handleResizeStart, handleRotateStart } = useDraggableLayer({
     stageRef,
     layerRef,
@@ -18,16 +19,20 @@ export default function DraggableLayer({ layer, stageRef, selected, onSelect, on
     rotation: layer.rotation || 0,
     onChange: (patch) => onChange(layer.id, patch),
     onSnap: setSnap,
+    minSize: minimumSize,
   });
 
-  const fontSize = 10 + layer.size * 1.1; // px, scales with size %
+  // A fixed 10px base made the former minimum much too large for the narrow
+  // printable chest. This curve preserves today's normal sizes while allowing
+  // production text to shrink to roughly 5px for small names and sponsors.
+  const fontSize = 4 + layer.size * 1.33;
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
   const resizeBy = (delta) => {
     onChange(layer.id, {
       x: layer.x,
       y: layer.y,
-      size: clamp((layer.size ?? 16) + delta, 6, 120),
+      size: clamp((layer.size ?? 16) + delta, minimumSize, 120),
       rotation: layer.rotation || 0,
     });
   };
@@ -70,7 +75,8 @@ export default function DraggableLayer({ layer, stageRef, selected, onSelect, on
           e.preventDefault();
           e.stopPropagation();
           onSelect(layer.id);
-          resizeBy(e.deltaY < 0 ? 2 : -2);
+          const step = layer.type === "text" && layer.size < 6 ? 0.5 : 2;
+          resizeBy(e.deltaY < 0 ? step : -step);
         }}
         onKeyDown={(e) => {
           if (e.target !== e.currentTarget) return;
@@ -91,11 +97,11 @@ export default function DraggableLayer({ layer, stageRef, selected, onSelect, on
           }
           if (e.key === "+" || e.key === "=") {
             e.preventDefault();
-            resizeBy(2);
+            resizeBy(layer.type === "text" && layer.size < 6 ? 0.5 : 2);
           }
           if (e.key === "-" || e.key === "_") {
             e.preventDefault();
-            resizeBy(-2);
+            resizeBy(layer.type === "text" && layer.size <= 6 ? -0.5 : -2);
           }
         }}
       >

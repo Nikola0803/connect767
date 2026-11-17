@@ -33,6 +33,28 @@ describe("DraggableLayer", () => {
     expect(onChange).toHaveBeenCalledWith("text-1", { text: "CONNECT\n767" });
   });
 
+  it("allows production text to shrink below the former six-point minimum", () => {
+    const onChange = vi.fn();
+    render(
+      <DraggableLayer
+        layer={{ ...layer, id: "small-text", type: "text", text: "TEAM", size: 1, color: "#fff" }}
+        stageRef={{ current: document.createElement("div") }}
+        selected
+        onSelect={vi.fn()}
+        onChange={onChange}
+      />,
+    );
+
+    fireEvent.wheel(screen.getByRole("group"), { deltaY: 100 });
+    expect(onChange).toHaveBeenCalledWith("small-text", {
+      x: 50,
+      y: 45,
+      size: 0.5,
+      rotation: 0,
+    });
+    expect(screen.getByText("TEAM")).toHaveStyle({ fontSize: "5.33px" });
+  });
+
   it("resizes selected artwork with the mouse wheel", () => {
     const onChange = vi.fn();
     const onSelect = vi.fn();

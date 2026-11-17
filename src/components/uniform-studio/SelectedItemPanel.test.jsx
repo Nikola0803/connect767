@@ -39,6 +39,9 @@ describe("SelectedItemPanel", () => {
     expect(onTextChange).toHaveBeenCalledWith("text-1", "CONNECT\n767");
     expect(onLayoutChange).toHaveBeenCalledWith("text-1", "single-line");
     expect(onDelete).toHaveBeenCalledWith("text-1");
+    const size = screen.getByLabelText("Size");
+    expect(size).toHaveAttribute("min", "0.5");
+    expect(size).toHaveAttribute("step", "0.5");
   });
 
   it("connects all selected-logo controls to the active 2D layer", () => {
