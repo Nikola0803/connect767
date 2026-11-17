@@ -18,6 +18,7 @@ import {
   bottomLengthOptions,
   playerRoleOptions,
   kitUnitPrice,
+  mixedSleeveSurcharge,
   FAN_JERSEY_PRICE,
   sportConfigFor,
   sportModelUrl,
@@ -1333,7 +1334,7 @@ export default function UniformStudioPage() {
       fanJerseyAdded,
       supporterJerseys: fanJerseyAdded ? supporterJerseys : [],
       unitPrice,
-      grandTotal: unitPrice * unitCount + supporterCount * FAN_JERSEY_PRICE,
+      grandTotal: unitPrice * unitCount + mixedSleeveSurcharge(sleeve, roster) + supporterCount * FAN_JERSEY_PRICE,
       layers,
       placements3d,
       designMode: stageMode === "3d" ? "3d" : "flat",
@@ -2271,6 +2272,8 @@ export default function UniformStudioPage() {
                 )}
                 {activeTool === "roster" && (
                   <RosterTool
+                    mixedSleeves={sleeve === "Mixed"}
+                    setRoster={setRoster}
                     bottomLabel={sportConfig.bottomLabel}
                     hasSocks={sportConfig.hasSocks}
                     sleeveOptions={sportConfig.sleeveOptions}
@@ -2422,6 +2425,8 @@ export default function UniformStudioPage() {
         )}
         {activeTool === "roster" && (
           <RosterTool
+            mixedSleeves={sleeve === "Mixed"}
+            setRoster={setRoster}
             bottomLabel={sportConfig.bottomLabel}
             hasSocks={sportConfig.hasSocks}
             sleeveOptions={sportConfig.sleeveOptions}
@@ -2499,6 +2504,8 @@ export default function UniformStudioPage() {
 }
 
 function RosterTool({
+  mixedSleeves = false,
+  setRoster,
   bottomLabel = "Shorts",
   hasSocks = false,
   sleeveOptions = [],
@@ -2740,19 +2747,17 @@ function RosterTool({
             />
           </div>
         </div>
-        {sleeveOptions?.length > 0 && (
+        {mixedSleeves && sleeveOptions?.length > 0 && (
           <div>
             <span className="text-[11px] font-label text-foreground-500 block mb-1">
-              Player sleeve preference
+              Player sleeve length
             </span>
             <Select
               value={rosterEntry.sleevePreference}
               onChange={(e) => setRosterEntry((r) => ({ ...r, sleevePreference: e.target.value }))}
             >
-              <option value="Team selection">Team selection</option>
-              {sleeveOptions.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
+              <option value="Team selection">Short — included</option>
+              <option value="Long">Long (+$2.00/kit)</option>
             </Select>
           </div>
         )}
@@ -2807,6 +2812,10 @@ function RosterTool({
                   </span>
                 )}
               </span>
+              {mixedSleeves && <select aria-label={`Sleeve length for ${entry.name}`} value={entry.sleevePreference === "Long" ? "Long" : "Short"} onChange={(event) => setRoster((current) => current.map((row) => row.id === entry.id ? { ...row, sleevePreference: event.target.value } : row))} className="mx-2 min-w-0 rounded border border-background-300 bg-background-50 p-2 text-xs text-foreground-900">
+                <option value="Short">Short — included</option>
+                <option value="Long">Long (+$2.00/kit)</option>
+              </select>}
               <button
                 type="button"
                 onClick={() => removeFromRoster(entry.id)}
@@ -2866,7 +2875,8 @@ function ReviewOrderTool({
   onView3d,
 }) {
   const unitCount = rosterUnitCount(roster);
-  const kitsTotal = unitPrice * unitCount;
+  const sleeveSurcharge = mixedSleeveSurcharge(sleeve, roster);
+  const kitsTotal = unitPrice * unitCount + sleeveSurcharge;
   const supporterCount = fanJerseyAdded ? supporterJerseyCount(supporterJerseys) : 0;
   const supporterTotal = supporterCount * FAN_JERSEY_PRICE;
   const grandTotal = kitsTotal + supporterTotal;
@@ -2895,7 +2905,7 @@ function ReviewOrderTool({
   useEffect(() => {
     setTotals(null);
     setCardSession(null);
-  }, [fanJerseyAdded, supporterJerseys, unitCount, unitPrice]);
+  }, [fanJerseyAdded, supporterJerseys, unitCount, unitPrice, sleeveSurcharge, roster]);
 
   useEffect(() => {
     if (!import.meta.env.DEV || !window.location.search.includes("preview=checkout") || !canCheckout || totals) return;
@@ -3117,7 +3127,8 @@ function ReviewOrderTool({
           </span>
         </div>
         <div className="mt-3 space-y-1 border-t border-white/15 pt-3 text-xs text-background-50/70">
-          <div className="flex justify-between"><span>{unitCount} kits × ${unitPrice.toFixed(2)}</span><span>${kitsTotal.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span>{unitCount} kits × ${unitPrice.toFixed(2)}</span><span>${(unitPrice * unitCount).toFixed(2)}</span></div>
+          {sleeveSurcharge > 0 && <div className="flex justify-between"><span>Long sleeves · $2.00/kit</span><span>${sleeveSurcharge.toFixed(2)}</span></div>}
           {fanJerseyAdded && <div className="flex justify-between"><span>{supporterCount} supporter jersey{supporterCount === 1 ? "" : "s"} × ${FAN_JERSEY_PRICE.toFixed(2)}</span><span>${supporterTotal.toFixed(2)}</span></div>}
           <div className="flex justify-between"><span>Subtotal</span><span>${(totals?.subtotal ?? grandTotal).toFixed(2)}</span></div>
           <div className="flex justify-between"><span>Tax</span><span>{totals ? `$${totals.tax.toFixed(2)}` : "—"}</span></div>

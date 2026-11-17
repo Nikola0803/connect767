@@ -283,7 +283,16 @@ class C767_Uniform_Checkout
         }
 
         $unit_price = self::authoritative_unit_price($payload);
-        $kits_total = round($unit_price * $unit_count, 2);
+        $long_sleeve_count = 0;
+        if (($payload['sleeve'] ?? '') === 'Mixed') {
+            foreach ($roster as $entry) {
+                $entry = (array) $entry;
+                if (sanitize_text_field((string) ($entry['name'] ?? '')) !== '' && ($entry['sleevePreference'] ?? '') === 'Long') {
+                    $long_sleeve_count += max(1, min(99, absint($entry['quantity'] ?? 1)));
+                }
+            }
+        }
+        $kits_total = round($unit_price * $unit_count + $long_sleeve_count * 2.00, 2);
         $fan_added = rest_sanitize_boolean($payload['fanJerseyAdded'] ?? false);
         $supporter_jerseys = $fan_added ? self::sanitize_supporter_jerseys($payload['supporterJerseys'] ?? []) : [];
         if ($fan_added && empty($supporter_jerseys)) {
@@ -313,6 +322,9 @@ class C767_Uniform_Checkout
         if ($kit_item) {
             $kit_item->set_name($template . ' team kit');
             $kit_item->add_meta_data('Unit price', wc_price($unit_price), true);
+            if ($long_sleeve_count > 0) {
+                $kit_item->add_meta_data('Long sleeve upgrades', $long_sleeve_count . ' × ' . wc_price(2.00), true);
+            }
             $kit_item->save();
         }
 
@@ -408,8 +420,8 @@ class C767_Uniform_Checkout
         $price = self::BASE_KIT_PRICE;
         $sleeve = sanitize_text_field((string) ($payload['sleeve'] ?? ''));
         $collar = sanitize_text_field((string) ($payload['collar'] ?? ''));
-        if ($sleeve === 'Long' || $sleeve === 'Mixed') {
-            $price += 3.00;
+        if ($sleeve === 'Long') {
+            $price += 2.00;
         }
         if ($collar === 'Polo') {
             $price += 2.00;

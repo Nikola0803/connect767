@@ -112,7 +112,7 @@ export const templates = [
 ];
 
 export const collarOptions = ["Crew", "V-Neck", "Polo"];
-export const sleeveOptions = ["Short", "Long", "Sleeveless", "Mixed"];
+export const sleeveOptions = ["Short", "Long", "Mixed"];
 
 /**
  * Per-sport field rules, taken directly from the client's confirmed
@@ -127,7 +127,7 @@ export const sleeveOptions = ["Short", "Long", "Sleeveless", "Mixed"];
 export const sportConfigs = {
   soccer: {
     collarOptions: ["Crew", "V-Neck", "Polo"],
-    sleeveOptions: ["Short", "Long", "Sleeveless", "Mixed"],
+    sleeveOptions: ["Short", "Long", "Mixed"],
     hasSocks: true,
     bottomLabel: "Shorts",
   },
@@ -159,7 +159,7 @@ export const sportConfigs = {
   },
   other: {
     collarOptions: ["Crew", "V-Neck", "Polo"],
-    sleeveOptions: ["Short", "Long", "Sleeveless", "Mixed"],
+    sleeveOptions: ["Short", "Long", "Mixed"],
     hasSocks: false,
     bottomLabel: "Shorts",
   },
@@ -186,10 +186,8 @@ export const playerRoleOptions = ["Player", "Goalkeeper", "Coach / Staff"];
  */
 export const BASE_KIT_PRICE = 25;
 export const ADD_ON_PRICES = {
-  // Confirmed against the client's "forms for new website.xlsx" (Soccer sheet):
-  // Sleeves Options — Long or Short (Long Sleeve +$3).
-  sleeveLong: 3, // Sleeve Length: Long
-  sleeveMixed: 3, // Sleeve Length: Mixed — same as Long until the client says otherwise
+  // Short sleeves are included; mixed orders charge only long-sleeve kits.
+  sleeveLong: 2,
   collarPolo: 2, // Collar Type: Polo-Style
   // Client-confirmed 2026-08-10 (WhatsApp): "Custom Logo/Message in Collar
   // +1/Kit" and "Embroidery Logo: +1.50/Kit". Both superseded the earlier
@@ -204,11 +202,16 @@ export const FAN_JERSEY_PRICE = 34;
 export function kitUnitPrice({ sleeve, collar, insideCollarMessage, logoApplication }) {
   let price = BASE_KIT_PRICE;
   if (sleeve === "Long") price += ADD_ON_PRICES.sleeveLong;
-  if (sleeve === "Mixed") price += ADD_ON_PRICES.sleeveMixed;
   if (collar === "Polo") price += ADD_ON_PRICES.collarPolo;
   if (insideCollarMessage) price += ADD_ON_PRICES.insideCollarMessage;
   if (logoApplication === "Embroidery") price += ADD_ON_PRICES.logoEmbroidery;
   return price;
+}
+
+export function mixedSleeveSurcharge(sleeve, roster = []) {
+  if (sleeve !== "Mixed") return 0;
+  return roster.reduce((total, entry) => total + (entry.sleevePreference === "Long"
+    ? Math.max(1, Math.min(99, parseInt(entry.quantity, 10) || 1)) * ADD_ON_PRICES.sleeveLong : 0), 0);
 }
 
 export const colorways = [
