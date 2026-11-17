@@ -1874,12 +1874,12 @@ export default function UniformStudioPage() {
                     )}
 
                     {showingAIConcept ? (
-                      <div className="flex min-h-0 w-full flex-1 items-stretch justify-center">
-                        <div className="relative flex h-full w-full max-w-none items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[#ece9e1] shadow-[0_26px_70px_rgba(0,0,0,.34)]">
+                      <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden">
+                        <div className="relative inline-flex max-h-full max-w-full overflow-hidden rounded-2xl border border-white/10 bg-[#ece9e1] shadow-[0_26px_70px_rgba(0,0,0,.34)]">
                           <img
                             src={aiWorkspaceConcept.src}
                             alt={`${aiUniformPlan?.name || aiWorkspaceConcept?.name || "AI generated"} complete front and back uniform concept`}
-                            className="h-full w-full object-contain"
+                            className="block max-h-full max-w-full object-contain"
                           />
                           <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.13em] text-primary-800 shadow-sm backdrop-blur">
                             <i className="ri-sparkling-2-fill text-accent-500" /> Complete AI uniform · front and back
