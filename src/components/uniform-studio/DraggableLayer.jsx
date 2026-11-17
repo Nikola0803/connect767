@@ -44,6 +44,7 @@ export default function DraggableLayer({ layer, stageRef, selected, onSelect, on
 
       <div
         ref={layerRef}
+        data-production-layer={layer.id}
         className="absolute select-none"
         style={{
           left: `${layer.x}%`,

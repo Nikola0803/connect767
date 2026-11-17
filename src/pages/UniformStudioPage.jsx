@@ -29,6 +29,7 @@ import {
   sportModelUrl,
 } from "../data/uniforms";
 import JerseyStage from "../components/uniform-studio/JerseyStage";
+import ProductionViewport from "../components/uniform-studio/ProductionViewport";
 import useGarmentColors from "../components/uniform-studio/useGarmentColors";
 import {
   formatProductionText,
@@ -308,6 +309,8 @@ export default function UniformStudioPage() {
   // Gate every entry path, including saved links and artwork selection.
   const activeTool = hasSelectedFit || ["design", "zones"].includes(selectedTool) ? selectedTool : "design";
   const [zoom, setZoom] = useState(1);
+  const [productionPanMode, setProductionPanMode] = useState(false);
+  const productionViewportRef = useRef(null);
   const [aiConceptRotation, setAiConceptRotation] = useState(0);
   const [aiConceptPan, setAiConceptPan] = useState({ x: 0, y: 0 });
   const aiConceptDragRef = useRef(null);
@@ -372,16 +375,16 @@ export default function UniformStudioPage() {
   };
 
   const switchAICanvasMode = (mode) => {
+    productionViewportRef.current?.reset();
+    setProductionPanMode(false);
     if (mode === "production" && aiUniformPlan && !aiDesignApplied) {
       applyAIUniformDesign(aiUniformPlan, { canvasMode: "production" });
       return;
     }
     setAiCanvasMode(mode);
     setStageMode("edit");
-    // The generated image can be inspected at up to 400%, while the editable
-    // production map tops out at 140%. Carrying either view's zoom into the
-    // other made the map rise underneath the fixed workspace rows. Each mode
-    // now opens fitted and owns its transform state independently.
+    // Each surface opens fitted; the production viewport clips its own
+    // transforms so the garment cannot cover the fixed workspace controls.
     setZoom(1);
     setAiConceptRotation(0);
     setAiConceptPan({ x: 0, y: 0 });
@@ -389,10 +392,11 @@ export default function UniformStudioPage() {
   };
 
   const setClampedZoom = (nextZoom) => {
-    const maximum = showingAIConcept ? 4 : 1.4;
-    const value = typeof nextZoom === "function" ? nextZoom(zoom) : nextZoom;
-    const clamped = Math.max(showingAIConcept ? 0.5 : 0.7, Math.min(maximum, +value.toFixed(2)));
-    setZoom(clamped);
+    const maximum = stageMode === "edit" ? 4 : 1.4;
+    setZoom((current) => {
+      const value = typeof nextZoom === "function" ? nextZoom(current) : nextZoom;
+      return Math.max(stageMode === "edit" ? 0.5 : 0.7, Math.min(maximum, +value.toFixed(2)));
+    });
   };
 
 
@@ -747,6 +751,7 @@ export default function UniformStudioPage() {
 
   useEffect(() => {
     if (!pendingLayer) return;
+    setProductionPanMode(false);
     const onKey = (e) => {
       if (e.key === "Escape") setPendingLayer(null);
     };
@@ -1019,6 +1024,8 @@ export default function UniformStudioPage() {
     && aiWorkspaceConcept?.src
     && aiCanvasMode === "concept",
   );
+  const showingProductionMap = stageMode === "edit" && !showingAIConcept
+    && !(activeTool === "ai" && aiDesignerMode === "uniform" && !aiWorkspaceConcept?.src);
   useEffect(() => {
     setZoom(1);
     setAiConceptRotation(0);
@@ -1027,7 +1034,7 @@ export default function UniformStudioPage() {
   }, [aiWorkspaceConcept?.src]);
   useEffect(() => {
     if (showingAIConcept) return;
-    setZoom((current) => Math.min(current, 1.4));
+    setZoom(1);
     setAiConceptPan({ x: 0, y: 0 });
     aiConceptDragRef.current = null;
   }, [showingAIConcept]);
@@ -1988,12 +1995,14 @@ export default function UniformStudioPage() {
                               <span aria-hidden="true" className="mx-0.5 h-3.5 w-px bg-white/10" />
                             </>
                           )}
+                          {showingProductionMap && <button type="button" aria-label="Pan production map" aria-pressed={productionPanMode} title="Pan mode: drag anywhere. Turn off to edit artwork. Alt-drag also pans." disabled={Boolean(pendingLayer)} onClick={() => setProductionPanMode((current) => !current)} className={`flex h-6 w-6 cursor-pointer items-center justify-center rounded disabled:opacity-40 ${productionPanMode ? "bg-primary-600 text-white" : "text-background-50/60 hover:bg-white/10 hover:text-background-50"}`}><i className="ri-hand-line text-xs" /></button>}
                           <button type="button" aria-label="Zoom out" title="Zoom out" onClick={() => setClampedZoom((value) => value - 0.1)} className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-subtract-line text-xs" /></button>
                           <span className="w-9 text-center font-label text-[10px] tabular-nums text-background-50/60">{Math.round(zoom * 100)}%</span>
                           <button type="button" aria-label="Zoom in" title="Zoom in" onClick={() => setClampedZoom((value) => value + 0.1)} className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-add-line text-xs" /></button>
                           {showingAIConcept && (
                             <button type="button" aria-label="Reset design view" title="Reset view" onClick={resetAIConceptView} className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-focus-3-line text-xs" /></button>
                           )}
+                          {showingProductionMap && <button type="button" aria-label="Fit production map" title="Reset zoom and pan" onClick={() => productionViewportRef.current?.reset()} className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-focus-3-line text-xs" /></button>}
                         </div>
                       </div>
                     </div>
@@ -2106,9 +2115,13 @@ export default function UniformStudioPage() {
                       </div>
                     ) : stageMode === "edit" ? (
                       <div className="relative z-0 flex min-h-0 w-full flex-1 flex-col items-center justify-start gap-2 overflow-hidden pt-1">
-                        <div
-                          className={`w-full transition-transform ${activeTool === "ai" ? "max-w-[min(100%,1280px)]" : "max-w-[800px]"}`}
-                          style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}
+                        <ProductionViewport
+                          ref={productionViewportRef}
+                          zoom={zoom}
+                          onZoomChange={setClampedZoom}
+                          panMode={productionPanMode}
+                          placingArtwork={Boolean(pendingLayer)}
+                          contentClassName={activeTool === "ai" ? "max-w-[min(100%,1280px)]" : "max-w-[800px]"}
                         >
                           <JerseyStage
                             ref={stageRef}
@@ -2139,11 +2152,12 @@ export default function UniformStudioPage() {
                             pendingLayer={pendingLayer}
                             onCommitPending={commitPendingLayer}
                           />
-                        </div>
+                        </ProductionViewport>
                         <p className="text-[11px] text-background-50/30 font-label text-center flex-shrink-0">
                           {pendingLayer
                             ? "Click the design where you want it · Esc to cancel"
-                            : "Drag to move · black handle rotates · green handle resizes · double-click text to edit"}
+                            : productionPanMode ? "Drag anywhere to pan · scroll to zoom · use Fit to reset"
+                              : "Drag empty space or Alt-drag to pan · scroll to zoom · drag artwork to edit"}
                         </p>
                       </div>
                     ) : (
