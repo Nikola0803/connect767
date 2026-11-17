@@ -186,7 +186,7 @@ const Product3DStage = lazy(
 // Keep the fast flat editor as the initial surface, then load WebGL only when
 // the customer asks for a rotating preview. This gives customers a genuine 3D
 // proof without making every visit pay the model-loading cost up front.
-const ENABLE_3D = true;
+const ENABLE_3D = false;
 
 const newRosterEntry = () => ({
   name: "",
@@ -295,7 +295,7 @@ export default function UniformStudioPage() {
   // Start in the instant flat editor. The 3D mesh is mounted on demand, which
   // keeps the initial page light while retaining a production-friendly proof.
   const [stageMode, setStageMode] = useState(
-    searchParams.get("view") === "3d" ? "3d" : "edit"
+    ENABLE_3D && searchParams.get("view") === "3d" ? "3d" : "edit"
   ); // '3d' | 'edit'
 
   // When set, the next click on the garment creates this item AT the click
@@ -1606,19 +1606,21 @@ export default function UniformStudioPage() {
               {manualSaveStatus === "saved" ? "Progress saved" : manualSaveStatus === "error" ? "Save failed" : "Save progress"}
             </span>
           </button>
-          <button
-            type="button"
-            aria-pressed={stageMode === "3d"}
-            onClick={() => setStageMode((mode) => (mode === "3d" ? "edit" : "3d"))}
-            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
-              stageMode === "3d"
-                ? "border-primary-500 bg-primary-600 text-white shadow-[0_8px_18px_rgba(0,116,73,0.28)]"
-                : "border-primary-500/45 bg-primary-950/55 text-primary-100 hover:border-primary-400 hover:bg-primary-900"
-            }`}
-          >
-            <i className={stageMode === "3d" ? "ri-edit-2-line" : "ri-3d-cube-sphere-line"} />
-            {stageMode === "3d" ? "Return to 2D" : "View in 3D"}
-          </button>
+          {ENABLE_3D && (
+            <button
+              type="button"
+              aria-pressed={stageMode === "3d"}
+              onClick={() => setStageMode((mode) => (mode === "3d" ? "edit" : "3d"))}
+              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+                stageMode === "3d"
+                  ? "border-primary-500 bg-primary-600 text-white shadow-[0_8px_18px_rgba(0,116,73,0.28)]"
+                  : "border-primary-500/45 bg-primary-950/55 text-primary-100 hover:border-primary-400 hover:bg-primary-900"
+              }`}
+            >
+              <i className={stageMode === "3d" ? "ri-edit-2-line" : "ri-3d-cube-sphere-line"} />
+              {stageMode === "3d" ? "Return to 2D" : "View in 3D"}
+            </button>
+          )}
           <button
             type="button"
             onClick={handleDownloadSvg}
@@ -1777,49 +1779,79 @@ export default function UniformStudioPage() {
 
                   {/* Canvas */}
                   <div className={`flex min-w-0 flex-1 flex-col items-center overflow-hidden ${activeTool === "ai" ? "gap-2 px-2 py-2 md:px-3 xl:px-4" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
-                    {/* Top bar: view thumbnails + zoom/export, inline instead of a separate row above the card */}
-                    <div className={`flex w-full flex-shrink-0 items-center justify-between gap-2 ${activeTool === "ai" ? "max-w-none" : "max-w-6xl"}`}>
-                      <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
-                        <div className="hidden min-w-0 items-center gap-1.5 text-background-50/55 md:flex">
-                          <i className={`${activeToolConfig?.icon || workflowStep.icon} text-xs text-primary-300`} />
-                          <span className="truncate text-[10px] font-bold uppercase tracking-[0.13em]">{activeToolConfig?.label || workflowStep.label}</span>
-                        </div>
-                        {ENABLE_3D && (
-                          <div
-                            className="inline-flex shrink-0 items-center rounded-lg border border-white/[0.08] bg-black/15 p-0.5"
-                            aria-label="Uniform preview mode"
-                          >
-                            <button
-                              type="button"
-                              aria-pressed={stageMode === "edit"}
-                              onClick={() => setStageMode("edit")}
-                              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer ${
-                                stageMode === "edit"
-                                  ? "bg-background-50 text-foreground-950 shadow-sm"
-                                  : "text-background-50/55 hover:bg-white/[0.06] hover:text-background-50"
-                              }`}
-                            >
-                              <i className="ri-edit-2-line" />
-                              AI canvas
-                            </button>
-                            <button
-                              type="button"
-                              aria-pressed={stageMode === "3d"}
-                              onClick={() => setStageMode("3d")}
-                              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer ${
-                                stageMode === "3d"
-                                  ? "bg-primary-600 text-white shadow-[0_6px_16px_rgba(0,116,73,0.28)]"
-                                  : "text-background-50/55 hover:bg-white/[0.06] hover:text-background-50"
-                              }`}
-                            >
-                              <i className="ri-3d-cube-sphere-line" />
-                              3D preview
-                            </button>
+                    {/* Unified 2D workspace toolbar — view, AI state and canvas controls share one non-overlapping row. */}
+                    <div className={`relative z-10 flex w-full flex-shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-white/[0.07] bg-black/15 px-2 py-1.5 ${activeTool === "ai" ? "max-w-none" : "max-w-6xl"}`}>
+                      <div className="flex min-w-0 flex-1 items-center gap-2">
+                        {activeTool !== "ai" && (
+                          <div className="hidden min-w-0 items-center gap-1.5 text-background-50/55 md:flex">
+                            <i className={`${activeToolConfig?.icon || workflowStep.icon} text-xs text-primary-300`} />
+                            <span className="truncate text-[10px] font-bold uppercase tracking-[0.13em]">{activeToolConfig?.label || workflowStep.label}</span>
                           </div>
                         )}
-
+                        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-background-50 px-2.5 py-1 text-[10px] font-semibold text-foreground-950 shadow-sm" aria-current="true">
+                          <i className="ri-layout-2-line" /> 2D view
+                        </span>
+                        {(aiUniformPlan || aiWorkspaceConcept) && (
+                          <>
+                            <span aria-hidden="true" className="h-4 w-px shrink-0 bg-white/10" />
+                            <span className="hidden shrink-0 items-center gap-1 text-[8px] font-bold uppercase tracking-[0.13em] text-primary-200 sm:inline-flex">
+                              <i className="ri-sparkling-2-fill" /> AI design
+                            </span>
+                            <div className="min-w-0">
+                              <h3 className="truncate font-heading text-xs font-semibold text-white">{aiUniformPlan?.name || aiWorkspaceConcept?.name || "AI uniform concept"}</h3>
+                              <p className="hidden truncate text-[8px] text-background-50/45 xl:block">{aiUniformPlan?.summary || "Generated concept ready for review."}</p>
+                            </div>
+                          </>
+                        )}
                       </div>
-                      {stageMode === "edit" && (
+
+                      <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                        {(aiUniformPlan || aiWorkspaceConcept) && (
+                          <>
+                            <div className="inline-flex rounded-md border border-white/10 bg-black/20 p-0.5">
+                              <button
+                                type="button"
+                                onClick={() => { setAiCanvasMode("concept"); setStageMode("edit"); }}
+                                className={`cursor-pointer rounded px-2 py-1 text-[8px] font-bold transition ${aiCanvasMode === "concept" ? "bg-accent-500 text-white" : "text-white/55 hover:text-white"}`}
+                              >
+                                AI output
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setAiCanvasMode("production"); setStageMode("edit"); }}
+                                className={`cursor-pointer rounded px-2 py-1 text-[8px] font-bold transition ${aiCanvasMode === "production" ? "bg-primary-500 text-white" : "text-white/55 hover:text-white"}`}
+                              >
+                                Production map
+                              </button>
+                            </div>
+                            <button
+                              type="button"
+                              aria-label="Discard AI design"
+                              title="Discard design"
+                              onClick={() => {
+                                setAiUniformPlan(null);
+                                setAiWorkspaceConcept(null);
+                                setAiDesignApplied(false);
+                                setAiCanvasMode("concept");
+                              }}
+                              className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-white/10 text-[11px] text-white/55 transition hover:bg-white/10 hover:text-white"
+                            >
+                              <i className="ri-delete-bin-line" />
+                            </button>
+                            {aiUniformPlan && (
+                              <button
+                                type="button"
+                                title={aiDesignApplied ? "Design applied to production map" : "Apply design to production map"}
+                                onClick={() => applyAIUniformDesign(aiUniformPlan)}
+                                className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md bg-primary-500 px-2.5 text-[8px] font-bold text-white shadow-[0_6px_14px_rgba(0,116,73,.24)] transition hover:bg-primary-400"
+                              >
+                                <i className={aiDesignApplied ? "ri-check-double-line" : "ri-magic-line"} /> {aiDesignApplied ? "Applied" : "Apply"}
+                              </button>
+                            )}
+                            <span aria-hidden="true" className="h-4 w-px bg-white/10" />
+                          </>
+                        )}
+
                         <div className="inline-flex items-center rounded-lg border border-white/[0.07] bg-black/15 p-0.5">
                           {showingAIConcept && (
                             <>
@@ -1850,100 +1882,15 @@ export default function UniformStudioPage() {
                               <span aria-hidden="true" className="mx-0.5 h-3.5 w-px bg-white/10" />
                             </>
                           )}
-                          <button
-                            type="button"
-                            aria-label="Zoom out"
-                            title="Zoom out"
-                            onClick={() => setClampedZoom((value) => value - 0.1)}
-                            className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"
-                          >
-                            <i className="ri-subtract-line text-xs" />
-                          </button>
-                          <span className="w-9 text-center font-label text-[10px] tabular-nums text-background-50/60">
-                            {Math.round(zoom * 100)}%
-                          </span>
-                          <button
-                            type="button"
-                            aria-label="Zoom in"
-                            title="Zoom in"
-                            onClick={() => setClampedZoom((value) => value + 0.1)}
-                            className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"
-                          >
-                            <i className="ri-add-line text-xs" />
-                          </button>
+                          <button type="button" aria-label="Zoom out" title="Zoom out" onClick={() => setClampedZoom((value) => value - 0.1)} className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-subtract-line text-xs" /></button>
+                          <span className="w-9 text-center font-label text-[10px] tabular-nums text-background-50/60">{Math.round(zoom * 100)}%</span>
+                          <button type="button" aria-label="Zoom in" title="Zoom in" onClick={() => setClampedZoom((value) => value + 0.1)} className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-add-line text-xs" /></button>
                           {showingAIConcept && (
-                            <button
-                              type="button"
-                              aria-label="Reset design view"
-                              title="Reset view"
-                              onClick={resetAIConceptView}
-                              className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"
-                            >
-                              <i className="ri-focus-3-line text-xs" />
-                            </button>
+                            <button type="button" aria-label="Reset design view" title="Reset view" onClick={resetAIConceptView} className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-focus-3-line text-xs" /></button>
                           )}
                         </div>
-                      )}
-                    </div>
-
-                    {(aiUniformPlan || aiWorkspaceConcept) && (
-                      <div className="w-full max-w-none flex-shrink-0 overflow-hidden rounded-xl border border-primary-400/30 bg-[linear-gradient(105deg,rgba(0,116,73,.24),rgba(17,19,16,.94)_48%,rgba(239,84,53,.1))] shadow-[0_12px_32px_rgba(0,0,0,.2)]">
-                        <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex min-w-0 items-center gap-2">
-                              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-500/18 px-2 py-1 text-[8px] font-bold uppercase tracking-[0.13em] text-primary-200">
-                                <i className="ri-sparkling-2-fill" /> AI design
-                              </span>
-                              <h3 className="truncate font-heading text-sm font-semibold text-white">{aiUniformPlan?.name || aiWorkspaceConcept?.name || "AI uniform concept"}</h3>
-                              <span className="hidden shrink-0 text-[9px] text-background-50/35 xl:inline">Preview before applying</span>
-                            </div>
-                            <p className="mt-0.5 hidden truncate text-[9px] text-background-50/50 md:block">{aiUniformPlan?.summary || "Your generated concept is the primary design workspace."}</p>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-1.5">
-                            <div className="inline-flex rounded-md border border-white/10 bg-black/20 p-0.5">
-                              <button
-                                type="button"
-                                onClick={() => { setAiCanvasMode("concept"); setStageMode("edit"); }}
-                                className={`cursor-pointer rounded px-2.5 py-1 text-[9px] font-bold transition ${aiCanvasMode === "concept" ? "bg-accent-500 text-white" : "text-white/55 hover:text-white"}`}
-                              >
-                                AI output
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => { setAiCanvasMode("production"); setStageMode("edit"); }}
-                                className={`cursor-pointer rounded px-2.5 py-1 text-[9px] font-bold transition ${aiCanvasMode === "production" ? "bg-primary-500 text-white" : "text-white/55 hover:text-white"}`}
-                              >
-                                Production map
-                              </button>
-                            </div>
-                            <button
-                              type="button"
-                              aria-label="Discard AI design"
-                              title="Discard design"
-                              onClick={() => {
-                                setAiUniformPlan(null);
-                                setAiWorkspaceConcept(null);
-                                setAiDesignApplied(false);
-                                setAiCanvasMode("concept");
-                              }}
-                              className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-white/10 text-[11px] text-white/55 transition hover:bg-white/10 hover:text-white"
-                            >
-                              <i className="ri-delete-bin-line" />
-                            </button>
-                            {aiUniformPlan && (
-                              <button
-                                type="button"
-                                title={aiDesignApplied ? "Design applied to production map" : "Apply design to production map"}
-                                onClick={() => applyAIUniformDesign(aiUniformPlan)}
-                                className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md bg-primary-500 px-2.5 text-[9px] font-bold text-white shadow-[0_6px_14px_rgba(0,116,73,.24)] transition hover:bg-primary-400"
-                              >
-                                <i className={aiDesignApplied ? "ri-check-double-line" : "ri-magic-line"} /> {aiDesignApplied ? "Applied" : "Apply"}
-                              </button>
-                            )}
-                          </div>
-                        </div>
                       </div>
-                    )}
+                    </div>
 
                     {/* Floating contextual toolbar */}
                     {stageMode === "edit" && selectedLayer && (
@@ -2310,7 +2257,7 @@ export default function UniformStudioPage() {
                     submitting={submittingQuote}
                     error={quoteError}
                     onEditStep={(tool) => setActiveTool(tool)}
-                    onView3d={() => setStageMode("3d")}
+                    onView3d={ENABLE_3D ? () => setStageMode("3d") : undefined}
                   />
                 )}
                 </div>
@@ -2458,7 +2405,7 @@ export default function UniformStudioPage() {
             submitting={submittingQuote}
             error={quoteError}
             onEditStep={(tool) => setActiveTool(tool)}
-            onView3d={() => setStageMode("3d")}
+            onView3d={ENABLE_3D ? () => setStageMode("3d") : undefined}
           />
         )}
       </div>
@@ -2978,14 +2925,16 @@ function ReviewOrderTool({
         <p className="mt-2 text-xs leading-relaxed text-foreground-500">
           Confirm the design and roster, calculate delivery and tax, then pay securely to place the order.
         </p>
-        <button
-          type="button"
-          onClick={onView3d}
-          className="mt-3 inline-flex items-center gap-2 rounded-full border border-primary-300 bg-primary-50 px-3.5 py-2 text-xs font-semibold text-primary-800 transition hover:-translate-y-0.5 hover:border-primary-500 hover:bg-primary-100 cursor-pointer"
-        >
-          <i className="ri-3d-cube-sphere-line text-sm" />
-          View uniform design in 3D
-        </button>
+        {onView3d && (
+          <button
+            type="button"
+            onClick={onView3d}
+            className="mt-3 inline-flex items-center gap-2 rounded-full border border-primary-300 bg-primary-50 px-3.5 py-2 text-xs font-semibold text-primary-800 transition hover:-translate-y-0.5 hover:border-primary-500 hover:bg-primary-100 cursor-pointer"
+          >
+            <i className="ri-3d-cube-sphere-line text-sm" />
+            View uniform design in 3D
+          </button>
+        )}
       </div>
 
       <div className="space-y-2 mb-4">
