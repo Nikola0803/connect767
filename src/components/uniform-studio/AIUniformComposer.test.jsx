@@ -40,6 +40,7 @@ function renderComposer(overrides = {}) {
     canUndo: false,
     onUndo: vi.fn(),
     onNewChat: vi.fn(),
+    onClearCurrentDesign: vi.fn(),
     ...overrides,
   };
   if (!("historyEntries" in overrides)) props.historyEntries = props.promptHistory;
@@ -105,5 +106,26 @@ describe("AIUniformComposer", () => {
     expect(screen.getByText("Riverside FC — Modern & Bold")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /apply design/i })).toBeInTheDocument();
     expect(screen.queryByAltText(/AI uniform concept/i)).not.toBeInTheDocument();
+  });
+
+  it("provides explicit controls for starting over and clearing saved AI state", () => {
+    const entry = {
+      id: "prompt-1",
+      kind: "Full uniform",
+      prompt: "Create a green kit",
+      createdAt: new Date("2026-11-16T12:00:00Z").toISOString(),
+    };
+    const props = renderComposer({ promptHistory: [entry] });
+
+    fireEvent.click(screen.getByRole("button", { name: "New design" }));
+    expect(props.onNewChat).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByLabelText("Open design reset options"));
+    fireEvent.click(screen.getByRole("menuitem", { name: /clear current design/i }));
+    expect(props.onClearCurrentDesign).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByLabelText("Open design reset options"));
+    fireEvent.click(screen.getByRole("menuitem", { name: /clear prompt history/i }));
+    expect(props.onClearHistory).toHaveBeenCalledTimes(1);
   });
 });
