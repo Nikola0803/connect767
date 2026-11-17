@@ -92,6 +92,27 @@ describe("AI full-uniform design endpoint", () => {
     expect(prompt).toContain("Socks must be one solid color");
     expect(prompt).toContain("Do not invent side panels");
     expect(prompt).toContain("Allowed collars");
+    expect(prompt).toContain("all three editable surfaces: front, side, and back");
+    expect(prompt).toContain("Set view to front, side, or back");
+  });
+
+  it("preserves Side artwork and all-surface patterns in the normalized AI plan", () => {
+    const input = normalizeUniformRequest({
+      ...validRequest,
+      locks: { ...validRequest.locks, artwork: false },
+    });
+    const plan = normalizeUniformPlan({
+      ...upstreamPlan,
+      pattern: { enabled: true, key: "diagonal", view: "all" },
+      productionElements: [
+        { kind: "text", content: "ISLAND", view: "side", x: 50, y: 42, size: 14, rotation: 0, color: "#FFFFFF" },
+      ],
+    }, input);
+
+    expect(plan.pattern.view).toBe("all");
+    expect(plan.productionElements).toEqual([
+      expect.objectContaining({ kind: "text", content: "ISLAND", view: "side" }),
+    ]);
   });
 
   it("enforces locks after generation instead of trusting the model", () => {

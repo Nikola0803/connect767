@@ -116,7 +116,7 @@ const tools = [
     key: "layers",
     label: "Layers",
     icon: "ri-stack-line",
-    hint: "Everything you've added, front and back. Reorder, select or delete items here.",
+    hint: "Everything you've added across Front, Side and Back. Reorder, select or delete items here.",
   },
   {
     key: "roster",
@@ -259,6 +259,11 @@ const productionLayersFromPlan = (plan, { preview = false } = {}) =>
       };
     })
     .filter(Boolean);
+const patternViewsFromPlan = (patternView) => {
+  if (patternView === "all") return ["front", "side", "back"];
+  if (patternView === "both") return ["front", "back"];
+  return [["front", "side", "back"].includes(patternView) ? patternView : "front"];
+};
 const AI_TRANSFER_KEY = "connect767-ai-design-transfer";
 
 export default function UniformStudioPage() {
@@ -1016,7 +1021,11 @@ export default function UniformStudioPage() {
     return {
       enabled: true,
       key: patternLayers[0].skinKey,
-      view: patternViews.has("front") && patternViews.has("back") ? "both" : patternLayers[0].view,
+      view: patternViews.has("front") && patternViews.has("side") && patternViews.has("back")
+        ? "all"
+        : patternViews.has("front") && patternViews.has("back")
+          ? "both"
+          : patternLayers[0].view,
     };
   }, [layers]);
   const stageCollar = showingAIUniformPreview ? aiUniformPlan.collar : collar;
@@ -1069,7 +1078,7 @@ export default function UniformStudioPage() {
       );
       const patternAdditions = !plan.pattern?.enabled || plan.pattern.key === "none"
         ? []
-        : (plan.pattern.view === "both" ? ["front", "back"] : [plan.pattern.view || "front"]).map((patternView) => ({
+        : patternViewsFromPlan(plan.pattern.view).map((patternView) => ({
             id: nextLayerId(),
             type: "skin",
             skinKey: plan.pattern.key,
@@ -1452,7 +1461,7 @@ export default function UniformStudioPage() {
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-relaxed text-foreground-600 md:text-lg">
                 Choose a sport, describe the uniform you want, and let AI create the complete
-                front-and-back concept before you add the roster and production options.
+                Front / Side / Back concept before you add the roster and production options.
               </p>
             </div>
             <ol className="grid grid-cols-3 overflow-hidden rounded-2xl border border-background-300 bg-background-50 shadow-sm sm:grid-cols-6">
@@ -2016,7 +2025,7 @@ export default function UniformStudioPage() {
                         >
                           <img
                             src={aiWorkspaceConcept.src}
-                            alt={`${aiUniformPlan?.name || aiWorkspaceConcept?.name || "AI generated"} complete front and back uniform concept`}
+                            alt={`${aiUniformPlan?.name || aiWorkspaceConcept?.name || "AI generated"} complete front, side and back uniform concept`}
                             draggable="false"
                             className="block max-h-full max-w-full select-none object-contain will-change-transform"
                             style={{
@@ -2037,12 +2046,12 @@ export default function UniformStudioPage() {
                           </span>
                           <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.2em] text-primary-300">AI-first uniform studio</p>
                           <h2 className="mx-auto mt-2 max-w-3xl font-heading text-3xl font-semibold leading-tight text-white sm:text-4xl xl:text-5xl">Your generated uniform will appear here</h2>
-                          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-background-50/55">Add a team name and design brief in the AI Designer panel. You can also upload a reference image, lock any details you want to keep, and generate a complete front-and-back concept.</p>
+                          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-background-50/55">Add a team name and design brief in the AI Designer panel. You can also upload a reference image, lock any details you want to keep, and generate a complete Front / Side / Back concept.</p>
                           <div className="mx-auto mt-7 grid w-full max-w-3xl gap-3 text-left sm:grid-cols-3">
                             {[
                               ["ri-image-add-line", "Reference", "Optional inspiration image"],
                               ["ri-quill-pen-line", "Describe", "Colors, style and identity"],
-                              ["ri-magic-line", "Generate", "Complete front and back kit"],
+                              ["ri-magic-line", "Generate", "Complete Front / Side / Back kit"],
                             ].map(([icon, title, copy]) => (
                               <div key={title} className="rounded-2xl border border-white/[0.07] bg-black/15 p-4">
                                 <i className={`${icon} text-lg text-primary-300`} />
