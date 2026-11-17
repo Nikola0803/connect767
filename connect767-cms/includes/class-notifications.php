@@ -149,6 +149,32 @@ class C767_Notifications
         return c767_frontend_url($path);
     }
 
+    /** Notify a listing owner when another business mentions them in the community feed. */
+    public static function send_community_mention($recipient_user_id, $actor_user_id, $post_id, $business_name = '')
+    {
+        $recipient = get_userdata((int) $recipient_user_id);
+        $actor = get_userdata((int) $actor_user_id);
+        if (!$recipient || !is_email($recipient->user_email) || (int) $recipient_user_id === (int) $actor_user_id) {
+            return false;
+        }
+
+        $actor_name = sanitize_text_field($business_name ?: ($actor ? ($actor->display_name ?: $actor->user_login) : 'A Connect767 business'));
+        $post_url = self::frontend_url('/community#community-post-' . (int) $post_id);
+        $subject = sprintf('%s mentioned you on Connect767', $actor_name);
+        $body = sprintf(
+            "Hi %s,\n\n%s mentioned your business in a Connect767 Community Feed update.\n\nView the update:\n%s\n\nYou are receiving this message because your published directory listing was mentioned.\n\n— Connect767",
+            $recipient->display_name ?: $recipient->user_login,
+            $actor_name,
+            $post_url
+        );
+
+        $sent = self::send_directory_mail($recipient->user_email, $subject, $body);
+        if (!$sent) {
+            error_log('Connect767 community mention email could not be sent to user ' . (int) $recipient_user_id . ' for post ' . (int) $post_id . '.');
+        }
+        return $sent;
+    }
+
     // ---------- Registration ----------
 
     public static function on_user_registered($user_id, $account_type)
