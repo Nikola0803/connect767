@@ -92,4 +92,18 @@ describe("AIUniformComposer", () => {
     fireEvent.click(within(screen.getByLabelText("AI design conversation history")).getByText("Make the shorts black"));
     expect(props.onReusePrompt).toHaveBeenCalledWith(entry);
   });
+
+  it("keeps the full AI concept image on the Studio canvas instead of duplicating it in the side panel", () => {
+    renderComposer({
+      uniformPlan: {
+        name: "Riverside FC — Modern & Bold",
+        summary: "A clean white soccer kit.",
+        conceptImage: { src: "data:image/png;base64,preview" },
+      },
+    });
+
+    expect(screen.getByText("Riverside FC — Modern & Bold")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /apply design/i })).toBeInTheDocument();
+    expect(screen.queryByAltText(/AI uniform concept/i)).not.toBeInTheDocument();
+  });
 });
