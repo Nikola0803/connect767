@@ -1766,24 +1766,24 @@ export default function UniformStudioPage() {
                   </div>
 
                   {/* Canvas */}
-                  <div className={`flex min-w-0 flex-1 flex-col items-center gap-3 overflow-hidden py-3 ${activeTool === "ai" ? "px-2 md:px-3 xl:px-4" : "px-4 md:px-6 xl:px-10"}`}>
+                  <div className={`flex min-w-0 flex-1 flex-col items-center overflow-hidden ${activeTool === "ai" ? "gap-2 px-2 py-2 md:px-3 xl:px-4" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
                     {/* Top bar: view thumbnails + zoom/export, inline instead of a separate row above the card */}
                     <div className={`flex w-full flex-shrink-0 items-center justify-between gap-2 ${activeTool === "ai" ? "max-w-none" : "max-w-6xl"}`}>
                       <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
-                        <div className="hidden min-w-0 md:block">
-                          <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-background-50/30">Workspace</p>
-                          <p className="truncate text-xs font-semibold text-background-50/65">{activeToolConfig?.label || workflowStep.label}</p>
+                        <div className="hidden min-w-0 items-center gap-1.5 text-background-50/55 md:flex">
+                          <i className={`${activeToolConfig?.icon || workflowStep.icon} text-xs text-primary-300`} />
+                          <span className="truncate text-[10px] font-bold uppercase tracking-[0.13em]">{activeToolConfig?.label || workflowStep.label}</span>
                         </div>
                         {ENABLE_3D && (
                           <div
-                            className="ml-2 inline-flex shrink-0 items-center rounded-xl border border-white/[0.08] bg-black/15 p-1"
+                            className="inline-flex shrink-0 items-center rounded-lg border border-white/[0.08] bg-black/15 p-0.5"
                             aria-label="Uniform preview mode"
                           >
                             <button
                               type="button"
                               aria-pressed={stageMode === "edit"}
                               onClick={() => setStageMode("edit")}
-                              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer ${
                                 stageMode === "edit"
                                   ? "bg-background-50 text-foreground-950 shadow-sm"
                                   : "text-background-50/55 hover:bg-white/[0.06] hover:text-background-50"
@@ -1796,7 +1796,7 @@ export default function UniformStudioPage() {
                               type="button"
                               aria-pressed={stageMode === "3d"}
                               onClick={() => setStageMode("3d")}
-                              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer ${
                                 stageMode === "3d"
                                   ? "bg-primary-600 text-white shadow-[0_6px_16px_rgba(0,116,73,0.28)]"
                                   : "text-background-50/55 hover:bg-white/[0.06] hover:text-background-50"
@@ -1810,7 +1810,7 @@ export default function UniformStudioPage() {
 
                       </div>
                       {stageMode === "edit" && (
-                        <div className="inline-flex items-center gap-1 rounded-xl border border-white/[0.07] bg-black/15 px-1 py-1">
+                        <div className="inline-flex items-center rounded-lg border border-white/[0.07] bg-black/15 p-0.5">
                           {showingAIConcept && (
                             <>
                               <button
@@ -1821,7 +1821,7 @@ export default function UniformStudioPage() {
                                   setAiConceptRotation((angle) => angle - 90);
                                   setAiConceptPan({ x: 0, y: 0 });
                                 }}
-                                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"
+                                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"
                               >
                                 <i className="ri-anticlockwise-2-line text-xs" />
                               </button>
@@ -1833,11 +1833,11 @@ export default function UniformStudioPage() {
                                   setAiConceptRotation((angle) => angle + 90);
                                   setAiConceptPan({ x: 0, y: 0 });
                                 }}
-                                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"
+                                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"
                               >
                                 <i className="ri-clockwise-2-line text-xs" />
                               </button>
-                              <span aria-hidden="true" className="mx-0.5 h-4 w-px bg-white/10" />
+                              <span aria-hidden="true" className="mx-0.5 h-3.5 w-px bg-white/10" />
                             </>
                           )}
                           <button
@@ -1845,11 +1845,11 @@ export default function UniformStudioPage() {
                             aria-label="Zoom out"
                             title="Zoom out"
                             onClick={() => setClampedZoom((value) => value - 0.1)}
-                            className="w-7 h-7 flex items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50 cursor-pointer"
+                            className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"
                           >
                             <i className="ri-subtract-line text-xs" />
                           </button>
-                          <span className="text-xs text-background-50/60 font-label w-10 text-center">
+                          <span className="w-9 text-center font-label text-[10px] tabular-nums text-background-50/60">
                             {Math.round(zoom * 100)}%
                           </span>
                           <button
@@ -1857,7 +1857,7 @@ export default function UniformStudioPage() {
                             aria-label="Zoom in"
                             title="Zoom in"
                             onClick={() => setClampedZoom((value) => value + 0.1)}
-                            className="w-7 h-7 flex items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50 cursor-pointer"
+                            className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"
                           >
                             <i className="ri-add-line text-xs" />
                           </button>
@@ -1867,7 +1867,7 @@ export default function UniformStudioPage() {
                               aria-label="Reset design view"
                               title="Reset view"
                               onClick={resetAIConceptView}
-                              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"
+                              className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"
                             >
                               <i className="ri-focus-3-line text-xs" />
                             </button>
@@ -1877,54 +1877,57 @@ export default function UniformStudioPage() {
                     </div>
 
                     {(aiUniformPlan || aiWorkspaceConcept) && (
-                      <div className="w-full max-w-none flex-shrink-0 overflow-hidden rounded-2xl border border-primary-400/35 bg-[linear-gradient(105deg,rgba(0,116,73,.28),rgba(17,19,16,.92)_48%,rgba(239,84,53,.12))] shadow-[0_18px_50px_rgba(0,0,0,.25)]">
-                        <div className="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-500/20 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.14em] text-primary-200">
-                                <i className="ri-sparkling-2-fill" /> Full uniform design
+                      <div className="w-full max-w-none flex-shrink-0 overflow-hidden rounded-xl border border-primary-400/30 bg-[linear-gradient(105deg,rgba(0,116,73,.24),rgba(17,19,16,.94)_48%,rgba(239,84,53,.1))] shadow-[0_12px_32px_rgba(0,0,0,.2)]">
+                        <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-500/18 px-2 py-1 text-[8px] font-bold uppercase tracking-[0.13em] text-primary-200">
+                                <i className="ri-sparkling-2-fill" /> AI design
                               </span>
-                              <span className="text-[10px] text-background-50/40">Preview before applying</span>
+                              <h3 className="truncate font-heading text-sm font-semibold text-white">{aiUniformPlan?.name || aiWorkspaceConcept?.name || "AI uniform concept"}</h3>
+                              <span className="hidden shrink-0 text-[9px] text-background-50/35 xl:inline">Preview before applying</span>
                             </div>
-                            <h3 className="mt-1.5 truncate font-heading text-lg font-semibold text-white">{aiUniformPlan?.name || aiWorkspaceConcept?.name || "AI uniform concept"}</h3>
-                            <p className="mt-0.5 line-clamp-1 text-[10px] text-background-50/55">{aiUniformPlan?.summary || "Your generated concept is the primary design workspace."}</p>
+                            <p className="mt-0.5 hidden truncate text-[9px] text-background-50/50 md:block">{aiUniformPlan?.summary || "Your generated concept is the primary design workspace."}</p>
                           </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <div className="inline-flex rounded-lg border border-white/10 bg-black/20 p-1">
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            <div className="inline-flex rounded-md border border-white/10 bg-black/20 p-0.5">
                               <button
                                 type="button"
                                 onClick={() => { setAiCanvasMode("concept"); setStageMode("edit"); }}
-                                className={`cursor-pointer rounded-md px-3 py-1.5 text-[10px] font-bold transition ${aiCanvasMode === "concept" ? "bg-accent-500 text-white" : "text-white/55 hover:text-white"}`}
+                                className={`cursor-pointer rounded px-2.5 py-1 text-[9px] font-bold transition ${aiCanvasMode === "concept" ? "bg-accent-500 text-white" : "text-white/55 hover:text-white"}`}
                               >
                                 AI output
                               </button>
                               <button
                                 type="button"
                                 onClick={() => { setAiCanvasMode("production"); setStageMode("edit"); }}
-                                className={`cursor-pointer rounded-md px-3 py-1.5 text-[10px] font-bold transition ${aiCanvasMode === "production" ? "bg-primary-500 text-white" : "text-white/55 hover:text-white"}`}
+                                className={`cursor-pointer rounded px-2.5 py-1 text-[9px] font-bold transition ${aiCanvasMode === "production" ? "bg-primary-500 text-white" : "text-white/55 hover:text-white"}`}
                               >
                                 Production map
                               </button>
                             </div>
                             <button
                               type="button"
+                              aria-label="Discard AI design"
+                              title="Discard design"
                               onClick={() => {
                                 setAiUniformPlan(null);
                                 setAiWorkspaceConcept(null);
                                 setAiDesignApplied(false);
                                 setAiCanvasMode("concept");
                               }}
-                              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-[10px] font-bold text-white/65 transition hover:bg-white/10 hover:text-white"
+                              className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-white/10 text-[11px] text-white/55 transition hover:bg-white/10 hover:text-white"
                             >
-                              <i className="ri-close-line" /> Discard
+                              <i className="ri-delete-bin-line" />
                             </button>
                             {aiUniformPlan && (
                               <button
                                 type="button"
+                                title={aiDesignApplied ? "Design applied to production map" : "Apply design to production map"}
                                 onClick={() => applyAIUniformDesign(aiUniformPlan)}
-                                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-primary-500 px-3.5 py-2 text-[10px] font-bold text-white shadow-[0_8px_18px_rgba(0,116,73,.28)] transition hover:bg-primary-400"
+                                className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md bg-primary-500 px-2.5 text-[9px] font-bold text-white shadow-[0_6px_14px_rgba(0,116,73,.24)] transition hover:bg-primary-400"
                               >
-                                <i className={aiDesignApplied ? "ri-check-double-line" : "ri-magic-line"} /> {aiDesignApplied ? "Applied to production map" : "Apply design"}
+                                <i className={aiDesignApplied ? "ri-check-double-line" : "ri-magic-line"} /> {aiDesignApplied ? "Applied" : "Apply"}
                               </button>
                             )}
                           </div>
