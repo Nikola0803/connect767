@@ -1574,7 +1574,7 @@ export default function UniformStudioPage() {
                 : "border-accent-400/40 bg-accent-950/30 text-accent-200 hover:border-accent-300 hover:bg-accent-950/55"
             }`}
           >
-            <i className="ri-sparkling-2-fill" />
+            <img src="/connect767-ai-logo.png" alt="" aria-hidden="true" className="h-5 w-5 rounded object-cover" />
             <span className="hidden sm:inline">AI Designer</span>
             <span className="sm:hidden">AI</span>
           </button>
@@ -1755,7 +1755,11 @@ export default function UniformStudioPage() {
                               : "border-transparent text-background-50/40 hover:border-white/[0.06] hover:bg-white/[0.045] hover:text-background-50/85"
                           }`}
                         >
-                          <i className={`${t.icon} text-lg`} />
+                          {t.key === "ai" ? (
+                            <img src="/connect767-ai-logo.png" alt="" aria-hidden="true" className="h-7 w-7 rounded-md object-cover" />
+                          ) : (
+                            <i className={`${t.icon} text-lg`} />
+                          )}
                           <span className="text-[9px] font-semibold uppercase tracking-wide leading-none">
                             {t.label}
                           </span>
@@ -1770,7 +1774,11 @@ export default function UniformStudioPage() {
                     <div className={`flex w-full flex-shrink-0 items-center justify-between gap-2 ${activeTool === "ai" ? "max-w-none" : "max-w-6xl"}`}>
                       <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
                         <div className="hidden min-w-0 items-center gap-1.5 text-background-50/55 md:flex">
-                          <i className={`${activeToolConfig?.icon || workflowStep.icon} text-xs text-primary-300`} />
+                          {activeTool === "ai" ? (
+                            <img src="/connect767-ai-logo.png" alt="" aria-hidden="true" className="h-4 w-4 rounded object-cover" />
+                          ) : (
+                            <i className={`${activeToolConfig?.icon || workflowStep.icon} text-xs text-primary-300`} />
+                          )}
                           <span className="truncate text-[10px] font-bold uppercase tracking-[0.13em]">{activeToolConfig?.label || workflowStep.label}</span>
                         </div>
                         {ENABLE_3D && (
@@ -2022,9 +2030,11 @@ export default function UniformStudioPage() {
                     ) : stageMode === "edit" && activeTool === "ai" && aiDesignerMode === "uniform" && !aiWorkspaceConcept?.src ? (
                       <div className="flex min-h-0 w-full flex-1 items-stretch justify-center p-1">
                         <div className="flex h-full w-full max-w-none flex-col justify-center rounded-[28px] border border-dashed border-primary-400/35 bg-[radial-gradient(circle_at_50%_0%,rgba(0,116,73,.2),transparent_56%),rgba(255,255,255,.025)] px-6 py-8 text-center shadow-[0_24px_70px_rgba(0,0,0,.2)] sm:px-10 lg:px-14">
-                          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-500 text-3xl text-white shadow-[0_16px_34px_rgba(239,84,53,.24)]">
-                            <i className="ri-sparkling-2-fill" />
-                          </span>
+                          <img
+                            src="/connect767-ai-logo.png"
+                            alt="Connect767 AI"
+                            className="mx-auto h-20 w-20 rounded-2xl object-cover shadow-[0_16px_34px_rgba(0,116,73,.24)]"
+                          />
                           <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.2em] text-primary-300">AI-first uniform studio</p>
                           <h2 className="mx-auto mt-2 max-w-3xl font-heading text-3xl font-semibold leading-tight text-white sm:text-4xl xl:text-5xl">Your generated uniform will appear here</h2>
                           <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-background-50/55">Add a team name and design brief in the AI Designer panel. You can also upload a reference image, lock any details you want to keep, and generate a complete front-and-back concept.</p>
@@ -2143,7 +2153,11 @@ export default function UniformStudioPage() {
                               : "bg-white/5 text-background-50/70 border-white/10 hover:bg-white/10 hover:text-background-50"
                           }`}
                         >
-                          <i className={t.icon} />
+                          {t.key === "ai" ? (
+                            <img src="/connect767-ai-logo.png" alt="" aria-hidden="true" className="h-5 w-5 rounded object-cover" />
+                          ) : (
+                            <i className={t.icon} />
+                          )}
                           {t.label}
                         </button>
                       ))}
