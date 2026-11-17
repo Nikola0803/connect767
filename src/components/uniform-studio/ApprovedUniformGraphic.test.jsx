@@ -2,9 +2,38 @@ import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { sports, templates } from "../../data/uniforms";
 import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
-import { SIDE_ASSET_BY_SPORT } from "./SideUniformGraphic";
+import { SIDE_ASSET_BY_SPORT, SIDE_REGIONS } from "./SideUniformGraphic";
 
 describe("ApprovedUniformGraphic trim isolation", () => {
+  it("aligns side color boundaries with each image's native dimensions", () => {
+    const { container, rerender } = render(<ApprovedUniformGraphic sport="soccer" view="side" />);
+    for (const [sport, region] of Object.entries(SIDE_REGIONS)) {
+      rerender(<ApprovedUniformGraphic sport={sport} view="side" />);
+      const svg = container.querySelector('svg');
+      expect(svg.getAttribute("viewBox")).toBe(`0 0 ${region.width} ${region.height}`);
+      expect(svg.querySelector('image').getAttribute("width")).toBe(String(region.width));
+      expect(svg.querySelector('[data-garment-zone="body"]').getAttribute("height")).toBe(String(region.bottomStart));
+    }
+  });
+
+  it("composites side colors once so the sleeve never multiplies into the body color", () => {
+    const colors = { body: "#17384e", sleeve: "#ed430d", shorts: "#22cc88", collar: "#ffcc00", sleeveStrip: "#112233" };
+    const { container, rerender } = render(<ApprovedUniformGraphic sport="soccer" view="side" colors={colors} />);
+    expect(container.querySelectorAll('[data-garment-tint="fabric-multiply"]')).toHaveLength(1);
+    for (const key of ["body", "sleeve", "shorts", "collar", "sleeveStrip"]) {
+      expect(container.querySelector(`[data-garment-zone="${key}"]`).getAttribute("fill")).toBe(colors[key]);
+    }
+    rerender(<ApprovedUniformGraphic sport="soccer" view="side" colors={{ ...colors, body: "#ff0000" }} />);
+    expect(container.querySelector('[data-garment-zone="body"]').getAttribute("fill")).toBe("#ff0000");
+    expect(container.querySelector('[data-garment-zone="sleeve"]').getAttribute("fill")).toBe(colors.sleeve);
+  });
+
+  it("does not double-tint the default front or back shirt zones", () => {
+    const { container, rerender } = render(<ApprovedUniformGraphic sport="soccer" view="front" colors={{ body: "#17384e" }} />);
+    expect(container.querySelector('[data-zone-id="front-body"]').getAttribute("fill-opacity")).toBe("0");
+    rerender(<ApprovedUniformGraphic sport="soccer" view="back" colors={{ body: "#17384e" }} />);
+    expect(container.querySelector('[data-zone-id="back-body"]').getAttribute("fill-opacity")).toBe("0");
+  });
   it("provides a side-view asset for every sport category and template", () => {
     for (const sport of sports) {
       expect(SIDE_ASSET_BY_SPORT[sport.slug], `${sport.label} side asset`).toBeTruthy();
@@ -57,7 +86,9 @@ describe("ApprovedUniformGraphic trim isolation", () => {
       />,
     );
 
-    const shirtBody = container.querySelector('path[d^="M275,56"]');
+    const shirtBody = [...container.querySelectorAll('[data-garment-tint="fabric-multiply"]')]
+      .map((node) => node.querySelector('path[d^="M275,56"]'))
+      .find(Boolean);
     const shorts = [...container.querySelectorAll('[data-garment-tint="fabric-multiply"]')]
       .find((node) => node.getAttribute("mask")?.includes("approved-shorts-"))
       ?.querySelector('rect[fill="#086B44"]');
