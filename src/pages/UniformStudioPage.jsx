@@ -31,6 +31,11 @@ import {
 import JerseyStage from "../components/uniform-studio/JerseyStage";
 import ProductionViewport from "../components/uniform-studio/ProductionViewport";
 import useGarmentColors from "../components/uniform-studio/useGarmentColors";
+import GarmentCapabilitySummary from "../components/uniform-studio/GarmentCapabilitySummary";
+import {
+  detectGarmentCapabilities,
+  firstSupportedTool,
+} from "../components/uniform-studio/garmentCapabilities";
 import {
   formatProductionText,
   mapProductionElementToGarment,
@@ -306,8 +311,6 @@ export default function UniformStudioPage() {
       ? initialWorkflowStep
       : studioWorkflow.find((step) => step.key === initialWorkflowStep)?.defaultTool || "design"
   );
-  // Gate every entry path, including saved links and artwork selection.
-  const activeTool = hasSelectedFit || ["design", "zones"].includes(selectedTool) ? selectedTool : "design";
   const [zoom, setZoom] = useState(1);
   const [productionPanMode, setProductionPanMode] = useState(false);
   const productionViewportRef = useRef(null);
@@ -359,6 +362,7 @@ export default function UniformStudioPage() {
   const [aiUndoSnapshot, setAiUndoSnapshot] = useState(null);
   const [aiUniformPlan, setAiUniformPlan] = useState(null);
   const [aiWorkspaceConcept, setAiWorkspaceConcept] = useState(null);
+  const [hasUploadedReference, setHasUploadedReference] = useState(false);
   const [aiDesignApplied, setAiDesignApplied] = useState(false);
   const [aiDesignerMode, setAiDesignerMode] = useState("uniform");
   const [aiCanvasMode, setAiCanvasMode] = useState("concept");
@@ -477,13 +481,40 @@ export default function UniformStudioPage() {
   const sportConfig = sportConfigFor(activeSport);
   const minimumKits = minimumFullKitsFor(activeSport);
   const minimumKitsMet = rosterUnitCount(roster) >= minimumKits;
+  // Tool availability now follows the actual garment surface instead of a
+  // generic step toolbar. A flat AI/reference image is intentionally
+  // preview-only; placement tools unlock only on a verified production map.
+  const garmentCapabilities = useMemo(() => detectGarmentCapabilities({
+    sport: activeSport,
+    view,
+    canvasMode: aiCanvasMode,
+    hasConceptImage: Boolean(aiWorkspaceConcept?.src || hasUploadedReference),
+    zoneModel,
+    layerCount: layers.length,
+  }), [activeSport, view, aiCanvasMode, aiWorkspaceConcept?.src, hasUploadedReference, zoneModel, layers.length]);
+  // Gate every entry path, including saved links and artwork selection.
+  const gatedTool = hasSelectedFit || ["design", "zones"].includes(selectedTool) ? selectedTool : "design";
+  const requestedWorkflowIndex = Math.max(
+    0,
+    studioWorkflow.findIndex((step) => step.tools.includes(gatedTool))
+  );
+  const requestedCapabilityWorkflow = studioWorkflow[requestedWorkflowIndex];
+  const activeTool = garmentCapabilities.canUse(gatedTool)
+    ? gatedTool
+    : firstSupportedTool(requestedCapabilityWorkflow.tools, garmentCapabilities) || "design";
   const workflowIndex = Math.max(
     0,
     studioWorkflow.findIndex((step) => step.tools.includes(activeTool))
   );
   const workflowStep = studioWorkflow[workflowIndex];
-  const visibleTools = tools.filter((tool) => workflowStep.tools.includes(tool.key));
+  const visibleTools = tools.filter(
+    (tool) => workflowStep.tools.includes(tool.key) && garmentCapabilities.canUse(tool.key)
+  );
   const activeToolConfig = tools.find((tool) => tool.key === activeTool) || visibleTools[0];
+
+  useEffect(() => {
+    if (activeTool !== gatedTool) setActiveTool(activeTool);
+  }, [activeTool, gatedTool]);
 
   useEffect(() => {
     if (searchParams.get("aiDesign") !== "1") return;
@@ -1918,6 +1949,15 @@ export default function UniformStudioPage() {
                   <div className={`flex min-w-0 flex-1 flex-col items-center overflow-hidden ${activeTool === "ai" ? "gap-2 px-2 py-2 md:px-3 xl:px-4" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
                     {/* Functional canvas controls only; descriptive labels live in the AI panel. */}
                     <div className="relative z-20 flex w-fit max-w-full flex-shrink-0 self-end flex-wrap items-center gap-2 rounded-xl border border-white/[0.07] bg-[#10120f] px-2 py-1.5 shadow-[0_8px_22px_rgba(0,0,0,.24)]">
+                      <div
+                        className={`inline-flex max-w-[260px] items-center gap-1.5 rounded-md border px-2 py-1 text-[9px] font-semibold ${garmentCapabilities.previewOnly ? "border-amber-400/35 bg-amber-950/25 text-amber-100" : "border-primary-400/30 bg-primary-950/30 text-primary-100"}`}
+                        title={garmentCapabilities.status}
+                      >
+                        <i className={garmentCapabilities.previewOnly ? "ri-eye-line" : "ri-scan-2-line"} aria-hidden="true" />
+                        <span className="truncate">{garmentCapabilities.garment}</span>
+                        <span className="text-white/25">·</span>
+                        <span className="shrink-0">{garmentCapabilities.previewOnly ? "Preview only" : `${garmentCapabilities.zones.length} zones`}</span>
+                      </div>
                       <div className="flex shrink-0 items-center gap-1.5">
                         {(aiUniformPlan || aiWorkspaceConcept) && (
                           <>
@@ -2235,6 +2275,11 @@ export default function UniformStudioPage() {
                   <p className="mt-1 text-xs text-foreground-500">{activeToolConfig?.hint || workflowStep.description}</p>
                 </div>}
                 <div className={activeTool === "ai" ? "h-full" : activeTool === "design" ? "p-3" : "p-5"}>
+                {activeTool !== "ai" && (
+                  <div className="mb-4">
+                    <GarmentCapabilitySummary capabilities={garmentCapabilities} />
+                  </div>
+                )}
                 {selectedLayer && <SelectedItemPanel
                   layer={selectedLayer}
                   placement={stageMode === "3d" && selectedLayerId ? placements3d[selectedLayerId] : null}
@@ -2283,6 +2328,7 @@ export default function UniformStudioPage() {
                     currentPatternKey={currentAiPatternKey}
                     uniformPlan={aiUniformPlan}
                     onUniformPlanChange={handleAIUniformPlanChange}
+                    onReferenceChange={(reference) => setHasUploadedReference(Boolean(reference))}
                     onModeChange={setAiDesignerMode}
                     onPlace={placeAIArtwork}
                     onApplyUniform={applyAIUniformDesign}
@@ -2363,6 +2409,11 @@ export default function UniformStudioPage() {
 
       {/* Mobile: the fields panel docks to the bottom instead of the side */}
       <div className={`md:hidden flex-shrink-0 overflow-y-auto overscroll-contain border-t border-background-200/60 bg-background-50 ${activeTool === "ai" ? "max-h-[72dvh] p-0" : "max-h-[42dvh] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"}`}>
+        {activeTool !== "ai" && (
+          <div className="mb-4">
+            <GarmentCapabilitySummary capabilities={garmentCapabilities} compact />
+          </div>
+        )}
         <SelectedItemPanel
           layer={selectedLayer}
           placement={stageMode === "3d" && selectedLayerId ? placements3d[selectedLayerId] : null}
@@ -2411,6 +2462,7 @@ export default function UniformStudioPage() {
             currentPatternKey={currentAiPatternKey}
             uniformPlan={aiUniformPlan}
             onUniformPlanChange={handleAIUniformPlanChange}
+            onReferenceChange={(reference) => setHasUploadedReference(Boolean(reference))}
             onModeChange={setAiDesignerMode}
             onPlace={placeAIArtwork}
             onApplyUniform={applyAIUniformDesign}
