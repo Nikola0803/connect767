@@ -1832,8 +1832,8 @@ export default function UniformStudioPage() {
                   {/* Canvas */}
                   <div className={`flex min-w-0 flex-1 flex-col items-center overflow-hidden ${activeTool === "ai" ? "gap-2 px-2 py-2 md:px-3 xl:px-4" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
                     {/* Functional canvas controls only; descriptive labels live in the AI panel. */}
-                    <div className={`relative z-20 flex w-full flex-shrink-0 flex-wrap items-center justify-end gap-2 rounded-xl border border-white/[0.07] bg-[#10120f] px-2 py-1.5 shadow-[0_8px_22px_rgba(0,0,0,.24)] ${activeTool === "ai" ? "max-w-none" : "max-w-6xl"}`}>
-                      <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                    <div className="relative z-20 flex w-fit max-w-full flex-shrink-0 self-end flex-wrap items-center gap-2 rounded-xl border border-white/[0.07] bg-[#10120f] px-2 py-1.5 shadow-[0_8px_22px_rgba(0,0,0,.24)]">
+                      <div className="flex shrink-0 items-center gap-1.5">
                         {(aiUniformPlan || aiWorkspaceConcept) && (
                           <>
                             <div className="inline-flex rounded-md border border-white/10 bg-black/20 p-0.5">
