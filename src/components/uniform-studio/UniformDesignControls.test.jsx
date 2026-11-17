@@ -5,6 +5,11 @@ import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
 import { DesignPanel, OptionsPanel, StudioBackgroundPanel, UniformSetupPanel } from "./StudioPanels";
 
 describe("uniform design controls", () => {
+  it.each([["soccer", 22], ["basketball", 10], ["cricket", 15], ["netball", 10]])("shows the %s minimum beside Full Kit pricing", (sport, minimum) => {
+    render(<OptionsPanel sport={sport} section="fit" fitType="Men" kitType="Full" />);
+    expect(screen.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent(`Team order · Min Qnty ${minimum}`);
+    expect(screen.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("Extra shirts with a Full Kit order");
+  });
   it("keeps Full Kit selected when adding extra shirts and allows sizes and quantities", () => {
     const setKitType = vi.fn();
     const setExtraTeamShirts = vi.fn();

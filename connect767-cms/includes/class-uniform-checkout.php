@@ -272,6 +272,10 @@ class C767_Uniform_Checkout
         if ($unit_count < 1) {
             return new WP_Error('c767_empty_roster', 'Add at least one player before checkout.', ['status' => 400]);
         }
+        $minimum_check = C767_REST_Uniform_Quotes::validate_full_kit_minimum($payload['sport'] ?? '', $unit_count);
+        if (is_wp_error($minimum_check)) {
+            return $minimum_check;
+        }
 
         $email = sanitize_email((string) $request->get_param('email'));
         if (!is_email($email)) {

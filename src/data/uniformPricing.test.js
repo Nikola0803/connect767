@@ -1,5 +1,20 @@
 import { describe, it, expect } from "vitest";
-import { BASE_KIT_PRICE, SHIRT_ONLY_PRICE, extraTeamShirtCount, normalizeExtraTeamShirts, kitUnitPrice, mixedSleeveSurcharge } from "./uniforms";
+import { BASE_KIT_PRICE, SHIRT_ONLY_PRICE, extraTeamShirtCount, normalizeExtraTeamShirts, kitUnitPrice, mixedSleeveSurcharge, minimumFullKitsFor, fullKitCount } from "./uniforms";
+
+describe("full-kit minimums", () => {
+  it.each([["soccer", 22], ["basketball", 10], ["cricket", 15], ["netball", 10]])("requires %s's confirmed minimum of %i kits", (sport, minimum) => {
+    expect(minimumFullKitsFor(sport)).toBe(minimum);
+    expect(fullKitCount([{ name: "Team", quantity: minimum - 1 }])).toBeLessThan(minimumFullKitsFor(sport));
+    expect(fullKitCount([{ name: "Team", quantity: minimum }])).toBeGreaterThanOrEqual(minimumFullKitsFor(sport));
+  });
+  it("counts full-kit quantities, ignores blank rows and excludes extra shirts", () => {
+    const order = { roster: [{ name: "Player", quantity: 12 }, { name: "Player 2", quantity: 9 }, { name: " ", quantity: 50 }], extraTeamShirts: [{ size: "AM", quantity: 20 }] };
+    expect(fullKitCount(order.roster)).toBe(21);
+    expect(fullKitCount(order.roster)).toBeLessThan(minimumFullKitsFor("soccer"));
+    expect(fullKitCount([{ name: "Player", quantity: 500 }])).toBe(99);
+    expect(minimumFullKitsFor("other")).toBe(1);
+  });
+});
 
 describe("sleeve pricing", () => {
   it("prices full kits at $30 and adds extra shirts at $12 without replacing kits", () => {

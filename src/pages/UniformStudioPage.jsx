@@ -20,6 +20,8 @@ import {
   kitUnitPrice,
   mixedSleeveSurcharge,
   SHIRT_ONLY_PRICE,
+  minimumFullKitsFor,
+  fullKitCount as rosterUnitCount,
   normalizeExtraTeamShirts,
   extraTeamShirtCount,
   FAN_JERSEY_PRICE,
@@ -196,9 +198,6 @@ const supporterJerseyCount = (rows = []) => rows.reduce(
   (total, row) => total + Math.max(0, Math.min(99, Number.parseInt(row.quantity, 10) || 0)),
   0,
 );
-
-const rosterUnitCount = (roster) =>
-  roster.reduce((total, entry) => total + Math.max(1, Number.parseInt(entry.quantity, 10) || 1), 0);
 
 function parseCsv(text) {
   const rows = [];
@@ -450,6 +449,8 @@ export default function UniformStudioPage() {
   const template = templates.find((t) => t.slug === selectedTemplate);
   const selectedLayer = layers.find((l) => l.id === selectedLayerId) || null;
   const sportConfig = sportConfigFor(activeSport);
+  const minimumKits = minimumFullKitsFor(activeSport);
+  const minimumKitsMet = rosterUnitCount(roster) >= minimumKits;
   const workflowIndex = Math.max(
     0,
     studioWorkflow.findIndex((step) => step.tools.includes(activeTool))
@@ -484,6 +485,7 @@ export default function UniformStudioPage() {
 
   const openWorkflowStep = (index) => {
     const nextStep = studioWorkflow[Math.max(0, Math.min(studioWorkflow.length - 1, index))];
+    if (nextStep.key === "review" && !minimumKitsMet) return;
     setPendingLayer(null);
     setSelectedLayerId(null);
     setActiveTool(nextStep.defaultTool);
@@ -1343,6 +1345,10 @@ export default function UniformStudioPage() {
   };
 
   const handleRequestQuote = async () => {
+    if (!minimumKitsMet) {
+      setQuoteError(`Minimum order: ${minimumKits} full kits. Extra shirts do not count toward this minimum.`);
+      return;
+    }
     if (!contactValid) {
       setQuoteError("Add your name and a valid email so we can send the quote back to you.");
       return;
@@ -1608,8 +1614,9 @@ export default function UniformStudioPage() {
 
   const uniformSetupPanel = <UniformSetupPanel
     designProps={{ sport: activeSport, collar, setCollar, sleeve, setSleeve, colors, setColors, onHoverZone: setHoverZone, twoTone, setTwoTone }}
-    optionsProps={{ fitType, setFitType, kitType, setKitType, extraTeamShirts, setExtraTeamShirts, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment }}
+    optionsProps={{ sport: activeSport, fitType, setFitType, kitType, setKitType, extraTeamShirts, setExtraTeamShirts, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment }}
   />;
+
   // ---------- The studio itself: one full viewport, nothing else ----------
   return (
     <div className="h-[100dvh] flex flex-col overflow-hidden bg-[#10110f] text-background-50">
@@ -1721,7 +1728,7 @@ export default function UniformStudioPage() {
           {studioWorkflow.map((step, index) => {
             const active = index === workflowIndex;
             const complete = index < workflowIndex;
-            const locked = step.key === "review" && roster.length === 0;
+            const locked = step.key === "review" && !minimumKitsMet;
             return (
               <div key={step.key} className="flex min-w-0 flex-1 items-center gap-1.5">
                 <button
@@ -2242,6 +2249,7 @@ export default function UniformStudioPage() {
                 )}
                 {activeTool === "roster" && (
                   <RosterTool
+                    minimumKits={minimumKits}
                     mixedSleeves={sleeve === "Mixed"}
                     setRoster={setRoster}
                     bottomLabel={sportConfig.bottomLabel}
@@ -2366,6 +2374,7 @@ export default function UniformStudioPage() {
         )}
         {activeTool === "roster" && (
           <RosterTool
+            minimumKits={minimumKits}
             mixedSleeves={sleeve === "Mixed"}
             setRoster={setRoster}
             bottomLabel={sportConfig.bottomLabel}
@@ -2428,7 +2437,7 @@ export default function UniformStudioPage() {
           <button
             type="button"
             onClick={continueWorkflow}
-            disabled={workflowStep.key === "roster" && roster.length === 0}
+            disabled={workflowStep.key === "roster" && !minimumKitsMet}
             className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,116,73,0.22)] transition hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer"
           >
             Continue to {studioWorkflow[workflowIndex + 1].label}
@@ -2445,6 +2454,7 @@ export default function UniformStudioPage() {
 }
 
 function RosterTool({
+  minimumKits = 1,
   mixedSleeves = false,
   setRoster,
   bottomLabel = "Shorts",
@@ -2503,7 +2513,7 @@ function RosterTool({
   return (
     <div>
       <p className="text-xs text-foreground-500 font-label mb-4">
-        Add one row per player, or import the complete team from a CSV file.
+        Minimum {minimumKits} full kits. Add players below or import a CSV. Extra shirts do not count toward the minimum.
       </p>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground-500">
@@ -2770,17 +2780,17 @@ function RosterTool({
         </div>
       )}
 
-      <div className={`rounded-xl border p-4 ${roster.length ? "border-primary-200 bg-primary-50" : "border-background-300 bg-background-100/60"}`}>
+      <div role="status" className={`rounded-xl border p-4 ${unitCount >= minimumKits ? "border-primary-200 bg-primary-50" : "border-background-300 bg-background-100/60"}`}>
         <div className="flex items-center gap-3">
-          <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${roster.length ? "bg-primary-600 text-white" : "bg-background-200 text-foreground-400"}`}>
-            <i className={roster.length ? "ri-check-line" : "ri-team-line"} />
+          <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${unitCount >= minimumKits ? "bg-primary-600 text-white" : "bg-background-200 text-foreground-400"}`}>
+            <i className={unitCount >= minimumKits ? "ri-check-line" : "ri-team-line"} />
           </span>
           <div>
             <p className="text-sm font-semibold text-foreground-900">
-              {roster.length ? `${unitCount} kit${unitCount === 1 ? "" : "s"} ready for review` : "Add at least one player"}
+              {unitCount} full kits · Minimum {minimumKits}
             </p>
             <p className="text-[11px] font-label text-foreground-500">
-              {roster.length ? "Use Continue to Review below to confirm the order." : "The Review step unlocks after the first roster entry."}
+              {unitCount >= minimumKits ? "Minimum met. Continue to Review to confirm your order." : `Add ${minimumKits - unitCount} more full kit${minimumKits - unitCount === 1 ? "" : "s"} to continue. Extra shirts do not count.`}
             </p>
           </div>
         </div>
@@ -2817,6 +2827,8 @@ function ReviewOrderTool({
 }) {
   const unitCount = rosterUnitCount(roster);
   const sleeveSurcharge = mixedSleeveSurcharge(sleeve, roster);
+  const minimumKits = minimumFullKitsFor(activeSport);
+  const minimumKitsMet = unitCount >= minimumKits;
   const kitsTotal = unitPrice * unitCount + sleeveSurcharge;
   const supporterCount = fanJerseyAdded ? supporterJerseyCount(supporterJerseys) : 0;
   const supporterTotal = supporterCount * FAN_JERSEY_PRICE;
@@ -2838,7 +2850,7 @@ function ReviewOrderTool({
     shipping.city.trim() && shipping.postcode.trim() && shipping.country.trim() &&
     (shipping.country !== "US" || shipping.state.trim())
   );
-  const canCheckout = roster.length > 0 && emailValid && shippingComplete && (!fanJerseyAdded || supporterCount > 0);
+  const canCheckout = minimumKitsMet && emailValid && shippingComplete && (!fanJerseyAdded || supporterCount > 0);
 
   useEffect(() => {
     getCheckoutConfig()
@@ -2876,7 +2888,7 @@ function ReviewOrderTool({
 
   const calculateTotal = async () => {
     if (!canCheckout) {
-      setCheckoutError("Enter a valid email and complete the delivery address first.");
+      setCheckoutError(!minimumKitsMet ? `Minimum order: ${minimumKits} full kits.` : "Enter a valid email and complete the delivery address first.");
       return;
     }
     setCalculating(true);
@@ -2931,6 +2943,9 @@ function ReviewOrderTool({
         </h2>
         <p className="mt-2 text-xs leading-relaxed text-foreground-500">
           Confirm the design and roster, calculate delivery and tax, then pay securely to place the order.
+        </p>
+        <p role="status" className="mt-2 text-xs font-semibold text-primary-700">
+          {sportLabel}: minimum {minimumKits} full kits. {minimumKitsMet ? "Minimum met." : `Add ${minimumKits - unitCount} more to continue.`} Extra shirts do not count.
         </p>
         {onView3d && (
           <button
@@ -3264,7 +3279,7 @@ function ReviewOrderTool({
           </div>
         )}
 
-        <Button type="button" variant="secondary" disabled={roster.length === 0 || submitting} onClick={onRequestQuote} icon="ri-file-list-3-line" className="w-full">
+        <Button type="button" variant="secondary" disabled={!minimumKitsMet || submitting} onClick={onRequestQuote} icon="ri-file-list-3-line" className="w-full">
           {submitting ? "Submitting…" : "Request a quote instead"}
         </Button>
         <p className="mt-2 text-center text-[10px] font-label leading-relaxed text-foreground-400">Payments are processed securely by Stripe or PayPal. The production team confirms artwork before manufacturing.</p>
