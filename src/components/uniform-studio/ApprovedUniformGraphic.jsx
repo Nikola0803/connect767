@@ -70,6 +70,20 @@ const KIT_REGIONS = {
     shirtTop: 155, bottomStart: 735, kitBottom: 1225,
     sleeveBottom: 390, shortSleeveBottom: 390, bodyLeft: 170, bodyRight: 410, collarY: 215,
     nativeSleeve: "sleeveless",
+    views: {
+      front: {
+        centerX: 334,
+        collarY: 206,
+        collarPatch: { cy: 213, rx: 87, ry: 67 },
+        vNeck: { outerHalf: 75, outerTop: 173, outerPoint: 266, innerHalf: 52, innerTop: 187, innerPoint: 242 },
+      },
+      back: {
+        centerX: 257,
+        collarY: 184,
+        collarPatch: { cy: 193, rx: 82, ry: 61 },
+        vNeck: { outerHalf: 71, outerTop: 158, outerPoint: 244, innerHalf: 49, innerTop: 173, innerPoint: 222 },
+      },
+    },
   },
   netball: {
     spriteWidth: 2048, spriteHeight: 1536,
@@ -160,6 +174,8 @@ export default function ApprovedUniformGraphic({
   const offset = view === "back" ? halfWidth : 0;
   const region = { ...baseRegion, ...(baseRegion.views?.[view] || {}) };
   const collarCenterX = offset + (region.centerX ?? halfWidth / 2);
+  const collarPatch = region.collarPatch || { cy: region.collarY + 13, rx: 65, ry: 49 };
+  const vNeck = region.vNeck;
   const opacityFor = (zone, base = 1) => (highlightZone && highlightZone !== zone ? base * 0.22 : base);
   const body = colors.body || "#f6f1e7";
   const sleeve = colors.sleeve || body;
@@ -600,10 +616,20 @@ export default function ApprovedUniformGraphic({
             grey highlights showed through the selected swatch and made the
             live garment appear to use a different color than the control. */}
         <g mask={`url(#${maskId})`}>
-          <ellipse cx={collarCenterX} cy={region.collarY + 13} rx="65" ry="49" fill={body} />
+          <ellipse
+            data-collar-patch="source-cleanup"
+            cx={collarCenterX}
+            cy={collarPatch.cy}
+            rx={collarPatch.rx}
+            ry={collarPatch.ry}
+            fill={body}
+          />
           {collar === "V-Neck" && (
             <path
-              d={`M${collarCenterX - 55},${region.collarY - 16} L${collarCenterX},${region.collarY + 50} L${collarCenterX + 55},${region.collarY - 16} L${collarCenterX + 40},${region.collarY - 22} L${collarCenterX},${region.collarY + 29} L${collarCenterX - 40},${region.collarY - 22} Z`}
+              data-collar-part="v-neck-band"
+              d={vNeck
+                ? `M${collarCenterX - vNeck.outerHalf},${vNeck.outerTop} L${collarCenterX},${vNeck.outerPoint} L${collarCenterX + vNeck.outerHalf},${vNeck.outerTop} L${collarCenterX + vNeck.innerHalf},${vNeck.innerTop} L${collarCenterX},${vNeck.innerPoint} L${collarCenterX - vNeck.innerHalf},${vNeck.innerTop} Z`
+                : `M${collarCenterX - 55},${region.collarY - 16} L${collarCenterX},${region.collarY + 50} L${collarCenterX + 55},${region.collarY - 16} L${collarCenterX + 40},${region.collarY - 22} L${collarCenterX},${region.collarY + 29} L${collarCenterX - 40},${region.collarY - 22} Z`}
               fill={collarColor}
             />
           )}
@@ -619,7 +645,17 @@ export default function ApprovedUniformGraphic({
           )}
         </g>
         {collar === "V-Neck" && (
-          <path d={`M${collarCenterX - 35},${region.collarY - 12} L${collarCenterX},${region.collarY + 29} L${collarCenterX + 35},${region.collarY - 12}`} fill="none" stroke="#171512" strokeOpacity="0.72" strokeWidth="5" strokeLinejoin="round" />
+          <path
+            data-collar-part="v-neck-opening"
+            d={vNeck
+              ? `M${collarCenterX - vNeck.innerHalf},${vNeck.innerTop} L${collarCenterX},${vNeck.innerPoint} L${collarCenterX + vNeck.innerHalf},${vNeck.innerTop}`
+              : `M${collarCenterX - 35},${region.collarY - 12} L${collarCenterX},${region.collarY + 29} L${collarCenterX + 35},${region.collarY - 12}`}
+            fill="none"
+            stroke="#171512"
+            strokeOpacity="0.72"
+            strokeWidth="5"
+            strokeLinejoin="round"
+          />
         )}
         {collar === "Crew" && (
           <ellipse cx={collarCenterX} cy={region.collarY - 1} rx="39" ry="18" fill="#171512" fillOpacity="0.72" />

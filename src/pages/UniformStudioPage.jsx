@@ -30,6 +30,10 @@ import {
 } from "../data/uniforms";
 import JerseyStage from "../components/uniform-studio/JerseyStage";
 import useGarmentColors from "../components/uniform-studio/useGarmentColors";
+import {
+  mapProductionElementToGarment,
+  normalizeStoredProductionLayer,
+} from "../components/uniform-studio/productionPlacement";
 import FloatingToolbar from "../components/uniform-studio/FloatingToolbar";
 import {
   UniformSetupPanel,
@@ -237,14 +241,16 @@ const nextLayerId = () => `layer-${Date.now()}-${layerIdCounter++}`;
 const productionLayersFromPlan = (plan, { preview = false } = {}) =>
   (Array.isArray(plan?.productionElements) ? plan.productionElements : [])
     .map((element, index) => {
+      const placement = mapProductionElementToGarment(element);
       const common = {
         id: preview ? `ai-production-preview-${index}` : nextLayerId(),
         source: "ai-uniform-element",
+        placementSpace: "garment-v1",
         name: element.name || `${plan?.name || "AI uniform"} ${element.kind}`,
-        view: ["front", "side", "back"].includes(element.view) ? element.view : "front",
-        x: Number(element.x) || 50,
-        y: Number(element.y) || 35,
-        size: Number(element.size) || (element.kind === "artwork" ? 20 : 14),
+        view: placement.view,
+        x: placement.x,
+        y: placement.y,
+        size: placement.size,
         rotation: Number(element.rotation) || 0,
       };
       if (element.kind === "artwork") {
@@ -668,7 +674,7 @@ export default function UniformStudioPage() {
       if (!raw) return false;
       const saved = JSON.parse(raw);
       if (!saved?.layers?.length && !Object.keys(saved?.placements3d || {}).length && !saved?.zoneModel) return false;
-      setLayers(saved.layers || []);
+      setLayers((saved.layers || []).map(normalizeStoredProductionLayer));
       setPlacements3d(saved.placements3d || {});
       if (saved.colors) setColors(normalizeZoneColors(saved.colors));
       if (saved.studioBackground) setStudioBackground(normalizeStudioBackground(saved.studioBackground));
