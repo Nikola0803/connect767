@@ -468,8 +468,24 @@ export default function UniformStudioPage() {
 
   // Local screenshot fixture only; Vite removes this branch from production.
   useEffect(() => {
-    if (!import.meta.env.DEV || !["checkout", "roster"].includes(searchParams.get("preview"))) return;
+    if (!import.meta.env.DEV || !["checkout", "roster", "long-sleeve"].includes(searchParams.get("preview"))) return;
     setFitType("Men");
+    if (searchParams.get("preview") === "long-sleeve") {
+      setSleeve("Long");
+      setColors((current) => ({
+        ...current,
+        body: "#03cfc9",
+        sleeve: "#f5f2eb",
+        collar: "#03cfc9",
+        shorts: "#03cfc9",
+        socks: "#f5f2eb",
+        shirtStrip: "#03cfc9",
+        sleeveStrip: "#dedbd3",
+        shortsStrip: "#dedbd3",
+      }));
+      setActiveTool("design");
+      return;
+    }
     setRoster([
       { ...newRosterEntry(), id: "preview-1", name: "A. Miller", number: "10", shirtSize: "L", shortSize: "M", quantity: 4 },
       { ...newRosterEntry(), id: "preview-2", name: "J. Carter", number: "7", shirtSize: "M", shortSize: "M", quantity: 4 },
@@ -2464,7 +2480,7 @@ export default function UniformStudioPage() {
                   <p className="mt-1 text-xs text-foreground-500">{activeToolConfig?.hint || workflowStep.description}</p>
                 </div>}
                 <div className={`min-h-0 flex-1 ${activeTool === "ai" ? "flex flex-col overflow-hidden" : "overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"} ${activeTool === "ai" ? "" : activeTool === "design" ? "p-3 pb-20" : "p-5 pb-24"}`}>
-                {activeTool !== "ai" && (
+                {workflowStep.key === "design" && activeTool !== "ai" && (
                   <div className="mb-4">
                     <GarmentCapabilitySummary
                       capabilities={garmentCapabilities}
@@ -2614,7 +2630,7 @@ export default function UniformStudioPage() {
 
       {/* Mobile: the fields panel docks to the bottom instead of the side */}
       <div className={`md:hidden flex-shrink-0 overflow-y-auto overscroll-contain border-t border-background-200/60 bg-background-50 ${activeTool === "ai" ? "max-h-[72dvh] p-0" : "max-h-[42dvh] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"}`}>
-        {activeTool !== "ai" && (
+        {workflowStep.key === "design" && activeTool !== "ai" && (
           <div className="mb-4">
             <GarmentCapabilitySummary
               capabilities={garmentCapabilities}
@@ -2853,9 +2869,27 @@ function RosterTool({
 
   return (
     <div>
-      <p className="text-xs text-foreground-500 font-label mb-4">
-        Minimum {minimumKits} full kits. Add players below or import a CSV. Extra shirts do not count toward the minimum.
-      </p>
+      <div className="mb-3 flex items-center justify-between rounded-lg bg-primary-50 px-3 py-2 text-[11px] font-label text-primary-800">
+        <span className="font-semibold">Fit type: {fitType}</span>
+        <span>Sizes follow the Step 1 fit selection</span>
+      </div>
+
+      <div role="status" className={`mb-4 rounded-xl border px-3 py-2.5 ${unitCount >= minimumKits ? "border-primary-200 bg-primary-50" : "border-background-300 bg-background-100/60"}`}>
+        <div className="flex items-center gap-2.5">
+          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${unitCount >= minimumKits ? "bg-primary-600 text-white" : "bg-background-200 text-foreground-400"}`}>
+            <i className={unitCount >= minimumKits ? "ri-check-line" : "ri-team-line"} />
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-foreground-900">
+              {minimumKits} full-kit minimum · {unitCount} added
+            </p>
+            <p className="text-[10px] font-label text-foreground-500">
+              {unitCount >= minimumKits ? "Minimum met. Continue to Review & quote to confirm your order." : `Add ${minimumKits - unitCount} more full kit${minimumKits - unitCount === 1 ? "" : "s"}. Extra shirts do not count.`}
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground-500">
           Team roster
@@ -2952,10 +2986,6 @@ function RosterTool({
           value={rosterEntry.number}
           onChange={(e) => setRosterEntry((r) => ({ ...r, number: e.target.value }))}
         />
-        <div className="flex items-center justify-between rounded-lg bg-primary-50 px-3 py-2 text-[11px] font-label text-primary-800">
-          <span className="font-semibold">Fit type: {fitType}</span>
-          <span>Sizes follow the Step 1 fit selection</span>
-        </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
             <span className="text-[11px] font-label text-foreground-500 block mb-1">Shirt Size</span>
@@ -3100,21 +3130,6 @@ function RosterTool({
         </div>
       )}
 
-      <div role="status" className={`rounded-xl border p-4 ${unitCount >= minimumKits ? "border-primary-200 bg-primary-50" : "border-background-300 bg-background-100/60"}`}>
-        <div className="flex items-center gap-3">
-          <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${unitCount >= minimumKits ? "bg-primary-600 text-white" : "bg-background-200 text-foreground-400"}`}>
-            <i className={unitCount >= minimumKits ? "ri-check-line" : "ri-team-line"} />
-          </span>
-          <div>
-            <p className="text-sm font-semibold text-foreground-900">
-              {unitCount} full kits · Minimum {minimumKits}
-            </p>
-            <p className="text-[11px] font-label text-foreground-500">
-              {unitCount >= minimumKits ? "Minimum met. Continue to Review & quote to confirm your order." : `Add ${minimumKits - unitCount} more full kit${minimumKits - unitCount === 1 ? "" : "s"} to continue. Extra shirts do not count.`}
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
