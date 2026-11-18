@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 const AI_LOGO_SRC = "/connect767-ai-logo-transparent.png?v=20261117";
 const AI_COMMAND_LOGO_SRC = "/connect767-ai-command-logo.png?v=20261117";
@@ -70,6 +71,7 @@ export default function AIUniformComposer({
   comparisonActive = false,
   onGenerateVariation,
   onSavePreview,
+  toolbarTarget,
 }) {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -155,6 +157,59 @@ export default function AIUniformComposer({
   const card = dark ? "border-white/10 bg-white/[0.055] text-white" : "border-background-200 bg-white text-foreground-950";
   const muted = dark ? "text-white/50" : "text-foreground-500";
 
+  const bannerCommands = toolbarTarget ? createPortal(
+    <div className="relative flex flex-wrap items-center justify-center gap-1.5" data-ai-popover>
+      <div className="relative flex h-7 overflow-visible rounded-md border border-primary-300/25 bg-primary-500/10 text-primary-100">
+        <button
+          type="button"
+          onClick={() => { closePopovers(); onNewChat(); }}
+          className="inline-flex cursor-pointer items-center gap-1.5 px-2.5 text-[8px] font-bold transition hover:bg-primary-500/20 hover:text-white"
+        >
+          <i className="ri-chat-new-line text-[10px]" /> New design
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setResetMenuOpen((value) => !value);
+            setHistoryOpen(false);
+            setToolsOpen(false);
+            setSettingsOpen(false);
+          }}
+          className="flex w-7 cursor-pointer items-center justify-center border-l border-primary-300/20 transition hover:bg-primary-500/20 hover:text-white"
+          aria-label="Open design reset options"
+          aria-expanded={resetMenuOpen}
+          aria-haspopup="menu"
+          data-ai-popover-trigger
+        >
+          <i className="ri-arrow-down-s-line" />
+        </button>
+        {resetMenuOpen && (
+          <div className="absolute right-0 top-[calc(100%+.4rem)] z-50 w-52 overflow-hidden rounded-xl border border-background-200 bg-white p-1.5 text-foreground-950 shadow-2xl" role="menu" aria-label="Design reset options" data-ai-popover>
+            <p className="px-3 pb-1 pt-1.5 text-[8px] font-bold uppercase tracking-[0.14em] text-foreground-500">Create new</p>
+            <button type="button" onClick={() => startDesign("uniform")} className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-primary-50 hover:text-primary-800" role="menuitem"><i className="ri-shirt-line text-sm" /><span className="flex min-w-0 flex-1 items-center justify-between gap-2"><span>Full uniform</span>{mode === "uniform" && <i className="ri-check-line text-primary-700" />}</span></button>
+            <button type="button" onClick={() => startDesign("artwork")} className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-primary-50 hover:text-primary-800" role="menuitem"><i className="ri-image-edit-line text-sm" /><span className="flex min-w-0 flex-1 items-center justify-between gap-2"><span>Transparent artwork</span>{mode === "artwork" && <i className="ri-check-line text-primary-700" />}</span></button>
+            {(uniformPlan || artworkPreview) && <><div className="my-1 border-t border-background-200" /><button type="button" onClick={() => { setResetMenuOpen(false); onClearCurrentDesign(); }} className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-red-50 hover:text-red-700" role="menuitem"><i className="ri-delete-bin-6-line text-sm" /> Clear current design</button></>}
+          </div>
+        )}
+      </div>
+      <button type="button" onClick={() => { setHistoryOpen((value) => !value); setResetMenuOpen(false); setToolsOpen(false); setSettingsOpen(false); }} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-white/10 px-2.5 text-[8px] font-bold text-white/70 transition hover:bg-white/10 hover:text-white" aria-expanded={historyOpen}><i className="ri-history-line text-[10px]" /> History</button>
+      <button type="button" onClick={() => fileInputRef.current?.click()} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-white/10 px-2.5 text-[8px] font-bold text-white/70 transition hover:bg-white/10 hover:text-white"><i className="ri-image-add-line text-[10px]" /> Reference</button>
+      <button type="button" onClick={() => { setSettingsOpen((value) => !value); setHistoryOpen(false); setResetMenuOpen(false); setToolsOpen(false); }} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-white/10 px-2.5 text-[8px] font-bold text-white/70 transition hover:bg-white/10 hover:text-white" aria-expanded={settingsOpen}><i className="ri-equalizer-2-line text-[10px]" /> AI controls</button>
+      <button type="button" onClick={() => textareaRef.current?.focus()} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-primary-300/25 bg-primary-500/10 px-2.5 text-[8px] font-bold text-primary-100 transition hover:bg-primary-500/20 hover:text-white"><i className="ri-magic-line text-[10px]" /> Refine with AI</button>
+      {mode === "uniform" && uniformPlan && <details className="group relative">
+        <summary className="inline-flex h-7 cursor-pointer list-none items-center gap-1.5 rounded-md border border-white/10 px-2.5 text-[8px] font-bold text-white/70 transition hover:bg-white/10 hover:text-white [&::-webkit-details-marker]:hidden"><i className="ri-git-branch-line text-[10px]" /> Versions <i className="ri-arrow-down-s-line" /></summary>
+        <div className="absolute right-0 top-[calc(100%+.4rem)] z-50 grid w-52 gap-1 rounded-xl border border-background-200 bg-white p-2 text-foreground-950 shadow-2xl" data-ai-popover>
+          <button type="button" onClick={() => previousVersion && onRestoreVersion?.(previousVersion)} disabled={!previousVersion || generating} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40"><i className="ri-arrow-left-line" /> Previous version</button>
+          <button type="button" onClick={() => onCompareVersions?.(comparisonActive ? null : previousVersion)} disabled={!previousVersion || generating} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40"><i className="ri-split-cells-horizontal" /> {comparisonActive ? "Close comparison" : "Compare versions"}</button>
+          <button type="button" onClick={() => originalVersion && onRestoreVersion?.(originalVersion)} disabled={!originalVersion || versions.length < 2 || generating} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40"><i className="ri-restart-line" /> Restore original</button>
+          <button type="button" onClick={onGenerateVariation} disabled={generating || connection !== "connected"} className="flex cursor-pointer items-center gap-2 rounded-lg bg-primary-50 px-3 py-2 text-left text-[9px] font-bold text-primary-800 hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-40"><i className="ri-refresh-line" /> New variation</button>
+        </div>
+      </details>}
+      {mode === "uniform" && uniformPlan && <button type="button" onClick={onSavePreview} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-primary-300/30 bg-primary-600 px-2.5 text-[8px] font-bold text-white transition hover:bg-primary-500"><i className="ri-check-line text-[10px]" /> Save design</button>}
+    </div>,
+    toolbarTarget,
+  ) : null;
+
   return (
     <section onPointerDown={handleSurfacePointerDown} className={`relative flex h-full min-h-0 flex-1 flex-col overflow-hidden transition-colors ${surface}`} aria-label="Connect767 AI uniform designer">
       <input
@@ -169,7 +224,9 @@ export default function AIUniformComposer({
         }}
       />
 
-      <header className={`flex flex-shrink-0 items-center justify-between gap-3 border-b px-4 py-3 ${dark ? "border-white/10" : "border-background-200"}`}>
+      {bannerCommands}
+
+      {!toolbarTarget && <header className={`flex flex-shrink-0 items-center justify-between gap-3 border-b px-4 py-3 ${dark ? "border-white/10" : "border-background-200"}`}>
         <div className="flex min-w-0 items-center gap-2.5">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -251,7 +308,7 @@ export default function AIUniformComposer({
             </div>
           )}
         </div>
-      </header>
+      </header>}
 
       {historyOpen && (
         <aside data-ai-popover className={`absolute inset-x-3 top-[68px] z-30 max-h-[60%] overflow-hidden rounded-2xl border shadow-2xl ${card}`} aria-label="AI design conversation history">
@@ -273,7 +330,7 @@ export default function AIUniformComposer({
       <div ref={conversationRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4" aria-live="polite">
         {!hasConversation ? <EmptyConversation dark={dark} /> : (
           <div className="mx-auto max-w-xl space-y-4">
-            {mode === "uniform" && uniformPlan && (
+            {!toolbarTarget && mode === "uniform" && uniformPlan && (
               <section className="rounded-2xl border border-amber-200 bg-amber-50/75 p-3.5" aria-label="AI preview controls">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[8px] font-bold uppercase tracking-wide text-amber-900"><i className="ri-eye-line" /> Preview Only</span>
@@ -287,10 +344,7 @@ export default function AIUniformComposer({
                   <button type="button" onClick={() => originalVersion && onRestoreVersion?.(originalVersion)} disabled={!originalVersion || versions.length < 2 || generating} className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-background-300 bg-white px-2.5 py-2 text-[9px] font-bold text-foreground-700 hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40"><i className="ri-restart-line" /> Restore original</button>
                   <button type="button" onClick={onGenerateVariation} disabled={generating || connection !== "connected"} className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-primary-700 px-2.5 py-2 text-[9px] font-bold text-white hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-45"><i className="ri-refresh-line" /> New variation</button>
                 </div>
-                <div className="mt-3">
-                  <button type="button" onClick={onSavePreview} aria-label="Save image to project" className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2.5 text-[9px] font-bold text-primary-900 hover:bg-primary-100"><i className="ri-check-line" /> Accept &amp; save to project</button>
-                </div>
-                {connection !== "connected" && <p className="mt-2 rounded-lg border border-amber-200 bg-white px-2.5 py-2 text-[9px] leading-relaxed text-amber-800">AI image editing is not configured or is currently unavailable. Your existing preview remains unchanged.</p>}
+                <button type="button" onClick={onSavePreview} aria-label="Save image to project" className="mt-3 inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2.5 text-[9px] font-bold text-primary-900 hover:bg-primary-100"><i className="ri-check-line" /> Accept &amp; save to project</button>
               </section>
             )}
             {[...promptHistory].reverse().map((entry) => (
