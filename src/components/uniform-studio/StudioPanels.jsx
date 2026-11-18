@@ -1798,12 +1798,6 @@ export function SkinsPanel({ colorA, colorB, onAdd, onUpload }) {
   );
 }
 
-/**
- * PLACEHOLDER CONTENT — dummy colourways and starter layouts so the Layers
- * panel isn't an empty box on a fresh design. Swap the palettes for the
- * client's real club colourways, and wire `presetLayouts` to actual saved
- * designs once those exist; nothing else depends on these values.
- */
 const presetColourways = [
   { key: "club-red", label: "Club Red", colors: ["#c0392b", "#ffffff", "#1b1a16"] },
   { key: "navy-gold", label: "Navy & Gold", colors: ["#0c2340", "#e4a11b", "#ffffff"] },
@@ -1811,6 +1805,20 @@ const presetColourways = [
   { key: "blackout", label: "Blackout", colors: ["#1b1a16", "#3d3d3d", "#9b9b9b"] },
   { key: "sky", label: "Sky", colors: ["#1f5c7a", "#ffffff", "#e4583a"] },
   { key: "sand", label: "Sand", colors: ["#d9c7b8", "#7a6a53", "#ffffff"] },
+  { key: "royal-white", label: "Royal", colors: ["#1d4ed8", "#ffffff", "#0f172a"] },
+  { key: "maroon-gold", label: "Maroon", colors: ["#7f1d1d", "#d4af37", "#f8fafc"] },
+  { key: "purple-gold", label: "Purple", colors: ["#5b21b6", "#f4c430", "#ffffff"] },
+  { key: "teal-coral", label: "Teal & Coral", colors: ["#0f766e", "#fb7185", "#f8fafc"] },
+  { key: "orange-navy", label: "Orange", colors: ["#f05a28", "#0c2340", "#ffffff"] },
+  { key: "graphite-lime", label: "Graphite", colors: ["#2b2d31", "#9acd32", "#f5f5f5"] },
+  { key: "dominica", label: "Dominica", colors: ["#006b3f", "#fcd116", "#000000"] },
+  { key: "aqua-black", label: "Aqua", colors: ["#06b6d4", "#111827", "#ffffff"] },
+  { key: "pink-charcoal", label: "Pink", colors: ["#ec4899", "#374151", "#ffffff"] },
+  { key: "lime-navy", label: "Lime", colors: ["#84cc16", "#172554", "#ffffff"] },
+  { key: "chocolate-cream", label: "Chocolate", colors: ["#713f12", "#fef3c7", "#92400e"] },
+  { key: "silver-blue", label: "Silver & Blue", colors: ["#94a3b8", "#1e3a8a", "#ffffff"] },
+  { key: "yellow-black", label: "Yellow", colors: ["#facc15", "#111827", "#ffffff"] },
+  { key: "scarlet-navy", label: "Scarlet", colors: ["#dc2626", "#0f172a", "#f8fafc"] },
 ];
 
 const presetLayouts = [
@@ -1849,6 +1857,7 @@ export function LayersPanel({
             key={p.key}
             type="button"
             title={p.label}
+            aria-label={`Apply ${p.label} colourway`}
             onClick={() => onApplyColourway?.(p.colors)}
             className="rounded-lg border border-background-200/70 hover:border-primary-400 hover:ring-2 hover:ring-primary-100 transition-all cursor-pointer overflow-hidden"
           >
