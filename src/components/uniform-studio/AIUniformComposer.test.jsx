@@ -16,6 +16,7 @@ function renderComposer(overrides = {}) {
     generating: false,
     canSend: true,
     onSend: vi.fn(),
+    renderTier: "preview",
     onStop: vi.fn(),
     style: "Modern & Bold",
     styles: ["Modern & Bold", "Minimal & Elegant"],
@@ -75,7 +76,16 @@ describe("AIUniformComposer", () => {
     expect(props.onSend).not.toHaveBeenCalled();
 
     fireEvent.keyDown(message, { key: "Enter" });
-    expect(props.onSend).toHaveBeenCalledTimes(1);
+    expect(props.onSend).toHaveBeenCalledWith("preview");
+  });
+
+  it("offers separate preview and high-quality proof actions", () => {
+    const props = renderComposer();
+
+    fireEvent.click(screen.getByRole("button", { name: "Render high-quality proof" }));
+    expect(props.onSend).toHaveBeenCalledWith("proof");
+    fireEvent.click(screen.getByRole("button", { name: "Generate preview" }));
+    expect(props.onSend).toHaveBeenLastCalledWith("preview");
   });
 
   it("shows only tools supported by the uniform AI backend", () => {

@@ -9,7 +9,7 @@ const projectRoot = fileURLToPath(new URL('.', import.meta.url))
 
 function localApiPlugin(mode) {
   const serverEnv = loadEnv(mode, process.cwd(), '')
-  for (const key of ['OPENAI_API_KEY', 'OPENAI_IMAGE_MODEL', 'OPENAI_IMAGE_QUALITY', 'OPENAI_TEXT_MODEL']) {
+  for (const key of ['OPENAI_API_KEY', 'OPENAI_IMAGE_MODEL', 'OPENAI_IMAGE_PREVIEW_QUALITY', 'OPENAI_IMAGE_PROOF_QUALITY', 'OPENAI_TEXT_MODEL']) {
     if (serverEnv[key]) process.env[key] = serverEnv[key]
   }
 
