@@ -1856,17 +1856,6 @@ export default function UniformStudioPage() {
       ? "flex max-w-full shrink-0 flex-nowrap items-center justify-end gap-1.5"
       : "relative z-20 flex w-fit max-w-full flex-shrink-0 self-end flex-wrap items-center gap-2 rounded-xl border border-white/[0.07] bg-[#10120f] px-2 py-1.5 shadow-[0_8px_22px_rgba(0,0,0,.24)]"}
     >
-      {!integrated && (
-        <div
-          className={`inline-flex max-w-[240px] items-center gap-1.5 rounded-md border px-2 py-1 text-[9px] font-semibold ${garmentCapabilities.previewOnly ? "border-amber-400/35 bg-amber-950/25 text-amber-100" : "border-primary-400/30 bg-primary-950/30 text-primary-100"}`}
-          title={garmentCapabilities.status}
-        >
-          <i className={garmentCapabilities.previewOnly ? "ri-eye-line" : "ri-scan-2-line"} aria-hidden="true" />
-          <span className="truncate">{garmentCapabilities.garment}</span>
-          <span className="text-white/25">·</span>
-          <span className="shrink-0">{garmentCapabilities.previewOnly ? "Preview only" : `${garmentCapabilities.zones.length} zones`}</span>
-        </div>
-      )}
       <div className="flex shrink-0 items-center gap-1.5">
         {(aiUniformPlan || aiWorkspaceConcept) && (
           <>
