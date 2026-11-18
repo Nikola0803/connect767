@@ -36,7 +36,7 @@ describe("required uniform fit selection", () => {
     const progress = openStudio("ai");
     fireEvent.click(progress.getByRole("button", { name: /Design/ }));
     expect(progress.getByRole("button", { name: /Design/ })).toHaveAttribute("aria-current", "step");
-    expect(screen.getAllByRole("alert")[0]).toHaveTextContent("before continuing to Team roster");
+    expect(screen.getAllByRole("alert")[0]).toHaveTextContent("Select a fit to continue to Team roster");
     fireEvent.click(screen.getAllByRole("button", { name: fit, exact: true })[0]);
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(progress.getByRole("button", { name: /Team roster/ })).toBeEnabled();
@@ -54,7 +54,7 @@ describe("required uniform fit selection", () => {
     const progress = within(screen.getByRole("navigation", { name: "Uniform order progress" }));
     if (confirmed) {
       expect(progress.getByRole("button", { name: /Team roster/ })).toBeEnabled();
-      expect(screen.queryByText("Fit selection required")).not.toBeInTheDocument();
+      expect(screen.queryByText("Select a fit to continue to Team roster.")).not.toBeInTheDocument();
     } else {
       expect(progress.getByRole("button", { name: /Design/ })).toBeEnabled();
       expect(progress.getByRole("button", { name: /Team roster/ })).toBeDisabled();
