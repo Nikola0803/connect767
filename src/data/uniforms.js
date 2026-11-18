@@ -260,6 +260,11 @@ export const fontOptions = [
   { key: "athletic", label: "Athletic", family: "'Oswald', sans-serif", weight: 600 },
   { key: "clean", label: "Clean", family: "'Manrope', sans-serif", weight: 700 },
   { key: "classic", label: "Classic", family: "'Fraunces', serif", weight: 600 },
+  { key: "varsity", label: "Varsity block", family: "Impact, 'Arial Black', sans-serif", weight: 700 },
+  { key: "condensed", label: "Condensed", family: "'Arial Narrow', 'Roboto Condensed', sans-serif", weight: 700 },
+  { key: "modern", label: "Modern", family: "Montserrat, Arial, sans-serif", weight: 700 },
+  { key: "collegiate", label: "Collegiate serif", family: "Rockwell, 'Roboto Slab', serif", weight: 700 },
+  { key: "script", label: "Script", family: "'Brush Script MT', 'Segoe Script', cursive", weight: 600 },
 ];
 
 /** Active editor zones. Side panels and the catch-all `trim` zone were

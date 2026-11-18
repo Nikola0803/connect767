@@ -121,7 +121,7 @@ export default function DraggableLayer({ layer, stageRef, selected, onSelect, on
                 rows={layer.textLayout === "stacked" || layer.text?.includes("\n") ? 2 : 1}
                 maxLength={30}
                 onMouseDown={(e) => e.stopPropagation()}
-                onChange={(e) => onChange(layer.id, { text: e.target.value.toUpperCase() })}
+                onChange={(e) => onChange(layer.id, { text: e.target.value })}
                 onBlur={() => {
                   setEditing(false);
                   if (layer.autoEdit) onChange(layer.id, { autoEdit: false });
@@ -133,16 +133,20 @@ export default function DraggableLayer({ layer, stageRef, selected, onSelect, on
                   color: layer.color,
                   fontSize: `${fontSize}px`,
                   fontFamily: layer.fontFamily || "'Oswald', sans-serif",
+                  fontWeight: layer.fontWeight || 700,
+                  fontStyle: layer.italic ? "italic" : "normal",
+                  letterSpacing: `${layer.letterSpacing ?? 0.6}px`,
                   lineHeight: 1.05,
                   resize: "none",
-                  textAlign: "center",
+                  textAlign: layer.textAlign || "center",
+                  textTransform: layer.textTransform || "uppercase",
                 }}
                 aria-label="Edit uniform text"
-                className="overflow-hidden font-bold uppercase tracking-wide bg-background-50/90 rounded px-1 outline-none border border-primary-400"
+                className="overflow-hidden bg-background-50/90 rounded px-1 outline-none border border-primary-400"
               />
             ) : (
               <span
-                className="font-bold uppercase tracking-wide whitespace-pre-line text-center"
+                className="block whitespace-pre-line"
                 onDoubleClick={(e) => {
                   e.stopPropagation();
                   setEditing(true);
@@ -152,6 +156,14 @@ export default function DraggableLayer({ layer, stageRef, selected, onSelect, on
                   fontSize: `${fontSize}px`,
                   lineHeight: 1,
                   fontFamily: layer.fontFamily || "'Oswald', sans-serif",
+                  fontWeight: layer.fontWeight || 700,
+                  fontStyle: layer.italic ? "italic" : "normal",
+                  letterSpacing: `${layer.letterSpacing ?? 0.6}px`,
+                  textAlign: layer.textAlign || "center",
+                  textTransform: layer.textTransform || "uppercase",
+                  WebkitTextStroke: layer.outline ? `1.5px ${layer.outlineColor || "#1b1a16"}` : undefined,
+                  paintOrder: layer.outline ? "stroke fill" : undefined,
+                  textShadow: layer.shadow ? "0 3px 6px rgba(0,0,0,0.38)" : undefined,
                 }}
               >
                 {layer.text || "TEXT"}

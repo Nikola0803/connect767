@@ -44,14 +44,22 @@ function finish(canvas) {
 function textTexture(layer) {
   const fontSize = 256;
   const family = layer.fontFamily || "sans-serif";
-  const weight = layer.fontWeight || "700";
-  const font = `${weight} ${fontSize}px ${family}`;
+  const weight = layer.fontWeight || (layer.bold ? 900 : 700);
+  const style = layer.italic ? "italic" : "normal";
+  const font = `${style} ${weight} ${fontSize}px ${family}`;
 
   // Measure on a throwaway context first so the real canvas can be sized to
   // the glyphs rather than to a guessed box.
   const probe = makeCanvas(2, 2).getContext("2d");
   probe.font = font;
-  const text = layer.text || " ";
+  const sourceText = layer.text || " ";
+  const text = layer.textTransform === "lowercase"
+    ? sourceText.toLowerCase()
+    : layer.textTransform === "none"
+      ? sourceText
+      : sourceText.toUpperCase();
+  const letterSpacing = Number(layer.letterSpacing ?? 0.6);
+  if ("letterSpacing" in probe) probe.letterSpacing = `${letterSpacing * (fontSize / 16)}px`;
   const m = probe.measureText(text);
 
   const ascent = m.actualBoundingBoxAscent || fontSize * 0.8;
@@ -64,12 +72,13 @@ function textTexture(layer) {
   const canvas = makeCanvas(w, h);
   const ctx = canvas.getContext("2d");
   ctx.font = font;
+  if ("letterSpacing" in ctx) ctx.letterSpacing = `${letterSpacing * (fontSize / 16)}px`;
   ctx.textBaseline = "alphabetic";
   ctx.textAlign = "left";
 
-  if (layer.outlineColor && layer.outlineWidth) {
-    ctx.lineWidth = layer.outlineWidth * (fontSize / 16);
-    ctx.strokeStyle = layer.outlineColor;
+  if (layer.outline || (layer.outlineColor && layer.outlineWidth)) {
+    ctx.lineWidth = (layer.outlineWidth || 1.5) * (fontSize / 16);
+    ctx.strokeStyle = layer.outlineColor || "#1b1a16";
     ctx.lineJoin = "round";
     ctx.strokeText(text, pad, pad + ascent);
   }
@@ -84,6 +93,11 @@ function textTexture(layer) {
     ctx.fillStyle = grad;
   } else {
     ctx.fillStyle = layer.color || "#ffffff";
+  }
+  if (layer.shadow) {
+    ctx.shadowColor = "rgba(0,0,0,0.38)";
+    ctx.shadowBlur = fontSize * 0.08;
+    ctx.shadowOffsetY = fontSize * 0.04;
   }
   ctx.fillText(text, pad, pad + ascent);
 

@@ -34,6 +34,7 @@ export default function SelectedItemPanel({
   onLayoutChange,
   onColorChange,
   onFontChange,
+  onStyleChange,
   onGradientChange,
   onScaleChange,
   onRotateChange,
@@ -69,6 +70,7 @@ export default function SelectedItemPanel({
 
   const label =
     layer.type === "text" ? "Text" : layer.type === "skin" ? "Skin" : "Logo";
+  const customColorValue = /^#[0-9a-f]{6}$/i.test(layer.color || "") ? layer.color : "#ffffff";
 
   return (
     <div className="rounded-xl border border-primary-200 bg-primary-50/40 p-4">
@@ -154,6 +156,87 @@ export default function SelectedItemPanel({
             ))}
           </select>
 
+          <div className="mb-4 grid grid-cols-2 gap-2">
+            <label className="text-[11px] font-semibold text-foreground-700" htmlFor="sel-case">
+              Letter case
+              <select
+                id="sel-case"
+                value={layer.textTransform || "uppercase"}
+                onChange={(e) => onStyleChange?.(layer.id, { textTransform: e.target.value })}
+                className="mt-1 w-full rounded-lg border border-background-300 bg-background-50 px-2.5 py-2 text-xs text-foreground-950"
+              >
+                <option value="none">As typed</option>
+                <option value="uppercase">UPPERCASE</option>
+                <option value="lowercase">lowercase</option>
+              </select>
+            </label>
+            <label className="text-[11px] font-semibold text-foreground-700" htmlFor="sel-weight">
+              Weight
+              <select
+                id="sel-weight"
+                value={String(layer.fontWeight || 700)}
+                onChange={(e) => onStyleChange?.(layer.id, { fontWeight: Number(e.target.value) })}
+                className="mt-1 w-full rounded-lg border border-background-300 bg-background-50 px-2.5 py-2 text-xs text-foreground-950"
+              >
+                <option value="400">Regular</option>
+                <option value="600">Semi bold</option>
+                <option value="700">Bold</option>
+                <option value="900">Heavy</option>
+              </select>
+            </label>
+          </div>
+
+          <span className="mb-1.5 block text-xs font-semibold text-foreground-800">Alignment</span>
+          <div className="mb-4 grid grid-cols-3 gap-1.5" role="group" aria-label="Text alignment">
+            {["left", "center", "right"].map((alignment) => (
+              <button
+                key={alignment}
+                type="button"
+                aria-label={`Align text ${alignment}`}
+                aria-pressed={(layer.textAlign || "center") === alignment}
+                onClick={() => onStyleChange?.(layer.id, { textAlign: alignment })}
+                className={`rounded-lg border px-2 py-2 text-xs transition ${(layer.textAlign || "center") === alignment ? "border-primary-500 bg-primary-500 text-white" : "border-background-300 bg-background-50 text-foreground-700"}`}
+              >
+                <i className={`ri-align-${alignment}`} aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+
+          <span className="mb-1.5 block text-xs font-semibold text-foreground-800">Effects</span>
+          <div className="mb-4 grid grid-cols-3 gap-1.5">
+            {[
+              ["italic", "Italic", "ri-italic"],
+              ["outline", "Outline", "ri-font-size-2"],
+              ["shadow", "Shadow", "ri-contrast-drop-2-line"],
+            ].map(([key, label, icon]) => (
+              <button
+                key={key}
+                type="button"
+                aria-label={`${label} text`}
+                aria-pressed={Boolean(layer[key])}
+                onClick={() => onStyleChange?.(layer.id, { [key]: !layer[key] })}
+                className={`inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-2 text-[11px] font-semibold transition ${layer[key] ? "border-primary-500 bg-primary-500 text-white" : "border-background-300 bg-background-50 text-foreground-700"}`}
+              >
+                <i className={icon} aria-hidden="true" /> {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="mb-1 flex items-center justify-between">
+            <label className="text-xs font-semibold text-foreground-800" htmlFor="sel-letter-spacing">Letter spacing</label>
+            <span className="text-[10px] text-foreground-500">{Number(layer.letterSpacing ?? 0.6).toFixed(1)} px</span>
+          </div>
+          <input
+            id="sel-letter-spacing"
+            type="range"
+            min="-1"
+            max="6"
+            step="0.2"
+            value={layer.letterSpacing ?? 0.6}
+            onChange={(e) => onStyleChange?.(layer.id, { letterSpacing: Number(e.target.value) })}
+            className="mb-4 h-2 w-full cursor-pointer accent-primary-500"
+          />
+
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-foreground-800">
               {layer.gradient ? "Colours (fades top to bottom)" : "Colour"}
@@ -194,6 +277,16 @@ export default function SelectedItemPanel({
                 style={{ backgroundColor: c }}
               />
             ))}
+            <label className="relative h-7 w-7 cursor-pointer overflow-hidden rounded-full border-2 border-background-300" title="Custom text colour">
+              <span className="absolute inset-0 bg-[conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)]" aria-hidden="true" />
+              <input
+                type="color"
+                aria-label="Custom text colour"
+                value={customColorValue}
+                onChange={(e) => onColorChange(layer.id, e.target.value)}
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              />
+            </label>
           </div>
 
           {layer.gradient && (
