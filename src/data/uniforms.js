@@ -215,8 +215,8 @@ export const ADD_ON_PRICES = {
   logoEmbroidery: 1.5, // Team Logo application: Embroidery (Sublimated included in base)
   goalkeeperPadded: 5, // Goal Keeper "Padded?" option — confirmed in the xlsx (Yes: +$5)
 };
-/** Fan/Supporter Jersey — a derived, single-item add-on per team design, matching the existing "Fan Jersey" pricing tier below. */
-export const FAN_JERSEY_PRICE = 34;
+/** Kept for integrations that still read the legacy name; supporter jerseys use the Step 1 Shirt Only price. */
+export const FAN_JERSEY_PRICE = SHIRT_ONLY_PRICE;
 
 export function kitUnitPrice({ sleeve, collar, insideCollarMessage, logoApplication }) {
   let price = BASE_KIT_PRICE;
