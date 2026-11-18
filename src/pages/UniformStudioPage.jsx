@@ -14,9 +14,6 @@ import {
   kitTypeOptions,
   shirtSizeOptions,
   shortSizeOptions,
-  sockSizeOptions,
-  bottomLengthOptions,
-  playerRoleOptions,
   kitUnitPrice,
   mixedSleeveSurcharge,
   ADD_ON_PRICES,
@@ -202,18 +199,14 @@ const ENABLE_3D = false;
 const newRosterEntry = () => ({
   name: "",
   number: "",
-  shortsNumber: "",
-  shirtSize: "AM",
-  shortSize: "AM",
-  sockSize: "Medium",
-  bottomLength: "Regular",
-  sleevePreference: "Team selection",
-  role: "Player",
+  shirtSize: "M",
+  shortSize: "M",
+  sleevePreference: "Short",
   quantity: 1,
   notes: "",
 });
 
-const newSupporterJersey = () => ({ size: "AM", quantity: 1 });
+const newSupporterJersey = () => ({ size: "M", quantity: 1 });
 const supporterJerseyCount = (rows = []) => rows.reduce(
   (total, row) => total + Math.max(0, Math.min(99, Number.parseInt(row.quantity, 10) || 0)),
   0,
@@ -443,7 +436,7 @@ export default function UniformStudioPage() {
 
   // ---------- Priced options (spec §4.4/§4.5) ----------
   const [kitType, setKitType] = useState(kitTypeOptions[0]);
-  const [extraTeamShirts, setExtraTeamShirts] = useState([{ size: "AM", quantity: 1 }]);
+  const [extraTeamShirts, setExtraTeamShirts] = useState([{ size: "M", quantity: 1 }]);
   const [logoApplication, setLogoApplication] = useState("Sublimated");
   const [insideCollarMessage, setInsideCollarMessage] = useState(false);
   const [insideCollarText, setInsideCollarText] = useState("");
@@ -459,6 +452,7 @@ export default function UniformStudioPage() {
   // ---------- Roster state ----------
   const [rosterEntry, setRosterEntry] = useState(newRosterEntry);
   const [roster, setRoster] = useState([]);
+  const [sockQuantityOverride, setSockQuantityOverride] = useState(null);
   // Who to send the quote back to. The submission previously carried none of
   // this — the shop received a design and a roster with no way to reply, and
   // the notification email literally said the order came from "Guest".
@@ -474,16 +468,22 @@ export default function UniformStudioPage() {
 
   // Local screenshot fixture only; Vite removes this branch from production.
   useEffect(() => {
-    if (!import.meta.env.DEV || searchParams.get("preview") !== "checkout") return;
+    if (!import.meta.env.DEV || !["checkout", "roster"].includes(searchParams.get("preview"))) return;
+    setFitType("Men");
     setRoster([
-      { ...newRosterEntry(), name: "A. Miller", number: "10", shirtSize: "AL", quantity: 4 },
-      { ...newRosterEntry(), name: "J. Carter", number: "7", shirtSize: "AM", quantity: 4 },
-      { ...newRosterEntry(), name: "D. Rivera", number: "23", shirtSize: "AXL", quantity: 4 },
+      { ...newRosterEntry(), id: "preview-1", name: "A. Miller", number: "10", shirtSize: "L", shortSize: "M", quantity: 4 },
+      { ...newRosterEntry(), id: "preview-2", name: "J. Carter", number: "7", shirtSize: "M", shortSize: "M", quantity: 4 },
+      { ...newRosterEntry(), id: "preview-3", name: "D. Rivera", number: "23", shirtSize: "XL", shortSize: "L", quantity: 4 },
     ]);
+    if (searchParams.get("preview") === "roster") {
+      setSleeve("Mixed");
+      setActiveTool("roster");
+      return;
+    }
     setContact({ name: "Riverside FC", email: "orders@example.com", phone: "(767) 555-0100", club: "Riverside FC", notes: "" });
     setShipping({ firstName: "Avery", lastName: "Miller", company: "Riverside FC", address1: "10 Stadium Road", address2: "", city: "Roseau", state: "Saint George", postcode: "00109", country: "DM", phone: "(767) 555-0100" });
     setFanJerseyAdded(true);
-    setSupporterJerseys([{ size: "AM", quantity: 2 }, { size: "AL", quantity: 1 }]);
+    setSupporterJerseys([{ size: "M", quantity: 2 }, { size: "L", quantity: 1 }]);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const template = templates.find((t) => t.slug === selectedTemplate);
@@ -491,6 +491,7 @@ export default function UniformStudioPage() {
   const sportConfig = sportConfigFor(activeSport);
   const minimumKits = minimumFullKitsFor(activeSport);
   const minimumKitsMet = rosterUnitCount(roster) >= minimumKits;
+  const socksQuantity = sockQuantityOverride ?? rosterUnitCount(roster);
   const manualEditingAllowed = canUseManualEditing(studioMode);
   const strictAIPreview = isAIPreviewMode(studioMode);
   // Tool availability now follows the actual garment surface instead of a
@@ -677,6 +678,7 @@ export default function UniformStudioPage() {
           fanJerseyAdded,
           supporterJerseys,
           roster,
+          socksQuantity,
           contact,
           shipping,
            aiUniformPlan: aiUniformPlan ? { ...aiUniformPlan, conceptImage: undefined } : null,
@@ -690,7 +692,7 @@ export default function UniformStudioPage() {
          no worse than before this existed */
     }
   }, [storageKey, layers, placements3d, colors, studioBackground, collar, sleeve, zoneModel, zoneStyles, twoTone,
-    fitType, hasSelectedFit, kitType, extraTeamShirts, logoApplication, insideCollarMessage, insideCollarText, insideCollarAttachment, fanJerseyAdded, supporterJerseys, roster, contact, shipping,
+    fitType, hasSelectedFit, kitType, extraTeamShirts, logoApplication, insideCollarMessage, insideCollarText, insideCollarAttachment, fanJerseyAdded, supporterJerseys, roster, socksQuantity, contact, shipping,
     aiUniformPlan, aiWorkspaceConcept, aiDesignApplied]);
 
   const saveProgress = () => {
@@ -719,6 +721,7 @@ export default function UniformStudioPage() {
           fanJerseyAdded,
           supporterJerseys,
           roster,
+          socksQuantity,
           contact,
           shipping,
            aiUniformPlan: aiUniformPlan ? { ...aiUniformPlan, conceptImage: undefined } : null,
@@ -764,7 +767,11 @@ export default function UniformStudioPage() {
       if (saved.insideCollarAttachment?.src) setInsideCollarAttachment(saved.insideCollarAttachment);
       if (typeof saved.fanJerseyAdded === "boolean") setFanJerseyAdded(saved.fanJerseyAdded);
       if (Array.isArray(saved.supporterJerseys) && saved.supporterJerseys.length) setSupporterJerseys(saved.supporterJerseys);
-      if (Array.isArray(saved.roster)) setRoster(saved.roster);
+      if (Array.isArray(saved.roster)) setRoster(saved.roster.map((entry) => ({
+        ...entry,
+        sleevePreference: entry.sleevePreference === "Long" ? "Long" : "Short",
+      })));
+      if (Number.isFinite(Number(saved.socksQuantity))) setSockQuantityOverride(Math.max(0, Math.min(999, Number(saved.socksQuantity))));
       if (saved.contact) setContact(saved.contact);
       if (saved.shipping) setShipping(saved.shipping);
       if (saved.aiWorkspaceConcept?.src) {
@@ -800,11 +807,13 @@ export default function UniformStudioPage() {
     setLayers([]);
     setPlacements3d({});
     setSelectedLayerId(null);
+    setSockQuantityOverride(null);
     setAiUniformPlan(null);
     setAiWorkspaceConcept(null);
     setAiVersions([]);
     setAiComparisonPlan(null);
     setAiDesignApplied(false);
+    setSockQuantityOverride(null);
     setStudioMode(STUDIO_MODES.EDITABLE);
   };
 
@@ -1466,13 +1475,9 @@ export default function UniformStudioPage() {
           id: `${Date.now()}-csv-${index}`,
           name,
           number: valueFor(row, ["number", "shirtnumber", "jerseynumber"]),
-          shortsNumber: valueFor(row, ["shortsnumber", "pantsnumber", "bottomnumber"]),
-          shirtSize: valueFor(row, ["shirtsize", "jerseysize", "topsize"]) || "AM",
-          shortSize: valueFor(row, ["shortsize", "shortssize", "pantssize", "bottomsize"]) || "AM",
-          sockSize: valueFor(row, ["socksize", "sockssize"]) || "Medium",
-          bottomLength: valueFor(row, ["bottomlength", "pantlength", "shortlength"]) || "Regular",
-          sleevePreference: valueFor(row, ["sleeve", "sleevelength", "sleevepreference"]) || "Team selection",
-          role: valueFor(row, ["role", "playerrole", "position"]) || "Player",
+          shirtSize: valueFor(row, ["shirtsize", "jerseysize", "topsize"]) || "M",
+          shortSize: valueFor(row, ["shortsize", "shortssize", "pantssize", "bottomsize"]) || "M",
+          sleevePreference: valueFor(row, ["sleeve", "sleevelength", "sleevepreference"]).toLowerCase() === "long" ? "Long" : "Short",
           quantity: Math.max(1, Number.parseInt(valueFor(row, ["quantity", "qty"]), 10) || 1),
           notes: valueFor(row, ["notes", "note", "comments"]),
         };
@@ -1577,6 +1582,7 @@ export default function UniformStudioPage() {
       placements3d,
       designMode: stageMode === "3d" ? "3d" : "flat",
       roster,
+      socksQuantity,
       contact,
       previewImage,
       aiDesignName: aiUniformPlan?.name || aiWorkspaceConcept?.name || null,
@@ -2558,6 +2564,7 @@ export default function UniformStudioPage() {
                 {activeTool === "roster" && (
                   <RosterTool
                     minimumKits={minimumKits}
+                    fitType={fitType}
                     mixedSleeves={sleeve === "Mixed"}
                     setRoster={setRoster}
                     bottomLabel={sportConfig.bottomLabel}
@@ -2569,6 +2576,8 @@ export default function UniformStudioPage() {
                     addToRoster={addToRoster}
                     importRosterCsv={importRosterCsv}
                     removeFromRoster={removeFromRoster}
+                    socksQuantity={socksQuantity}
+                    setSocksQuantity={setSockQuantityOverride}
                   />
                 )}
                 {activeTool === "review" && (
@@ -2704,6 +2713,7 @@ export default function UniformStudioPage() {
         {activeTool === "roster" && (
           <RosterTool
             minimumKits={minimumKits}
+            fitType={fitType}
             mixedSleeves={sleeve === "Mixed"}
             setRoster={setRoster}
             bottomLabel={sportConfig.bottomLabel}
@@ -2715,6 +2725,8 @@ export default function UniformStudioPage() {
             addToRoster={addToRoster}
             importRosterCsv={importRosterCsv}
             removeFromRoster={removeFromRoster}
+            socksQuantity={socksQuantity}
+            setSocksQuantity={setSockQuantityOverride}
           />
         )}
         {activeTool === "review" && (
@@ -2785,6 +2797,7 @@ export default function UniformStudioPage() {
 
 function RosterTool({
   minimumKits = 1,
+  fitType = "",
   mixedSleeves = false,
   setRoster,
   bottomLabel = "Shorts",
@@ -2796,6 +2809,8 @@ function RosterTool({
   addToRoster,
   importRosterCsv,
   removeFromRoster,
+  socksQuantity = 0,
+  setSocksQuantity,
 }) {
   const unitCount = rosterUnitCount(roster);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
@@ -2819,17 +2834,13 @@ function RosterTool({
     const headers = [
       "Name",
       "Jersey Number",
-      `${bottomLabel} Number`,
       "Shirt Size",
       `${bottomLabel} Size`,
-      "Sock Size",
-      "Bottom Length",
       "Sleeve Preference",
-      "Role",
       "Quantity",
       "Notes",
     ];
-    const example = ["Alex James", "10", "10", "AM", "AM", "Medium", "Regular", "Short", "Player", "1", "Captain"];
+    const example = ["Alex James", "10", "M", "M", "Short", "1", "Captain"];
     const blob = new Blob([[headers, example].map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n")], {
       type: "text/csv;charset=utf-8",
     });
@@ -2907,14 +2918,13 @@ function RosterTool({
             </thead>
             <tbody>
               {[
-                ["YS", "26–28", "22–24", "48–52"],
-                ["YM", "28–30", "24–26", "52–56"],
-                ["YL", "30–32", "26–28", "56–60"],
-                ["AS", "34–36", "28–30", "65–68"],
-                ["AM", "38–40", "31–33", "68–70"],
-                ["AL", "42–44", "34–36", "70–72"],
-                ["AXL", "46–48", "37–39", "72–74"],
-                ["A2XL", "50–52", "40–42", "74–76"],
+                ["XS", "32–34", "26–28", "62–65"],
+                ["S", "35–37", "29–31", "65–68"],
+                ["M", "38–40", "32–34", "68–70"],
+                ["L", "41–43", "35–37", "70–72"],
+                ["XL", "44–46", "38–40", "72–74"],
+                ["2XL", "47–50", "41–44", "74–76"],
+                ["3XL", "51–54", "45–48", "76–78"],
               ].map((row, i) => (
                 <tr key={row[0]} className={i % 2 ? "bg-background-50" : "bg-background-100/30"}>
                   {row.map((cell, j) => (
@@ -2931,26 +2941,26 @@ function RosterTool({
 
       <div className="space-y-3 mb-4">
         <Input
-          placeholder="Player name"
+          placeholder="Name"
+          aria-label="Name"
           value={rosterEntry.name}
           onChange={(e) => setRosterEntry((r) => ({ ...r, name: e.target.value }))}
         />
-        <div className="grid grid-cols-2 gap-2">
-          <Input
-            placeholder="Shirt #"
-            value={rosterEntry.number}
-            onChange={(e) => setRosterEntry((r) => ({ ...r, number: e.target.value }))}
-          />
-          <Input
-            placeholder={`${bottomLabel} #`}
-            value={rosterEntry.shortsNumber}
-            onChange={(e) => setRosterEntry((r) => ({ ...r, shortsNumber: e.target.value }))}
-          />
+        <Input
+          placeholder="Jersey #"
+          aria-label="Jersey number"
+          value={rosterEntry.number}
+          onChange={(e) => setRosterEntry((r) => ({ ...r, number: e.target.value }))}
+        />
+        <div className="flex items-center justify-between rounded-lg bg-primary-50 px-3 py-2 text-[11px] font-label text-primary-800">
+          <span className="font-semibold">Fit type: {fitType}</span>
+          <span>Sizes follow the Step 1 fit selection</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <span className="text-[11px] font-label text-foreground-500 block mb-1">Shirt size</span>
+            <span className="text-[11px] font-label text-foreground-500 block mb-1">Shirt Size</span>
             <Select
+              aria-label="Shirt Size"
               value={rosterEntry.shirtSize}
               onChange={(e) => setRosterEntry((r) => ({ ...r, shirtSize: e.target.value }))}
             >
@@ -2963,9 +2973,10 @@ function RosterTool({
           </div>
           <div>
             <span className="text-[11px] font-label text-foreground-500 block mb-1">
-              {bottomLabel} size
+              {bottomLabel === "Shorts" ? "Short Size" : `${bottomLabel} Size`}
             </span>
             <Select
+              aria-label={bottomLabel === "Shorts" ? "Short Size" : `${bottomLabel} Size`}
               value={rosterEntry.shortSize}
               onChange={(e) => setRosterEntry((r) => ({ ...r, shortSize: e.target.value }))}
             >
@@ -2977,69 +2988,37 @@ function RosterTool({
             </Select>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          {hasSocks && (
-            <div>
-              <span className="text-[11px] font-label text-foreground-500 block mb-1">Sock size</span>
-              <Select
-                value={rosterEntry.sockSize}
-                onChange={(e) => setRosterEntry((r) => ({ ...r, sockSize: e.target.value }))}
-              >
-                {sockSizeOptions.map((size) => (
-                  <option key={size} value={size}>{size}</option>
-                ))}
-              </Select>
-            </div>
-          )}
-          <div className={hasSocks ? "" : "col-span-2"}>
-            <span className="text-[11px] font-label text-foreground-500 block mb-1">
-              {bottomLabel} length
-            </span>
-            <Select
-              value={rosterEntry.bottomLength}
-              onChange={(e) => setRosterEntry((r) => ({ ...r, bottomLength: e.target.value }))}
-            >
-              {bottomLengthOptions.map((length) => (
-                <option key={length} value={length}>{length}</option>
-              ))}
-            </Select>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <span className="text-[11px] font-label text-foreground-500 block mb-1">Role</span>
-            <Select
-              value={rosterEntry.role}
-              onChange={(e) => setRosterEntry((r) => ({ ...r, role: e.target.value }))}
-            >
-              {playerRoleOptions.map((role) => (
-                <option key={role} value={role}>{role}</option>
-              ))}
-            </Select>
-          </div>
-          <div>
-            <span className="text-[11px] font-label text-foreground-500 block mb-1">Quantity</span>
-            <Input
-              type="number"
-              min="1"
-              max="99"
-              value={rosterEntry.quantity}
-              onChange={(e) => setRosterEntry((r) => ({ ...r, quantity: e.target.value }))}
-            />
-          </div>
+        <div>
+          <span className="text-[11px] font-label text-foreground-500 block mb-1">Quantity</span>
+          <Input
+            type="number"
+            aria-label="Player quantity"
+            min="1"
+            max="99"
+            value={rosterEntry.quantity}
+            onChange={(e) => setRosterEntry((r) => ({ ...r, quantity: e.target.value }))}
+          />
         </div>
         {mixedSleeves && sleeveOptions?.length > 0 && (
           <div>
             <span className="text-[11px] font-label text-foreground-500 block mb-1">
               Player sleeve length
             </span>
-            <Select
-              value={rosterEntry.sleevePreference}
-              onChange={(e) => setRosterEntry((r) => ({ ...r, sleevePreference: e.target.value }))}
-            >
-              <option value="Team selection">Short — included</option>
-              <option value="Long">Long (+$2.00/kit)</option>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Select
+                aria-label="Sleeve length"
+                value={rosterEntry.sleevePreference}
+                onChange={(e) => setRosterEntry((r) => ({ ...r, sleevePreference: e.target.value }))}
+              >
+                <option value="Short">Short — included</option>
+                <option value="Long">Long</option>
+              </Select>
+              {rosterEntry.sleevePreference === "Long" && (
+                <span className="shrink-0 rounded-full bg-accent-50 px-2.5 py-1 text-[10px] font-bold text-accent-700">
+                  +${ADD_ON_PRICES.sleeveLong.toFixed(2)} per kit
+                </span>
+              )}
+            </div>
           </div>
         )}
         <Textarea
@@ -3071,32 +3050,25 @@ function RosterTool({
               <span className="text-foreground-800">
                 <span className="font-semibold">{entry.name}</span>{" "}
                 {entry.number && <span className="text-foreground-500">#{entry.number}</span>}{" "}
-                {entry.shortsNumber && (
-                  <span className="text-foreground-400">
-                    ({bottomLabel.toLowerCase()} #{entry.shortsNumber})
-                  </span>
-                )}{" "}
                 <span className="text-foreground-400 font-label">
                   · shirt {entry.shirtSize} / {bottomLabel.toLowerCase()} {entry.shortSize}
                 </span>
                 {entry.quantity > 1 && (
                   <span className="text-primary-700 font-semibold"> · qty {entry.quantity}</span>
                 )}
-                {(entry.sockSize || entry.bottomLength || entry.sleevePreference) && (
+                {mixedSleeves && entry.sleevePreference && (
                   <span className="block text-foreground-400 font-label mt-0.5">
-                    {hasSocks && entry.sockSize ? `socks ${entry.sockSize} · ` : ""}
-                    {entry.bottomLength || "Regular"} length
-                    {entry.sleevePreference && entry.sleevePreference !== "Team selection"
-                      ? ` · ${entry.sleevePreference} sleeve`
-                      : ""}
-                    {entry.role && entry.role !== "Player" ? ` · ${entry.role}` : ""}
+                    {entry.sleevePreference} sleeve
                   </span>
                 )}
               </span>
-              {mixedSleeves && <select aria-label={`Sleeve length for ${entry.name}`} value={entry.sleevePreference === "Long" ? "Long" : "Short"} onChange={(event) => setRoster((current) => current.map((row) => row.id === entry.id ? { ...row, sleevePreference: event.target.value } : row))} className="mx-2 min-w-0 rounded border border-background-300 bg-background-50 p-2 text-xs text-foreground-900">
-                <option value="Short">Short — included</option>
-                <option value="Long">Long (+$2.00/kit)</option>
-              </select>}
+              {mixedSleeves && <div className="mx-2 flex min-w-0 items-center gap-1.5">
+                <select aria-label={`Sleeve length for ${entry.name}`} value={entry.sleevePreference === "Long" ? "Long" : "Short"} onChange={(event) => setRoster((current) => current.map((row) => row.id === entry.id ? { ...row, sleevePreference: event.target.value } : row))} className="min-w-0 rounded border border-background-300 bg-background-50 p-2 text-xs text-foreground-900">
+                  <option value="Short">Short — included</option>
+                  <option value="Long">Long</option>
+                </select>
+                {entry.sleevePreference === "Long" && <span className="shrink-0 rounded-full bg-accent-50 px-2 py-1 text-[9px] font-bold text-accent-700">+${ADD_ON_PRICES.sleeveLong.toFixed(2)}/kit</span>}
+              </div>}
               <button
                 type="button"
                 onClick={() => removeFromRoster(entry.id)}
@@ -3107,6 +3079,24 @@ function RosterTool({
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {hasSocks && (
+        <div className="mb-4 flex items-center justify-between gap-4 rounded-xl border border-background-200/70 bg-background-100/50 px-4 py-3">
+          <span className="text-sm font-semibold text-foreground-900">Socks</span>
+          <label className="flex items-center gap-2 text-xs font-label text-foreground-500">
+            Qnty
+            <Input
+              type="number"
+              min="0"
+              max="999"
+              aria-label="Socks quantity"
+              value={socksQuantity}
+              onChange={(event) => setSocksQuantity?.(Math.max(0, Number.parseInt(event.target.value, 10) || 0))}
+              className="w-24"
+            />
+          </label>
         </div>
       )}
 
@@ -3314,7 +3304,7 @@ function ReviewOrderTool({
           icon="ri-team-line"
           title="Roster"
           value={`${unitCount} kit${unitCount === 1 ? "" : "s"} · ${roster.length} player row${roster.length === 1 ? "" : "s"}`}
-          meta={roster.length ? roster.slice(0, 3).map((entry) => entry.name).join(", ") + (roster.length > 3 ? "…" : "") : "No players added"}
+          meta={`${roster.length ? roster.slice(0, 3).map((entry) => entry.name).join(", ") + (roster.length > 3 ? "…" : "") : "No players added"}${sportConfigFor(activeSport).hasSocks ? ` · ${orderPayload.socksQuantity ?? 0} socks` : ""}`}
           onEdit={() => onEditStep("roster")}
         />
       </div>
@@ -3392,7 +3382,7 @@ function ReviewOrderTool({
                 type="button"
                 onClick={() => {
                   const nextSize = shirtSizeOptions.find((size) => !supporterJerseys.some((row) => row.size === size));
-                  setSupporterJerseys((current) => [...current, { size: nextSize || "AM", quantity: 1 }]);
+                  setSupporterJerseys((current) => [...current, { size: nextSize || "M", quantity: 1 }]);
                 }}
                 className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary-700 hover:text-primary-900"
               >

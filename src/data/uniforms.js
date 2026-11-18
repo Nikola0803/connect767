@@ -170,8 +170,8 @@ export function sportConfigFor(slug) {
 export const fitTypeOptions = ["Men", "Women", "Youth"];
 export const kitTypeOptions = ["Full", "Shirt"];
 export const logoApplicationOptions = ["Sublimated", "Embroidery"];
-export const shirtSizeOptions = ["YS", "YM", "YL", "AS", "AM", "AL", "AXL", "A2XL"];
-export const shortSizeOptions = ["YS", "YM", "YL", "AS", "AM", "AL", "AXL", "A2XL"];
+export const shirtSizeOptions = ["XS", "S", "M", "L", "XL", "2XL", "3XL"];
+export const shortSizeOptions = ["XS", "S", "M", "L", "XL", "2XL", "3XL"];
 export const sockSizeOptions = ["Youth", "Small", "Medium", "Large", "XL"];
 export const bottomLengthOptions = ["Short", "Regular", "Long"];
 export const playerRoleOptions = ["Player", "Goalkeeper", "Coach / Staff"];

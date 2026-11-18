@@ -71,12 +71,12 @@ describe("uniform design controls", () => {
   it("keeps Full Kit selected when adding extra shirts and allows sizes and quantities", () => {
     const setKitType = vi.fn();
     const setExtraTeamShirts = vi.fn();
-    const options = { fitType: "Men", setFitType: vi.fn(), kitType: "Shirt", setKitType, extraTeamShirts: [{ size: "AM", quantity: 1 }], setExtraTeamShirts, logoApplication: "Sublimated", setLogoApplication: vi.fn(), insideCollarMessage: false, setInsideCollarMessage: vi.fn(), insideCollarText: "", setInsideCollarText: vi.fn() };
+    const options = { fitType: "Men", setFitType: vi.fn(), kitType: "Shirt", setKitType, extraTeamShirts: [{ size: "M", quantity: 1 }], setExtraTeamShirts, logoApplication: "Sublimated", setLogoApplication: vi.fn(), insideCollarMessage: false, setInsideCollarMessage: vi.fn(), insideCollarText: "", setInsideCollarText: vi.fn() };
     render(<OptionsPanel {...options} section="fit" />);
     expect(screen.getByRole("button", { name: /^Full Kit/ })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: /^Shirt Only/ })).toHaveAttribute("aria-pressed", "true");
     fireEvent.change(screen.getByLabelText("Extra shirt quantity 1"), { target: { value: "3" } });
-    expect(setExtraTeamShirts.mock.calls.at(-1)[0](options.extraTeamShirts)).toEqual([{ size: "AM", quantity: 3 }]);
+    expect(setExtraTeamShirts.mock.calls.at(-1)[0](options.extraTeamShirts)).toEqual([{ size: "M", quantity: 3 }]);
     fireEvent.click(screen.getByRole("button", { name: "Remove extra shirt size 1" }));
     expect(setKitType).toHaveBeenCalledWith("Full");
   });

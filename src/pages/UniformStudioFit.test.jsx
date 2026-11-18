@@ -47,6 +47,41 @@ describe("required uniform fit selection", () => {
     expect(progress.getByRole("button", { name: /Team roster/ })).toHaveAttribute("aria-current", "step");
   });
 
+  it("uses one jersey number, fit-linked garment sizes and an order-level socks quantity", () => {
+    const progress = openStudio("design");
+    fireEvent.click(screen.getAllByRole("button", { name: "Men", exact: true })[0]);
+    fireEvent.click(progress.getByRole("button", { name: /Team roster/ }));
+
+    expect(screen.getAllByText("Fit type: Men").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("textbox", { name: "Jersey number" }).length).toBeGreaterThan(0);
+    expect(screen.queryByPlaceholderText("Shirt #")).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("Shorts #")).not.toBeInTheDocument();
+    expect(screen.queryByText("Sock size")).not.toBeInTheDocument();
+    expect(screen.queryByText("Shorts length")).not.toBeInTheDocument();
+    expect(screen.queryByText("Role")).not.toBeInTheDocument();
+
+    for (const select of screen.getAllByRole("combobox", { name: "Shirt Size" })) {
+      expect(Array.from(select.options).map((option) => option.value)).toEqual(["XS", "S", "M", "L", "XL", "2XL", "3XL"]);
+    }
+    expect(screen.getAllByText("Socks").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("spinbutton", { name: "Socks quantity" }).length).toBeGreaterThan(0);
+  });
+
+  it("offers Short or Long for each player when Mixed team order is selected", () => {
+    const progress = openStudio("design");
+    fireEvent.click(screen.getAllByRole("button", { name: "Men", exact: true })[0]);
+    fireEvent.click(screen.getAllByRole("checkbox", { name: "Mixed team order" })[0]);
+    fireEvent.click(progress.getByRole("button", { name: /Team roster/ }));
+
+    expect(screen.getAllByRole("textbox", { name: "Name" }).length).toBeGreaterThan(0);
+    expect(screen.queryByPlaceholderText("Player name")).not.toBeInTheDocument();
+    for (const select of screen.getAllByRole("combobox", { name: "Sleeve length" })) {
+      expect(Array.from(select.options).map((option) => option.value)).toEqual(["Short", "Long"]);
+    }
+    fireEvent.change(screen.getAllByRole("combobox", { name: "Sleeve length" })[0], { target: { value: "Long" } });
+    expect(screen.getAllByText("+$2.00 per kit").length).toBeGreaterThan(0);
+  });
+
   it.each([false, true])("restores only a previously confirmed fit (confirmed: %s)", async (confirmed) => {
     window.localStorage.setItem("c767:studio:soccer:blank-canvas", JSON.stringify({ fitType: "Men", fitTypeConfirmed: confirmed, zoneModel: { front: [], back: [] } }));
     render(<MemoryRouter initialEntries={["/uniforms"]}><UniformStudioPage /></MemoryRouter>);
