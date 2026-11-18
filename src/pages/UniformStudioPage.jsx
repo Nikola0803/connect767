@@ -162,29 +162,20 @@ const tools = [
 
 const studioWorkflow = [
   {
-    key: "artwork",
-    label: "Artwork",
-    description: "Text, logos & patterns",
-    icon: "ri-image-edit-line",
+    key: "design",
+    label: "Design",
+    description: "Uniform, colors & artwork",
+    icon: "ri-pencil-ruler-2-line",
     step: 1,
-    defaultTool: "text",
-    tools: ["ai", "text", "logo", "remove-bg", "skins", "layers"],
-  },
-  {
-    key: "uniform",
-    label: "Uniform",
-    description: "Fit, colors & extras",
-    icon: "ri-shirt-line",
-    step: 2,
     defaultTool: "design",
-    tools: ["design", "zones"],
+    tools: ["design", "zones", "ai", "text", "logo", "remove-bg", "skins", "layers"],
   },
   {
     key: "roster",
     label: "Team roster",
     description: "Names, numbers & sizes",
     icon: "ri-team-line",
-    step: 3,
+    step: 2,
     defaultTool: "roster",
     tools: ["roster"],
   },
@@ -193,7 +184,7 @@ const studioWorkflow = [
     label: "Review & quote",
     description: "Confirm and submit",
     icon: "ri-shopping-bag-3-line",
-    step: 4,
+    step: 3,
     defaultTool: "review",
     tools: ["review"],
   },
@@ -517,7 +508,7 @@ export default function UniformStudioPage() {
   const selectedWorkflowStep = studioWorkflow.find((step) => step.tools.includes(selectedTool));
   const gatedTool = strictAIPreview
     ? "ai"
-    : !hasSelectedFit && selectedWorkflowStep?.step > 2 ? "text" : selectedTool;
+    : !hasSelectedFit && selectedWorkflowStep?.step > 1 ? "design" : selectedTool;
   const requestedWorkflowIndex = Math.max(
     0,
     studioWorkflow.findIndex((step) => step.tools.includes(gatedTool))
@@ -566,7 +557,7 @@ export default function UniformStudioPage() {
 
   const openWorkflowStep = (index) => {
     const nextStep = studioWorkflow[Math.max(0, Math.min(studioWorkflow.length - 1, index))];
-    if (nextStep.step > 2 && !hasSelectedFit) return;
+    if (nextStep.step > 1 && !hasSelectedFit) return;
     if (nextStep.key === "review" && !minimumKitsMet) return;
     setPendingLayer(null);
     setSelectedLayerId(null);
@@ -1595,7 +1586,7 @@ export default function UniformStudioPage() {
 
   const handleRequestQuote = async () => {
     if (!hasSelectedFit) {
-      setQuoteError("Select Men, Women or Youth in Uniform setup before continuing.");
+      setQuoteError("Select Men, Women or Youth in Design before continuing.");
       return;
     }
     if (!minimumKitsMet) {
@@ -1705,21 +1696,19 @@ export default function UniformStudioPage() {
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-relaxed text-foreground-600 md:text-lg">
                 Choose a sport, describe the uniform you want, and let AI create the complete
-                Front / Side / Back concept before you add the roster and production options.
+                Front / Side / Back concept before you add the roster and review your quote.
               </p>
             </div>
-            <ol className="grid grid-cols-3 overflow-hidden rounded-2xl border border-background-300 bg-background-50 shadow-sm sm:grid-cols-6">
-              {["Sport & style", "Design", "Artwork", "Options", "Roster", "Review"].map((label, index) => (
+            <ol className="grid grid-cols-3 overflow-hidden rounded-2xl border border-background-300 bg-background-50 shadow-sm">
+              {["Design", "Team roster", "Review & quote"].map((label, index) => (
                 <li
                   key={label}
-                  className={`flex min-w-0 flex-col gap-1 px-3 py-3 ${
-                    index === 0 ? "bg-primary-600 text-white" : "border-l border-background-200 text-foreground-500"
-                  }`}
+                  className="flex min-w-0 flex-col gap-1 border-l border-background-200 px-3 py-3 first:border-l-0"
                 >
-                  <span className={`text-[10px] font-bold uppercase tracking-[0.16em] ${index === 0 ? "text-white/70" : "text-foreground-400"}`}>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-foreground-400">
                     Step {index + 1}
                   </span>
-                  <span className="text-sm font-semibold">{label}</span>
+                  <span className="text-sm font-semibold text-foreground-700">{label}</span>
                 </li>
               ))}
             </ol>
@@ -1729,7 +1718,7 @@ export default function UniformStudioPage() {
             <div className="flex flex-col gap-3 border-b border-background-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">
-                  Step 1
+                  Choose sport
                 </p>
                 <h2 className="mt-1 font-heading text-3xl font-semibold sm:text-4xl">
                   {categorySport ? categorySport.label : "Choose your sport"}
@@ -2051,7 +2040,7 @@ export default function UniformStudioPage() {
           {studioWorkflow.map((step, index) => {
             const active = index === workflowIndex;
             const complete = index < workflowIndex;
-            const locked = (step.step > 2 && !hasSelectedFit) || (step.key === "review" && !minimumKitsMet);
+            const locked = (step.step > 1 && !hasSelectedFit) || (step.key === "review" && !minimumKitsMet);
             return (
               <div key={step.key} className="flex min-w-0 flex-1 items-center gap-1.5">
                 <button
@@ -2455,7 +2444,7 @@ export default function UniformStudioPage() {
 
               {/* Docked fields panel */}
               <aside className={`hidden w-full flex-shrink-0 flex-col overflow-hidden border-l border-black/10 bg-[#f7f5ef] md:flex ${activeTool === "ai" ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px]" : "max-w-[420px]"}`}>
-                {workflowStep.key === "artwork" && !strictAIPreview ? (
+                {workflowStep.key === "design" && !strictAIPreview ? (
                   <ArtworkToolNavigation
                     tools={visibleTools}
                     activeTool={activeTool}
@@ -2769,8 +2758,8 @@ export default function UniformStudioPage() {
           <button
             type="button"
             onClick={continueWorkflow}
-            disabled={(studioWorkflow[workflowIndex + 1].step > 2 && !hasSelectedFit) || (workflowStep.key === "roster" && !minimumKitsMet)}
-            title={studioWorkflow[workflowIndex + 1].step > 2 && !hasSelectedFit ? "Select Men, Women or Youth in Uniform setup to continue" : undefined}
+            disabled={(studioWorkflow[workflowIndex + 1].step > 1 && !hasSelectedFit) || (workflowStep.key === "roster" && !minimumKitsMet)}
+            title={studioWorkflow[workflowIndex + 1].step > 1 && !hasSelectedFit ? "Select Men, Women or Youth in Design before continuing" : undefined}
             className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,116,73,0.22)] transition hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer"
           >
             Continue to {studioWorkflow[workflowIndex + 1].label}
@@ -3123,7 +3112,7 @@ function RosterTool({
               {unitCount} full kits · Minimum {minimumKits}
             </p>
             <p className="text-[11px] font-label text-foreground-500">
-              {unitCount >= minimumKits ? "Minimum met. Continue to Review to confirm your order." : `Add ${minimumKits - unitCount} more full kit${minimumKits - unitCount === 1 ? "" : "s"} to continue. Extra shirts do not count.`}
+              {unitCount >= minimumKits ? "Minimum met. Continue to Review & quote to confirm your order." : `Add ${minimumKits - unitCount} more full kit${minimumKits - unitCount === 1 ? "" : "s"} to continue. Extra shirts do not count.`}
             </p>
           </div>
         </div>

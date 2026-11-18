@@ -11,10 +11,11 @@ const artworkTools = [
 ];
 
 describe("ArtworkToolNavigation", () => {
-  it("presents every supported Step 2 tool in the docked panel", () => {
+  it("presents every supported Step 1 Design tool in the docked panel", () => {
     render(<ArtworkToolNavigation tools={artworkTools} activeTool="text" onSelect={() => {}} />);
 
-    expect(screen.getByRole("navigation", { name: "Artwork tools" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Design tools" })).toBeInTheDocument();
+    expect(screen.getByText("Step 1 · Design")).toBeInTheDocument();
     for (const tool of artworkTools) {
       expect(screen.getByRole("button", { name: tool.label })).toBeInTheDocument();
     }
