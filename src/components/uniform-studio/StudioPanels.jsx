@@ -1044,7 +1044,7 @@ export function AIArtworkPanel({
   const [archivedPrompts, setArchivedPrompts] = useState([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [error, setError] = useState("");
-  const [renderTier, setRenderTier] = useState("preview");
+  const [renderTier, setRenderTier] = useState("proof");
   const generationControllerRef = useRef(null);
   const allDesignControlsLocked = locks.collar && locks.sleeve && locks.colors && locks.pattern;
   const lockedControlCount = Object.values(locks).filter(Boolean).length;
@@ -1440,7 +1440,7 @@ export function AIArtworkPanel({
       onModeChange?.(nextMode);
       setError("");
     };
-    const sendPrompt = (requestedTier = "preview") => {
+    const sendPrompt = (requestedTier = "proof") => {
       setRenderTier(requestedTier);
       if (isRefinement) generateUniform(refinementBrief, requestedTier);
       else generateDesign(requestedTier);
@@ -1460,7 +1460,6 @@ export function AIArtworkPanel({
         generating={generating}
         canSend={canSend}
         onSend={sendPrompt}
-        renderTier={renderTier}
         onStop={stopGenerating}
         style={style}
         styles={AI_STYLES}
