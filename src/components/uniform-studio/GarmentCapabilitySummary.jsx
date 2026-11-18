@@ -7,7 +7,7 @@ const toolLabels = {
   layers: "Layers",
 };
 
-export default function GarmentCapabilitySummary({ capabilities, compact = false }) {
+export default function GarmentCapabilitySummary({ capabilities, compact = false, fitNotice = "" }) {
   const enabled = Object.keys(toolLabels).filter((key) => capabilities.canUse(key));
 
   if (compact) {
@@ -23,6 +23,11 @@ export default function GarmentCapabilitySummary({ capabilities, compact = false
               {capabilities.previewOnly ? capabilities.status : `${capabilities.zones.length} zones · ${enabled.length} tools ready`}
             </p>
           </div>
+          {fitNotice && (
+            <p role="alert" className="max-w-[210px] shrink-0 border-l border-accent-300 pl-2 text-[10px] font-semibold leading-tight text-accent-800">
+              {fitNotice}
+            </p>
+          )}
         </div>
       </section>
     );

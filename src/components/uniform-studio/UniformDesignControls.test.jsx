@@ -170,7 +170,7 @@ describe("uniform design controls", () => {
     expect(screen.queryByText(/Trim \(hem/i)).not.toBeInTheDocument();
   });
 
-  it("maps the two-colour shortcut to the real shorts zone", () => {
+  it("maps a distinct shorts color to the real shorts zone", () => {
     const setColors = vi.fn();
     const setTwoTone = vi.fn();
     render(
@@ -188,7 +188,7 @@ describe("uniform design controls", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("checkbox", { name: /Different shirt and shorts colors/i }));
+    fireEvent.change(screen.getByLabelText("Shorts color"), { target: { value: "#1b1a16" } });
     const colorUpdater = setColors.mock.calls[0][0];
     const toneUpdater = setTwoTone.mock.calls[0][0];
     expect(colorUpdater(defaultZoneColors).shorts).toBe("#1b1a16");
