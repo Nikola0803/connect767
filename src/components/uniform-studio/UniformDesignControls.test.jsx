@@ -65,6 +65,7 @@ describe("uniform design controls", () => {
   it.each([["soccer", 22], ["basketball", 10], ["cricket", 15], ["netball", 10]])("shows the %s minimum beside Full Kit pricing", (sport, minimum) => {
     render(<OptionsPanel sport={sport} section="fit" fitType="Men" kitType="Full" />);
     expect(screen.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent(`Team order · Min Qnty ${minimum}`);
+    expect(screen.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent("Includes shirt, shorts and socks");
     expect(screen.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("Extra shirts with a Full Kit order");
   });
   it("keeps Full Kit selected when adding extra shirts and allows sizes and quantities", () => {
@@ -263,7 +264,7 @@ describe("uniform design controls", () => {
     render(<OptionsPanel fitType="Men" setFitType={vi.fn()} kitType="Full" setKitType={setKitType} logoApplication="Sublimated" setLogoApplication={vi.fn()} insideCollarMessage={false} setInsideCollarMessage={vi.fn()} insideCollarText="" setInsideCollarText={vi.fn()} />);
     expect(screen.queryByText("Studio background")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Both" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent("$30.00");
+    expect(screen.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent("$35.00");
     expect(screen.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("$12.00");
     fireEvent.click(screen.getByRole("button", { name: /^Shirt Only/ }));
     expect(setKitType).toHaveBeenCalledWith("Shirt");

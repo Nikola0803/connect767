@@ -184,7 +184,7 @@ export const playerRoleOptions = ["Player", "Goalkeeper", "Coach / Staff"];
  * component) so the numbers are a one-place edit once the client confirms
  * pricing for the other sports.
  */
-export const BASE_KIT_PRICE = 30;
+export const BASE_KIT_PRICE = 35;
 export const SHIRT_ONLY_PRICE = 12;
 export function minimumFullKitsFor(sport) {
   return { soccer: 22, basketball: 10, cricket: 15, netball: 10 }[sport] || 1;
