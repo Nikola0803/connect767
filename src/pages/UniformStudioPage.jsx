@@ -1859,22 +1859,22 @@ export default function UniformStudioPage() {
       <div className="flex shrink-0 items-center gap-1.5">
         {(aiUniformPlan || aiWorkspaceConcept) && (
           <>
-            <div className="inline-flex rounded-md border border-white/10 bg-black/20 p-0.5">
+            {manualEditingAllowed && <div className="inline-flex rounded-md border border-white/10 bg-black/20 p-0.5">
               <button
                 type="button"
                 onClick={() => switchAICanvasMode("concept")}
-                className={`cursor-pointer rounded px-2 py-1 text-[8px] font-bold transition ${aiCanvasMode === "concept" ? "bg-accent-500 text-white" : "text-white/55 hover:text-white"}`}
+                className="cursor-pointer rounded bg-accent-500 px-2 py-1 text-[8px] font-bold text-white transition hover:bg-accent-600"
               >
                 AI 3D Preview
               </button>
-              {manualEditingAllowed && <button
+              <button
                   type="button"
                   onClick={() => switchAICanvasMode("production")}
                   className={`cursor-pointer rounded px-2 py-1 text-[8px] font-bold transition ${aiCanvasMode === "production" ? "bg-primary-500 text-white" : "text-white/55 hover:text-white"}`}
                 >
                   Editable Studio
-                </button>}
-            </div>
+                </button>
+            </div>}
             <button
               type="button"
               aria-label="Discard AI design"
