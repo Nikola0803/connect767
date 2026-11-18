@@ -20,6 +20,23 @@ describe("ApprovedUniformGraphic trim isolation", () => {
       expect(container.querySelector('mask[id^="approved-kit-shape-"]').style.maskType).toBe("luminance");
     }
   });
+  it.each(["front", "back"])("composites the %s shirt body and sleeves once without a bordered join", (view) => {
+    const color = "#0c2340";
+    const { container } = render(
+      <ApprovedUniformGraphic sport="soccer" view={view} colors={{ body: color, sleeve: color }} />,
+    );
+
+    const body = container.querySelector('[data-garment-zone="body"]');
+    const sleeves = container.querySelectorAll('[data-garment-zone="sleeve"]');
+    expect(sleeves).toHaveLength(2);
+    expect(body.parentElement).toBe(sleeves[0].parentElement);
+    expect(body.parentElement.getAttribute("data-garment-tint")).toBe("fabric-multiply");
+    expect(body.getAttribute("stroke")).toBe(color);
+    for (const sleeve of sleeves) {
+      expect(sleeve.getAttribute("stroke")).toBe(color);
+      expect(sleeve.getAttribute("stroke-width")).toBe("5");
+    }
+  });
   it("aligns the basketball V-neck to the actual front and back garment centers", () => {
     const { container, rerender } = render(
       <ApprovedUniformGraphic sport="basketball" view="front" collar="V-Neck" />,

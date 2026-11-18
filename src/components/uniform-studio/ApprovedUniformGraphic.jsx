@@ -384,13 +384,25 @@ export default function ApprovedUniformGraphic({
       <g mask={`url(#${shapeMaskId})`}>
         <image href={asset} x="0" y="0" width={spriteWidth} height={spriteHeight} />
 
-        {/* Start with one shirt/body color across the complete torso, then let
-            the sleeve layer replace only the sleeves. There is deliberately no
-            side-panel zone: every shirt pixel belongs to body or sleeve. */}
-        <TintLayer mask={maskId} fill={body} opacity={opacityFor("body")}>
-          {(fill) => region.bodyPolygon
-            ? <path d={polygonPath(region.bodyPolygon)} fill={fill} />
-            : <rect x={offset} y={region.shirtTop} width={halfWidth} height={region.bottomStart - region.shirtTop} fill={fill} />}
+        {/* Composite the shirt body and sleeves into one palette before the
+            multiply blend is applied to the photographed fabric. Separate
+            blend groups used to create a light/dark border where their
+            antialiased edges met. A small same-colour overlap removes that
+            artificial border while preserving independent sleeve colours. */}
+        <TintLayer mask={maskId} fill={body} opacity={1}>
+          {() => (
+            <>
+              {region.bodyPolygon
+                ? <path data-garment-zone="body" d={polygonPath(region.bodyPolygon)} fill={body} stroke={body} strokeWidth="5" strokeLinejoin="round" opacity={opacityFor("body")} />
+                : <rect data-garment-zone="body" x={offset} y={region.shirtTop} width={halfWidth} height={region.bottomStart - region.shirtTop} fill={body} opacity={opacityFor("body")} />}
+              {!isSleeveless && (
+                <>
+                  <path data-garment-zone="sleeve" data-sleeve-side="left" d={baseSleevePath("left")} fill={sleeve} stroke={sleeve} strokeWidth="5" strokeLinejoin="round" opacity={opacityFor("sleeve")} />
+                  <path data-garment-zone="sleeve" data-sleeve-side="right" d={baseSleevePath("right")} fill={sleeve} stroke={sleeve} strokeWidth="5" strokeLinejoin="round" opacity={opacityFor("sleeve")} />
+                </>
+              )}
+            </>
+          )}
         </TintLayer>
 
         {patternApplies && (
@@ -457,17 +469,6 @@ export default function ApprovedUniformGraphic({
               <path d={`M${collarCenterX},${region.shirtTop + 95} L${collarCenterX + 105},${region.shirtTop + 155} L${collarCenterX + 72},${region.shirtTop + 345} L${collarCenterX},${region.shirtTop + 410} L${collarCenterX - 72},${region.shirtTop + 345} L${collarCenterX - 105},${region.shirtTop + 155} Z`} fill={shirtEnd} />
             )}
           </g>
-        )}
-
-        {!isSleeveless && (
-          <TintLayer mask={maskId} fill={sleeve} opacity={opacityFor("sleeve")}>
-            {(fill) => (
-              <>
-                <path d={baseSleevePath("left")} fill={fill} />
-                <path d={baseSleevePath("right")} fill={fill} />
-              </>
-            )}
-          </TintLayer>
         )}
 
         <TintLayer mask={shortsMaskId} fill={bottom} opacity={opacityFor("shorts")}>
