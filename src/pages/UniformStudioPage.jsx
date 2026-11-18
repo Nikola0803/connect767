@@ -384,6 +384,7 @@ export default function UniformStudioPage() {
   const [studioMode, setStudioMode] = useState(STUDIO_MODES.EDITABLE);
   const [conversionError, setConversionError] = useState("");
   const aiConceptViewportRef = useRef(null);
+  const [aiConceptViewportWidth, setAiConceptViewportWidth] = useState(null);
   const [aiBannerActionsTarget, setAiBannerActionsTarget] = useState(null);
   // Shown when leaving the studio with unsaved work — see confirmExit below.
   const [exitPrompt, setExitPrompt] = useState(false);
@@ -1185,6 +1186,26 @@ export default function UniformStudioPage() {
   );
   const showingProductionMap = stageMode === "edit" && !showingAIConcept
     && !(activeTool === "ai" && aiDesignerMode === "uniform" && !aiWorkspaceConcept?.src);
+  useEffect(() => {
+    if (!showingAIConcept) {
+      setAiConceptViewportWidth(null);
+      return undefined;
+    }
+    const viewport = aiConceptViewportRef.current;
+    if (!viewport) return undefined;
+    const syncBannerWidth = () => {
+      const nextWidth = Math.round(viewport.getBoundingClientRect().width);
+      if (nextWidth > 0) setAiConceptViewportWidth((current) => current === nextWidth ? current : nextWidth);
+    };
+    syncBannerWidth();
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(syncBannerWidth) : null;
+    observer?.observe(viewport);
+    window.addEventListener("resize", syncBannerWidth);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", syncBannerWidth);
+    };
+  }, [showingAIConcept, aiWorkspaceConcept?.src]);
   useEffect(() => {
     setZoom(1);
     setAiConceptPan({ x: 0, y: 0 });
@@ -2164,7 +2185,11 @@ export default function UniformStudioPage() {
                   {/* Canvas */}
                   <div className={`flex min-w-0 flex-1 flex-col items-center overflow-hidden ${activeTool === "ai" ? "gap-2 px-2 py-2 md:px-3 xl:px-4" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
                     {strictAIPreview && (
-                      <section className="relative z-20 w-full max-w-[1536px] flex-shrink-0 self-center rounded-xl border border-amber-300/25 bg-[linear-gradient(120deg,rgba(82,57,5,.38),rgba(18,24,18,.92))] px-3 py-2 shadow-[0_10px_26px_rgba(0,0,0,.18)]" aria-labelledby="ai-preview-title">
+                      <section
+                        className="relative z-20 w-full max-w-[1536px] flex-shrink-0 self-center rounded-xl border border-amber-300/25 bg-[linear-gradient(120deg,rgba(82,57,5,.38),rgba(18,24,18,.92))] px-3 py-2 shadow-[0_10px_26px_rgba(0,0,0,.18)]"
+                        style={aiConceptViewportWidth ? { width: `${aiConceptViewportWidth}px`, maxWidth: "100%" } : undefined}
+                        aria-labelledby="ai-preview-title"
+                      >
                         <div className="flex flex-col items-center gap-1.5">
                           <div className="flex flex-wrap items-baseline justify-center gap-x-2 text-center">
                             <h2 id="ai-preview-title" className="font-heading text-base font-semibold leading-tight text-white">Preview</h2>
