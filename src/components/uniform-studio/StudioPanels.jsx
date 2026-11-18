@@ -616,7 +616,14 @@ export function OptionsPanel({
             >
               <span className="flex items-center justify-between gap-1 font-semibold">{k === "Full" ? "Full Kit" : "Shirt Only"}{(k === "Full" || kitType === "Shirt") && <i className="ri-check-line" aria-hidden="true" />}</span>
               <span className="mt-1 block"><strong className="text-base font-semibold">${(k === "Full" ? BASE_KIT_PRICE : SHIRT_ONLY_PRICE).toFixed(2)}</strong><span className="ml-1 text-[11px] font-normal opacity-80">{k === "Full" ? "per kit" : "per shirt"}</span></span>
-              <span className="mt-1 block text-[10px] font-normal leading-snug opacity-80">{k === "Full" ? `Team order · Min Qnty ${minimumFullKitsFor(sport)}` : "Extra shirts with a Full Kit order"}</span>
+              {k === "Full" ? (
+                <span className="mt-1 block text-[10px] font-normal leading-snug opacity-80">
+                  <span className="block">Includes shirt, shorts and socks</span>
+                  <span className="mt-0.5 block">Team order · Min Qnty {minimumFullKitsFor(sport)}</span>
+                </span>
+              ) : (
+                <span className="mt-1 block text-[10px] font-normal leading-snug opacity-80">Extra shirts with a Full Kit order</span>
+              )}
             </button>
           ))}
         </div>

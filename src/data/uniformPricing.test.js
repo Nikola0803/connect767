@@ -17,11 +17,11 @@ describe("full-kit minimums", () => {
 });
 
 describe("sleeve pricing", () => {
-  it("prices full kits at $30 and adds extra shirts at $12 without replacing kits", () => {
+  it("prices full kits at $35 and adds extra shirts at $12 without replacing kits", () => {
     const rows = [{ size: "AM", quantity: 2 }, { size: "AL", quantity: 1 }, { size: "invalid", quantity: 10 }];
-    expect(kitUnitPrice({ sleeve: "Short", collar: "Crew" })).toBe(30);
+    expect(kitUnitPrice({ sleeve: "Short", collar: "Crew" })).toBe(35);
     expect(extraTeamShirtCount(rows)).toBe(3);
-    expect(BASE_KIT_PRICE * 5 + extraTeamShirtCount(rows) * SHIRT_ONLY_PRICE).toBe(186);
+    expect(BASE_KIT_PRICE * 5 + extraTeamShirtCount(rows) * SHIRT_ONLY_PRICE).toBe(211);
     expect(normalizeExtraTeamShirts([{ size: "AM", quantity: 2 }, { size: "AM", quantity: 3 }])).toEqual([{ size: "AM", quantity: 5 }]);
   });
   it("includes short sleeves and charges $2 for long sleeves and optional Polo", () => {
