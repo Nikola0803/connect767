@@ -545,7 +545,7 @@ export function OptionsPanel({
   fitType, setFitType, kitType, setKitType, logoApplication, setLogoApplication,
   insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText,
   insideCollarAttachment, setInsideCollarAttachment,
-  extraTeamShirts = [{ size: "AM", quantity: 1 }], setExtraTeamShirts,
+  extraTeamShirts = [{ size: "M", quantity: 1 }], setExtraTeamShirts,
   section = "all", showFitAlert = true,
 }) {
   return (

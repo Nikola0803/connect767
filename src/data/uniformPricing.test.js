@@ -18,11 +18,11 @@ describe("full-kit minimums", () => {
 
 describe("sleeve pricing", () => {
   it("prices full kits at $35 and adds extra shirts at $12 without replacing kits", () => {
-    const rows = [{ size: "AM", quantity: 2 }, { size: "AL", quantity: 1 }, { size: "invalid", quantity: 10 }];
+    const rows = [{ size: "M", quantity: 2 }, { size: "L", quantity: 1 }, { size: "invalid", quantity: 10 }];
     expect(kitUnitPrice({ sleeve: "Short", collar: "Crew" })).toBe(35);
     expect(extraTeamShirtCount(rows)).toBe(3);
     expect(BASE_KIT_PRICE * 5 + extraTeamShirtCount(rows) * SHIRT_ONLY_PRICE).toBe(211);
-    expect(normalizeExtraTeamShirts([{ size: "AM", quantity: 2 }, { size: "AM", quantity: 3 }])).toEqual([{ size: "AM", quantity: 5 }]);
+    expect(normalizeExtraTeamShirts([{ size: "M", quantity: 2 }, { size: "M", quantity: 3 }])).toEqual([{ size: "M", quantity: 5 }]);
   });
   it("includes short sleeves and charges $2 for long sleeves and optional Polo", () => {
     expect(kitUnitPrice({ sleeve: "Short", collar: "Crew" })).toBe(BASE_KIT_PRICE);
@@ -30,7 +30,7 @@ describe("sleeve pricing", () => {
     expect(kitUnitPrice({ sleeve: "Long", collar: "Polo" })).toBe(BASE_KIT_PRICE + 4);
   });
   it("prices mixed sleeves by long-sleeve quantities only", () => {
-    const roster = [{ sleevePreference: "Long", quantity: 3 }, { sleevePreference: "Short", quantity: 4 }, { sleevePreference: "Team selection", quantity: 2 }];
+    const roster = [{ sleevePreference: "Long", quantity: 3 }, { sleevePreference: "Short", quantity: 4 }, { sleevePreference: "Short", quantity: 2 }];
     expect(kitUnitPrice({ sleeve: "Mixed", collar: "Crew" })).toBe(BASE_KIT_PRICE);
     expect(mixedSleeveSurcharge("Mixed", roster)).toBe(6);
     expect(mixedSleeveSurcharge("Short", roster)).toBe(0);
