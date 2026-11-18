@@ -1021,6 +1021,16 @@ export function AIArtworkPanel({
   canUndoUniform = false,
   hasExistingArtwork = false,
   composerVariant = "unified",
+  onGeneratingChange,
+  aiVersions = [],
+  onRestoreAIVersion,
+  onCompareVersions,
+  comparisonActive = false,
+  onConvertToEditable,
+  conversionAvailable = false,
+  conversionReason = "",
+  conversionError = "",
+  onSavePreview,
 }) {
   const [mode, setMode] = useState("uniform");
   const [brandName, setBrandName] = useState("");
@@ -1044,6 +1054,10 @@ export function AIArtworkPanel({
   const activePrompt = mode === "uniform" && uniformPlan ? refinementBrief : brief;
   const promptHistoryKey = `connect767-ai-prompt-history:${sport || "uniform"}`;
   const promptArchiveKey = `connect767-ai-prompt-archive:${sport || "uniform"}`;
+
+  useEffect(() => {
+    onGeneratingChange?.(generating);
+  }, [generating, onGeneratingChange]);
 
   useEffect(() => {
     if (hasExistingArtwork) {
@@ -1174,7 +1188,6 @@ export function AIArtworkPanel({
     setError("");
     generationControllerRef.current?.abort();
     generationControllerRef.current = new AbortController();
-    if (!refinement) onUniformPlanChange?.(null);
     setApplied(false);
     try {
       const response = await fetch("/api/generate-uniform-design", {
@@ -1475,6 +1488,16 @@ export function AIArtworkPanel({
         onUndo={onUndoUniform}
         onNewChat={startNewChat}
         onClearCurrentDesign={clearCurrentDesign}
+        versions={aiVersions}
+        onRestoreVersion={onRestoreAIVersion}
+        onCompareVersions={onCompareVersions}
+        comparisonActive={comparisonActive}
+        onGenerateVariation={() => generateUniform("", renderTier)}
+        onConvertToEditable={onConvertToEditable}
+        conversionAvailable={conversionAvailable}
+        conversionReason={conversionReason}
+        conversionError={conversionError}
+        onSavePreview={onSavePreview}
       />
     );
   }

@@ -31,8 +31,6 @@ function renderComposer(overrides = {}) {
     error: "",
     onRetry: vi.fn(),
     uniformPlan: null,
-    applied: false,
-    onApplyUniform: vi.fn(),
     artworkPreview: null,
     onPlaceArtwork: vi.fn(),
     onClearArtwork: vi.fn(),
@@ -41,6 +39,14 @@ function renderComposer(overrides = {}) {
     onUndo: vi.fn(),
     onNewChat: vi.fn(),
     onClearCurrentDesign: vi.fn(),
+    versions: [],
+    onRestoreVersion: vi.fn(),
+    onCompareVersions: vi.fn(),
+    onGenerateVariation: vi.fn(),
+    onConvertToEditable: vi.fn(),
+    conversionAvailable: false,
+    conversionReason: "Structured garment data is incomplete.",
+    onSavePreview: vi.fn(),
     ...overrides,
   };
   if (!("historyEntries" in overrides)) props.historyEntries = props.promptHistory;
@@ -123,13 +129,15 @@ describe("AIUniformComposer", () => {
     expect(props.onReusePrompt).toHaveBeenCalledWith(entry);
   });
 
-  it("keeps the design card off the side panel and exposes Apply design in the composer", () => {
+  it("keeps AI output preview-only and exposes AI refinement controls instead of manual apply", () => {
+    const version = {
+      name: "Riverside FC — Modern & Bold",
+      summary: "A clean white soccer kit.",
+      conceptImage: { src: "data:image/png;base64,preview" },
+    };
     const props = renderComposer({
-      uniformPlan: {
-        name: "Riverside FC — Modern & Bold",
-        summary: "A clean white soccer kit.",
-        conceptImage: { src: "data:image/png;base64,preview" },
-      },
+      uniformPlan: version,
+      versions: [version],
     });
 
     expect(screen.queryByText("Current AI design")).not.toBeInTheDocument();
@@ -138,8 +146,28 @@ describe("AIUniformComposer", () => {
     expect(screen.queryByRole("button", { name: /new direction/i })).not.toBeInTheDocument();
     expect(screen.queryByAltText(/AI uniform concept/i)).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /apply design/i }));
-    expect(props.onApplyUniform).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("button", { name: /apply design/i })).not.toBeInTheDocument();
+    expect(screen.getByText("Preview Only")).toBeInTheDocument();
+    expect(screen.getByText("AI Editing Available")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Refine with AI" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Convert to Editable Design" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Save image to project" }));
+    expect(props.onSavePreview).toHaveBeenCalledTimes(1);
+  });
+
+  it("preserves AI versions for comparison, rejection and restoration", () => {
+    const original = { name: "Original", conceptImage: { src: "data:image/png;base64,one" } };
+    const current = { name: "Current", conceptImage: { src: "data:image/png;base64,two" } };
+    const props = renderComposer({ uniformPlan: current, versions: [original, current] });
+
+    fireEvent.click(screen.getByRole("button", { name: "Compare versions" }));
+    expect(props.onCompareVersions).toHaveBeenCalledWith(original);
+    fireEvent.click(screen.getByRole("button", { name: "Previous version" }));
+    expect(props.onRestoreVersion).toHaveBeenCalledWith(original);
+    fireEvent.click(screen.getByRole("button", { name: "Restore original" }));
+    expect(props.onRestoreVersion).toHaveBeenLastCalledWith(original);
+    fireEvent.click(screen.getByRole("button", { name: "New variation" }));
+    expect(props.onGenerateVariation).toHaveBeenCalledTimes(1);
   });
 
   it("provides explicit controls for starting over and clearing saved AI state", () => {
