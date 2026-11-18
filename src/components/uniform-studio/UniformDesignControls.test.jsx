@@ -127,15 +127,15 @@ describe("uniform design controls", () => {
     const props = { sport: "soccer", collar: "Crew", setCollar: vi.fn(), sleeve: "Short", setSleeve, colors: defaultZoneColors, setColors: vi.fn() };
     const { rerender } = render(<DesignPanel {...props} />);
     expect(screen.queryByRole("button", { name: /Crew|V-Neck|Sleeveless/ })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("checkbox", { name: "Mixed sleeves" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Mixed team order" }));
     expect(setSleeve).toHaveBeenCalledWith("Mixed");
     rerender(<DesignPanel {...props} sleeve="Mixed" />);
-    expect(screen.getByText(/Only long-sleeve kits add/)).toBeInTheDocument();
+    expect(screen.getByText(/combination of short- and long-sleeve jerseys/i)).toBeInTheDocument();
     const longSleeves = screen.getByRole("checkbox", { name: /Long sleeves/ });
     expect(longSleeves).not.toBeChecked();
     fireEvent.click(longSleeves);
     expect(setSleeve).toHaveBeenLastCalledWith("Long");
-    fireEvent.click(screen.getByRole("checkbox", { name: "Mixed sleeves" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Mixed team order" }));
     expect(setSleeve).toHaveBeenLastCalledWith("Short");
   });
   it("starts the collar in the same color as the blank shirt fabric", () => {

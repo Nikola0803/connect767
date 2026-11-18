@@ -248,10 +248,10 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
             </label>
             <label className="flex min-h-8 cursor-pointer items-center gap-1.5 text-xs font-semibold leading-snug text-foreground-800">
               <input type="checkbox" checked={sleeve === "Mixed"} onChange={(event) => setSleeve(event.target.checked ? "Mixed" : "Short")} className="accent-primary-600" />
-              Mixed sleeves
+              Mixed team order
             </label>
           </div>
-          {sleeve === "Mixed" && <p className="mt-1 text-xs leading-snug text-foreground-500">Choose sleeves per player in Team roster. Only long-sleeve kits add $2.00 each.</p>}
+          {sleeve === "Mixed" && <p className="mt-1 text-xs leading-snug text-foreground-500">Team order with a combination of short- and long-sleeve jerseys. Choose each player’s sleeve length in Team roster; only long-sleeve kits add $2.00 each.</p>}
         </div>
       )}
 

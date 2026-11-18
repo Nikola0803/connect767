@@ -96,6 +96,19 @@ describe("AI full-uniform design endpoint", () => {
     expect(prompt).toContain("Set view to front, side, or back");
     expect(prompt).toContain("The concept image and production map must use the same text layout");
     expect(prompt).toContain("Use x 50 for horizontally centered chest artwork");
+    expect(prompt).toContain("It never means one jersey with different left and right sleeves");
+  });
+
+  it("normalizes AI polo and mixed-order wording to priced studio options", () => {
+    const input = normalizeUniformRequest(validRequest);
+    const plan = normalizeUniformPlan({
+      ...upstreamPlan,
+      collar: "polo-style collar",
+      sleeve: "mixed sleeve team order",
+    }, input);
+
+    expect(plan.collar).toBe("Polo");
+    expect(plan.sleeve).toBe("Mixed");
   });
 
   it("preserves Side artwork and all-surface patterns in the normalized AI plan", () => {
