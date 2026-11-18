@@ -17,7 +17,6 @@ class C767_Uniform_Checkout
     const NAMESPACE_ = 'connect767/v1';
     const BASE_KIT_PRICE = 30.00;
     const EXTRA_TEAM_SHIRT_PRICE = 12.00;
-    const FAN_JERSEY_PRICE = 34.00;
 
     public static function init()
     {
@@ -353,7 +352,7 @@ class C767_Uniform_Checkout
         }
 
         if ($supporter_count > 0) {
-            $supporter_total = round(self::FAN_JERSEY_PRICE * $supporter_count, 2);
+            $supporter_total = round(self::EXTRA_TEAM_SHIRT_PRICE * $supporter_count, 2);
             $fan_item_id = $order->add_product($product, $supporter_count, [
                 'subtotal' => $supporter_total,
                 'total' => $supporter_total,
@@ -361,7 +360,7 @@ class C767_Uniform_Checkout
             $fan_item = $order->get_item($fan_item_id);
             if ($fan_item) {
                 $fan_item->set_name($template . ' supporter jersey');
-                $fan_item->add_meta_data('Unit price', wc_price(self::FAN_JERSEY_PRICE), true);
+                $fan_item->add_meta_data('Unit price', wc_price(self::EXTRA_TEAM_SHIRT_PRICE), true);
                 $fan_item->add_meta_data('Sizes', implode(', ', array_map(function ($row) {
                     return $row['size'] . ' × ' . $row['quantity'];
                 }, $supporter_jerseys)), true);
