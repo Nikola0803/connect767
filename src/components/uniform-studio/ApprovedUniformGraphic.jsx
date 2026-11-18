@@ -169,7 +169,6 @@ export default function ApprovedUniformGraphic({
   const socksMaskId = `approved-socks-${uid}`;
   const socksClipId = `approved-socks-clip-${uid}`;
   const shapeMaskId = `approved-kit-shape-${uid}`;
-  const sleeveGradientId = `approved-kit-sleeve-${uid}`;
   const asset = APPROVED_ASSETS[sport] || APPROVED_ASSETS.other;
   const baseRegion = KIT_REGIONS[sport] || KIT_REGIONS.other;
   const spriteWidth = baseRegion.spriteWidth || SPRITE_WIDTH;
@@ -210,24 +209,33 @@ export default function ApprovedUniformGraphic({
   const longSleeveGeometry = (side) => {
     const left = side === "left";
     const cuffPolygon = region.sleeveEndPolygons?.[side];
-    // Continue from the photographed short-sleeve cuff instead of starting a
-    // second rectangular arm. This preserves the original shoulder/armhole
-    // boundary while extending the same garment cleanly to the wrist.
+    const sleevePolygon = region.sleevePolygons?.[side];
+    // A long sleeve is a complete replacement garment piece. It begins at the
+    // same shoulder and armhole as the short sleeve, then continues to the
+    // wrist. Starting at the photographed cuff merely adds a second forearm
+    // below the existing short sleeve and leaves a visible horizontal join.
+    const shoulderTop = sleevePolygon?.[0]
+      || [left ? region.bodyLeft - 110 : region.bodyRight + 110, region.shirtTop + 102];
+    const armhole = sleevePolygon?.at(-1)
+      || [left ? region.bodyLeft + 7 : region.bodyRight - 7, region.shirtTop + 122];
     const outerTop = cuffPolygon
-      ? cuffPolygon[left ? 3 : 2]
+      ? cuffPolygon[left ? 0 : 1]
       : [left ? region.bodyLeft - 104 : region.bodyRight + 104, shortSleeveBottom - 16];
     const innerTop = cuffPolygon
-      ? cuffPolygon[left ? 2 : 3]
+      ? cuffPolygon[left ? 1 : 0]
       : [left ? region.bodyLeft + 5 : region.bodyRight - 5, shortSleeveBottom];
     const direction = left ? 1 : -1;
+    const outward = left ? -1 : 1;
     const outerBottom = [outerTop[0] + (16 * direction), longSleeveBottom];
     const innerBottom = [innerTop[0] - (8 * direction), longSleeveBottom];
     const midY = Math.round((outerTop[1] + longSleeveBottom) / 2);
     const path = [
-      `M${offset + outerTop[0]},${outerTop[1]}`,
+      `M${offset + shoulderTop[0]},${shoulderTop[1]}`,
+      `C${offset + shoulderTop[0] + (72 * outward)},${shoulderTop[1] + 8} ${offset + outerTop[0] + (8 * outward)},${outerTop[1] - 55} ${offset + outerTop[0]},${outerTop[1]}`,
       `C${offset + outerTop[0] + (4 * direction)},${midY - 30} ${offset + outerBottom[0] - (3 * direction)},${midY + 30} ${offset + outerBottom[0]},${outerBottom[1]}`,
       `L${offset + innerBottom[0]},${innerBottom[1]}`,
       `C${offset + innerBottom[0] - (2 * direction)},${midY + 30} ${offset + innerTop[0] - (3 * direction)},${midY - 30} ${offset + innerTop[0]},${innerTop[1]}`,
+      `C${offset + innerTop[0]},${innerTop[1] - 46} ${offset + armhole[0] + (7 * outward)},${armhole[1] + 20} ${offset + armhole[0]},${armhole[1]}`,
       "Z",
     ].join(" ");
     return { path, outerBottom, innerBottom };
@@ -375,11 +383,6 @@ export default function ApprovedUniformGraphic({
             </>
           )}
         </mask>
-        <linearGradient id={sleeveGradientId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor={sleeve} stopOpacity="0.82" />
-          <stop offset="0.5" stopColor={sleeve} />
-          <stop offset="1" stopColor={sleeve} stopOpacity="0.72" />
-        </linearGradient>
         <linearGradient id={patternFadeId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor={shirtEnd} stopOpacity="0.9" />
           <stop offset="1" stopColor={shirtEnd} stopOpacity="0" />
@@ -390,13 +393,6 @@ export default function ApprovedUniformGraphic({
           <feBlend in="SourceGraphic" in2="texture" mode="multiply" />
         </filter>
       </defs>
-
-      {!isSleeveless && !nativeLongSleeve && (
-        <g opacity={opacityFor("sleeve")} data-sleeve-extension={sleeveStyle}>
-          {hasLeftLongSleeve && <path data-long-sleeve-side="left" d={longSleevePath("left")} fill={`url(#${sleeveGradientId})`} />}
-          {hasRightLongSleeve && <path data-long-sleeve-side="right" d={longSleevePath("right")} fill={`url(#${sleeveGradientId})`} />}
-        </g>
-      )}
 
       <g mask={`url(#${shapeMaskId})`}>
         <image href={asset} x="0" y="0" width={spriteWidth} height={spriteHeight} />
@@ -610,6 +606,13 @@ export default function ApprovedUniformGraphic({
         )}
         </TintLayer>
       </g>
+
+      {!isSleeveless && !nativeLongSleeve && sleeveStyle === "Long" && (
+        <g opacity={opacityFor("sleeve")} data-sleeve-replacement="Long">
+          {hasLeftLongSleeve && <path data-long-sleeve-side="left" d={longSleevePath("left")} fill={sleeve} />}
+          {hasRightLongSleeve && <path data-long-sleeve-side="right" d={longSleevePath("right")} fill={sleeve} />}
+        </g>
+      )}
 
       {editableZones.length > 0 && (
         <g>

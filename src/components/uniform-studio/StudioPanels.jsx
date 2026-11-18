@@ -597,7 +597,7 @@ export function OptionsPanel({
                   <span className="mt-0.5 block">Team order · Min Qnty {minimumFullKitsFor(sport)}</span>
                 </span>
               ) : (
-                <span className="mt-1 block text-[10px] font-normal leading-snug opacity-80">Extra shirts with a Full Kit order</span>
+                <span className="mt-1 block text-[10px] font-normal leading-snug opacity-80">Extra team and supporter jerseys use this price</span>
               )}
             </button>
           ))}
