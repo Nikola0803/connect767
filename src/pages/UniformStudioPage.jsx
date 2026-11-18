@@ -41,6 +41,7 @@ import {
 import {
   STUDIO_MODES,
   canUseManualEditing,
+  getStudioHeaderCapabilities,
   isAIPreviewMode,
   validateEditableUniformPlan,
 } from "../components/uniform-studio/studioModes";
@@ -1187,6 +1188,15 @@ export default function UniformStudioPage() {
   );
   const showingProductionMap = stageMode === "edit" && !showingAIConcept
     && !(activeTool === "ai" && aiDesignerMode === "uniform" && !aiWorkspaceConcept?.src);
+  const headerCapabilities = getStudioHeaderCapabilities({
+    mode: studioMode,
+    hasAIResult: Boolean(aiUniformPlan || aiWorkspaceConcept),
+    canOpenProduction: editablePlanValidation.valid && studioMode !== STUDIO_MODES.AI_GENERATING,
+    hasStorage: Boolean(storageKey),
+    showingAIConcept,
+    showingProductionMap,
+    stageMode,
+  });
   useEffect(() => {
     if (!showingAIConcept) {
       setAiConceptViewportWidth(null);
@@ -1860,64 +1870,58 @@ export default function UniformStudioPage() {
     optionsProps={{ sport: activeSport, fitType, setFitType: (value) => { setFitType(value); if (!hasSelectedFit) setActiveTool("design"); }, kitType, setKitType, extraTeamShirts, setExtraTeamShirts, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment }}
   />;
 
-  const renderCanvasControls = (integrated = false) => (
-    <div className={integrated
-      ? "flex max-w-full shrink-0 flex-nowrap items-center justify-end gap-1.5"
-      : "relative z-20 flex w-fit max-w-full flex-shrink-0 self-end flex-wrap items-center gap-2 rounded-xl border border-white/[0.07] bg-[#10120f] px-2 py-1.5 shadow-[0_8px_22px_rgba(0,0,0,.24)]"}
-    >
-      <div className="flex shrink-0 items-center gap-1.5">
-        {(aiUniformPlan || aiWorkspaceConcept) && (
-          <>
-            {manualEditingAllowed && <div className="inline-flex gap-1.5 rounded-md border border-white/10 bg-black/20 p-0.5">
-              <button
-                type="button"
-                onClick={() => switchAICanvasMode("concept")}
-                className="cursor-pointer rounded bg-accent-500 px-2 py-1 text-[8px] font-bold text-white transition hover:bg-accent-600"
-              >
-                AI 3D Preview
-              </button>
-              <button
-                  type="button"
-                  onClick={() => switchAICanvasMode("production")}
-                  className={`cursor-pointer rounded px-2 py-1 text-[8px] font-bold transition ${aiCanvasMode === "production" ? "bg-primary-500 text-white" : "text-white/55 hover:text-white"}`}
-                >
-                  Editable Studio
-                </button>
-            </div>}
-            <button
-              type="button"
-              aria-label="Discard AI design"
-              title="Discard design"
-              onClick={() => {
-                setAiUniformPlan(null);
-                setAiWorkspaceConcept(null);
-                setAiVersions([]);
-                setAiComparisonPlan(null);
-                setAiDesignApplied(false);
-                setAiCanvasMode("concept");
-                setStudioMode(STUDIO_MODES.EDITABLE);
-              }}
-              className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-white/10 text-[11px] text-white/55 transition hover:bg-white/10 hover:text-white"
-            >
-              <i className="ri-delete-bin-line" />
-            </button>
-            <span aria-hidden="true" className="h-4 w-px bg-white/10" />
-          </>
+  const headerTileClass = "inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition";
+  const headerIconTileClass = "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition";
+  const renderCanvasControls = () => {
+    if (!headerCapabilities.openAIPreview && !headerCapabilities.openEditableStudio && !headerCapabilities.discardAI && !headerCapabilities.viewport) return null;
+    return (
+      <div className="flex max-w-full shrink-0 flex-nowrap items-center justify-end gap-2">
+        {headerCapabilities.openAIPreview && <button
+          type="button"
+          onClick={() => switchAICanvasMode("concept")}
+          className={`${headerTileClass} min-w-[104px] cursor-pointer border-accent-400/55 bg-accent-500 text-white hover:bg-accent-600`}
+        >
+          AI 3D Preview
+        </button>}
+        {headerCapabilities.openEditableStudio && <button
+          type="button"
+          onClick={convertAIToEditableDesign}
+          className={`${headerTileClass} min-w-[104px] cursor-pointer border-primary-400 bg-primary-600 text-white hover:bg-primary-500`}
+        >
+          Editable Studio
+        </button>}
+        {headerCapabilities.discardAI && (
+          <button
+            type="button"
+            aria-label="Discard AI design"
+            title="Discard design"
+            onClick={() => {
+              setAiUniformPlan(null);
+              setAiWorkspaceConcept(null);
+              setAiVersions([]);
+              setAiComparisonPlan(null);
+              setAiDesignApplied(false);
+              setAiCanvasMode("concept");
+              setStudioMode(STUDIO_MODES.EDITABLE);
+            }}
+            className={`${headerIconTileClass} cursor-pointer border-white/10 bg-white/[0.035] text-white/55 hover:bg-white/10 hover:text-white`}
+          >
+            <i className="ri-delete-bin-line" />
+          </button>
         )}
-
-        <div className="inline-flex items-center rounded-lg border border-white/[0.07] bg-black/15 p-0.5">
-          {showingProductionMap && <button type="button" aria-label="Pan production map" aria-pressed={productionPanMode} title="Pan mode: drag anywhere. Turn off to edit artwork. Alt-drag also pans." disabled={Boolean(pendingLayer)} onClick={() => setProductionPanMode((current) => !current)} className={`flex h-6 w-6 cursor-pointer items-center justify-center rounded disabled:opacity-40 ${productionPanMode ? "bg-primary-600 text-white" : "text-background-50/60 hover:bg-white/10 hover:text-background-50"}`}><i className="ri-hand-line text-xs" /></button>}
-          <button type="button" aria-label="Zoom out" title="Zoom out" onClick={() => setClampedZoom((value) => value - 0.1)} className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-subtract-line text-xs" /></button>
-          <span className="w-9 text-center font-label text-[10px] tabular-nums text-background-50/60">{Math.round(zoom * 100)}%</span>
-          <button type="button" aria-label="Zoom in" title="Zoom in" onClick={() => setClampedZoom((value) => value + 0.1)} className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-add-line text-xs" /></button>
-          {showingAIConcept && (
-            <button type="button" aria-label="Reset design view" title="Reset view" onClick={resetAIConceptView} className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-focus-3-line text-xs" /></button>
-          )}
-          {showingProductionMap && <button type="button" aria-label="Fit production map" title="Reset zoom and pan" onClick={() => productionViewportRef.current?.reset()} className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-focus-3-line text-xs" /></button>}
-        </div>
+        {headerCapabilities.viewport && (
+          <div className="inline-flex h-9 shrink-0 items-center rounded-lg border border-white/10 bg-white/[0.035] px-0.5">
+            {showingProductionMap && <button type="button" aria-label="Pan production map" aria-pressed={productionPanMode} title="Pan mode: drag anywhere. Turn off to edit artwork. Alt-drag also pans." disabled={Boolean(pendingLayer)} onClick={() => setProductionPanMode((current) => !current)} className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-md disabled:opacity-40 ${productionPanMode ? "bg-primary-600 text-white" : "text-background-50/60 hover:bg-white/10 hover:text-background-50"}`}><i className="ri-hand-line text-xs" /></button>}
+            <button type="button" aria-label="Zoom out" title="Zoom out" onClick={() => setClampedZoom((value) => value - 0.1)} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-subtract-line text-xs" /></button>
+            <span className="w-11 text-center font-label text-[10px] tabular-nums text-background-50/70">{Math.round(zoom * 100)}%</span>
+            <button type="button" aria-label="Zoom in" title="Zoom in" onClick={() => setClampedZoom((value) => value + 0.1)} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-add-line text-xs" /></button>
+            {showingAIConcept && <button type="button" aria-label="Reset design view" title="Reset view" onClick={resetAIConceptView} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-focus-3-line text-xs" /></button>}
+            {showingProductionMap && <button type="button" aria-label="Fit production map" title="Reset zoom and pan" onClick={() => productionViewportRef.current?.reset()} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-focus-3-line text-xs" /></button>}
+          </div>
+        )}
       </div>
-    </div>
-  );
+    );
+  };
 
   // ---------- The studio itself: one full viewport, nothing else ----------
   return (
@@ -1944,27 +1948,29 @@ export default function UniformStudioPage() {
           </span>
         </div>
         <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
-          <button
-            type="button"
-            onClick={openAIDesigner}
-            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-45 ${
-              activeTool === "ai"
-                ? "border-accent-400 bg-accent-500 text-white shadow-[0_8px_20px_rgba(239,84,53,0.22)]"
-                : "border-accent-400/40 bg-accent-950/30 text-accent-200 hover:border-accent-300 hover:bg-accent-950/55"
-            }`}
-          >
-            <span className="relative block h-5 w-5 shrink-0" aria-hidden="true">
-              <img src={`${import.meta.env.BASE_URL}connect767-ai-logo-transparent.png?v=20261117`} alt="" className="h-full w-full object-contain brightness-0 invert" />
-              <i className="ri-sparkling-2-fill absolute -right-0.5 -top-0.5 text-[8px] leading-none text-white" />
-            </span>
-            <span className="hidden sm:inline">AI Designer</span>
-            <span className="sm:hidden">AI</span>
-          </button>
-          {renderCanvasControls(true)}
-          <button
+          {headerCapabilities.aiDesigner && (
+            <button
+              type="button"
+              onClick={openAIDesigner}
+              className={`${headerTileClass} cursor-pointer font-bold disabled:cursor-not-allowed disabled:opacity-45 ${
+                activeTool === "ai"
+                  ? "border-accent-400 bg-accent-500 text-white shadow-[0_8px_20px_rgba(239,84,53,0.22)]"
+                  : "border-accent-400/40 bg-accent-950/30 text-accent-200 hover:border-accent-300 hover:bg-accent-950/55"
+              }`}
+            >
+              <span className="relative block h-5 w-5 shrink-0" aria-hidden="true">
+                <img src={`${import.meta.env.BASE_URL}connect767-ai-logo-transparent.png?v=20261117`} alt="" className="h-full w-full object-contain brightness-0 invert" />
+                <i className="ri-sparkling-2-fill absolute -right-0.5 -top-0.5 text-[8px] leading-none text-white" />
+              </span>
+              <span className="hidden sm:inline">AI Designer</span>
+              <span className="sm:hidden">AI</span>
+            </button>
+          )}
+          {renderCanvasControls()}
+          {headerCapabilities.saveProgress && <button
             type="button"
             onClick={saveProgress}
-            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+            className={`${headerTileClass} cursor-pointer ${
               manualSaveStatus === "saved"
                 ? "border-primary-400/55 bg-primary-700 text-white"
                 : manualSaveStatus === "error"
@@ -1977,13 +1983,13 @@ export default function UniformStudioPage() {
             <span className="hidden sm:inline">
               {manualSaveStatus === "saved" ? "Progress saved" : manualSaveStatus === "error" ? "Save failed" : "Save progress"}
             </span>
-          </button>
+          </button>}
           {ENABLE_3D && manualEditingAllowed && (
             <button
               type="button"
               aria-pressed={stageMode === "3d"}
               onClick={() => setStageMode((mode) => (mode === "3d" ? "edit" : "3d"))}
-              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+              className={`${headerTileClass} cursor-pointer ${
                 stageMode === "3d"
                   ? "border-primary-500 bg-primary-600 text-white shadow-[0_8px_18px_rgba(0,116,73,0.28)]"
                   : "border-primary-500/45 bg-primary-950/55 text-primary-100 hover:border-primary-400 hover:bg-primary-900"
@@ -1993,41 +1999,40 @@ export default function UniformStudioPage() {
               {stageMode === "3d" ? "Return to 2D" : "View in 3D"}
             </button>
           )}
-          {manualEditingAllowed && (
+          {headerCapabilities.svgExport && (
             <button
               type="button"
               onClick={handleDownloadSvg}
-              disabled={stageMode !== "edit" || showingAIConcept}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer bg-white/5 text-background-50/70 hover:bg-white/10 hover:text-background-50 disabled:opacity-40"
+              className={`${headerTileClass} hidden cursor-pointer border-white/10 bg-white/5 text-background-50/70 hover:bg-white/10 hover:text-background-50 sm:inline-flex`}
             >
               <i className="ri-file-code-line" /> SVG
             </button>
           )}
-          {showingAIConcept && (
+          {headerCapabilities.fullscreen && (
             <button
               type="button"
               onClick={() => aiConceptViewportRef.current?.requestFullscreen?.()}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 px-3 py-1.5 text-xs font-semibold text-background-50/70 hover:bg-white/10 hover:text-background-50"
+              className={`${headerTileClass} cursor-pointer border-white/10 bg-white/5 text-background-50/70 hover:bg-white/10 hover:text-background-50`}
             >
               <i className="ri-fullscreen-line" />
               <span className="hidden sm:inline">Fullscreen</span>
             </button>
           )}
-          <button
+          {headerCapabilities.download && <button
             type="button"
             onClick={handleDownload}
-            disabled={exporting || stageMode !== "edit"}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer bg-white/5 text-background-50/70 hover:bg-white/10 hover:text-background-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={exporting}
+            className={`${headerTileClass} cursor-pointer border-white/10 bg-white/5 text-background-50/70 hover:bg-white/10 hover:text-background-50 disabled:cursor-not-allowed disabled:opacity-40`}
           >
             <i className="ri-download-2-line" />
             <span className="hidden sm:inline">{exporting ? "Exporting…" : "Download"}</span>
-          </button>
-          {manualEditingAllowed && <details className="group relative" onKeyDown={(event) => {
+          </button>}
+          {headerCapabilities.settings && <details className="group relative" onKeyDown={(event) => {
             if (event.key === "Escape") event.currentTarget.open = false;
           }} onBlur={(event) => {
             if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false;
           }}>
-            <summary aria-label="Studio settings" className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-background-50/75 hover:bg-white/10 [&::-webkit-details-marker]:hidden">
+            <summary aria-label="Studio settings" className={`${headerTileClass} cursor-pointer list-none border-white/10 bg-white/5 text-background-50/75 hover:bg-white/10 [&::-webkit-details-marker]:hidden`}>
               <i className="ri-settings-3-line" aria-hidden="true" />
               <span className="hidden sm:inline">Settings</span>
             </summary>

@@ -22,10 +22,12 @@ describe("required uniform fit selection", () => {
     for (const button of screen.getAllByRole("button", { name: /AI Designer/ })) expect(button).toBeEnabled();
   });
 
-  it("keeps the canvas controls in the top header beside AI Designer", () => {
-    openStudio("ai");
+  it("shows header controls only when the active mode has a working target", () => {
+    const progress = openStudio("ai");
     const header = within(screen.getByRole("button", { name: "Back" }).closest("header"));
     expect(header.getByRole("button", { name: /AI Designer/ })).toBeEnabled();
+    expect(header.queryByRole("button", { name: "Zoom out" })).not.toBeInTheDocument();
+    fireEvent.click(progress.getByRole("button", { name: /Uniform/ }));
     expect(header.getByRole("button", { name: "Zoom out" })).toBeEnabled();
     expect(header.getByRole("button", { name: "Zoom in" })).toBeEnabled();
     expect(screen.getAllByRole("button", { name: "Zoom out" })).toHaveLength(1);
