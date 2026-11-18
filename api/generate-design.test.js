@@ -32,20 +32,23 @@ describe("AI design generation endpoint", () => {
     resetRateLimitsForTests();
     process.env.OPENAI_API_KEY = "test-only-key";
     process.env.OPENAI_IMAGE_MODEL = "gpt-image-2.6-flare";
-    process.env.OPENAI_IMAGE_QUALITY = "medium";
+    process.env.OPENAI_IMAGE_PREVIEW_QUALITY = "medium";
+    process.env.OPENAI_IMAGE_PROOF_QUALITY = "high";
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
     delete process.env.OPENAI_API_KEY;
     delete process.env.OPENAI_IMAGE_MODEL;
-    delete process.env.OPENAI_IMAGE_QUALITY;
+    delete process.env.OPENAI_IMAGE_PREVIEW_QUALITY;
+    delete process.env.OPENAI_IMAGE_PROOF_QUALITY;
   });
 
   it("validates and constrains the customer brief", () => {
     const brief = normalizeBrief({ ...validBrief, notes: "x".repeat(2000) });
     expect(brief.notes).toHaveLength(1200);
     expect(brief.primaryColor).toBe("#006B3F");
+    expect(brief.renderTier).toBe("preview");
     expect(() => normalizeBrief({ ...validBrief, productType: "Unknown" })).toThrow("supported product");
   });
 
@@ -105,6 +108,26 @@ describe("AI design generation endpoint", () => {
     });
     expect(upstreamBody.safety_identifier).toMatch(/^[a-f0-9]{64}$/);
     expect(options.headers.Authorization).toBe("Bearer test-only-key");
+  });
+
+  it("renders high-quality uniform proofs on a landscape canvas", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: [{ b64_json: "cHJvb2Y=" }] }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const res = response();
+
+    await handler(request("POST", {
+      ...validBrief,
+      generationMode: "uniform",
+      renderTier: "proof",
+    }), res);
+
+    const upstreamBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(upstreamBody).toMatchObject({ size: "1536x1024", quality: "high" });
+    expect(res.payload).toMatchObject({ size: "1536x1024", quality: "high", renderTier: "proof" });
   });
 
   it("uses the image edit endpoint when refining an existing uniform concept", async () => {

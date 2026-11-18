@@ -13,6 +13,8 @@ const PRODUCTS = new Set(["T-Shirt", "Jersey", "Hoodie", "Polo", "Cap", "Tote Ba
 const STYLES = new Set(["Modern & Bold", "Classic & Clean", "Minimal & Elegant", "Retro & Vintage", "Street & Edgy"]);
 const MODES = new Set(["garment", "artwork", "uniform"]);
 const SPORTS = new Set(["Soccer", "Basketball", "Netball", "Cricket", "Goal Keeper", "Other"]);
+const RENDER_TIERS = new Set(["preview", "proof"]);
+const IMAGE_QUALITIES = new Set(["low", "medium", "high", "xhigh", "max", "auto"]);
 
 function text(value, maxLength) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
@@ -72,6 +74,7 @@ export function normalizeBrief(body = {}) {
   const primaryColor = /^#[0-9a-f]{6}$/i.test(body.primaryColor) ? body.primaryColor.toUpperCase() : "#111111";
   const secondaryColor = /^#[0-9a-f]{6}$/i.test(body.secondaryColor) ? body.secondaryColor.toUpperCase() : "#FFFFFF";
   const generationMode = MODES.has(body.generationMode) ? body.generationMode : "garment";
+  const renderTier = RENDER_TIERS.has(body.renderTier) ? body.renderTier : "preview";
   const sport = SPORTS.has(body.sport) ? body.sport : "";
   const inputImage = referenceImage(body.referenceImage);
 
@@ -79,7 +82,18 @@ export function normalizeBrief(body = {}) {
   if (!STYLES.has(style)) throw new Error("Choose a supported design style.");
   if (!brandName) throw new Error("Brand or team name is required.");
 
-  return { productType, style, brandName, tagline, notes, primaryColor, secondaryColor, generationMode, sport, referenceImage: inputImage };
+  return { productType, style, brandName, tagline, notes, primaryColor, secondaryColor, generationMode, renderTier, sport, referenceImage: inputImage };
+}
+
+function outputSettings(brief) {
+  const proof = brief.renderTier === "proof";
+  const configuredQuality = proof
+    ? process.env.OPENAI_IMAGE_PROOF_QUALITY
+    : process.env.OPENAI_IMAGE_PREVIEW_QUALITY;
+  return {
+    size: proof && brief.generationMode === "uniform" ? "1536x1024" : "1024x1024",
+    quality: IMAGE_QUALITIES.has(configuredQuality) ? configuredQuality : proof ? "high" : "medium",
+  };
 }
 
 export function buildPrompt(brief) {
@@ -166,6 +180,7 @@ export default async function handler(req, res) {
   const requestId = randomUUID();
 
   try {
+    const output = outputSettings(brief);
     let upstreamUrl = OPENAI_IMAGES_URL;
     let upstreamBody;
     let upstreamHeaders = {
@@ -181,8 +196,8 @@ export default async function handler(req, res) {
       form.append("prompt", buildPrompt(brief));
       form.append("image", image.blob, image.filename);
       form.append("n", "1");
-      form.append("size", "1024x1024");
-      form.append("quality", process.env.OPENAI_IMAGE_QUALITY || "medium");
+      form.append("size", output.size);
+      form.append("quality", output.quality);
       form.append("output_format", "png");
       form.append("background", brief.generationMode === "artwork" ? "transparent" : "opaque");
       form.append("safety_identifier", safetyIdentifier(req));
@@ -193,8 +208,8 @@ export default async function handler(req, res) {
         model,
         prompt: buildPrompt(brief),
         n: 1,
-        size: "1024x1024",
-        quality: process.env.OPENAI_IMAGE_QUALITY || "medium",
+        size: output.size,
+        quality: output.quality,
         output_format: "png",
         background: brief.generationMode === "artwork" ? "transparent" : "opaque",
         safety_identifier: safetyIdentifier(req),
@@ -227,7 +242,9 @@ export default async function handler(req, res) {
       mimeType: "image/png",
       mode: brief.generationMode,
       model,
-      size: data.size || "1024x1024",
+      size: data.size || output.size,
+      quality: output.quality,
+      renderTier: brief.renderTier,
       usage: data.usage || null,
       revisedPrompt: image.revised_prompt || null,
       requestId,

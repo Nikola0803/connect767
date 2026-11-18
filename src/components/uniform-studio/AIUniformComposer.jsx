@@ -41,6 +41,7 @@ export default function AIUniformComposer({
   generating,
   canSend,
   onSend,
+  renderTier = "preview",
   onStop,
   style,
   styles,
@@ -94,8 +95,8 @@ export default function AIUniformComposer({
     }
   }, [promptHistory.length, uniformPlan, artworkPreview, generating]);
 
-  const submit = () => {
-    if (canSend && !generating) onSend();
+  const submit = (requestedTier = "preview") => {
+    if (canSend && !generating) onSend(requestedTier);
   };
 
   const closePopovers = () => {
@@ -113,7 +114,7 @@ export default function AIUniformComposer({
   const handleKeyDown = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      submit();
+      submit("preview");
     }
     if (event.key === "Escape") {
       closePopovers();
@@ -368,11 +369,14 @@ export default function AIUniformComposer({
             {generating ? (
               <button type="button" onClick={onStop} className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-foreground-950 text-white transition hover:bg-red-600" aria-label="Stop generating"><i className="ri-stop-fill" /></button>
             ) : (
-              <button type="button" onClick={submit} disabled={!canSend} className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary-700 text-white shadow-sm transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:bg-background-300 disabled:text-foreground-400" aria-label="Send message"><i className="ri-arrow-up-line" /></button>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <button type="button" onClick={() => submit("proof")} disabled={!canSend} className="inline-flex h-8 cursor-pointer items-center justify-center gap-1 rounded-full border border-primary-200 bg-primary-50 px-2.5 text-[8px] font-bold text-primary-800 transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:border-background-200 disabled:bg-background-100 disabled:text-foreground-400" aria-label="Render high-quality proof" title={mode === "uniform" ? "1536 × 1024 landscape · high quality" : "1024 × 1024 transparent artwork · high quality"}><i className="ri-hd-line" /> HQ proof</button>
+                <button type="button" onClick={() => submit("preview")} disabled={!canSend} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-primary-700 text-white shadow-sm transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:bg-background-300 disabled:text-foreground-400" aria-label="Generate preview" title="1024 × 1024 · medium quality"><i className="ri-arrow-up-line" /></button>
+              </div>
             )}
           </div>
         </div>
-        <p className={`mt-2 text-center text-[8px] ${muted}`}>Enter to send · Shift + Enter for a new line · AI concepts require production review</p>
+        <p className={`mt-2 text-center text-[8px] ${muted}`}>{renderTier === "proof" ? `Last render: high-quality ${mode === "uniform" ? "landscape proof" : "transparent artwork"}` : "Enter generates a fast preview"} · Shift + Enter for a new line · AI concepts require production review</p>
       </div>
     </section>
   );

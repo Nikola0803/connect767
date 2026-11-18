@@ -969,7 +969,7 @@ function prepareAIReferenceImage(file) {
       const image = new Image();
       image.onerror = () => reject(new Error("The reference image could not be opened."));
       image.onload = () => {
-        const maxDimension = 1536;
+        const maxDimension = 2048;
         const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
         const canvas = document.createElement("canvas");
         canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
@@ -979,11 +979,14 @@ function prepareAIReferenceImage(file) {
           reject(new Error("The reference image could not be prepared."));
           return;
         }
-        context.fillStyle = "#FFFFFF";
-        context.fillRect(0, 0, canvas.width, canvas.height);
+        if (file.type === "image/jpeg") {
+          context.fillStyle = "#FFFFFF";
+          context.fillRect(0, 0, canvas.width, canvas.height);
+        }
         context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const outputType = file.type === "image/jpeg" ? "image/jpeg" : "image/png";
         resolve({
-          src: canvas.toDataURL("image/jpeg", 0.86),
+          src: canvas.toDataURL(outputType, outputType === "image/jpeg" ? 0.94 : undefined),
           name: file.name || "Uniform inspiration",
         });
       };
@@ -1027,6 +1030,7 @@ export function AIArtworkPanel({
   const [archivedPrompts, setArchivedPrompts] = useState([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [error, setError] = useState("");
+  const [renderTier, setRenderTier] = useState("preview");
   const generationControllerRef = useRef(null);
   const allDesignControlsLocked = locks.collar && locks.sleeve && locks.colors && locks.pattern;
   const lockedControlCount = Object.values(locks).filter(Boolean).length;
@@ -1104,7 +1108,7 @@ export function AIArtworkPanel({
     return () => { active = false; };
   }, []);
 
-  const generateArtwork = async () => {
+  const generateArtwork = async (requestedTier = renderTier) => {
     if (!brief.trim()) return;
     const effectiveBrandName = brandName.trim() || "Team artwork";
     setGenerating(true);
@@ -1125,6 +1129,7 @@ export function AIArtworkPanel({
           secondaryColor: colors.shirtStrip,
           notes: brief.trim(),
           generationMode: "artwork",
+          renderTier: requestedTier,
           sport,
         }),
       });
@@ -1150,7 +1155,7 @@ export function AIArtworkPanel({
     }
   };
 
-  const generateUniform = async (revision = "") => {
+  const generateUniform = async (revision = "", requestedTier = renderTier) => {
     const refinement = typeof revision === "string" ? revision.trim() : "";
     const promptKind = refinement ? "Refinement" : uniformPlan ? "Variation" : "Initial";
     const effectiveBrandName = brandName.trim() || uniformPlan?.name || "Team uniform";
@@ -1208,6 +1213,7 @@ export function AIArtworkPanel({
           primaryColor: plan.colors.body,
           secondaryColor: plan.colors.shirtStrip,
           generationMode: "uniform",
+          renderTier: requestedTier,
           sport,
           notes: [
             refinement ? `Revise the supplied existing uniform image: ${refinement}` : brief.trim(),
@@ -1234,6 +1240,7 @@ export function AIArtworkPanel({
               primaryColor: plan.colors.body,
               secondaryColor: plan.colors.shirtStrip,
               generationMode: "artwork",
+              renderTier: requestedTier,
               sport,
               notes: artworkElement.content,
             }),
@@ -1267,6 +1274,9 @@ export function AIArtworkPanel({
         conceptImage: {
           src: `data:${conceptData.mimeType || "image/png"};base64,${conceptData.b64}`,
           name: `${plan.name} full uniform concept`,
+          size: conceptData.size,
+          quality: conceptData.quality,
+          renderTier: conceptData.renderTier,
         },
       });
       savePrompt({
@@ -1286,7 +1296,11 @@ export function AIArtworkPanel({
     }
   };
 
-  const generate = mode === "uniform" ? generateUniform : generateArtwork;
+  const generateDesign = (requestedTier = renderTier) => {
+    setRenderTier(requestedTier);
+    if (mode === "uniform") return generateUniform("", requestedTier);
+    return generateArtwork(requestedTier);
+  };
   const toggleLock = (key) => setLocks((current) => ({ ...current, [key]: !current[key] }));
 
   const applyUniform = () => {
@@ -1409,9 +1423,10 @@ export function AIArtworkPanel({
       onModeChange?.(nextMode);
       setError("");
     };
-    const sendPrompt = () => {
-      if (isRefinement) generateUniform(refinementBrief);
-      else generate();
+    const sendPrompt = (requestedTier = "preview") => {
+      setRenderTier(requestedTier);
+      if (isRefinement) generateUniform(refinementBrief, requestedTier);
+      else generateDesign(requestedTier);
     };
 
     return (
@@ -1428,6 +1443,7 @@ export function AIArtworkPanel({
         generating={generating}
         canSend={canSend}
         onSend={sendPrompt}
+        renderTier={renderTier}
         onStop={stopGenerating}
         style={style}
         styles={AI_STYLES}
@@ -1539,7 +1555,7 @@ export function AIArtworkPanel({
           <button
             type="button"
             disabled={generating || connection !== "connected" || !activePrompt.trim() || (!brandName.trim() && !(mode === "uniform" && uniformPlan)) || (mode === "uniform" && allDesignControlsLocked)}
-            onClick={() => mode === "uniform" && uniformPlan ? generateUniform(refinementBrief) : generate()}
+            onClick={() => mode === "uniform" && uniformPlan ? generateUniform(refinementBrief, renderTier) : generateDesign(renderTier)}
             className={`inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-b-xl px-3 py-3 text-[11px] font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-45 ${
               mode === "uniform" && uniformPlan ? "bg-accent-500 hover:bg-accent-600" : "bg-primary-700 hover:bg-primary-800"
             }`}
@@ -1662,7 +1678,7 @@ export function AIArtworkPanel({
                 <button type="button" onClick={applyUniform} className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-primary-700 px-3 py-2.5 text-[10px] font-bold text-white hover:bg-primary-800">
                   <i className={applied ? "ri-check-double-line" : "ri-check-line"} /> {applied ? "Applied" : "Apply design"}
                 </button>
-                <button type="button" disabled={generating} onClick={() => generateUniform()} className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-background-300 bg-white px-3 py-2.5 text-[10px] font-bold text-foreground-700 hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-50">
+                <button type="button" disabled={generating} onClick={() => generateUniform("", renderTier)} className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-background-300 bg-white px-3 py-2.5 text-[10px] font-bold text-foreground-700 hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-50">
                   <i className={generating ? "ri-loader-4-line animate-spin" : "ri-refresh-line"} /> {generating ? "Designing…" : "New direction"}
                 </button>
               </div>
