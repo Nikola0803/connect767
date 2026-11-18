@@ -2192,11 +2192,11 @@ export default function UniformStudioPage() {
                       >
                         <div className="flex flex-col items-center gap-1.5">
                           <div className="flex flex-wrap items-baseline justify-center gap-x-2 text-center">
-                            <h2 id="ai-preview-title" className="font-heading text-base font-semibold leading-tight text-white">Preview</h2>
-                            <span className="text-[8px] font-black uppercase tracking-[0.16em] text-amber-200">Manual Editing Unavailable</span>
+                            <h2 id="ai-preview-title" className="font-heading text-base font-semibold leading-tight text-white">Preview Only</h2>
+                            <span className="text-[8px] font-black uppercase tracking-[0.16em] text-amber-200">Manual Editing Unavailable.</span>
                           </div>
 
-                          <div className="flex w-full min-w-0 flex-nowrap items-center justify-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                          <div className="flex w-full min-w-0 flex-nowrap items-center justify-center gap-1.5 overflow-visible">
                             <div ref={setAiBannerActionsTarget} className="contents" />
                             {renderCanvasControls(true)}
                             <button

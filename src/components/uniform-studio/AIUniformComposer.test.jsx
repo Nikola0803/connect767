@@ -166,6 +166,11 @@ describe("AIUniformComposer", () => {
     expect(toolbar.queryByRole("button", { name: "Save design" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Refine with AI" })).not.toBeInTheDocument();
 
+    fireEvent.click(toolbar.getByLabelText("Open design reset options"));
+    expect(screen.getByRole("menu", { name: "Design reset options" })).toBeInTheDocument();
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("menu", { name: "Design reset options" })).not.toBeInTheDocument();
+
     fireEvent.click(toolbar.getByRole("button", { name: "Versions" }));
     expect(screen.getByRole("menu", { name: "Version controls" })).toBeInTheDocument();
     fireEvent.pointerDown(document.body);
