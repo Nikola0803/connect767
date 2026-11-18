@@ -67,6 +67,47 @@ describe("required uniform fit selection", () => {
     expect(screen.getAllByRole("spinbutton", { name: "Socks quantity" }).length).toBeGreaterThan(0);
   });
 
+  it("validates the player name and adds a completed roster row", () => {
+    const progress = openStudio("design");
+    fireEvent.click(screen.getAllByRole("button", { name: "Men", exact: true })[0]);
+    fireEvent.click(progress.getByRole("button", { name: /Team roster/ }));
+
+    const addButtons = screen.getAllByRole("button", { name: "Add player" });
+    fireEvent.click(addButtons[0]);
+    expect(screen.getAllByRole("alert")[0]).toHaveTextContent("Enter the player's name");
+
+    const nameInputs = screen.getAllByRole("textbox", { name: "Name" });
+    fireEvent.change(nameInputs[0], { target: { value: "Alex James" } });
+    fireEvent.click(addButtons[0]);
+
+    expect(screen.getAllByText("Alex James").length).toBeGreaterThan(0);
+    expect(nameInputs[0]).toHaveValue("");
+    expect(screen.queryByText("Enter the player's name before adding this roster row.")).not.toBeInTheDocument();
+  });
+
+  it("moves supporter jersey quantities to Team roster and uses the Step 1 Shirt Only price", () => {
+    const progress = openStudio("design");
+    const shirtOnlyButtons = screen.getAllByRole("button", { name: /^Shirt Only/ });
+    expect(shirtOnlyButtons[0]).toHaveTextContent("$12.00");
+    expect(shirtOnlyButtons[0]).toHaveTextContent("supporter jerseys use this price");
+    expect(screen.queryByText("Add supporter jerseys")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Men", exact: true })[0]);
+    fireEvent.click(progress.getByRole("button", { name: /Team roster/ }));
+
+    expect(screen.getAllByText("Add supporter jerseys").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Shirt Only · $12.00 each").length).toBeGreaterThan(0);
+    fireEvent.click(screen.getAllByRole("checkbox", { name: /Add supporter jerseys/ })[0]);
+    expect(screen.getAllByRole("combobox", { name: "Supporter jersey size 1" }).length).toBeGreaterThan(0);
+
+    fireEvent.change(screen.getAllByRole("textbox", { name: "Name" })[0], { target: { value: "Minimum order" } });
+    fireEvent.change(screen.getAllByRole("spinbutton", { name: "Player quantity" })[0], { target: { value: "22" } });
+    fireEvent.click(screen.getAllByRole("button", { name: "Add player" })[0]);
+    fireEvent.click(progress.getByRole("button", { name: /Review & quote/ }));
+    expect(screen.queryByText("Add supporter jerseys")).not.toBeInTheDocument();
+    expect(screen.getAllByText(/1 supporter jersey × \$12\.00/).length).toBeGreaterThan(0);
+  });
+
   it("offers Short or Long for each player when Mixed team order is selected", () => {
     const progress = openStudio("design");
     fireEvent.click(screen.getAllByRole("button", { name: "Men", exact: true })[0]);
