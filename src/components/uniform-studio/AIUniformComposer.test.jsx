@@ -126,7 +126,7 @@ describe("AIUniformComposer", () => {
     expect(props.onReusePrompt).toHaveBeenCalledWith(entry);
   });
 
-  it("keeps AI output preview-only and exposes AI refinement controls instead of manual apply", () => {
+  it("keeps the 3D preview output AI-controlled instead of exposing manual apply", () => {
     const version = {
       name: "Riverside FC — Modern & Bold",
       summary: "A clean white soccer kit.",
@@ -167,6 +167,11 @@ describe("AIUniformComposer", () => {
     expect(toolbar.getByRole("button", { name: "Refine with AI" })).toBeInTheDocument();
     expect(toolbar.getByRole("button", { name: "Save design" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Refine with AI" })).not.toBeInTheDocument();
+
+    fireEvent.click(toolbar.getByRole("button", { name: "Versions" }));
+    expect(screen.getByRole("menu", { name: "Version controls" })).toBeInTheDocument();
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("menu", { name: "Version controls" })).not.toBeInTheDocument();
 
     fireEvent.click(toolbar.getByRole("button", { name: "Save design" }));
     expect(props.onSavePreview).toHaveBeenCalledTimes(1);

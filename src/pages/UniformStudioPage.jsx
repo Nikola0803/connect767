@@ -1855,7 +1855,7 @@ export default function UniformStudioPage() {
                 onClick={() => switchAICanvasMode("concept")}
                 className={`cursor-pointer rounded px-2 py-1 text-[8px] font-bold transition ${aiCanvasMode === "concept" ? "bg-accent-500 text-white" : "text-white/55 hover:text-white"}`}
               >
-                AI output
+                AI 3D Preview
               </button>
               {manualEditingAllowed && <button
                   type="button"
@@ -2172,7 +2172,6 @@ export default function UniformStudioPage() {
                           </div>
 
                           <div className="flex min-w-0 flex-wrap items-center justify-center gap-1.5">
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-300/25 bg-primary-500/10 px-2 py-1 text-[8px] font-bold text-primary-100"><i className="ri-sparkling-2-fill" /> AI Editing</span>
                             <div ref={setAiBannerActionsTarget} className="contents" />
                             {renderCanvasControls(true)}
                             <button
