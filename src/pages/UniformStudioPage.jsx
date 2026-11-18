@@ -19,6 +19,7 @@ import {
   playerRoleOptions,
   kitUnitPrice,
   mixedSleeveSurcharge,
+  ADD_ON_PRICES,
   SHIRT_ONLY_PRICE,
   minimumFullKitsFor,
   fullKitCount as rosterUnitCount,
@@ -1237,6 +1238,9 @@ export default function UniformStudioPage() {
   }, [layers]);
   const stageCollar = showingAIUniformPreview ? aiUniformPlan.collar : collar;
   const stageSleeve = showingAIUniformPreview ? aiUniformPlan.sleeve : sleeve;
+  // "Mixed" is an order-level choice: players can receive either short or
+  // long sleeves. A single sample garment must never render mismatched arms.
+  const renderedStageSleeve = stageSleeve === "Mixed" ? "Short" : stageSleeve;
   const previewProductionLayers = useMemo(
     () => productionLayersFromPlan(aiUniformPlan, { preview: true, sport: activeSport }),
     [aiUniformPlan, activeSport],
@@ -1262,7 +1266,12 @@ export default function UniformStudioPage() {
     });
 
     const nextColors = normalizeZoneColors(plan.colors);
-    setCollar(plan.collar);
+    const appliedCollar = sportConfig.collarOptions.includes(plan.collar)
+      ? plan.collar
+      : /polo/i.test(plan.collar || "") && sportConfig.collarOptions.includes("Polo")
+        ? "Polo"
+        : collar;
+    setCollar(appliedCollar);
     setSleeve(plan.sleeve);
     setColors(nextColors);
     setTwoTone((current) => ({
@@ -2348,7 +2357,7 @@ export default function UniformStudioPage() {
                             view={view}
                             onViewChange={setView}
                             collar={stageCollar}
-                            sleeve={stageSleeve}
+                            sleeve={renderedStageSleeve}
                             colors={stageColors}
                             garmentPattern={stageGarmentPattern}
                             studioBackground={studioBackground}
@@ -2397,7 +2406,7 @@ export default function UniformStudioPage() {
                             softness={twoTone.softness}
                             zoneColors={stageColors}
                             collar={stageCollar}
-                            sleeve={stageSleeve}
+                            sleeve={renderedStageSleeve}
                             garmentPattern={stageGarmentPattern}
                             fullscreen
                             layers={stageLayers.filter((layer) => layer.source !== "ai-uniform-pattern")}
@@ -3280,6 +3289,12 @@ function ReviewOrderTool({
             <i className="ri-3d-cube-sphere-line text-sm" />
             View uniform design in 3D
           </button>
+        )}
+        {collar === "Polo" && (
+          <div role="note" className="mt-3 flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-3 text-xs leading-relaxed text-amber-950">
+            <i className="ri-information-line mt-0.5 text-sm" aria-hidden="true" />
+            <span>This design uses a polo-style collar. The ${ADD_ON_PRICES.collarPolo.toFixed(2)} per-kit collar charge is included automatically.</span>
+          </div>
         )}
       </div>
 

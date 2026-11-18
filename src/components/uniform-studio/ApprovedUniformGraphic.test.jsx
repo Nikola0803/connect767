@@ -5,6 +5,11 @@ import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
 import { SIDE_ASSET_BY_SPORT, SIDE_REGIONS } from "./SideUniformGraphic";
 
 describe("ApprovedUniformGraphic trim isolation", () => {
+  it("renders Mixed as a matching short-sleeve sample instead of mismatched arms", () => {
+    const { container } = render(<ApprovedUniformGraphic sport="soccer" view="front" sleeve="Mixed" />);
+    expect(container.querySelectorAll('[data-sleeve-extension="Mixed"] path')).toHaveLength(0);
+  });
+
   it.each(["front", "side", "back"])("uses the same full-strength sleeve tint on the %s view", (view) => {
     const { container } = render(<ApprovedUniformGraphic sport="soccer" view={view} colors={{ body: "#8888ff", sleeve: "#111111" }} />);
     const sleeveTint = [...container.querySelectorAll('[data-garment-tint="fabric-multiply"]')]

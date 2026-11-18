@@ -190,7 +190,7 @@ export default function ApprovedUniformGraphic({
   const shortsEnd = colors.shortsStrip || colors.trim || collarColor;
   const bottomEnd = region.socksStart || region.kitBottom;
   const isSleeveless = sleeveStyle === "Sleeveless";
-  const hasLeftLongSleeve = sleeveStyle === "Long" || sleeveStyle === "Mixed";
+  const hasLeftLongSleeve = sleeveStyle === "Long";
   const hasRightLongSleeve = sleeveStyle === "Long";
   const nativeLongSleeve = region.nativeSleeve === "long";
   const nativeSleeveless = region.nativeSleeve === "sleeveless";
@@ -353,7 +353,7 @@ export default function ApprovedUniformGraphic({
           )}
           {!isSleeveless && nativeLongSleeve && sleeveStyle !== "Long" && (
             <>
-              {sleeveStyle === "Short" && <path d={cutLowerSleevePath("left")} fill="black" />}
+              {sleeveStyle !== "Long" && <path d={cutLowerSleevePath("left")} fill="black" />}
               <path d={cutLowerSleevePath("right")} fill="black" />
             </>
           )}

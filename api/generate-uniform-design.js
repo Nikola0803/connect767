@@ -156,6 +156,7 @@ export function buildUniformPrompt(input) {
     `Design an editable ${input.sport} team uniform for ${JSON.stringify(input.brandName)}.`,
     `Direction: ${input.style}. Customer brief: ${input.brief}`,
     `Allowed collars: ${input.collarOptions.join(", ")}. Allowed sleeves: ${input.sleeveOptions.join(", ")}.`,
+    "Mixed sleeves means a team order containing some matching short-sleeve jerseys and some matching long-sleeve jerseys. It never means one jersey with different left and right sleeves. For a Mixed representative preview, render two matching short sleeves.",
     `Current editable design: ${JSON.stringify(input.current)}. Locked controls: ${JSON.stringify(input.locks)}.`,
     "Return a cohesive production-friendly palette for only these zones: shirt body, sleeves, collar, shorts or trousers, socks, shirt ends, sleeve ends, and shorts ends.",
     "Socks must be one solid color. Do not invent side panels, shoulder panels, gradients outside the named pattern, or unsupported garment parts.",
@@ -173,6 +174,16 @@ export function buildUniformPrompt(input) {
 
 export function normalizeUniformPlan(plan, input) {
   const current = input.current;
+  const normalizedCollar = input.collarOptions.includes(plan?.collar)
+    ? plan.collar
+    : /polo/i.test(String(plan?.collar || "")) && input.collarOptions.includes("Polo")
+      ? "Polo"
+      : current.collar;
+  const normalizedSleeve = input.sleeveOptions.includes(plan?.sleeve)
+    ? plan.sleeve
+    : /mixed/i.test(String(plan?.sleeve || "")) && input.sleeveOptions.includes("Mixed")
+      ? "Mixed"
+      : current.sleeve;
   const nextColors = Object.fromEntries(COLOR_KEYS.map((key) => [
     key,
     input.locks.colors ? current.colors[key] : hex(plan?.colors?.[key], current.colors[key]),
@@ -206,10 +217,10 @@ export function normalizeUniformPlan(plan, input) {
     summary: text(plan?.summary, 300) || "An editable AI-generated uniform direction.",
     collar: input.locks.collar
       ? current.collar
-      : input.collarOptions.includes(plan?.collar) ? plan.collar : current.collar,
+      : normalizedCollar,
     sleeve: input.locks.sleeve
       ? current.sleeve
-      : input.sleeveOptions.includes(plan?.sleeve) ? plan.sleeve : current.sleeve,
+      : normalizedSleeve,
     colors: nextColors,
     pattern: input.locks.pattern
       ? { enabled: current.patternKey !== "none", key: current.patternKey, view: "both" }
