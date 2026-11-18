@@ -1056,28 +1056,23 @@ export default function UniformStudioPage() {
   const handleAIUniformPlanChange = (plan) => {
     setAiUniformPlan(plan || null);
     if (plan) {
-      // The AI preview and production editor deliberately share the same
-      // deterministic zone renderer. A separately generated concept image can
-      // reinterpret hex colours under photographic lighting and drift from
-      // the manufacturing map.
-      setAiWorkspaceConcept(null);
+      if (plan.conceptImage?.src) setAiWorkspaceConcept(plan.conceptImage);
       setAiDesignApplied(false);
-      setAiCanvasMode("concept");
+      setAiCanvasMode(plan.conceptImage?.src ? "concept" : "production");
       setStageMode("edit");
       setView("front");
       setSelectedLayerId(null);
     }
   };
 
-  const showingAIUniformPreview = Boolean(aiUniformPlan && !aiDesignApplied);
+  const showingAIUniformPreview = Boolean(aiUniformPlan && aiCanvasMode === "production" && !aiDesignApplied);
   const showingAIConcept = Boolean(
     stageMode === "edit"
-    && !aiUniformPlan
     && aiWorkspaceConcept?.src
     && aiCanvasMode === "concept",
   );
   const showingProductionMap = stageMode === "edit" && !showingAIConcept
-    && !(activeTool === "ai" && aiDesignerMode === "uniform" && !aiWorkspaceConcept?.src && !aiUniformPlan);
+    && !(activeTool === "ai" && aiDesignerMode === "uniform" && !aiWorkspaceConcept?.src);
   useEffect(() => {
     setZoom(1);
     setAiConceptRotation(0);
@@ -1176,10 +1171,7 @@ export default function UniformStudioPage() {
     setSelectedLayerId(null);
     setPendingLayer(null);
     setView("front");
-    // Keep the applied design on the same deterministic rendering path as the
-    // AI preview. Legacy plans may still contain a conceptImage, but showing
-    // it here would reintroduce colour and placement drift.
-    setAiWorkspaceConcept(null);
+    if (plan.conceptImage?.src) setAiWorkspaceConcept(plan.conceptImage);
     setAiDesignApplied(true);
     setAiCanvasMode(canvasMode);
   };
@@ -1991,7 +1983,7 @@ export default function UniformStudioPage() {
                                 onClick={() => switchAICanvasMode("concept")}
                                 className={`cursor-pointer rounded px-2 py-1 text-[8px] font-bold transition ${aiCanvasMode === "concept" ? "bg-accent-500 text-white" : "text-white/55 hover:text-white"}`}
                               >
-                                Exact AI preview
+                                AI output
                               </button>
                               <button
                                 type="button"
