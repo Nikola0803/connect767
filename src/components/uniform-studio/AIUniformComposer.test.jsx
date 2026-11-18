@@ -48,6 +48,15 @@ function renderComposer(overrides = {}) {
 }
 
 describe("AIUniformComposer", () => {
+  it("fits the complete composer inside its docked panel", () => {
+    renderComposer();
+
+    const composer = screen.getByLabelText("Connect767 AI uniform designer");
+    expect(composer).toHaveClass("h-full", "min-h-0", "flex-1", "overflow-hidden");
+    expect(composer).not.toHaveClass("min-h-[620px]");
+    expect(screen.getByLabelText("Message Connect767 AI")).toBeInTheDocument();
+  });
+
   it("uses the transparent Connect767 AI logo instead of visible brand-name text", () => {
     renderComposer();
 

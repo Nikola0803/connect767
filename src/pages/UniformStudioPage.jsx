@@ -2296,7 +2296,7 @@ export default function UniformStudioPage() {
                   </div>
                   <p className="mt-1 text-xs text-foreground-500">{activeToolConfig?.hint || workflowStep.description}</p>
                 </div>}
-                <div className={`min-h-0 flex-1 ${activeTool === "ai" ? "overflow-hidden" : "overflow-y-auto"} ${activeTool === "ai" ? "" : activeTool === "design" ? "p-3" : "p-5"}`}>
+                <div className={`min-h-0 flex-1 ${activeTool === "ai" ? "flex flex-col overflow-hidden" : "overflow-y-auto"} ${activeTool === "ai" ? "" : activeTool === "design" ? "p-3" : "p-5"}`}>
                 {activeTool !== "ai" && (
                   <div className="mb-4">
                     <GarmentCapabilitySummary capabilities={garmentCapabilities} />
