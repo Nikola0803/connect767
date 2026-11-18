@@ -161,22 +161,22 @@ const tools = [
 
 const studioWorkflow = [
   {
-    key: "uniform",
-    label: "Uniform",
-    description: "Fit, colors & extras",
-    icon: "ri-shirt-line",
-    step: 1,
-    defaultTool: "design",
-    tools: ["design", "zones"],
-  },
-  {
     key: "artwork",
     label: "Artwork",
     description: "Text, logos & patterns",
     icon: "ri-image-edit-line",
-    step: 2,
+    step: 1,
     defaultTool: "text",
     tools: ["ai", "text", "logo", "remove-bg", "skins", "layers"],
+  },
+  {
+    key: "uniform",
+    label: "Uniform",
+    description: "Fit, colors & extras",
+    icon: "ri-shirt-line",
+    step: 2,
+    defaultTool: "design",
+    tools: ["design", "zones"],
   },
   {
     key: "roster",
@@ -513,9 +513,10 @@ export default function UniformStudioPage() {
     layerCount: layers.length,
   }), [activeSport, view, aiCanvasMode, aiWorkspaceConcept?.src, hasUploadedReference, zoneModel, layers.length]);
   // Gate every entry path, including saved links and artwork selection.
+  const selectedWorkflowStep = studioWorkflow.find((step) => step.tools.includes(selectedTool));
   const gatedTool = strictAIPreview
     ? "ai"
-    : hasSelectedFit || ["design", "zones"].includes(selectedTool) ? selectedTool : "design";
+    : !hasSelectedFit && selectedWorkflowStep?.step > 2 ? "text" : selectedTool;
   const requestedWorkflowIndex = Math.max(
     0,
     studioWorkflow.findIndex((step) => step.tools.includes(gatedTool))
@@ -564,7 +565,7 @@ export default function UniformStudioPage() {
 
   const openWorkflowStep = (index) => {
     const nextStep = studioWorkflow[Math.max(0, Math.min(studioWorkflow.length - 1, index))];
-    if (nextStep.step > 1 && !hasSelectedFit) return;
+    if (nextStep.step > 2 && !hasSelectedFit) return;
     if (nextStep.key === "review" && !minimumKitsMet) return;
     setPendingLayer(null);
     setSelectedLayerId(null);
@@ -572,7 +573,6 @@ export default function UniformStudioPage() {
   };
 
   const openAIDesigner = () => {
-    if (!hasSelectedFit) return;
     setPendingLayer(null);
     setSelectedLayerId(null);
     setStageMode("edit");
@@ -1922,7 +1922,7 @@ export default function UniformStudioPage() {
   // ---------- The studio itself: one full viewport, nothing else ----------
   return (
     <div className="h-[100dvh] flex flex-col overflow-hidden bg-[#10110f] text-background-50">
-      <div className="relative z-40 flex min-h-14 flex-shrink-0 items-center justify-between gap-3 border-b border-white/[0.07] bg-[#0c0d0b]/95 px-3 py-2.5 pt-[max(.625rem,env(safe-area-inset-top))] sm:px-4 md:px-5">
+      <header className="relative z-40 flex min-h-14 flex-shrink-0 items-center justify-between gap-3 border-b border-white/[0.07] bg-[#0c0d0b]/95 px-3 py-2.5 pt-[max(.625rem,env(safe-area-inset-top))] sm:px-4 md:px-5">
         <button
           type="button"
           onClick={handleExit}
@@ -1943,12 +1943,10 @@ export default function UniformStudioPage() {
             <span className="h-1.5 w-1.5 rounded-full bg-primary-400" /> Auto-saved
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
           <button
             type="button"
             onClick={openAIDesigner}
-            disabled={!hasSelectedFit}
-            title={!hasSelectedFit ? "Select a fit in Step 1 first" : undefined}
             className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-45 ${
               activeTool === "ai"
                 ? "border-accent-400 bg-accent-500 text-white shadow-[0_8px_20px_rgba(239,84,53,0.22)]"
@@ -1962,6 +1960,7 @@ export default function UniformStudioPage() {
             <span className="hidden sm:inline">AI Designer</span>
             <span className="sm:hidden">AI</span>
           </button>
+          {renderCanvasControls(true)}
           <button
             type="button"
             onClick={saveProgress}
@@ -2037,7 +2036,7 @@ export default function UniformStudioPage() {
             </div>
           </details>}
         </div>
-      </div>
+      </header>
 
       {!strictAIPreview && <nav
         aria-label="Uniform order progress"
@@ -2047,7 +2046,7 @@ export default function UniformStudioPage() {
           {studioWorkflow.map((step, index) => {
             const active = index === workflowIndex;
             const complete = index < workflowIndex;
-            const locked = (index > 0 && !hasSelectedFit) || (step.key === "review" && !minimumKitsMet);
+            const locked = (step.step > 2 && !hasSelectedFit) || (step.key === "review" && !minimumKitsMet);
             return (
               <div key={step.key} className="flex min-w-0 flex-1 items-center gap-1.5">
                 <button
@@ -2196,7 +2195,6 @@ export default function UniformStudioPage() {
 
                           <div className="flex w-full min-w-0 flex-nowrap items-center justify-center gap-1.5 overflow-visible">
                             <div ref={setAiBannerActionsTarget} className="contents" />
-                            {renderCanvasControls(true)}
                             <button
                               type="button"
                               onClick={convertAIToEditableDesign}
@@ -2218,9 +2216,6 @@ export default function UniformStudioPage() {
                         {conversionError && <p role="alert" className="mt-1.5 rounded-lg border border-red-300/25 bg-red-950/30 px-3 py-1.5 text-[8px] leading-relaxed text-red-100">{conversionError}</p>}
                       </section>
                     )}
-                    {/* Functional canvas controls only; descriptive labels live in the AI panel. */}
-                    {!strictAIPreview && renderCanvasControls(false)}
-
                     {/* Floating contextual toolbar */}
                     {manualEditingAllowed && stageMode === "edit" && selectedLayer && (
                       <div className="flex items-center flex-shrink-0">
@@ -2769,8 +2764,8 @@ export default function UniformStudioPage() {
           <button
             type="button"
             onClick={continueWorkflow}
-            disabled={!hasSelectedFit || (workflowStep.key === "roster" && !minimumKitsMet)}
-            title={!hasSelectedFit ? "Select Men, Women or Youth to continue" : undefined}
+            disabled={(studioWorkflow[workflowIndex + 1].step > 2 && !hasSelectedFit) || (workflowStep.key === "roster" && !minimumKitsMet)}
+            title={studioWorkflow[workflowIndex + 1].step > 2 && !hasSelectedFit ? "Select Men, Women or Youth in Uniform setup to continue" : undefined}
             className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,116,73,0.22)] transition hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer"
           >
             Continue to {studioWorkflow[workflowIndex + 1].label}
