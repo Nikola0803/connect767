@@ -1156,7 +1156,6 @@ export function AIArtworkPanel({
     const effectiveBrandName = brandName.trim() || uniformPlan?.name || "Team uniform";
     const effectiveBrief = brief.trim() || uniformPlan?.summary || "Preserve the current uniform direction.";
     if (!effectiveBrandName || (!effectiveBrief && !refinement)) return;
-    const existingConcept = refinement ? uniformPlan?.conceptImage?.src || "" : "";
     const currentDesign = uniformPlan || { collar, sleeve, colors, pattern: { key: currentPatternKey } };
     setGenerating(true);
     setError("");
@@ -1185,43 +1184,13 @@ export function AIArtworkPanel({
             patternKey: currentDesign.pattern?.key || currentPatternKey,
           },
           locks,
-          referenceImage: existingConcept || reference?.src || "",
+          referenceImage: reference?.src || "",
         }),
       });
       const data = await response.json();
       if (!response.ok || !data.plan) throw new Error(data.error || "AI uniform design failed.");
       const plan = data.plan;
       const artworkElement = plan.productionElements?.find((element) => element.kind === "artwork");
-      const productionPlacementSummary = (plan.productionElements || []).length
-        ? plan.productionElements.map((element) => (
-            `${element.kind} ${JSON.stringify(element.content)} in ${element.layout || "single-line"} layout on ${element.view} at ${element.x}% x ${element.y}%`
-          )).join("; ")
-        : "No text, number, crest, logo or sponsor placements.";
-      const conceptRequest = fetch("/api/generate-design", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: generationControllerRef.current.signal,
-        body: JSON.stringify({
-          productType: "Jersey",
-          style,
-          brandName: effectiveBrandName,
-          primaryColor: plan.colors.body,
-          secondaryColor: plan.colors.shirtStrip,
-          generationMode: "uniform",
-          sport,
-          notes: [
-            refinement ? `Revise the supplied existing uniform image: ${refinement}` : brief.trim(),
-            `Design plan: ${plan.summary}`,
-            `Collar: ${plan.collar}. Sleeves: ${plan.sleeve}.`,
-            `Exact zone colors: body ${plan.colors.body}, sleeves ${plan.colors.sleeve}, collar ${plan.colors.collar}, shorts ${plan.colors.shorts}, socks ${plan.colors.socks}, shirt trim ${plan.colors.shirtStrip}, sleeve trim ${plan.colors.sleeveStrip}, shorts trim ${plan.colors.shortsStrip}.`,
-            plan.pattern?.enabled
-              ? `Pattern: ${plan.pattern.key}, applied to ${plan.pattern.view}.`
-              : "Pattern: clean solid-color design with no decorative pattern.",
-            `Editable Front / Side / Back placement map: ${productionPlacementSummary}`,
-          ].join(" "),
-          referenceImage: existingConcept,
-        }),
-      });
       const artworkRequest = artworkElement
         ? fetch("/api/generate-design", {
             method: "POST",
@@ -1239,11 +1208,7 @@ export function AIArtworkPanel({
             }),
           })
         : Promise.resolve(null);
-      const [conceptResponse, artworkResponse] = await Promise.all([conceptRequest, artworkRequest]);
-      const conceptData = await conceptResponse.json();
-      if (!conceptResponse.ok || !conceptData.b64) {
-        throw new Error(conceptData.error || "The editable design was created, but its full-uniform preview could not be rendered.");
-      }
+      const artworkResponse = await artworkRequest;
       let productionElements = plan.productionElements || [];
       if (artworkResponse) {
         const artworkData = await artworkResponse.json();
@@ -1264,10 +1229,6 @@ export function AIArtworkPanel({
       onUniformPlanChange?.({
         ...plan,
         productionElements,
-        conceptImage: {
-          src: `data:${conceptData.mimeType || "image/png"};base64,${conceptData.b64}`,
-          name: `${plan.name} full uniform concept`,
-        },
       });
       savePrompt({
         prompt: refinement || effectiveBrief,
