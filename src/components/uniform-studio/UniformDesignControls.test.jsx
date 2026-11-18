@@ -66,7 +66,7 @@ describe("uniform design controls", () => {
     render(<OptionsPanel sport={sport} section="fit" fitType="Men" kitType="Full" />);
     expect(screen.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent(`Team order · Min Qnty ${minimum}`);
     expect(screen.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent("Includes shirt, shorts and socks");
-    expect(screen.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("Extra shirts with a Full Kit order");
+    expect(screen.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("Extra team and supporter jerseys use this price");
   });
   it("keeps Full Kit selected when adding extra shirts and allows sizes and quantities", () => {
     const setKitType = vi.fn();
@@ -229,7 +229,7 @@ describe("uniform design controls", () => {
     );
     expect(container.querySelector('[data-collar-shape="Polo"]')).toBeInTheDocument();
     expect(container.querySelector('[data-collar-color="#ffffff"]')).toBeInTheDocument();
-    expect(container.querySelector('[data-sleeve-extension="Long"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-sleeve-replacement="Long"]')).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /soccer complete uniform front/i })).toHaveClass(
       "overflow-hidden",
     );

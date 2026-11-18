@@ -19,7 +19,7 @@ export const SIDE_REGIONS = {
     width: 887, height: 1774, bottomStart: 754, socksStart: 1125, shirtHem: 730, bottomHem: 1080,
     sleeve: "M369 38 C297 68 252 149 253 240 L281 363 C325 391 380 390 430 368 C441 284 441 212 423 158 C414 105 389 63 369 38 Z",
     sleeveEnd: "M302 337 C338 329 395 332 434 346 L430 369 C391 389 337 381 303 363 Z",
-    longSleeve: "M303 363 C337 381 391 389 430 369 C428 455 420 543 406 628 C381 642 348 641 326 626 C318 540 310 452 303 363 Z",
+    longSleeve: "M369 38 C297 68 252 149 253 240 L281 363 C290 455 305 545 326 626 C348 641 381 642 406 628 C420 540 428 455 430 368 C441 284 441 212 423 158 C414 105 389 63 369 38 Z",
     longSleeveEnd: "M326 626 C348 641 381 642 406 628 L405 654 C380 668 350 667 328 652 Z",
     collar: "M370 17 C424 27 481 70 515 115 L500 136 C461 92 407 58 353 46 Z",
   },
@@ -120,12 +120,6 @@ export default function SideUniformGraphic({
 
       <image href={asset} x="0" y="0" width={width} height={height} />
 
-      {showLongSleeve && (
-        <g data-sleeve-extension="Long" opacity={opacityFor("sleeve")}>
-          <path data-long-sleeve-side={side} d={region.longSleeve} fill={sleeve} />
-        </g>
-      )}
-
       {/* Composite the zone fills first, then multiply the resulting palette
           onto the photograph once. Separate multiply groups mix sleeve and
           body colors together instead of replacing the sleeve color. */}
@@ -139,6 +133,12 @@ export default function SideUniformGraphic({
         {region.sleeveEnd && !showLongSleeve && <path data-garment-zone="sleeveStrip" d={region.sleeveEnd} fill={sleeveEnd} stroke={sleeveEnd} strokeWidth="3" strokeLinejoin="round" opacity={opacityFor("sleeveStrip")} />}
         {region.collar && <path data-garment-zone="collar" d={region.collar} fill={collar} stroke={collar} strokeWidth="3" strokeLinejoin="round" opacity={opacityFor("collar")} />}
       </Tint>
+
+      {showLongSleeve && (
+        <g data-sleeve-replacement="Long" opacity={opacityFor("sleeve")}>
+          <path data-long-sleeve-side={side} d={region.longSleeve} fill={sleeve} />
+        </g>
+      )}
 
       {showLongSleeve && (
         <path

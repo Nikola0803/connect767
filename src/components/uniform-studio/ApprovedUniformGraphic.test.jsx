@@ -7,20 +7,20 @@ import { SIDE_ASSET_BY_SPORT, SIDE_REGIONS } from "./SideUniformGraphic";
 describe("ApprovedUniformGraphic trim isolation", () => {
   it("renders Mixed as a matching short-sleeve sample instead of mismatched arms", () => {
     const { container } = render(<ApprovedUniformGraphic sport="soccer" view="front" sleeve="Mixed" />);
-    expect(container.querySelectorAll('[data-sleeve-extension="Mixed"] path')).toHaveLength(0);
+    expect(container.querySelectorAll('[data-sleeve-replacement] path')).toHaveLength(0);
   });
 
-  it.each(["front", "back"])("extends both %s sleeves from the existing cuff boundary and preserves wrist trim", (view) => {
+  it.each(["front", "back"])("replaces both %s sleeves from the shoulder boundary and preserves wrist trim", (view) => {
     const { container } = render(
       <ApprovedUniformGraphic sport="soccer" view={view} sleeve="Long" colors={{ sleeveStrip: "#f15a37" }} />,
     );
-    const extensions = container.querySelectorAll('[data-sleeve-extension="Long"] [data-long-sleeve-side]');
-    expect(extensions).toHaveLength(2);
+    const replacements = container.querySelectorAll('[data-sleeve-replacement="Long"] [data-long-sleeve-side]');
+    expect(replacements).toHaveLength(2);
     const expectedBoundaryStarts = view === "front"
-      ? ["M105,260", "M560,260"]
-      : ["M609.5,260", "M1062.5,260"];
-    extensions.forEach((extension, index) => {
-      expect(extension.getAttribute("d")).toMatch(new RegExp(`^${expectedBoundaryStarts[index]}`));
+      ? ["M275,40", "M391,40"]
+      : ["M775.5,36", "M894.5,36"];
+    replacements.forEach((replacement, index) => {
+      expect(replacement.getAttribute("d")).toMatch(new RegExp(`^${expectedBoundaryStarts[index]}`));
     });
     expect(container.querySelectorAll('[data-long-sleeve-cuff]')).toHaveLength(2);
     // The selected long sleeve replaces the short cuff; only the wrist trim
@@ -35,7 +35,9 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     const { container } = render(
       <ApprovedUniformGraphic sport="soccer" view="side" sleeve="Long" colors={{ sleeve: "#f4f1e8", sleeveStrip: "#00c8c8" }} />,
     );
-    expect(container.querySelector('[data-sleeve-extension="Long"] [data-long-sleeve-side="right"]')).not.toBeNull();
+    const replacement = container.querySelector('[data-sleeve-replacement="Long"] [data-long-sleeve-side="right"]');
+    expect(replacement).not.toBeNull();
+    expect(replacement.getAttribute("d")).toMatch(/^M369 38/);
     expect(container.querySelector('[data-long-sleeve-cuff="right"]').getAttribute("fill")).toBe("#00c8c8");
   });
 
