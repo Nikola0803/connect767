@@ -16,7 +16,6 @@ function renderComposer(overrides = {}) {
     generating: false,
     canSend: true,
     onSend: vi.fn(),
-    renderTier: "preview",
     onStop: vi.fn(),
     style: "Modern & Bold",
     styles: ["Modern & Bold", "Minimal & Elegant"],
@@ -79,16 +78,15 @@ describe("AIUniformComposer", () => {
     expect(props.onSend).not.toHaveBeenCalled();
 
     fireEvent.keyDown(message, { key: "Enter" });
-    expect(props.onSend).toHaveBeenCalledWith("preview");
+    expect(props.onSend).toHaveBeenCalledWith("proof");
   });
 
-  it("offers separate preview and high-quality proof actions", () => {
+  it("uses highest-quality output for the standard preview action", () => {
     const props = renderComposer();
 
-    fireEvent.click(screen.getByRole("button", { name: "Render high-quality proof" }));
-    expect(props.onSend).toHaveBeenCalledWith("proof");
+    expect(screen.queryByRole("button", { name: "Render high-quality proof" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Generate preview" }));
-    expect(props.onSend).toHaveBeenLastCalledWith("preview");
+    expect(props.onSend).toHaveBeenCalledWith("proof");
   });
 
   it("shows only tools supported by the uniform AI backend", () => {
@@ -157,15 +155,15 @@ describe("AIUniformComposer", () => {
     document.body.appendChild(toolbarTarget);
     const original = { name: "Original", conceptImage: { src: "data:image/png;base64,one" } };
     const current = { name: "Current", conceptImage: { src: "data:image/png;base64,two" } };
-    const props = renderComposer({ toolbarTarget, uniformPlan: current, versions: [original, current] });
+    renderComposer({ toolbarTarget, uniformPlan: current, versions: [original, current] });
     const toolbar = within(toolbarTarget);
 
     expect(toolbar.getByRole("button", { name: "New design" })).toBeInTheDocument();
     expect(toolbar.getByRole("button", { name: "History" })).toBeInTheDocument();
     expect(toolbar.getByRole("button", { name: "Reference" })).toBeInTheDocument();
-    expect(toolbar.getByRole("button", { name: "AI controls" })).toBeInTheDocument();
     expect(toolbar.getByRole("button", { name: "Refine with AI" })).toBeInTheDocument();
-    expect(toolbar.getByRole("button", { name: "Save design" })).toBeInTheDocument();
+    expect(toolbar.queryByRole("button", { name: "AI controls" })).not.toBeInTheDocument();
+    expect(toolbar.queryByRole("button", { name: "Save design" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Refine with AI" })).not.toBeInTheDocument();
 
     fireEvent.click(toolbar.getByRole("button", { name: "Versions" }));
@@ -173,8 +171,6 @@ describe("AIUniformComposer", () => {
     fireEvent.pointerDown(document.body);
     expect(screen.queryByRole("menu", { name: "Version controls" })).not.toBeInTheDocument();
 
-    fireEvent.click(toolbar.getByRole("button", { name: "Save design" }));
-    expect(props.onSavePreview).toHaveBeenCalledTimes(1);
     toolbarTarget.remove();
   });
 

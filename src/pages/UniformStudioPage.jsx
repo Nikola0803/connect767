@@ -1853,7 +1853,7 @@ export default function UniformStudioPage() {
 
   const renderCanvasControls = (integrated = false) => (
     <div className={integrated
-      ? "flex max-w-full flex-wrap items-center justify-end gap-1.5"
+      ? "flex max-w-full shrink-0 flex-nowrap items-center justify-end gap-1.5"
       : "relative z-20 flex w-fit max-w-full flex-shrink-0 self-end flex-wrap items-center gap-2 rounded-xl border border-white/[0.07] bg-[#10120f] px-2 py-1.5 shadow-[0_8px_22px_rgba(0,0,0,.24)]"}
     >
       {!integrated && (
@@ -2196,7 +2196,7 @@ export default function UniformStudioPage() {
                             <span className="text-[8px] font-black uppercase tracking-[0.16em] text-amber-200">Manual Editing Unavailable</span>
                           </div>
 
-                          <div className="flex min-w-0 flex-wrap items-center justify-center gap-1.5">
+                          <div className="flex w-full min-w-0 flex-nowrap items-center justify-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                             <div ref={setAiBannerActionsTarget} className="contents" />
                             {renderCanvasControls(true)}
                             <button
@@ -2205,7 +2205,7 @@ export default function UniformStudioPage() {
                               disabled={!editablePlanValidation.valid || studioMode === STUDIO_MODES.AI_GENERATING}
                               title={editablePlanValidation.reason}
                               aria-label="Convert to Editable Design"
-                              className="group inline-flex min-h-9 min-w-[230px] cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary-300/35 bg-primary-600 px-3 py-1.5 text-left text-white shadow-[0_8px_22px_rgba(0,116,73,.28)] transition hover:-translate-y-0.5 hover:bg-primary-500 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/10 disabled:text-white/40 disabled:shadow-none"
+                              className="group inline-flex min-h-9 min-w-[230px] shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary-300/35 bg-primary-600 px-3 py-1.5 text-left text-white shadow-[0_8px_22px_rgba(0,116,73,.28)] transition hover:-translate-y-0.5 hover:bg-primary-500 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/10 disabled:text-white/40 disabled:shadow-none"
                             >
                               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/15 text-xs"><i className="ri-layout-grid-line" /></span>
                               <span className="min-w-0 flex-1">
