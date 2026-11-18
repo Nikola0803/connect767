@@ -1859,7 +1859,7 @@ export default function UniformStudioPage() {
       <div className="flex shrink-0 items-center gap-1.5">
         {(aiUniformPlan || aiWorkspaceConcept) && (
           <>
-            {manualEditingAllowed && <div className="inline-flex rounded-md border border-white/10 bg-black/20 p-0.5">
+            {manualEditingAllowed && <div className="inline-flex gap-1.5 rounded-md border border-white/10 bg-black/20 p-0.5">
               <button
                 type="button"
                 onClick={() => switchAICanvasMode("concept")}
