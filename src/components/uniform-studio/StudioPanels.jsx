@@ -1027,6 +1027,7 @@ export function AIArtworkPanel({
   onCompareVersions,
   comparisonActive = false,
   onSavePreview,
+  toolbarTarget,
 }) {
   const [mode, setMode] = useState("uniform");
   const [brandName, setBrandName] = useState("");
@@ -1490,6 +1491,7 @@ export function AIArtworkPanel({
         comparisonActive={comparisonActive}
         onGenerateVariation={() => generateUniform("", renderTier)}
         onSavePreview={onSavePreview}
+        toolbarTarget={toolbarTarget}
       />
     );
   }

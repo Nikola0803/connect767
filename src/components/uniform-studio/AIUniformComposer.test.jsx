@@ -152,6 +152,27 @@ describe("AIUniformComposer", () => {
     expect(props.onSavePreview).toHaveBeenCalledTimes(1);
   });
 
+  it("relocates AI commands and version actions into the studio banner", () => {
+    const toolbarTarget = document.createElement("div");
+    document.body.appendChild(toolbarTarget);
+    const original = { name: "Original", conceptImage: { src: "data:image/png;base64,one" } };
+    const current = { name: "Current", conceptImage: { src: "data:image/png;base64,two" } };
+    const props = renderComposer({ toolbarTarget, uniformPlan: current, versions: [original, current] });
+    const toolbar = within(toolbarTarget);
+
+    expect(toolbar.getByRole("button", { name: "New design" })).toBeInTheDocument();
+    expect(toolbar.getByRole("button", { name: "History" })).toBeInTheDocument();
+    expect(toolbar.getByRole("button", { name: "Reference" })).toBeInTheDocument();
+    expect(toolbar.getByRole("button", { name: "AI controls" })).toBeInTheDocument();
+    expect(toolbar.getByRole("button", { name: "Refine with AI" })).toBeInTheDocument();
+    expect(toolbar.getByRole("button", { name: "Save design" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Refine with AI" })).not.toBeInTheDocument();
+
+    fireEvent.click(toolbar.getByRole("button", { name: "Save design" }));
+    expect(props.onSavePreview).toHaveBeenCalledTimes(1);
+    toolbarTarget.remove();
+  });
+
   it("preserves AI versions for comparison, rejection and restoration", () => {
     const original = { name: "Original", conceptImage: { src: "data:image/png;base64,one" } };
     const current = { name: "Current", conceptImage: { src: "data:image/png;base64,two" } };

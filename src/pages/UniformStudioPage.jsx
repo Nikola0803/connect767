@@ -384,6 +384,7 @@ export default function UniformStudioPage() {
   const [studioMode, setStudioMode] = useState(STUDIO_MODES.EDITABLE);
   const [conversionError, setConversionError] = useState("");
   const aiConceptViewportRef = useRef(null);
+  const [aiBannerActionsTarget, setAiBannerActionsTarget] = useState(null);
   // Shown when leaving the studio with unsaved work — see confirmExit below.
   const [exitPrompt, setExitPrompt] = useState(false);
   const placeLayer3d = (layerId, placement) =>
@@ -1829,15 +1830,6 @@ export default function UniformStudioPage() {
     optionsProps={{ sport: activeSport, fitType, setFitType: (value) => { setFitType(value); if (!hasSelectedFit) setActiveTool("design"); }, kitType, setKitType, extraTeamShirts, setExtraTeamShirts, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment }}
   />;
 
-  const focusAIRefinement = () => {
-    setActiveTool("ai");
-    window.requestAnimationFrame(() => {
-      const messageBox = document.querySelector('[aria-label="Message Connect767 AI"]');
-      messageBox?.scrollIntoView({ behavior: "smooth", block: "center" });
-      messageBox?.focus({ preventScroll: true });
-    });
-  };
-
   const renderCanvasControls = (integrated = false) => (
     <div className={integrated
       ? "flex max-w-full flex-wrap items-center justify-end gap-1.5"
@@ -2172,27 +2164,16 @@ export default function UniformStudioPage() {
                   {/* Canvas */}
                   <div className={`flex min-w-0 flex-1 flex-col items-center overflow-hidden ${activeTool === "ai" ? "gap-2 px-2 py-2 md:px-3 xl:px-4" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
                     {strictAIPreview && (
-                      <section className="relative z-20 w-full max-w-[1760px] flex-shrink-0 self-center rounded-xl border border-amber-300/25 bg-[linear-gradient(120deg,rgba(82,57,5,.38),rgba(18,24,18,.92))] px-3 py-2 shadow-[0_10px_26px_rgba(0,0,0,.18)]" aria-labelledby="ai-preview-title">
-                        <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
-                          <div className="flex min-w-[260px] flex-1 items-center gap-2.5">
-                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary-300/20 bg-white/10 p-1">
-                              <img src={`${import.meta.env.BASE_URL}connect767-ai-logo-transparent.png?v=20261117`} alt="Connect767 AI" className="h-full w-full object-contain" />
-                            </span>
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-baseline gap-x-2">
-                                <h2 id="ai-preview-title" className="font-heading text-base font-semibold leading-tight text-white">Preview</h2>
-                                <span className="text-[8px] font-black uppercase tracking-[0.16em] text-amber-200">Manual editing unavailable</span>
-                              </div>
-                              <p className="mt-0.5 truncate text-[9px] text-white/55">Refine with AI, or open Production Mode for editable garment zones.</p>
-                            </div>
+                      <section className="relative z-20 w-full max-w-[1536px] flex-shrink-0 self-center rounded-xl border border-amber-300/25 bg-[linear-gradient(120deg,rgba(82,57,5,.38),rgba(18,24,18,.92))] px-3 py-2 shadow-[0_10px_26px_rgba(0,0,0,.18)]" aria-labelledby="ai-preview-title">
+                        <div className="flex flex-col items-center gap-1.5">
+                          <div className="flex flex-wrap items-baseline justify-center gap-x-2 text-center">
+                            <h2 id="ai-preview-title" className="font-heading text-base font-semibold leading-tight text-white">Preview</h2>
+                            <span className="text-[8px] font-black uppercase tracking-[0.16em] text-amber-200">Manual Editing Unavailable</span>
                           </div>
 
-                          <div className="flex min-w-0 flex-1 flex-wrap items-center justify-start gap-1.5 xl:justify-end">
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/25 bg-amber-300/10 px-2 py-1 text-[8px] font-bold text-amber-100"><i className="ri-eye-line" /> Preview Only</span>
+                          <div className="flex min-w-0 flex-wrap items-center justify-center gap-1.5">
                             <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-300/25 bg-primary-500/10 px-2 py-1 text-[8px] font-bold text-primary-100"><i className="ri-sparkling-2-fill" /> AI Editing</span>
-                            <button type="button" onClick={focusAIRefinement} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-primary-300/25 bg-primary-500/10 px-2.5 text-[8px] font-bold text-primary-100 transition hover:border-primary-300/45 hover:bg-primary-500/20 hover:text-white">
-                              <i className="ri-magic-line text-[10px]" /> Refine with AI
-                            </button>
+                            <div ref={setAiBannerActionsTarget} className="contents" />
                             {renderCanvasControls(true)}
                             <button
                               type="button"
@@ -2452,7 +2433,7 @@ export default function UniformStudioPage() {
 
               {/* Docked fields panel */}
               <aside className={`hidden w-full flex-shrink-0 flex-col overflow-hidden border-l border-black/10 bg-[#f7f5ef] md:flex ${activeTool === "ai" ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px]" : "max-w-[420px]"}`}>
-                {workflowStep.key === "artwork" ? (
+                {workflowStep.key === "artwork" && !strictAIPreview ? (
                   <ArtworkToolNavigation
                     tools={visibleTools}
                     activeTool={activeTool}
@@ -2532,6 +2513,7 @@ export default function UniformStudioPage() {
                     onCompareVersions={setAiComparisonPlan}
                     comparisonActive={Boolean(aiComparisonPlan)}
                     onSavePreview={saveProgress}
+                    toolbarTarget={aiBannerActionsTarget}
                     hasExistingArtwork={layers.some(
                       (layer) => ["text", "logo", "clipart"].includes(layer.type) && !layer.source?.startsWith("ai-uniform"),
                     )}
