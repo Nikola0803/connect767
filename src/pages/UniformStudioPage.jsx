@@ -1856,7 +1856,7 @@ export default function UniformStudioPage() {
 
   const uniformSetupPanel = <UniformSetupPanel
     designProps={{ sport: activeSport, collar, setCollar, sleeve, setSleeve, colors: stageColors, setColors: updateGarmentColors, onHoverZone: setHoverZone, twoTone, setTwoTone }}
-    optionsProps={{ sport: activeSport, fitType, setFitType: (value) => { setFitType(value); if (!hasSelectedFit) setActiveTool("design"); }, kitType, setKitType, extraTeamShirts, setExtraTeamShirts, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment }}
+    optionsProps={{ sport: activeSport, fitType, setFitType: (value) => { setFitType(value); if (!hasSelectedFit) setActiveTool("design"); }, kitType, setKitType, extraTeamShirts, setExtraTeamShirts, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment, showFitAlert: false }}
   />;
 
   const headerTileClass = "inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition";
@@ -2460,7 +2460,11 @@ export default function UniformStudioPage() {
                 <div className={`min-h-0 flex-1 ${activeTool === "ai" ? "flex flex-col overflow-hidden" : "overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"} ${activeTool === "ai" ? "" : activeTool === "design" ? "p-3 pb-20" : "p-5 pb-24"}`}>
                 {activeTool !== "ai" && (
                   <div className="mb-4">
-                    <GarmentCapabilitySummary capabilities={garmentCapabilities} compact />
+                    <GarmentCapabilitySummary
+                      capabilities={garmentCapabilities}
+                      compact
+                      fitNotice={activeTool === "design" && !hasSelectedFit ? "Select a fit to continue to Team roster." : ""}
+                    />
                   </div>
                 )}
                 {manualEditingAllowed && selectedLayer && <SelectedItemPanel
@@ -2603,7 +2607,11 @@ export default function UniformStudioPage() {
       <div className={`md:hidden flex-shrink-0 overflow-y-auto overscroll-contain border-t border-background-200/60 bg-background-50 ${activeTool === "ai" ? "max-h-[72dvh] p-0" : "max-h-[42dvh] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"}`}>
         {activeTool !== "ai" && (
           <div className="mb-4">
-            <GarmentCapabilitySummary capabilities={garmentCapabilities} compact />
+            <GarmentCapabilitySummary
+              capabilities={garmentCapabilities}
+              compact
+              fitNotice={activeTool === "design" && !hasSelectedFit ? "Select a fit to continue to Team roster." : ""}
+            />
           </div>
         )}
         {manualEditingAllowed && <SelectedItemPanel

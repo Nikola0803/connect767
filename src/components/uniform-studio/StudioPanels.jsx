@@ -207,13 +207,6 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
       }));
     }
   };
-  const toggleTwoTone = (enabled) => {
-    setTwoTone((current) => ({ ...current, enabled, splitAt: 0.5, softness: 0.005 }));
-    setColors((current) => ({
-      ...current,
-      shorts: enabled ? twoTone.colorB : current.body,
-    }));
-  };
   const config = sportConfigFor(sport);
   const colorZones = [
     { key: "body", label: "Shirt body" },
@@ -228,10 +221,10 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
 
   return (
     <div>
-      <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400 mb-2">
+      <h3 className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400">
         Collar &amp; sleeves
       </h3>
-      <div className="mb-2">
+      <div className="mb-1.5">
         {config.collarOptions.includes("Polo") && <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-foreground-800">
           <input type="checkbox" checked={collar === "Polo"} onChange={(event) => setCollar(event.target.checked ? "Polo" : "Crew")} className="accent-primary-600" />
           Polo collar (+${ADD_ON_PRICES.collarPolo.toFixed(2)}/kit)
@@ -239,7 +232,7 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
         <p className="mt-1 text-xs leading-snug text-foreground-500">Standard crew or V-Neck collar included in the base price.</p>
       </div>
       {config.sleeveOptions && (
-        <div className="mb-2">
+        <div className="mb-1.5">
           <p className="mb-1 text-xs text-foreground-500">Short sleeves included in the base price.</p>
           <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-x-2" role="group" aria-label="Sleeve options">
             <label className="flex min-h-8 cursor-pointer items-center gap-1.5 text-xs font-semibold leading-snug text-foreground-800">
@@ -255,24 +248,7 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
         </div>
       )}
 
-      {twoTone && (
-        <>
-          <label className="flex items-center gap-2 border-t border-background-200/70 pt-2 mb-2 cursor-pointer">
-            <input
-              type="checkbox"
-              className="rounded border-background-300 cursor-pointer"
-              checked={twoTone.enabled}
-              onChange={(e) => toggleTwoTone(e.target.checked)}
-            />
-            <span className="text-xs text-foreground-700 font-label">
-              Different shirt and {config.bottomLabel.toLowerCase()} colors
-            </span>
-          </label>
-
-        </>
-      )}
-
-      <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400 mb-2 pt-2 border-t border-background-200/70">
+      <h3 className="mb-1.5 border-t border-background-200/70 pt-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400">
         Garment colors
       </h3>
       <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="Garment part colors" onMouseLeave={() => onHoverZone?.(null)}>
@@ -280,8 +256,8 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
           onMouseEnter={() => onHoverZone?.(zone.key)} onMouseLeave={() => onHoverZone?.(null)}
           onFocus={() => onHoverZone?.(null)} onBlur={() => onHoverZone?.(null)}
           onPointerCancel={() => onHoverZone?.(null)}
-          className="relative flex min-h-11 min-w-0 cursor-pointer items-center gap-1.5 rounded-lg border border-background-200 bg-background-50 px-2 py-1.5 text-left transition hover:border-primary-300 focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20">
-          <span className="h-6 w-6 shrink-0 rounded-md border border-black/10" style={{ backgroundColor: colors[zone.key] }} aria-hidden="true" />
+          className="relative flex min-h-10 min-w-0 cursor-pointer items-center gap-1.5 rounded-lg border border-background-200 bg-background-50 px-2 py-1 text-left transition hover:border-primary-300 focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20">
+          <span className="h-5 w-5 shrink-0 rounded-md border border-black/10" style={{ backgroundColor: colors[zone.key] }} aria-hidden="true" />
           <span className="min-w-0 text-[11px] font-semibold leading-tight text-foreground-800">{zone.label}</span>
           <input type="color" aria-label={`${zone.label} color`} value={colors[zone.key]} onClick={() => onHoverZone?.(null)} onChange={(event) => { setZone(zone.key)(event.target.value); onHoverZone?.(null); }} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
         </label>)}
@@ -570,12 +546,12 @@ export function OptionsPanel({
   insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText,
   insideCollarAttachment, setInsideCollarAttachment,
   extraTeamShirts = [{ size: "AM", quantity: 1 }], setExtraTeamShirts,
-  section = "all",
+  section = "all", showFitAlert = true,
 }) {
   return (
     <div>
       {section !== "production" && <>
-      {!fitTypeOptions.includes(fitType) && <div role="alert" className="mb-2 flex items-center gap-2 rounded-lg border border-accent-400 bg-accent-50 px-2.5 py-1.5 text-accent-950">
+      {showFitAlert && !fitTypeOptions.includes(fitType) && <div role="alert" className="mb-2 flex items-center gap-2 rounded-lg border border-accent-400 bg-accent-50 px-2.5 py-1.5 text-accent-950">
         <i className="ri-error-warning-fill shrink-0 text-sm text-accent-600" aria-hidden="true" />
         <p className="text-xs font-semibold leading-tight">Select a fit to continue to Team roster.</p>
       </div>}
@@ -600,7 +576,6 @@ export function OptionsPanel({
         </div>
       </div>
       <div>
-        <span className="text-xs font-semibold text-foreground-800 block mb-1.5">Kit type</span>
         <div className="grid grid-cols-2 gap-2">
           {kitTypeOptions.map((k) => (
             <button
@@ -693,11 +668,11 @@ export function OptionsPanel({
 }
 
 export function UniformSetupPanel({ designProps, optionsProps }) {
-  return <div className="space-y-2.5">
+  return <div className="space-y-2">
     <OptionsPanel {...optionsProps} section="fit" />
     <DesignPanel {...designProps} />
     <details className="group rounded-xl border border-primary-300 bg-primary-50 shadow-sm">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 text-sm font-bold text-primary-900 [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-sm font-bold text-primary-900 [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 items-center gap-2.5"><i className="ri-settings-4-line text-lg text-primary-700" aria-hidden="true" /><span>Production extras<span className="mt-0.5 block text-[11px] font-normal text-primary-800">{optionsProps.logoApplication === "Embroidery" ? "Embroidery" : "Sublimated logo included"}{optionsProps.insideCollarMessage ? " · Collar customization" : ""}</span></span></span>
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-800"><i className="ri-arrow-down-s-line transition-transform group-open:rotate-180" aria-hidden="true" /></span>
       </summary>
