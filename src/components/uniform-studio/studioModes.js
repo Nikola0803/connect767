@@ -10,6 +10,38 @@ export const isAIPreviewMode = (mode) => (
 
 export const canUseManualEditing = (mode) => mode === STUDIO_MODES.EDITABLE;
 
+/**
+ * Header actions are rendered from the capabilities of the active surface.
+ * This prevents controls from appearing in a mode where their handler has no
+ * valid target (for example SVG export while viewing a generated bitmap).
+ */
+export function getStudioHeaderCapabilities({
+  mode,
+  hasAIResult = false,
+  canOpenProduction = false,
+  hasStorage = false,
+  showingAIConcept = false,
+  showingProductionMap = false,
+  stageMode = "edit",
+} = {}) {
+  const editable = canUseManualEditing(mode);
+  const flatCanvas = stageMode === "edit";
+  const hasVisibleCanvas = flatCanvas && (showingAIConcept || showingProductionMap);
+
+  return {
+    aiDesigner: editable,
+    openAIPreview: editable && hasAIResult,
+    openEditableStudio: isAIPreviewMode(mode) && hasAIResult && canOpenProduction,
+    discardAI: hasAIResult,
+    viewport: hasVisibleCanvas,
+    saveProgress: Boolean(hasStorage),
+    svgExport: editable && flatCanvas && showingProductionMap,
+    fullscreen: showingAIConcept,
+    download: hasVisibleCanvas,
+    settings: editable,
+  };
+}
+
 const requiredColorZones = [
   "body",
   "sleeve",

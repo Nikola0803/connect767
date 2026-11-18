@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   STUDIO_MODES,
   canUseManualEditing,
+  getStudioHeaderCapabilities,
   isAIPreviewMode,
   validateEditableUniformPlan,
 } from "./studioModes";
@@ -39,5 +40,61 @@ describe("uniform studio modes", () => {
   it("requires both a verified template and a valid structured plan", () => {
     expect(validateEditableUniformPlan(validPlan).valid).toBe(false);
     expect(validateEditableUniformPlan(validPlan, { hasVerifiedTemplate: true }).valid).toBe(true);
+  });
+
+  it("shows only working controls in AI preview mode", () => {
+    expect(getStudioHeaderCapabilities({
+      mode: STUDIO_MODES.AI_OUTPUT,
+      hasAIResult: true,
+      canOpenProduction: true,
+      hasStorage: true,
+      showingAIConcept: true,
+    })).toEqual({
+      aiDesigner: false,
+      openAIPreview: false,
+      openEditableStudio: true,
+      discardAI: true,
+      viewport: true,
+      saveProgress: true,
+      svgExport: false,
+      fullscreen: true,
+      download: true,
+      settings: false,
+    });
+  });
+
+  it("enables the editable production toolset only in production mode", () => {
+    expect(getStudioHeaderCapabilities({
+      mode: STUDIO_MODES.EDITABLE,
+      hasAIResult: true,
+      canOpenProduction: true,
+      hasStorage: true,
+      showingProductionMap: true,
+    })).toEqual({
+      aiDesigner: true,
+      openAIPreview: true,
+      openEditableStudio: false,
+      discardAI: true,
+      viewport: true,
+      saveProgress: true,
+      svgExport: true,
+      fullscreen: false,
+      download: true,
+      settings: true,
+    });
+  });
+
+  it("hides canvas actions while an AI preview has no render target", () => {
+    const capabilities = getStudioHeaderCapabilities({
+      mode: STUDIO_MODES.AI_GENERATING,
+      hasStorage: true,
+    });
+    expect(capabilities.viewport).toBe(false);
+    expect(capabilities.openAIPreview).toBe(false);
+    expect(capabilities.openEditableStudio).toBe(false);
+    expect(capabilities.download).toBe(false);
+    expect(capabilities.svgExport).toBe(false);
+    expect(capabilities.fullscreen).toBe(false);
+    expect(capabilities.saveProgress).toBe(true);
   });
 });
