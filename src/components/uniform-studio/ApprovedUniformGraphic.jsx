@@ -149,6 +149,7 @@ export default function ApprovedUniformGraphic({
     return (
       <SideUniformGraphic
         sport={sport}
+        sleeve={sleeveStyle}
         colors={colors}
         garmentPattern={garmentPattern}
         highlightZone={highlightZone}
@@ -206,14 +207,32 @@ export default function ApprovedUniformGraphic({
     && (garmentPattern.view === "both" || !garmentPattern.view || garmentPattern.view === view),
   );
 
-  const longSleevePath = (side) => {
+  const longSleeveGeometry = (side) => {
     const left = side === "left";
-    const outerTop = left ? region.bodyLeft - 95 : region.bodyRight + 95;
-    const innerTop = left ? region.bodyLeft + 20 : region.bodyRight - 20;
-    const outerBottom = left ? region.bodyLeft - 65 : region.bodyRight + 65;
-    const innerBottom = left ? region.bodyLeft - 5 : region.bodyRight + 5;
-    return `M${offset + outerTop},${shortSleeveBottom - 26} L${offset + innerTop},${shortSleeveBottom - 26} L${offset + innerBottom},${longSleeveBottom} L${offset + outerBottom},${longSleeveBottom} Z`;
+    const cuffPolygon = region.sleeveEndPolygons?.[side];
+    // Continue from the photographed short-sleeve cuff instead of starting a
+    // second rectangular arm. This preserves the original shoulder/armhole
+    // boundary while extending the same garment cleanly to the wrist.
+    const outerTop = cuffPolygon
+      ? cuffPolygon[left ? 3 : 2]
+      : [left ? region.bodyLeft - 104 : region.bodyRight + 104, shortSleeveBottom - 16];
+    const innerTop = cuffPolygon
+      ? cuffPolygon[left ? 2 : 3]
+      : [left ? region.bodyLeft + 5 : region.bodyRight - 5, shortSleeveBottom];
+    const direction = left ? 1 : -1;
+    const outerBottom = [outerTop[0] + (16 * direction), longSleeveBottom];
+    const innerBottom = [innerTop[0] - (8 * direction), longSleeveBottom];
+    const midY = Math.round((outerTop[1] + longSleeveBottom) / 2);
+    const path = [
+      `M${offset + outerTop[0]},${outerTop[1]}`,
+      `C${offset + outerTop[0] + (4 * direction)},${midY - 30} ${offset + outerBottom[0] - (3 * direction)},${midY + 30} ${offset + outerBottom[0]},${outerBottom[1]}`,
+      `L${offset + innerBottom[0]},${innerBottom[1]}`,
+      `C${offset + innerBottom[0] - (2 * direction)},${midY + 30} ${offset + innerTop[0] - (3 * direction)},${midY - 30} ${offset + innerTop[0]},${innerTop[1]}`,
+      "Z",
+    ].join(" ");
+    return { path, outerBottom, innerBottom };
   };
+  const longSleevePath = (side) => longSleeveGeometry(side).path;
   const baseSleevePath = (side, endOnly = false, end = baseSleeveBottom) => {
     const left = side === "left";
     const polygon = region.sleevePolygons?.[side];
@@ -241,10 +260,8 @@ export default function ApprovedUniformGraphic({
     return `M${offset + halfWidth},${shortSleeveBottom} H${offset + region.bodyRight - 8} L${offset + region.bodyRight - 5},${region.sleeveBottom} H${offset + halfWidth} Z`;
   };
   const longCuffPath = (side) => {
-    const left = side === "left";
-    const outer = left ? region.bodyLeft - 65 : region.bodyRight + 65;
-    const inner = left ? region.bodyLeft - 5 : region.bodyRight + 5;
-    return `M${offset + outer},${longSleeveBottom} L${offset + inner},${longSleeveBottom}`;
+    const { outerBottom, innerBottom } = longSleeveGeometry(side);
+    return `M${offset + outerBottom[0]},${outerBottom[1]} L${offset + innerBottom[0]},${innerBottom[1]}`;
   };
   const polygonPath = (points) => points
     .map(([x, y], index) => `${index === 0 ? "M" : "L"}${offset + x},${y}`)
@@ -376,8 +393,8 @@ export default function ApprovedUniformGraphic({
 
       {!isSleeveless && !nativeLongSleeve && (
         <g opacity={opacityFor("sleeve")} data-sleeve-extension={sleeveStyle}>
-          {hasLeftLongSleeve && <path d={longSleevePath("left")} fill={`url(#${sleeveGradientId})`} />}
-          {hasRightLongSleeve && <path d={longSleevePath("right")} fill={`url(#${sleeveGradientId})`} />}
+          {hasLeftLongSleeve && <path data-long-sleeve-side="left" d={longSleevePath("left")} fill={`url(#${sleeveGradientId})`} />}
+          {hasRightLongSleeve && <path data-long-sleeve-side="right" d={longSleevePath("right")} fill={`url(#${sleeveGradientId})`} />}
         </g>
       )}
 
@@ -543,8 +560,12 @@ export default function ApprovedUniformGraphic({
           <>
               {region.sleeveEndPolygons ? (
                 <>
-                  <path data-garment-zone="sleeveStrip" d={polygonPath(region.sleeveEndPolygons.left)} fill={fill} />
-                  <path data-garment-zone="sleeveStrip" d={polygonPath(region.sleeveEndPolygons.right)} fill={fill} />
+                  {(!hasLeftLongSleeve || nativeLongSleeve) && (
+                    <path data-garment-zone="sleeveStrip" d={polygonPath(region.sleeveEndPolygons.left)} fill={fill} />
+                  )}
+                  {(!hasRightLongSleeve || nativeLongSleeve) && (
+                    <path data-garment-zone="sleeveStrip" d={polygonPath(region.sleeveEndPolygons.right)} fill={fill} />
+                  )}
                 </>
               ) : (
                 <>
@@ -679,8 +700,8 @@ export default function ApprovedUniformGraphic({
 
       {!isSleeveless && !nativeLongSleeve && (
         <g opacity={opacityFor("sleeveStrip")}>
-          {hasLeftLongSleeve && <path d={longCuffPath("left")} fill="none" stroke={sleeveEnd} strokeWidth="18" strokeLinecap="round" />}
-          {hasRightLongSleeve && <path d={longCuffPath("right")} fill="none" stroke={sleeveEnd} strokeWidth="18" strokeLinecap="round" />}
+          {hasLeftLongSleeve && <path data-long-sleeve-cuff="left" d={longCuffPath("left")} fill="none" stroke={sleeveEnd} strokeWidth="18" strokeLinecap="round" />}
+          {hasRightLongSleeve && <path data-long-sleeve-cuff="right" d={longCuffPath("right")} fill="none" stroke={sleeveEnd} strokeWidth="18" strokeLinecap="round" />}
         </g>
       )}
     </svg>
