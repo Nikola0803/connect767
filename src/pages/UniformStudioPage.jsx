@@ -32,6 +32,7 @@ import JerseyStage from "../components/uniform-studio/JerseyStage";
 import ProductionViewport from "../components/uniform-studio/ProductionViewport";
 import useGarmentColors from "../components/uniform-studio/useGarmentColors";
 import GarmentCapabilitySummary from "../components/uniform-studio/GarmentCapabilitySummary";
+import ArtworkToolNavigation from "../components/uniform-studio/ArtworkToolNavigation";
 import {
   detectGarmentCapabilities,
   firstSupportedTool,
@@ -48,6 +49,7 @@ import {
   ZoneEditorPanel,
   TextPanel,
   LogoPanel,
+  BackgroundRemovalPanel,
   AIArtworkPanel,
   LayersPanel,
   StudioBackgroundPanel,
@@ -119,6 +121,12 @@ const tools = [
     hint: "Upload a crest or sponsor mark, then click the design where it goes. Transparent PNG or SVG prints cleanest.",
   },
   {
+    key: "remove-bg",
+    label: "Remove BG",
+    icon: "ri-eraser-line",
+    hint: "Remove the background from a regular photo or logo, then place the transparent result on the uniform.",
+  },
+  {
     key: "skins",
     label: "Patterns",
     icon: "ri-shapes-line",
@@ -161,7 +169,7 @@ const studioWorkflow = [
     icon: "ri-image-edit-line",
     step: 2,
     defaultTool: "text",
-    tools: ["ai", "text", "logo", "skins", "layers"],
+    tools: ["ai", "text", "logo", "remove-bg", "skins", "layers"],
   },
   {
     key: "roster",
@@ -916,6 +924,14 @@ export default function UniformStudioPage() {
     reader.onload = () => setPendingLayer({ type: "logo", src: reader.result });
     reader.readAsDataURL(file);
     e.target.value = "";
+  };
+
+  const armBackgroundRemovedArtwork = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setPendingLayer({ type: "logo", src: reader.result });
+    reader.readAsDataURL(file);
+    setActiveTool("remove-bg");
   };
 
   /** Customer's own pattern image, placed like any built-in one. */
@@ -2266,15 +2282,21 @@ export default function UniformStudioPage() {
                   </div>
 
               {/* Docked fields panel */}
-              <aside className={`hidden w-full flex-shrink-0 border-l border-black/10 bg-[#f7f5ef] md:block ${activeTool === "ai" ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px] overflow-hidden" : "max-w-[420px] overflow-y-auto"}`}>
-                {activeTool !== "ai" && <div className={`sticky top-0 z-10 border-b border-black/[0.07] bg-[#f7f5ef]/95 backdrop-blur-xl ${activeTool === "design" ? "px-4 py-3" : "px-5 py-4"}`}>
+              <aside className={`hidden w-full flex-shrink-0 flex-col overflow-hidden border-l border-black/10 bg-[#f7f5ef] md:flex ${activeTool === "ai" ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px]" : "max-w-[420px]"}`}>
+                {workflowStep.key === "artwork" ? (
+                  <ArtworkToolNavigation
+                    tools={visibleTools}
+                    activeTool={activeTool}
+                    onSelect={setActiveTool}
+                  />
+                ) : activeTool !== "ai" && <div className={`flex-shrink-0 border-b border-black/[0.07] bg-[#f7f5ef]/95 backdrop-blur-xl ${activeTool === "design" ? "px-4 py-3" : "px-5 py-4"}`}>
                   <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary-700">Step {workflowStep.step} · {workflowStep.label}</p>
                   <div className="mt-1 flex items-center justify-between gap-3">
                     <h2 className="font-heading text-lg font-medium text-foreground-950">{activeToolConfig?.label || workflowStep.label}</h2>
                   </div>
                   <p className="mt-1 text-xs text-foreground-500">{activeToolConfig?.hint || workflowStep.description}</p>
                 </div>}
-                <div className={activeTool === "ai" ? "h-full" : activeTool === "design" ? "p-3" : "p-5"}>
+                <div className={`min-h-0 flex-1 ${activeTool === "ai" ? "overflow-hidden" : "overflow-y-auto"} ${activeTool === "ai" ? "" : activeTool === "design" ? "p-3" : "p-5"}`}>
                 {activeTool !== "ai" && (
                   <div className="mb-4">
                     <GarmentCapabilitySummary capabilities={garmentCapabilities} />
@@ -2340,6 +2362,7 @@ export default function UniformStudioPage() {
                   />
                 )}
                 {activeTool === "logo" && <LogoPanel onUpload={armLogoPlacement} armed={pendingLayer?.type === "logo"} />}
+                {activeTool === "remove-bg" && <BackgroundRemovalPanel onPlace={armBackgroundRemovedArtwork} />}
                 {activeTool === "skins" && (
                   <SkinsPanel
                     colorA={colors.body}
@@ -2474,6 +2497,7 @@ export default function UniformStudioPage() {
           />
         )}
         {activeTool === "logo" && <LogoPanel onUpload={armLogoPlacement} armed={pendingLayer?.type === "logo"} />}
+        {activeTool === "remove-bg" && <BackgroundRemovalPanel onPlace={armBackgroundRemovedArtwork} />}
         {activeTool === "skins" && (
           <SkinsPanel
             colorA={colors.body}

@@ -781,6 +781,159 @@ export function LogoPanel({ onUpload, armed }) {
   );
 }
 
+const BACKGROUND_REMOVAL_MODULE_URL =
+  "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm";
+
+const readImageAsDataUrl = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = () => reject(new Error("The selected image could not be read."));
+  reader.readAsDataURL(file);
+});
+
+export async function removeImageBackground(file, onProgress) {
+  // Keep the large AI model out of the main Uniform Studio bundle. IMG.LY's
+  // browser package and model are loaded only when the customer uses this
+  // tool, and the source image never leaves their device.
+  const { removeBackground } = await import(
+    /* @vite-ignore */ BACKGROUND_REMOVAL_MODULE_URL
+  );
+  return removeBackground(file, {
+    progress: (_key, current, total) => {
+      if (total > 0) onProgress?.(Math.round((current / total) * 100));
+    },
+  });
+}
+
+export function BackgroundRemovalPanel({ onPlace, processor = removeImageBackground }) {
+  const [sourceFile, setSourceFile] = useState(null);
+  const [sourcePreview, setSourcePreview] = useState("");
+  const [resultFile, setResultFile] = useState(null);
+  const [resultPreview, setResultPreview] = useState("");
+  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState("");
+
+  const chooseImage = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      setError("Choose a PNG, JPEG or WebP image.");
+      return;
+    }
+    if (file.size > 12 * 1024 * 1024) {
+      setError("Choose an image smaller than 12 MB.");
+      return;
+    }
+    setError("");
+    setStatus("idle");
+    setProgress(0);
+    setResultFile(null);
+    setResultPreview("");
+    setSourceFile(file);
+    try {
+      setSourcePreview(await readImageAsDataUrl(file));
+    } catch (nextError) {
+      setError(nextError.message);
+    }
+  };
+
+  const processImage = async () => {
+    if (!sourceFile) return;
+    setStatus("processing");
+    setProgress(1);
+    setError("");
+    try {
+      const transparentBlob = await processor(sourceFile, setProgress);
+      const baseName = sourceFile.name.replace(/\.[^.]+$/, "") || "artwork";
+      const transparentFile = new File(
+        [transparentBlob],
+        `${baseName}-transparent.png`,
+        { type: "image/png" },
+      );
+      setResultFile(transparentFile);
+      setResultPreview(await readImageAsDataUrl(transparentFile));
+      setProgress(100);
+      setStatus("complete");
+    } catch (nextError) {
+      setStatus("error");
+      setError(nextError?.message || "The background could not be removed. Please try another image.");
+    }
+  };
+
+  return (
+    <div>
+      <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400">
+        Background remover
+      </h3>
+      <p className="mb-4 text-xs leading-relaxed text-foreground-600">
+        Turn a regular photo or logo into transparent artwork. Processing happens on this device.
+      </p>
+
+      <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-background-300 px-4 py-6 text-center transition hover:border-primary-400 hover:bg-primary-50/50">
+        <i className="ri-image-add-line text-2xl text-primary-700" aria-hidden="true" />
+        <span className="text-xs font-semibold text-foreground-700">
+          {sourceFile ? "Choose a different image" : "Upload a regular image"}
+        </span>
+        <span className="text-[10px] text-foreground-400">PNG, JPEG or WebP · up to 12 MB</span>
+        <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={chooseImage} />
+      </label>
+
+      {sourcePreview && (
+        <div className="mt-4 grid grid-cols-2 gap-2" aria-label="Background removal preview">
+          <figure>
+            <div className="aspect-square overflow-hidden rounded-lg border border-background-300 bg-white p-2">
+              <img src={sourcePreview} alt="Original upload" className="h-full w-full object-contain" />
+            </div>
+            <figcaption className="mt-1 text-center text-[9px] font-bold uppercase tracking-wide text-foreground-400">Original</figcaption>
+          </figure>
+          <figure>
+            <div className="aspect-square overflow-hidden rounded-lg border border-background-300 bg-[linear-gradient(45deg,#e8e5dc_25%,transparent_25%),linear-gradient(-45deg,#e8e5dc_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#e8e5dc_75%),linear-gradient(-45deg,transparent_75%,#e8e5dc_75%)] bg-[length:16px_16px] p-2">
+              {resultPreview ? (
+                <img src={resultPreview} alt="Transparent result" className="h-full w-full object-contain" />
+              ) : (
+                <div className="flex h-full items-center justify-center text-center text-[10px] text-foreground-400">Transparent result</div>
+              )}
+            </div>
+            <figcaption className="mt-1 text-center text-[9px] font-bold uppercase tracking-wide text-foreground-400">Transparent</figcaption>
+          </figure>
+        </div>
+      )}
+
+      {status === "processing" && (
+        <div className="mt-4" role="status" aria-live="polite">
+          <div className="mb-1 flex justify-between text-[10px] font-semibold text-foreground-500"><span>Removing background…</span><span>{progress}%</span></div>
+          <div className="h-2 overflow-hidden rounded-full bg-background-200"><div className="h-full rounded-full bg-primary-600 transition-all" style={{ width: `${progress}%` }} /></div>
+        </div>
+      )}
+      {error && <p role="alert" className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
+
+      <div className="mt-4 flex gap-2">
+        <button
+          type="button"
+          disabled={!sourceFile || status === "processing"}
+          onClick={processImage}
+          className="flex-1 cursor-pointer rounded-lg border border-primary-600 px-3 py-2.5 text-xs font-bold text-primary-700 transition hover:bg-primary-50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <i className="ri-eraser-line mr-1.5" aria-hidden="true" />
+          {resultFile ? "Remove again" : "Remove background"}
+        </button>
+        {resultFile && (
+          <button
+            type="button"
+            onClick={() => onPlace(resultFile)}
+            className="flex-1 cursor-pointer rounded-lg bg-primary-600 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-primary-700"
+          >
+            <i className="ri-cursor-line mr-1.5" aria-hidden="true" /> Place on uniform
+          </button>
+        )}
+      </div>
+      {resultFile && <p className="mt-3 text-[10px] leading-relaxed text-foreground-500">Click <strong>Place on uniform</strong>, then click the garment or either sleeve window.</p>}
+    </div>
+  );
+}
+
 const AI_STYLES = [
   "Modern & Bold",
   "Classic & Clean",
