@@ -60,6 +60,19 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     expect(container.querySelector('[data-garment-zone="sleeve"]').getAttribute("fill")).toBe(colors.sleeve);
   });
 
+  it.each(["front", "back"])("paints the selected sleeve-end color over dark source pixels on the %s view", (view) => {
+    const sleeveEnd = "#ff6538";
+    const { container } = render(
+      <ApprovedUniformGraphic sport="soccer" view={view} colors={{ sleeveStrip: sleeveEnd }} />,
+    );
+
+    const cuffs = container.querySelectorAll('[data-garment-zone="sleeveStrip"]');
+    expect(cuffs).toHaveLength(2);
+    for (const cuff of cuffs) expect(cuff.getAttribute("fill")).toBe(sleeveEnd);
+    expect(cuffs[0].parentElement.getAttribute("data-garment-tint")).toBe("flat-color");
+    expect(cuffs[0].parentElement.style.mixBlendMode).toBe("normal");
+  });
+
   it("does not double-tint the default front or back shirt zones", () => {
     const { container, rerender } = render(<ApprovedUniformGraphic sport="soccer" view="front" colors={{ body: "#17384e" }} />);
     expect(container.querySelector('[data-zone-id="front-body"]').getAttribute("fill-opacity")).toBe("0");
