@@ -69,10 +69,6 @@ export default function AIUniformComposer({
   onCompareVersions,
   comparisonActive = false,
   onGenerateVariation,
-  onConvertToEditable,
-  conversionAvailable = false,
-  conversionReason = "",
-  conversionError = "",
   onSavePreview,
 }) {
   const [toolsOpen, setToolsOpen] = useState(false);
@@ -291,12 +287,9 @@ export default function AIUniformComposer({
                   <button type="button" onClick={() => originalVersion && onRestoreVersion?.(originalVersion)} disabled={!originalVersion || versions.length < 2 || generating} className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-background-300 bg-white px-2.5 py-2 text-[9px] font-bold text-foreground-700 hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40"><i className="ri-restart-line" /> Restore original</button>
                   <button type="button" onClick={onGenerateVariation} disabled={generating || connection !== "connected"} className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-primary-700 px-2.5 py-2 text-[9px] font-bold text-white hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-45"><i className="ri-refresh-line" /> New variation</button>
                 </div>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <div className="mt-3">
                   <button type="button" onClick={onSavePreview} aria-label="Save image to project" className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2.5 text-[9px] font-bold text-primary-900 hover:bg-primary-100"><i className="ri-check-line" /> Accept &amp; save to project</button>
-                  <button type="button" onClick={onConvertToEditable} disabled={!conversionAvailable || generating} title={conversionReason} className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-background-300 bg-white px-3 py-2.5 text-[9px] font-bold text-foreground-700 hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-45"><i className="ri-shapes-line" /> Convert to Editable Design</button>
                 </div>
-                {!conversionAvailable && conversionReason && <p className="mt-2 text-[9px] leading-relaxed text-foreground-500">Editable conversion unavailable: {conversionReason}</p>}
-                {conversionError && <p role="alert" className="mt-2 rounded-lg border border-red-200 bg-red-50 px-2.5 py-2 text-[9px] leading-relaxed text-red-700">{conversionError}</p>}
                 {connection !== "connected" && <p className="mt-2 rounded-lg border border-amber-200 bg-white px-2.5 py-2 text-[9px] leading-relaxed text-amber-800">AI image editing is not configured or is currently unavailable. Your existing preview remains unchanged.</p>}
               </section>
             )}

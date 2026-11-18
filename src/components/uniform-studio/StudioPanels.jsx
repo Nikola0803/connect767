@@ -1026,10 +1026,6 @@ export function AIArtworkPanel({
   onRestoreAIVersion,
   onCompareVersions,
   comparisonActive = false,
-  onConvertToEditable,
-  conversionAvailable = false,
-  conversionReason = "",
-  conversionError = "",
   onSavePreview,
 }) {
   const [mode, setMode] = useState("uniform");
@@ -1493,10 +1489,6 @@ export function AIArtworkPanel({
         onCompareVersions={onCompareVersions}
         comparisonActive={comparisonActive}
         onGenerateVariation={() => generateUniform("", renderTier)}
-        onConvertToEditable={onConvertToEditable}
-        conversionAvailable={conversionAvailable}
-        conversionReason={conversionReason}
-        conversionError={conversionError}
         onSavePreview={onSavePreview}
       />
     );

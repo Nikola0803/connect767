@@ -2100,9 +2100,28 @@ export default function UniformStudioPage() {
                             <h2 id="ai-preview-title" className="mt-1 font-heading text-lg font-semibold text-white">AI-Generated Preview</h2>
                             <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-white/62">This design is an AI-generated preview. Manual editing is unavailable. To make changes, describe your instructions using the AI refinement tool.</p>
                           </div>
-                          <div className="flex shrink-0 flex-wrap gap-2">
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1.5 text-[9px] font-bold text-amber-100"><i className="ri-eye-line" /> Preview Only</span>
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-300/30 bg-primary-500/10 px-3 py-1.5 text-[9px] font-bold text-primary-100"><i className="ri-sparkling-2-fill" /> AI Editing Available</span>
+                          <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:min-w-[300px]">
+                            <div className="flex flex-wrap justify-start gap-2 sm:justify-end">
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1.5 text-[9px] font-bold text-amber-100"><i className="ri-eye-line" /> Preview Only</span>
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-300/30 bg-primary-500/10 px-3 py-1.5 text-[9px] font-bold text-primary-100"><i className="ri-sparkling-2-fill" /> AI Editing Available</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={convertAIToEditableDesign}
+                              disabled={!editablePlanValidation.valid || studioMode === STUDIO_MODES.AI_GENERATING}
+                              title={editablePlanValidation.reason}
+                              aria-label="Convert to Editable Design"
+                              className="group inline-flex min-h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-xl border border-primary-300/35 bg-primary-600 px-5 py-2.5 text-left text-white shadow-[0_12px_30px_rgba(0,116,73,.32)] transition hover:-translate-y-0.5 hover:bg-primary-500 hover:shadow-[0_16px_36px_rgba(0,116,73,.4)] disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/10 disabled:text-white/40 disabled:shadow-none"
+                            >
+                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/15 text-base"><i className="ri-layout-grid-line" /></span>
+                              <span className="min-w-0 flex-1">
+                                <strong className="block text-[11px] font-extrabold">Open Production Mode</strong>
+                                <span className="mt-0.5 block text-[9px] text-white/70">Convert to an editable production design</span>
+                              </span>
+                              <i className="ri-arrow-right-line text-base transition-transform group-hover:translate-x-0.5" />
+                            </button>
+                            {!editablePlanValidation.valid && <p className="text-[9px] leading-relaxed text-amber-100/70">Production mode unavailable: {editablePlanValidation.reason}</p>}
+                            {conversionError && <p role="alert" className="rounded-lg border border-red-300/25 bg-red-950/30 px-3 py-2 text-[9px] leading-relaxed text-red-100">{conversionError}</p>}
                           </div>
                         </div>
                       </section>
@@ -2484,10 +2503,6 @@ export default function UniformStudioPage() {
                     onRestoreAIVersion={restoreAIVersion}
                     onCompareVersions={setAiComparisonPlan}
                     comparisonActive={Boolean(aiComparisonPlan)}
-                    onConvertToEditable={convertAIToEditableDesign}
-                    conversionAvailable={editablePlanValidation.valid}
-                    conversionReason={editablePlanValidation.reason}
-                    conversionError={conversionError}
                     onSavePreview={saveProgress}
                     hasExistingArtwork={layers.some(
                       (layer) => ["text", "logo", "clipart"].includes(layer.type) && !layer.source?.startsWith("ai-uniform"),
@@ -2630,10 +2645,6 @@ export default function UniformStudioPage() {
             onRestoreAIVersion={restoreAIVersion}
             onCompareVersions={setAiComparisonPlan}
             comparisonActive={Boolean(aiComparisonPlan)}
-            onConvertToEditable={convertAIToEditableDesign}
-            conversionAvailable={editablePlanValidation.valid}
-            conversionReason={editablePlanValidation.reason}
-            conversionError={conversionError}
             onSavePreview={saveProgress}
             hasExistingArtwork={layers.some(
               (layer) => ["text", "logo", "clipart"].includes(layer.type) && !layer.source?.startsWith("ai-uniform"),
