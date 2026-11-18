@@ -123,9 +123,9 @@ export default function SideUniformGraphic({
         {socksStart < height && <rect data-garment-zone="socks" x="0" y={socksStart} width={width} height={height - socksStart} fill={socks} opacity={opacityFor("socks")} />}
         <rect data-garment-zone="shirtStrip" x="0" y={region.shirtHem} width={width} height={region.bottomStart - region.shirtHem} fill={shirtEnd} opacity={opacityFor("shirtStrip")} />
         <rect data-garment-zone="shortsStrip" x="0" y={region.bottomHem} width={width} height="24" fill={shortsEnd} opacity={opacityFor("shortsStrip")} />
-        {region.sleeve && <path data-garment-zone="sleeve" d={region.sleeve} fill={sleeve} opacity={opacityFor("sleeve")} />}
-        {region.sleeveEnd && <path data-garment-zone="sleeveStrip" d={region.sleeveEnd} fill={sleeveEnd} opacity={opacityFor("sleeveStrip")} />}
-        {region.collar && <path data-garment-zone="collar" d={region.collar} fill={collar} opacity={opacityFor("collar")} />}
+        {region.sleeve && <path data-garment-zone="sleeve" d={region.sleeve} fill={sleeve} stroke={sleeve} strokeWidth="6" strokeLinejoin="round" opacity={opacityFor("sleeve")} />}
+        {region.sleeveEnd && <path data-garment-zone="sleeveStrip" d={region.sleeveEnd} fill={sleeveEnd} stroke={sleeveEnd} strokeWidth="3" strokeLinejoin="round" opacity={opacityFor("sleeveStrip")} />}
+        {region.collar && <path data-garment-zone="collar" d={region.collar} fill={collar} stroke={collar} strokeWidth="3" strokeLinejoin="round" opacity={opacityFor("collar")} />}
       </Tint>
 
       {patternApplies && (
