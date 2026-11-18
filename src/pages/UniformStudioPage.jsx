@@ -1829,6 +1829,85 @@ export default function UniformStudioPage() {
     optionsProps={{ sport: activeSport, fitType, setFitType: (value) => { setFitType(value); if (!hasSelectedFit) setActiveTool("design"); }, kitType, setKitType, extraTeamShirts, setExtraTeamShirts, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment }}
   />;
 
+  const focusAIRefinement = () => {
+    setActiveTool("ai");
+    window.requestAnimationFrame(() => {
+      const messageBox = document.querySelector('[aria-label="Message Connect767 AI"]');
+      messageBox?.scrollIntoView({ behavior: "smooth", block: "center" });
+      messageBox?.focus({ preventScroll: true });
+    });
+  };
+
+  const renderCanvasControls = (integrated = false) => (
+    <div className={integrated
+      ? "flex max-w-full flex-wrap items-center justify-end gap-1.5"
+      : "relative z-20 flex w-fit max-w-full flex-shrink-0 self-end flex-wrap items-center gap-2 rounded-xl border border-white/[0.07] bg-[#10120f] px-2 py-1.5 shadow-[0_8px_22px_rgba(0,0,0,.24)]"}
+    >
+      {!integrated && (
+        <div
+          className={`inline-flex max-w-[240px] items-center gap-1.5 rounded-md border px-2 py-1 text-[9px] font-semibold ${garmentCapabilities.previewOnly ? "border-amber-400/35 bg-amber-950/25 text-amber-100" : "border-primary-400/30 bg-primary-950/30 text-primary-100"}`}
+          title={garmentCapabilities.status}
+        >
+          <i className={garmentCapabilities.previewOnly ? "ri-eye-line" : "ri-scan-2-line"} aria-hidden="true" />
+          <span className="truncate">{garmentCapabilities.garment}</span>
+          <span className="text-white/25">·</span>
+          <span className="shrink-0">{garmentCapabilities.previewOnly ? "Preview only" : `${garmentCapabilities.zones.length} zones`}</span>
+        </div>
+      )}
+      <div className="flex shrink-0 items-center gap-1.5">
+        {(aiUniformPlan || aiWorkspaceConcept) && (
+          <>
+            <div className="inline-flex rounded-md border border-white/10 bg-black/20 p-0.5">
+              <button
+                type="button"
+                onClick={() => switchAICanvasMode("concept")}
+                className={`cursor-pointer rounded px-2 py-1 text-[8px] font-bold transition ${aiCanvasMode === "concept" ? "bg-accent-500 text-white" : "text-white/55 hover:text-white"}`}
+              >
+                AI output
+              </button>
+              {manualEditingAllowed && <button
+                  type="button"
+                  onClick={() => switchAICanvasMode("production")}
+                  className={`cursor-pointer rounded px-2 py-1 text-[8px] font-bold transition ${aiCanvasMode === "production" ? "bg-primary-500 text-white" : "text-white/55 hover:text-white"}`}
+                >
+                  Editable Studio
+                </button>}
+            </div>
+            <button
+              type="button"
+              aria-label="Discard AI design"
+              title="Discard design"
+              onClick={() => {
+                setAiUniformPlan(null);
+                setAiWorkspaceConcept(null);
+                setAiVersions([]);
+                setAiComparisonPlan(null);
+                setAiDesignApplied(false);
+                setAiCanvasMode("concept");
+                setStudioMode(STUDIO_MODES.EDITABLE);
+              }}
+              className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-white/10 text-[11px] text-white/55 transition hover:bg-white/10 hover:text-white"
+            >
+              <i className="ri-delete-bin-line" />
+            </button>
+            <span aria-hidden="true" className="h-4 w-px bg-white/10" />
+          </>
+        )}
+
+        <div className="inline-flex items-center rounded-lg border border-white/[0.07] bg-black/15 p-0.5">
+          {showingProductionMap && <button type="button" aria-label="Pan production map" aria-pressed={productionPanMode} title="Pan mode: drag anywhere. Turn off to edit artwork. Alt-drag also pans." disabled={Boolean(pendingLayer)} onClick={() => setProductionPanMode((current) => !current)} className={`flex h-6 w-6 cursor-pointer items-center justify-center rounded disabled:opacity-40 ${productionPanMode ? "bg-primary-600 text-white" : "text-background-50/60 hover:bg-white/10 hover:text-background-50"}`}><i className="ri-hand-line text-xs" /></button>}
+          <button type="button" aria-label="Zoom out" title="Zoom out" onClick={() => setClampedZoom((value) => value - 0.1)} className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-subtract-line text-xs" /></button>
+          <span className="w-9 text-center font-label text-[10px] tabular-nums text-background-50/60">{Math.round(zoom * 100)}%</span>
+          <button type="button" aria-label="Zoom in" title="Zoom in" onClick={() => setClampedZoom((value) => value + 0.1)} className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-add-line text-xs" /></button>
+          {showingAIConcept && (
+            <button type="button" aria-label="Reset design view" title="Reset view" onClick={resetAIConceptView} className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-focus-3-line text-xs" /></button>
+          )}
+          {showingProductionMap && <button type="button" aria-label="Fit production map" title="Reset zoom and pan" onClick={() => productionViewportRef.current?.reset()} className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-focus-3-line text-xs" /></button>}
+        </div>
+      </div>
+    </div>
+  );
+
   // ---------- The studio itself: one full viewport, nothing else ----------
   return (
     <div className="h-[100dvh] flex flex-col overflow-hidden bg-[#10110f] text-background-50">
@@ -2093,102 +2172,51 @@ export default function UniformStudioPage() {
                   {/* Canvas */}
                   <div className={`flex min-w-0 flex-1 flex-col items-center overflow-hidden ${activeTool === "ai" ? "gap-2 px-2 py-2 md:px-3 xl:px-4" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
                     {strictAIPreview && (
-                      <section className="relative z-20 w-full flex-shrink-0 rounded-2xl border border-amber-300/25 bg-[linear-gradient(120deg,rgba(82,57,5,.38),rgba(18,24,18,.92))] px-4 py-3 shadow-[0_12px_32px_rgba(0,0,0,.18)]" aria-labelledby="ai-preview-title">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div className="min-w-0">
-                            <p className="text-[9px] font-black uppercase tracking-[0.18em] text-amber-200">AI-GENERATED PREVIEW — MANUAL EDITING UNAVAILABLE</p>
-                            <h2 id="ai-preview-title" className="mt-1 font-heading text-lg font-semibold text-white">AI-Generated Preview</h2>
-                            <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-white/62">This design is an AI-generated preview. Manual editing is unavailable. To make changes, describe your instructions using the AI refinement tool.</p>
-                          </div>
-                          <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:min-w-[300px]">
-                            <div className="flex flex-wrap justify-start gap-2 sm:justify-end">
-                              <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1.5 text-[9px] font-bold text-amber-100"><i className="ri-eye-line" /> Preview Only</span>
-                              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-300/30 bg-primary-500/10 px-3 py-1.5 text-[9px] font-bold text-primary-100"><i className="ri-sparkling-2-fill" /> AI Editing Available</span>
+                      <section className="relative z-20 w-full max-w-[1760px] flex-shrink-0 self-center rounded-xl border border-amber-300/25 bg-[linear-gradient(120deg,rgba(82,57,5,.38),rgba(18,24,18,.92))] px-3 py-2 shadow-[0_10px_26px_rgba(0,0,0,.18)]" aria-labelledby="ai-preview-title">
+                        <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
+                          <div className="flex min-w-[260px] flex-1 items-center gap-2.5">
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary-300/20 bg-white/10 p-1">
+                              <img src={`${import.meta.env.BASE_URL}connect767-ai-logo-transparent.png?v=20261117`} alt="Connect767 AI" className="h-full w-full object-contain" />
+                            </span>
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-baseline gap-x-2">
+                                <h2 id="ai-preview-title" className="font-heading text-base font-semibold leading-tight text-white">Preview</h2>
+                                <span className="text-[8px] font-black uppercase tracking-[0.16em] text-amber-200">Manual editing unavailable</span>
+                              </div>
+                              <p className="mt-0.5 truncate text-[9px] text-white/55">Refine with AI, or open Production Mode for editable garment zones.</p>
                             </div>
+                          </div>
+
+                          <div className="flex min-w-0 flex-1 flex-wrap items-center justify-start gap-1.5 xl:justify-end">
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/25 bg-amber-300/10 px-2 py-1 text-[8px] font-bold text-amber-100"><i className="ri-eye-line" /> Preview Only</span>
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-300/25 bg-primary-500/10 px-2 py-1 text-[8px] font-bold text-primary-100"><i className="ri-sparkling-2-fill" /> AI Editing</span>
+                            <button type="button" onClick={focusAIRefinement} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-primary-300/25 bg-primary-500/10 px-2.5 text-[8px] font-bold text-primary-100 transition hover:border-primary-300/45 hover:bg-primary-500/20 hover:text-white">
+                              <i className="ri-magic-line text-[10px]" /> Refine with AI
+                            </button>
+                            {renderCanvasControls(true)}
                             <button
                               type="button"
                               onClick={convertAIToEditableDesign}
                               disabled={!editablePlanValidation.valid || studioMode === STUDIO_MODES.AI_GENERATING}
                               title={editablePlanValidation.reason}
                               aria-label="Convert to Editable Design"
-                              className="group inline-flex min-h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-xl border border-primary-300/35 bg-primary-600 px-5 py-2.5 text-left text-white shadow-[0_12px_30px_rgba(0,116,73,.32)] transition hover:-translate-y-0.5 hover:bg-primary-500 hover:shadow-[0_16px_36px_rgba(0,116,73,.4)] disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/10 disabled:text-white/40 disabled:shadow-none"
+                              className="group inline-flex min-h-9 min-w-[230px] cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary-300/35 bg-primary-600 px-3 py-1.5 text-left text-white shadow-[0_8px_22px_rgba(0,116,73,.28)] transition hover:-translate-y-0.5 hover:bg-primary-500 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/10 disabled:text-white/40 disabled:shadow-none"
                             >
-                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/15 text-base"><i className="ri-layout-grid-line" /></span>
+                              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/15 text-xs"><i className="ri-layout-grid-line" /></span>
                               <span className="min-w-0 flex-1">
-                                <strong className="block text-[11px] font-extrabold">Open Production Mode</strong>
-                                <span className="mt-0.5 block text-[9px] text-white/70">Convert to an editable production design</span>
+                                <strong className="block text-[10px] font-extrabold leading-tight">Open Production Mode</strong>
+                                <span className="block text-[8px] leading-tight text-white/65">Editable production design</span>
                               </span>
-                              <i className="ri-arrow-right-line text-base transition-transform group-hover:translate-x-0.5" />
+                              <i className="ri-arrow-right-line text-sm transition-transform group-hover:translate-x-0.5" />
                             </button>
-                            {!editablePlanValidation.valid && <p className="text-[9px] leading-relaxed text-amber-100/70">Production mode unavailable: {editablePlanValidation.reason}</p>}
-                            {conversionError && <p role="alert" className="rounded-lg border border-red-300/25 bg-red-950/30 px-3 py-2 text-[9px] leading-relaxed text-red-100">{conversionError}</p>}
                           </div>
                         </div>
+                        {!editablePlanValidation.valid && <p className="mt-1.5 text-right text-[8px] leading-relaxed text-amber-100/70">Production mode unavailable: {editablePlanValidation.reason}</p>}
+                        {conversionError && <p role="alert" className="mt-1.5 rounded-lg border border-red-300/25 bg-red-950/30 px-3 py-1.5 text-[8px] leading-relaxed text-red-100">{conversionError}</p>}
                       </section>
                     )}
                     {/* Functional canvas controls only; descriptive labels live in the AI panel. */}
-                    <div className="relative z-20 flex w-fit max-w-full flex-shrink-0 self-end flex-wrap items-center gap-2 rounded-xl border border-white/[0.07] bg-[#10120f] px-2 py-1.5 shadow-[0_8px_22px_rgba(0,0,0,.24)]">
-                      <div
-                        className={`inline-flex max-w-[260px] items-center gap-1.5 rounded-md border px-2 py-1 text-[9px] font-semibold ${garmentCapabilities.previewOnly ? "border-amber-400/35 bg-amber-950/25 text-amber-100" : "border-primary-400/30 bg-primary-950/30 text-primary-100"}`}
-                        title={garmentCapabilities.status}
-                      >
-                        <i className={garmentCapabilities.previewOnly ? "ri-eye-line" : "ri-scan-2-line"} aria-hidden="true" />
-                        <span className="truncate">{garmentCapabilities.garment}</span>
-                        <span className="text-white/25">·</span>
-                        <span className="shrink-0">{garmentCapabilities.previewOnly ? "Preview only" : `${garmentCapabilities.zones.length} zones`}</span>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-1.5">
-                        {(aiUniformPlan || aiWorkspaceConcept) && (
-                          <>
-                            <div className="inline-flex rounded-md border border-white/10 bg-black/20 p-0.5">
-                              <button
-                                type="button"
-                                onClick={() => switchAICanvasMode("concept")}
-                                className={`cursor-pointer rounded px-2 py-1 text-[8px] font-bold transition ${aiCanvasMode === "concept" ? "bg-accent-500 text-white" : "text-white/55 hover:text-white"}`}
-                              >
-                                AI output
-                              </button>
-                              {manualEditingAllowed && <button
-                                  type="button"
-                                  onClick={() => switchAICanvasMode("production")}
-                                  className={`cursor-pointer rounded px-2 py-1 text-[8px] font-bold transition ${aiCanvasMode === "production" ? "bg-primary-500 text-white" : "text-white/55 hover:text-white"}`}
-                                >
-                                  Editable Studio
-                                </button>}
-                            </div>
-                            <button
-                              type="button"
-                              aria-label="Discard AI design"
-                              title="Discard design"
-                              onClick={() => {
-                                setAiUniformPlan(null);
-                                setAiWorkspaceConcept(null);
-                                setAiVersions([]);
-                                setAiComparisonPlan(null);
-                                setAiDesignApplied(false);
-                                setAiCanvasMode("concept");
-                                setStudioMode(STUDIO_MODES.EDITABLE);
-                              }}
-                              className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-white/10 text-[11px] text-white/55 transition hover:bg-white/10 hover:text-white"
-                            >
-                              <i className="ri-delete-bin-line" />
-                            </button>
-                            <span aria-hidden="true" className="h-4 w-px bg-white/10" />
-                          </>
-                        )}
-
-                        <div className="inline-flex items-center rounded-lg border border-white/[0.07] bg-black/15 p-0.5">
-                          {showingProductionMap && <button type="button" aria-label="Pan production map" aria-pressed={productionPanMode} title="Pan mode: drag anywhere. Turn off to edit artwork. Alt-drag also pans." disabled={Boolean(pendingLayer)} onClick={() => setProductionPanMode((current) => !current)} className={`flex h-6 w-6 cursor-pointer items-center justify-center rounded disabled:opacity-40 ${productionPanMode ? "bg-primary-600 text-white" : "text-background-50/60 hover:bg-white/10 hover:text-background-50"}`}><i className="ri-hand-line text-xs" /></button>}
-                          <button type="button" aria-label="Zoom out" title="Zoom out" onClick={() => setClampedZoom((value) => value - 0.1)} className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-subtract-line text-xs" /></button>
-                          <span className="w-9 text-center font-label text-[10px] tabular-nums text-background-50/60">{Math.round(zoom * 100)}%</span>
-                          <button type="button" aria-label="Zoom in" title="Zoom in" onClick={() => setClampedZoom((value) => value + 0.1)} className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-add-line text-xs" /></button>
-                          {showingAIConcept && (
-                            <button type="button" aria-label="Reset design view" title="Reset view" onClick={resetAIConceptView} className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-focus-3-line text-xs" /></button>
-                          )}
-                          {showingProductionMap && <button type="button" aria-label="Fit production map" title="Reset zoom and pan" onClick={() => productionViewportRef.current?.reset()} className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-focus-3-line text-xs" /></button>}
-                        </div>
-                      </div>
-                    </div>
+                    {!strictAIPreview && renderCanvasControls(false)}
 
                     {/* Floating contextual toolbar */}
                     {manualEditingAllowed && stageMode === "edit" && selectedLayer && (
