@@ -38,6 +38,12 @@ import {
   firstSupportedTool,
 } from "../components/uniform-studio/garmentCapabilities";
 import {
+  STUDIO_MODES,
+  canUseManualEditing,
+  isAIPreviewMode,
+  validateEditableUniformPlan,
+} from "../components/uniform-studio/studioModes";
+import {
   formatProductionText,
   mapProductionElementToGarment,
   normalizeStoredProductionLayer,
@@ -322,7 +328,6 @@ export default function UniformStudioPage() {
   const [zoom, setZoom] = useState(1);
   const [productionPanMode, setProductionPanMode] = useState(false);
   const productionViewportRef = useRef(null);
-  const [aiConceptRotation, setAiConceptRotation] = useState(0);
   const [aiConceptPan, setAiConceptPan] = useState({ x: 0, y: 0 });
   const aiConceptDragRef = useRef(null);
   const [hoverZone, setHoverZone] = useState(null);
@@ -370,10 +375,15 @@ export default function UniformStudioPage() {
   const [aiUndoSnapshot, setAiUndoSnapshot] = useState(null);
   const [aiUniformPlan, setAiUniformPlan] = useState(null);
   const [aiWorkspaceConcept, setAiWorkspaceConcept] = useState(null);
+  const [aiVersions, setAiVersions] = useState([]);
+  const [aiComparisonPlan, setAiComparisonPlan] = useState(null);
   const [hasUploadedReference, setHasUploadedReference] = useState(false);
   const [aiDesignApplied, setAiDesignApplied] = useState(false);
   const [aiDesignerMode, setAiDesignerMode] = useState("uniform");
   const [aiCanvasMode, setAiCanvasMode] = useState("concept");
+  const [studioMode, setStudioMode] = useState(STUDIO_MODES.EDITABLE);
+  const [conversionError, setConversionError] = useState("");
+  const aiConceptViewportRef = useRef(null);
   // Shown when leaving the studio with unsaved work — see confirmExit below.
   const [exitPrompt, setExitPrompt] = useState(false);
   const placeLayer3d = (layerId, placement) =>
@@ -381,24 +391,21 @@ export default function UniformStudioPage() {
 
   const resetAIConceptView = () => {
     setZoom(1);
-    setAiConceptRotation(0);
     setAiConceptPan({ x: 0, y: 0 });
     aiConceptDragRef.current = null;
   };
 
   const switchAICanvasMode = (mode) => {
+    if (mode === "production" && !canUseManualEditing(studioMode)) return;
     productionViewportRef.current?.reset();
     setProductionPanMode(false);
-    if (mode === "production" && aiUniformPlan && !aiDesignApplied) {
-      applyAIUniformDesign(aiUniformPlan, { canvasMode: "production" });
-      return;
-    }
+    if (mode === "production" && aiUniformPlan && !aiDesignApplied) return;
     setAiCanvasMode(mode);
+    if (mode === "concept") setStudioMode(STUDIO_MODES.AI_OUTPUT);
     setStageMode("edit");
     // Each surface opens fitted; the production viewport clips its own
     // transforms so the garment cannot cover the fixed workspace controls.
     setZoom(1);
-    setAiConceptRotation(0);
     setAiConceptPan({ x: 0, y: 0 });
     aiConceptDragRef.current = null;
   };
@@ -489,6 +496,8 @@ export default function UniformStudioPage() {
   const sportConfig = sportConfigFor(activeSport);
   const minimumKits = minimumFullKitsFor(activeSport);
   const minimumKitsMet = rosterUnitCount(roster) >= minimumKits;
+  const manualEditingAllowed = canUseManualEditing(studioMode);
+  const strictAIPreview = isAIPreviewMode(studioMode);
   // Tool availability now follows the actual garment surface instead of a
   // generic step toolbar. A flat AI/reference image is intentionally
   // preview-only; placement tools unlock only on a verified production map.
@@ -501,7 +510,9 @@ export default function UniformStudioPage() {
     layerCount: layers.length,
   }), [activeSport, view, aiCanvasMode, aiWorkspaceConcept?.src, hasUploadedReference, zoneModel, layers.length]);
   // Gate every entry path, including saved links and artwork selection.
-  const gatedTool = hasSelectedFit || ["design", "zones"].includes(selectedTool) ? selectedTool : "design";
+  const gatedTool = strictAIPreview
+    ? "ai"
+    : hasSelectedFit || ["design", "zones"].includes(selectedTool) ? selectedTool : "design";
   const requestedWorkflowIndex = Math.max(
     0,
     studioWorkflow.findIndex((step) => step.tools.includes(gatedTool))
@@ -515,9 +526,9 @@ export default function UniformStudioPage() {
     studioWorkflow.findIndex((step) => step.tools.includes(activeTool))
   );
   const workflowStep = studioWorkflow[workflowIndex];
-  const visibleTools = tools.filter(
-    (tool) => workflowStep.tools.includes(tool.key) && garmentCapabilities.canUse(tool.key)
-  );
+  const visibleTools = strictAIPreview
+    ? tools.filter((tool) => tool.key === "ai")
+    : tools.filter((tool) => workflowStep.tools.includes(tool.key) && garmentCapabilities.canUse(tool.key));
   const activeToolConfig = tools.find((tool) => tool.key === activeTool) || visibleTools[0];
 
   useEffect(() => {
@@ -589,6 +600,7 @@ export default function UniformStudioPage() {
   const storageKey = selectedTemplate ? `c767:studio:${activeSport}:${selectedTemplate}` : null;
 
   const moveZonePoint = (side, zoneId, commandIndex, pointType, point) => {
+    if (!manualEditingAllowed) return;
     setZoneModel((current) => {
       setZoneHistory((history) => [...history.slice(-39), current]);
       const next = cloneZoneModel(current);
@@ -609,12 +621,16 @@ export default function UniformStudioPage() {
     });
   };
 
-  const updateZoneStyle = (side, zoneId, patch) => setZoneStyles((current) => ({
-    ...current,
-    [side]: { ...current[side], [zoneId]: { ...(current[side]?.[zoneId] || {}), ...patch } },
-  }));
+  const updateZoneStyle = (side, zoneId, patch) => {
+    if (!manualEditingAllowed) return;
+    setZoneStyles((current) => ({
+      ...current,
+      [side]: { ...current[side], [zoneId]: { ...(current[side]?.[zoneId] || {}), ...patch } },
+    }));
+  };
 
   const resetZone = (side, zoneId) => {
+    if (!manualEditingAllowed) return;
     const original = SOCCER_ZONE_MODEL[side].find((item) => item.id === zoneId);
     if (!original) return;
     setZoneHistory((history) => [...history.slice(-39), zoneModel]);
@@ -628,6 +644,7 @@ export default function UniformStudioPage() {
   };
 
   const resetAllZones = () => {
+    if (!manualEditingAllowed) return;
     setZoneHistory((history) => [...history.slice(-39), zoneModel]);
     setZoneModel(cloneZoneModel());
     setZoneStyles({ front: {}, back: {} });
@@ -764,6 +781,11 @@ export default function UniformStudioPage() {
           ...saved.aiUniformPlan,
           conceptImage: saved.aiWorkspaceConcept?.src ? saved.aiWorkspaceConcept : undefined,
         });
+        if (saved.aiWorkspaceConcept?.src && !saved.aiDesignApplied) {
+          setStudioMode(STUDIO_MODES.AI_OUTPUT);
+          setAiCanvasMode("concept");
+          setActiveTool("ai");
+        }
       }
       if (typeof saved.aiDesignApplied === "boolean") setAiDesignApplied(saved.aiDesignApplied);
       return true;
@@ -785,7 +807,10 @@ export default function UniformStudioPage() {
     setSelectedLayerId(null);
     setAiUniformPlan(null);
     setAiWorkspaceConcept(null);
+    setAiVersions([]);
+    setAiComparisonPlan(null);
     setAiDesignApplied(false);
+    setStudioMode(STUDIO_MODES.EDITABLE);
   };
 
   useEffect(() => {
@@ -834,7 +859,8 @@ export default function UniformStudioPage() {
     });
 
   /** Applies a preset colourway: [body, trim, accent]. */
-  const applyColourway = ([body, trim, accent]) =>
+  const applyColourway = ([body, trim, accent]) => {
+    if (!manualEditingAllowed) return;
     setColors((c) => ({
       ...c,
       body,
@@ -846,6 +872,7 @@ export default function UniformStudioPage() {
       shorts: accent,
       socks: accent,
     }));
+  };
 
   const hasWork = layers.length > 0 || Object.keys(placements3d).length > 0;
 
@@ -898,6 +925,7 @@ export default function UniformStudioPage() {
   const TOOL_FOR_LAYER = { text: "text", skin: "skins", logo: "logo", clipart: "logo" };
 
   const selectLayer = (id) => {
+    if (!manualEditingAllowed) return;
     setSelectedLayerId(id);
     const layer = layers.find((l) => l.id === id);
     // Selecting artwork opens the panel that edits that kind of artwork.
@@ -913,11 +941,13 @@ export default function UniformStudioPage() {
    * to be dragged.
    */
   const armTextPlacement = () => {
+    if (!manualEditingAllowed) return;
     setPendingLayer({ type: "text" });
     setActiveTool("text");
   };
 
   const armLogoPlacement = (e) => {
+    if (!manualEditingAllowed) return;
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -927,6 +957,7 @@ export default function UniformStudioPage() {
   };
 
   const armBackgroundRemovedArtwork = (file) => {
+    if (!manualEditingAllowed) return;
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => setPendingLayer({ type: "logo", src: reader.result });
@@ -936,6 +967,7 @@ export default function UniformStudioPage() {
 
   /** Customer's own pattern image, placed like any built-in one. */
   const armPatternUpload = (e) => {
+    if (!manualEditingAllowed) return;
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -945,6 +977,7 @@ export default function UniformStudioPage() {
   };
 
   const armSkinPlacement = (skinKey) => {
+    if (!manualEditingAllowed) return;
     setPendingLayer({
       type: "skin",
       skinKey,
@@ -958,7 +991,7 @@ export default function UniformStudioPage() {
    * way, only where it lands differs.
    */
   const commitPendingLayer = (placement) => {
-    if (!pendingLayer) return;
+    if (!manualEditingAllowed || !pendingLayer) return;
     const id = nextLayerId();
 
     const is2d = placement && placement.x !== undefined;
@@ -993,6 +1026,7 @@ export default function UniformStudioPage() {
   };
 
   const addTextLayer = () => {
+    if (!manualEditingAllowed) return;
     const id = nextLayerId();
     setLayers((ls) => [
       ...ls,
@@ -1022,6 +1056,7 @@ export default function UniformStudioPage() {
   };
 
   const addLogoLayer = (e) => {
+    if (!manualEditingAllowed) return;
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -1039,6 +1074,7 @@ export default function UniformStudioPage() {
   };
 
   const placeAIArtwork = ({ src, name }) => {
+    if (!manualEditingAllowed) return;
     const id = nextLayerId();
     setView("front");
     setLayers((current) => [
@@ -1055,27 +1091,101 @@ export default function UniformStudioPage() {
 
   const handleAIUniformPlanChange = (plan) => {
     setAiUniformPlan(plan || null);
+    if (!plan) {
+      setAiWorkspaceConcept(null);
+      setAiVersions([]);
+      setAiComparisonPlan(null);
+      setAiDesignApplied(false);
+      if (studioMode !== STUDIO_MODES.AI_GENERATING) setStudioMode(STUDIO_MODES.EDITABLE);
+      return;
+    }
     if (plan) {
       if (plan.conceptImage?.src) setAiWorkspaceConcept(plan.conceptImage);
+      if (plan.conceptImage?.src) {
+        setAiVersions((current) => {
+          if (current.some((version) => version.conceptImage?.src === plan.conceptImage.src)) return current;
+          return [...current, { ...plan, versionId: `${Date.now()}-${current.length + 1}` }].slice(-12);
+        });
+      }
+      setStudioMode(STUDIO_MODES.AI_OUTPUT);
+      setAiComparisonPlan(null);
+      setConversionError("");
       setAiDesignApplied(false);
       setAiCanvasMode(plan.conceptImage?.src ? "concept" : "production");
       setStageMode("edit");
       setView("front");
       setSelectedLayerId(null);
+      setPendingLayer(null);
+      setActiveTool("ai");
     }
+  };
+
+  const handleAIGeneratingChange = (generating) => {
+    if (generating) {
+      setStudioMode(STUDIO_MODES.AI_GENERATING);
+      setActiveTool("ai");
+      setSelectedLayerId(null);
+      setPendingLayer(null);
+      return;
+    }
+    setStudioMode((current) => (
+      current === STUDIO_MODES.AI_GENERATING && (aiWorkspaceConcept?.src || aiUniformPlan?.conceptImage?.src)
+        ? STUDIO_MODES.AI_OUTPUT
+        : current === STUDIO_MODES.AI_GENERATING ? STUDIO_MODES.EDITABLE : current
+    ));
+  };
+
+  useEffect(() => {
+    if (!aiUniformPlan && !aiWorkspaceConcept && studioMode !== STUDIO_MODES.AI_GENERATING) {
+      setStudioMode(STUDIO_MODES.EDITABLE);
+      setAiComparisonPlan(null);
+    }
+  }, [aiUniformPlan, aiWorkspaceConcept, studioMode]);
+
+  const restoreAIVersion = (version) => {
+    if (!version?.conceptImage?.src) return;
+    setAiUniformPlan(version);
+    setAiWorkspaceConcept(version.conceptImage);
+    setAiComparisonPlan(null);
+    setAiCanvasMode("concept");
+    setStudioMode(STUDIO_MODES.AI_OUTPUT);
+    setStageMode("edit");
+    setSelectedLayerId(null);
+    setPendingLayer(null);
+    setActiveTool("ai");
+  };
+
+  const editablePlanValidation = validateEditableUniformPlan(aiUniformPlan, {
+    hasVerifiedTemplate: Boolean(template && zoneModel),
+  });
+
+  const convertAIToEditableDesign = () => {
+    const validation = validateEditableUniformPlan(aiUniformPlan, {
+      hasVerifiedTemplate: Boolean(template && zoneModel),
+    });
+    if (!validation.valid) {
+      setConversionError(`${validation.reason} This preview will remain AI-only.`);
+      return;
+    }
+    applyAIUniformDesign(aiUniformPlan, { canvasMode: "production" });
+    setStudioMode(STUDIO_MODES.EDITABLE);
+    setAiCanvasMode("production");
+    setAiComparisonPlan(null);
+    setConversionError("");
+    setActiveTool("design");
   };
 
   const showingAIUniformPreview = Boolean(aiUniformPlan && aiCanvasMode === "production" && !aiDesignApplied);
   const showingAIConcept = Boolean(
     stageMode === "edit"
     && aiWorkspaceConcept?.src
-    && aiCanvasMode === "concept",
+    && aiCanvasMode === "concept"
+    && strictAIPreview,
   );
   const showingProductionMap = stageMode === "edit" && !showingAIConcept
     && !(activeTool === "ai" && aiDesignerMode === "uniform" && !aiWorkspaceConcept?.src);
   useEffect(() => {
     setZoom(1);
-    setAiConceptRotation(0);
     setAiConceptPan({ x: 0, y: 0 });
     aiConceptDragRef.current = null;
   }, [aiWorkspaceConcept?.src]);
@@ -1118,7 +1228,7 @@ export default function UniformStudioPage() {
   const stageGarmentPattern = showingAIUniformPreview ? aiUniformPlan.pattern : appliedAiPattern;
 
   const applyAIUniformDesign = (plan, { canvasMode = "concept" } = {}) => {
-    if (!plan?.colors) return;
+    if (!plan?.colors || (strictAIPreview && canvasMode !== "production")) return;
     setAiUndoSnapshot({
       collar,
       sleeve,
@@ -1191,15 +1301,19 @@ export default function UniformStudioPage() {
     setAiCanvasMode(aiWorkspaceConcept?.src ? "concept" : "production");
   };
 
-  const updateLayer = (id, patch) =>
+  const updateLayer = (id, patch) => {
+    if (!manualEditingAllowed) return;
     setLayers((ls) => ls.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+  };
 
-  const updateTextLayout = (id, textLayout) =>
+  const updateTextLayout = (id, textLayout) => {
+    if (!manualEditingAllowed) return;
     setLayers((current) => current.map((layer) => (
       layer.id === id
         ? { ...layer, textLayout, text: formatProductionText(layer.text || "", textLayout) }
         : layer
     )));
+  };
 
   /**
    * Skins are stored by key, not as a baked image, so they re-render whenever
@@ -1241,6 +1355,7 @@ export default function UniformStudioPage() {
   }, [colors.body, colors.shirtStrip]);
 
   const duplicateLayer = (id) => {
+    if (!manualEditingAllowed) return;
     const source = layers.find((l) => l.id === id);
     if (!source) return;
     const newId = nextLayerId();
@@ -1263,11 +1378,13 @@ export default function UniformStudioPage() {
   };
 
   const removeLayer = (id) => {
+    if (!manualEditingAllowed) return;
     setLayers((ls) => ls.filter((l) => l.id !== id));
     if (selectedLayerId === id) setSelectedLayerId(null);
   };
 
   const reorderLayer = (id, direction) => {
+    if (!manualEditingAllowed) return;
     setLayers((ls) => {
       const sameView = ls.filter((l) => l.view === view);
       const idx = sameView.findIndex((l) => l.id === id);
@@ -1772,7 +1889,7 @@ export default function UniformStudioPage() {
               {manualSaveStatus === "saved" ? "Progress saved" : manualSaveStatus === "error" ? "Save failed" : "Save progress"}
             </span>
           </button>
-          {ENABLE_3D && (
+          {ENABLE_3D && manualEditingAllowed && (
             <button
               type="button"
               aria-pressed={stageMode === "3d"}
@@ -1787,14 +1904,26 @@ export default function UniformStudioPage() {
               {stageMode === "3d" ? "Return to 2D" : "View in 3D"}
             </button>
           )}
-          <button
-            type="button"
-            onClick={handleDownloadSvg}
-            disabled={stageMode !== "edit" || showingAIConcept}
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer bg-white/5 text-background-50/70 hover:bg-white/10 hover:text-background-50 disabled:opacity-40"
-          >
-            <i className="ri-file-code-line" /> SVG
-          </button>
+          {manualEditingAllowed && (
+            <button
+              type="button"
+              onClick={handleDownloadSvg}
+              disabled={stageMode !== "edit" || showingAIConcept}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer bg-white/5 text-background-50/70 hover:bg-white/10 hover:text-background-50 disabled:opacity-40"
+            >
+              <i className="ri-file-code-line" /> SVG
+            </button>
+          )}
+          {showingAIConcept && (
+            <button
+              type="button"
+              onClick={() => aiConceptViewportRef.current?.requestFullscreen?.()}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 px-3 py-1.5 text-xs font-semibold text-background-50/70 hover:bg-white/10 hover:text-background-50"
+            >
+              <i className="ri-fullscreen-line" />
+              <span className="hidden sm:inline">Fullscreen</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={handleDownload}
@@ -1804,7 +1933,7 @@ export default function UniformStudioPage() {
             <i className="ri-download-2-line" />
             <span className="hidden sm:inline">{exporting ? "Exporting…" : "Download"}</span>
           </button>
-          <details className="group relative" onKeyDown={(event) => {
+          {manualEditingAllowed && <details className="group relative" onKeyDown={(event) => {
             if (event.key === "Escape") event.currentTarget.open = false;
           }} onBlur={(event) => {
             if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false;
@@ -1816,11 +1945,11 @@ export default function UniformStudioPage() {
             <div className="absolute right-0 top-full z-50 mt-2 max-h-[70dvh] w-[min(340px,calc(100vw-24px))] overflow-y-auto rounded-2xl border border-background-300 bg-background-50 p-4 text-foreground-900 shadow-2xl">
               <StudioBackgroundPanel studioBackground={studioBackground} setStudioBackground={setStudioBackground} />
             </div>
-          </details>
+          </details>}
         </div>
       </div>
 
-      <nav
+      {!strictAIPreview && <nav
         aria-label="Uniform order progress"
         className="relative z-30 flex-shrink-0 border-b border-white/[0.06] bg-[#12130f] px-3 py-2.5 sm:px-5"
       >
@@ -1881,7 +2010,7 @@ export default function UniformStudioPage() {
             );
           })}
         </div>
-      </nav>
+      </nav>}
 
       {exitPrompt && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-foreground-950/70 backdrop-blur-sm px-4">
@@ -1934,7 +2063,7 @@ export default function UniformStudioPage() {
 
       <div className="flex min-h-0 flex-1 bg-[radial-gradient(circle_at_48%_42%,rgba(36,45,36,0.32),transparent_38%),linear-gradient(135deg,#10110f_0%,#151610_52%,#10110f_100%)]">
                   {/* Icon rail — desktop only; mobile gets the pill row below the canvas */}
-                  <div className="hidden w-[76px] flex-shrink-0 flex-col items-center gap-2 overflow-y-auto border-r border-white/[0.055] bg-black/10 px-2 py-4 lg:flex">
+                  {!strictAIPreview && <div className="hidden w-[76px] flex-shrink-0 flex-col items-center gap-2 overflow-y-auto border-r border-white/[0.055] bg-black/10 px-2 py-4 lg:flex">
                     {visibleTools.map((t) => (
                       <Tooltip key={t.key} label={t.label} description={t.hint} placement="right">
                         <button
@@ -1959,10 +2088,25 @@ export default function UniformStudioPage() {
                         </button>
                       </Tooltip>
                     ))}
-                  </div>
+                  </div>}
 
                   {/* Canvas */}
                   <div className={`flex min-w-0 flex-1 flex-col items-center overflow-hidden ${activeTool === "ai" ? "gap-2 px-2 py-2 md:px-3 xl:px-4" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
+                    {strictAIPreview && (
+                      <section className="relative z-20 w-full flex-shrink-0 rounded-2xl border border-amber-300/25 bg-[linear-gradient(120deg,rgba(82,57,5,.38),rgba(18,24,18,.92))] px-4 py-3 shadow-[0_12px_32px_rgba(0,0,0,.18)]" aria-labelledby="ai-preview-title">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0">
+                            <p className="text-[9px] font-black uppercase tracking-[0.18em] text-amber-200">AI-GENERATED PREVIEW — MANUAL EDITING UNAVAILABLE</p>
+                            <h2 id="ai-preview-title" className="mt-1 font-heading text-lg font-semibold text-white">AI-Generated Preview</h2>
+                            <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-white/62">This design is an AI-generated preview. Manual editing is unavailable. To make changes, describe your instructions using the AI refinement tool.</p>
+                          </div>
+                          <div className="flex shrink-0 flex-wrap gap-2">
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1.5 text-[9px] font-bold text-amber-100"><i className="ri-eye-line" /> Preview Only</span>
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-300/30 bg-primary-500/10 px-3 py-1.5 text-[9px] font-bold text-primary-100"><i className="ri-sparkling-2-fill" /> AI Editing Available</span>
+                          </div>
+                        </div>
+                      </section>
+                    )}
                     {/* Functional canvas controls only; descriptive labels live in the AI panel. */}
                     <div className="relative z-20 flex w-fit max-w-full flex-shrink-0 self-end flex-wrap items-center gap-2 rounded-xl border border-white/[0.07] bg-[#10120f] px-2 py-1.5 shadow-[0_8px_22px_rgba(0,0,0,.24)]">
                       <div
@@ -1985,13 +2129,13 @@ export default function UniformStudioPage() {
                               >
                                 AI output
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => switchAICanvasMode("production")}
-                                className={`cursor-pointer rounded px-2 py-1 text-[8px] font-bold transition ${aiCanvasMode === "production" ? "bg-primary-500 text-white" : "text-white/55 hover:text-white"}`}
-                              >
-                                Production map
-                              </button>
+                              {manualEditingAllowed && <button
+                                  type="button"
+                                  onClick={() => switchAICanvasMode("production")}
+                                  className={`cursor-pointer rounded px-2 py-1 text-[8px] font-bold transition ${aiCanvasMode === "production" ? "bg-primary-500 text-white" : "text-white/55 hover:text-white"}`}
+                                >
+                                  Editable Studio
+                                </button>}
                             </div>
                             <button
                               type="button"
@@ -2000,57 +2144,21 @@ export default function UniformStudioPage() {
                               onClick={() => {
                                 setAiUniformPlan(null);
                                 setAiWorkspaceConcept(null);
+                                setAiVersions([]);
+                                setAiComparisonPlan(null);
                                 setAiDesignApplied(false);
                                 setAiCanvasMode("concept");
+                                setStudioMode(STUDIO_MODES.EDITABLE);
                               }}
                               className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-white/10 text-[11px] text-white/55 transition hover:bg-white/10 hover:text-white"
                             >
                               <i className="ri-delete-bin-line" />
                             </button>
-                            {aiUniformPlan && (
-                              <button
-                                type="button"
-                                title={aiDesignApplied ? "Design applied to production map" : "Apply design to production map"}
-                                onClick={() => applyAIUniformDesign(aiUniformPlan)}
-                                className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md bg-primary-500 px-2.5 text-[8px] font-bold text-white shadow-[0_6px_14px_rgba(0,116,73,.24)] transition hover:bg-primary-400"
-                              >
-                                <i className={aiDesignApplied ? "ri-check-double-line" : "ri-magic-line"} /> {aiDesignApplied ? "Applied" : "Apply"}
-                              </button>
-                            )}
                             <span aria-hidden="true" className="h-4 w-px bg-white/10" />
                           </>
                         )}
 
                         <div className="inline-flex items-center rounded-lg border border-white/[0.07] bg-black/15 p-0.5">
-                          {showingAIConcept && (
-                            <>
-                              <button
-                                type="button"
-                                aria-label="Rotate design left"
-                                title="Rotate left"
-                                onClick={() => {
-                                  setAiConceptRotation((angle) => angle - 90);
-                                  setAiConceptPan({ x: 0, y: 0 });
-                                }}
-                                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"
-                              >
-                                <i className="ri-anticlockwise-2-line text-xs" />
-                              </button>
-                              <button
-                                type="button"
-                                aria-label="Rotate design right"
-                                title="Rotate right"
-                                onClick={() => {
-                                  setAiConceptRotation((angle) => angle + 90);
-                                  setAiConceptPan({ x: 0, y: 0 });
-                                }}
-                                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"
-                              >
-                                <i className="ri-clockwise-2-line text-xs" />
-                              </button>
-                              <span aria-hidden="true" className="mx-0.5 h-3.5 w-px bg-white/10" />
-                            </>
-                          )}
                           {showingProductionMap && <button type="button" aria-label="Pan production map" aria-pressed={productionPanMode} title="Pan mode: drag anywhere. Turn off to edit artwork. Alt-drag also pans." disabled={Boolean(pendingLayer)} onClick={() => setProductionPanMode((current) => !current)} className={`flex h-6 w-6 cursor-pointer items-center justify-center rounded disabled:opacity-40 ${productionPanMode ? "bg-primary-600 text-white" : "text-background-50/60 hover:bg-white/10 hover:text-background-50"}`}><i className="ri-hand-line text-xs" /></button>}
                           <button type="button" aria-label="Zoom out" title="Zoom out" onClick={() => setClampedZoom((value) => value - 0.1)} className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-subtract-line text-xs" /></button>
                           <span className="w-9 text-center font-label text-[10px] tabular-nums text-background-50/60">{Math.round(zoom * 100)}%</span>
@@ -2064,7 +2172,7 @@ export default function UniformStudioPage() {
                     </div>
 
                     {/* Floating contextual toolbar */}
-                    {stageMode === "edit" && selectedLayer && (
+                    {manualEditingAllowed && stageMode === "edit" && selectedLayer && (
                       <div className="flex items-center flex-shrink-0">
                         <FloatingToolbar
                           layer={selectedLayer}
@@ -2079,6 +2187,7 @@ export default function UniformStudioPage() {
                     {showingAIConcept ? (
                       <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden">
                         <div
+                          ref={aiConceptViewportRef}
                           className="relative inline-flex max-h-full max-w-full cursor-grab overflow-hidden rounded-2xl border border-white/10 bg-white shadow-[0_26px_70px_rgba(0,0,0,.34)] outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-primary-400"
                           role="group"
                           tabIndex={0}
@@ -2130,18 +2239,31 @@ export default function UniformStudioPage() {
                           onPointerCancel={() => { aiConceptDragRef.current = null; }}
                           style={{ touchAction: "none" }}
                         >
-                          <img
-                            src={aiWorkspaceConcept.src}
-                            alt={`${aiUniformPlan?.name || aiWorkspaceConcept?.name || "AI generated"} complete front, side and back uniform concept`}
-                            draggable="false"
-                            className="block max-h-full max-w-full select-none object-contain will-change-transform"
-                            style={{
-                              transform: `translate3d(${aiConceptPan.x}px, ${aiConceptPan.y}px, 0) rotate(${aiConceptRotation}deg) scale(${zoom})`,
-                              transformOrigin: "center",
-                            }}
-                          />
+                          {aiComparisonPlan?.conceptImage?.src ? (
+                            <div className="grid max-h-full max-w-full grid-cols-2 gap-px bg-foreground-900 p-px">
+                              <figure className="relative min-w-0 bg-white">
+                                <img src={aiComparisonPlan.conceptImage.src} alt="Previous AI-generated uniform version" draggable="false" className="block max-h-full w-full select-none object-contain" />
+                                <figcaption className="absolute left-3 top-3 rounded-full bg-foreground-950/75 px-3 py-1 text-[9px] font-bold text-white">Previous</figcaption>
+                              </figure>
+                              <figure className="relative min-w-0 bg-white">
+                                <img src={aiWorkspaceConcept.src} alt="Current AI-generated uniform version" draggable="false" className="block max-h-full w-full select-none object-contain" />
+                                <figcaption className="absolute left-3 top-3 rounded-full bg-primary-800/85 px-3 py-1 text-[9px] font-bold text-white">Current</figcaption>
+                              </figure>
+                            </div>
+                          ) : (
+                            <img
+                              src={aiWorkspaceConcept.src}
+                              alt={`${aiUniformPlan?.name || aiWorkspaceConcept?.name || "AI generated"} complete front, side and back uniform concept`}
+                              draggable="false"
+                              className="block max-h-full max-w-full select-none object-contain will-change-transform"
+                              style={{
+                                transform: `translate3d(${aiConceptPan.x}px, ${aiConceptPan.y}px, 0) scale(${zoom})`,
+                                transformOrigin: "center",
+                              }}
+                            />
+                          )}
                           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-foreground-950/75 px-4 py-2 text-center text-[10px] text-white/80 backdrop-blur">
-                            Drag to pan · scroll to zoom · double-click to fit
+                            {aiComparisonPlan ? "Comparing previous and current AI previews" : "Drag to pan · scroll to zoom · double-click to fit"}
                           </div>
                         </div>
                       </div>
@@ -2262,7 +2384,7 @@ export default function UniformStudioPage() {
                     )}
 
                     {/* Mobile tool tabs — the icon rail is hidden below lg */}
-                    <div className="lg:hidden w-full flex items-center gap-2 overflow-x-auto pb-1">
+                    {!strictAIPreview && <div className="lg:hidden w-full flex items-center gap-2 overflow-x-auto pb-1">
                       {visibleTools.map((t) => (
                         <button
                           key={t.key}
@@ -2278,7 +2400,7 @@ export default function UniformStudioPage() {
                           {t.label}
                         </button>
                       ))}
-                    </div>
+                    </div>}
                   </div>
 
               {/* Docked fields panel */}
@@ -2302,7 +2424,7 @@ export default function UniformStudioPage() {
                     <GarmentCapabilitySummary capabilities={garmentCapabilities} compact />
                   </div>
                 )}
-                {selectedLayer && <SelectedItemPanel
+                {manualEditingAllowed && selectedLayer && <SelectedItemPanel
                   layer={selectedLayer}
                   placement={stageMode === "3d" && selectedLayerId ? placements3d[selectedLayerId] : null}
                   onTextChange={(id, text) => updateLayer(id, { text })}
@@ -2357,6 +2479,16 @@ export default function UniformStudioPage() {
                     onApplyUniform={applyAIUniformDesign}
                     onUndoUniform={undoAIUniformDesign}
                     canUndoUniform={Boolean(aiUndoSnapshot)}
+                    onGeneratingChange={handleAIGeneratingChange}
+                    aiVersions={aiVersions}
+                    onRestoreAIVersion={restoreAIVersion}
+                    onCompareVersions={setAiComparisonPlan}
+                    comparisonActive={Boolean(aiComparisonPlan)}
+                    onConvertToEditable={convertAIToEditableDesign}
+                    conversionAvailable={editablePlanValidation.valid}
+                    conversionReason={editablePlanValidation.reason}
+                    conversionError={conversionError}
+                    onSavePreview={saveProgress}
                     hasExistingArtwork={layers.some(
                       (layer) => ["text", "logo", "clipart"].includes(layer.type) && !layer.source?.startsWith("ai-uniform"),
                     )}
@@ -2438,7 +2570,7 @@ export default function UniformStudioPage() {
             <GarmentCapabilitySummary capabilities={garmentCapabilities} compact />
           </div>
         )}
-        <SelectedItemPanel
+        {manualEditingAllowed && <SelectedItemPanel
           layer={selectedLayer}
           placement={stageMode === "3d" && selectedLayerId ? placements3d[selectedLayerId] : null}
           onTextChange={(id, text) => updateLayer(id, { text })}
@@ -2451,7 +2583,7 @@ export default function UniformStudioPage() {
           onRotateChange={stageMode === "3d" ? rotateLayer : rotateLayer2d}
           onDuplicate={duplicateLayer}
           onDelete={removeLayer}
-        />
+        />}
 
         {activeTool === "design" && uniformSetupPanel}
         {activeTool === "zones" && (
@@ -2493,6 +2625,16 @@ export default function UniformStudioPage() {
             onApplyUniform={applyAIUniformDesign}
             onUndoUniform={undoAIUniformDesign}
             canUndoUniform={Boolean(aiUndoSnapshot)}
+            onGeneratingChange={handleAIGeneratingChange}
+            aiVersions={aiVersions}
+            onRestoreAIVersion={restoreAIVersion}
+            onCompareVersions={setAiComparisonPlan}
+            comparisonActive={Boolean(aiComparisonPlan)}
+            onConvertToEditable={convertAIToEditableDesign}
+            conversionAvailable={editablePlanValidation.valid}
+            conversionReason={editablePlanValidation.reason}
+            conversionError={conversionError}
+            onSavePreview={saveProgress}
             hasExistingArtwork={layers.some(
               (layer) => ["text", "logo", "clipart"].includes(layer.type) && !layer.source?.startsWith("ai-uniform"),
             )}

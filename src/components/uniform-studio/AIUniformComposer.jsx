@@ -22,7 +22,7 @@ function EmptyConversation({ dark }) {
       <img src={AI_COMMAND_LOGO_SRC} alt="Connect767 AI" className="h-28 w-44 object-contain drop-shadow-[0_12px_24px_rgba(0,116,73,.18)]" />
       <h3 className={`mt-4 font-heading text-xl font-semibold ${dark ? "text-white" : "text-foreground-950"}`}>Design your uniform</h3>
       <p className={`mt-2 text-[11px] leading-relaxed ${dark ? "text-white/55" : "text-foreground-500"}`}>
-        Describe a complete kit or create transparent artwork. Your generated result stays editable in the Uniform Studio.
+        Describe a complete kit or create transparent artwork. Full-uniform results open as AI-only previews and can be changed with AI instructions.
       </p>
     </div>
   );
@@ -56,8 +56,6 @@ export default function AIUniformComposer({
   error,
   onRetry,
   uniformPlan,
-  applied,
-  onApplyUniform,
   artworkPreview,
   onPlaceArtwork,
   onClearArtwork,
@@ -66,6 +64,16 @@ export default function AIUniformComposer({
   onUndo,
   onNewChat,
   onClearCurrentDesign,
+  versions = [],
+  onRestoreVersion,
+  onCompareVersions,
+  comparisonActive = false,
+  onGenerateVariation,
+  onConvertToEditable,
+  conversionAvailable = false,
+  conversionReason = "",
+  conversionError = "",
+  onSavePreview,
 }) {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -145,6 +153,8 @@ export default function AIUniformComposer({
   };
 
   const hasConversation = promptHistory.length > 0 || uniformPlan || artworkPreview || generating;
+  const previousVersion = versions.length > 1 ? versions[versions.length - 2] : null;
+  const originalVersion = versions[0] || null;
   const surface = dark ? "bg-[#11140f] text-white" : "bg-[#f8f7f2] text-foreground-950";
   const card = dark ? "border-white/10 bg-white/[0.055] text-white" : "border-background-200 bg-white text-foreground-950";
   const muted = dark ? "text-white/50" : "text-foreground-500";
@@ -267,6 +277,29 @@ export default function AIUniformComposer({
       <div ref={conversationRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4" aria-live="polite">
         {!hasConversation ? <EmptyConversation dark={dark} /> : (
           <div className="mx-auto max-w-xl space-y-4">
+            {mode === "uniform" && uniformPlan && (
+              <section className="rounded-2xl border border-amber-200 bg-amber-50/75 p-3.5" aria-label="AI preview controls">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[8px] font-bold uppercase tracking-wide text-amber-900"><i className="ri-eye-line" /> Preview Only</span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-1 text-[8px] font-bold uppercase tracking-wide text-primary-900"><i className="ri-sparkling-2-fill" /> AI Editing Available</span>
+                </div>
+                <h3 className="mt-3 font-heading text-lg font-semibold text-foreground-950">Refine with AI</h3>
+                <p className="mt-1 text-[10px] leading-relaxed text-foreground-600">Manual garment tools stay locked. Describe changes below or generate another variation; every successful result is preserved as a separate version.</p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => previousVersion && onRestoreVersion?.(previousVersion)} disabled={!previousVersion || generating} className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-background-300 bg-white px-2.5 py-2 text-[9px] font-bold text-foreground-700 hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40"><i className="ri-arrow-left-line" /> Previous version</button>
+                  <button type="button" onClick={() => onCompareVersions?.(comparisonActive ? null : previousVersion)} disabled={!previousVersion || generating} className={`inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-2.5 py-2 text-[9px] font-bold disabled:cursor-not-allowed disabled:opacity-40 ${comparisonActive ? "border-primary-600 bg-primary-700 text-white" : "border-background-300 bg-white text-foreground-700 hover:bg-background-100"}`}><i className="ri-split-cells-horizontal" /> {comparisonActive ? "Close comparison" : "Compare versions"}</button>
+                  <button type="button" onClick={() => originalVersion && onRestoreVersion?.(originalVersion)} disabled={!originalVersion || versions.length < 2 || generating} className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-background-300 bg-white px-2.5 py-2 text-[9px] font-bold text-foreground-700 hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40"><i className="ri-restart-line" /> Restore original</button>
+                  <button type="button" onClick={onGenerateVariation} disabled={generating || connection !== "connected"} className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-primary-700 px-2.5 py-2 text-[9px] font-bold text-white hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-45"><i className="ri-refresh-line" /> New variation</button>
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <button type="button" onClick={onSavePreview} aria-label="Save image to project" className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2.5 text-[9px] font-bold text-primary-900 hover:bg-primary-100"><i className="ri-check-line" /> Accept &amp; save to project</button>
+                  <button type="button" onClick={onConvertToEditable} disabled={!conversionAvailable || generating} title={conversionReason} className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-background-300 bg-white px-3 py-2.5 text-[9px] font-bold text-foreground-700 hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-45"><i className="ri-shapes-line" /> Convert to Editable Design</button>
+                </div>
+                {!conversionAvailable && conversionReason && <p className="mt-2 text-[9px] leading-relaxed text-foreground-500">Editable conversion unavailable: {conversionReason}</p>}
+                {conversionError && <p role="alert" className="mt-2 rounded-lg border border-red-200 bg-red-50 px-2.5 py-2 text-[9px] leading-relaxed text-red-700">{conversionError}</p>}
+                {connection !== "connected" && <p className="mt-2 rounded-lg border border-amber-200 bg-white px-2.5 py-2 text-[9px] leading-relaxed text-amber-800">AI image editing is not configured or is currently unavailable. Your existing preview remains unchanged.</p>}
+              </section>
+            )}
             {[...promptHistory].reverse().map((entry) => (
               <div key={entry.id} className="space-y-2">
                 <div className="ml-auto max-w-[88%] rounded-2xl rounded-br-md bg-primary-700 px-3.5 py-2.5 text-[11px] leading-relaxed text-white shadow-sm">
@@ -323,7 +356,7 @@ export default function AIUniformComposer({
           <div data-ai-popover className={`absolute bottom-[calc(100%-4px)] left-3 z-30 w-64 overflow-hidden rounded-2xl border p-2 shadow-2xl ${card}`} role="menu" aria-label="AI composer tools">
             <button type="button" onClick={() => { fileInputRef.current?.click(); setToolsOpen(false); }} className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-700"><i className="ri-image-add-line" /></span><span><strong className="block text-[10px]">Upload inspiration image</strong><span className={`text-[8px] ${muted}`}>PNG, JPG or WebP · up to 10 MB</span></span></button>
             {mode === "artwork" && <button type="button" onClick={() => { onModeChange("uniform"); setToolsOpen(false); }} className="mt-1 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-700"><i className="ri-shirt-line" /></span><span><strong className="block text-[10px]">Design full uniform</strong><span className={`text-[8px] ${muted}`}>Return to the complete kit designer</span></span></button>}
-            {mode === "uniform" && <button type="button" onClick={() => { onModeChange("artwork"); setToolsOpen(false); }} className="mt-1 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-50 text-accent-600"><i className="ri-image-edit-line" /></span><span><strong className="block text-[10px]">Create transparent artwork</strong><span className={`text-[8px] ${muted}`}>Generate artwork to place on the kit</span></span></button>}
+            {mode === "uniform" && !uniformPlan && <button type="button" onClick={() => { onModeChange("artwork"); setToolsOpen(false); }} className="mt-1 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-50 text-accent-600"><i className="ri-image-edit-line" /></span><span><strong className="block text-[10px]">Create transparent artwork</strong><span className={`text-[8px] ${muted}`}>Generate artwork to place on the kit</span></span></button>}
           </div>
         )}
 
@@ -350,20 +383,6 @@ export default function AIUniformComposer({
           <div className="flex items-center justify-between gap-2 px-2 pb-2">
             <div className="flex min-w-0 items-center gap-1.5">
               <button type="button" onClick={() => { setToolsOpen((value) => !value); setHistoryOpen(false); setResetMenuOpen(false); setSettingsOpen(false); }} className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-background-200 bg-background-50 text-sm text-foreground-700 transition hover:bg-background-100" aria-label="Add attachment or AI tool" aria-expanded={toolsOpen} data-ai-popover-trigger><i className={toolsOpen ? "ri-close-line" : "ri-add-line"} /></button>
-              {mode === "uniform" && uniformPlan && !generating && (
-                <button
-                  type="button"
-                  onClick={onApplyUniform}
-                  className={`inline-flex h-8 shrink-0 cursor-pointer items-center justify-center gap-1 rounded-full px-2.5 text-[9px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${
-                    applied
-                      ? "border border-primary-200 bg-primary-50 text-primary-800 hover:bg-primary-100"
-                      : "bg-primary-700 text-white shadow-sm hover:bg-primary-800"
-                  }`}
-                >
-                  <i className={applied ? "ri-check-double-line" : "ri-check-line"} />
-                  {applied ? "Applied" : "Apply design"}
-                </button>
-              )}
               <button type="button" onClick={() => { setSettingsOpen((value) => !value); setHistoryOpen(false); setResetMenuOpen(false); setToolsOpen(false); }} className="inline-flex h-8 w-8 cursor-pointer items-center justify-center gap-1 rounded-full border border-background-200 bg-background-50 text-[9px] font-bold text-foreground-600 hover:bg-background-100 sm:w-auto sm:px-2.5" data-ai-popover-trigger><i className="ri-equalizer-2-line" /><span className="hidden sm:inline">Controls</span></button>
             </div>
             {generating ? (
@@ -371,7 +390,7 @@ export default function AIUniformComposer({
             ) : (
               <div className="flex shrink-0 items-center gap-1.5">
                 <button type="button" onClick={() => submit("proof")} disabled={!canSend} className="inline-flex h-8 cursor-pointer items-center justify-center gap-1 rounded-full border border-primary-200 bg-primary-50 px-2.5 text-[8px] font-bold text-primary-800 transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:border-background-200 disabled:bg-background-100 disabled:text-foreground-400" aria-label="Render high-quality proof" title={mode === "uniform" ? "1536 × 1024 landscape · high quality" : "1024 × 1024 transparent artwork · high quality"}><i className="ri-hd-line" /> HQ proof</button>
-                <button type="button" onClick={() => submit("preview")} disabled={!canSend} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-primary-700 text-white shadow-sm transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:bg-background-300 disabled:text-foreground-400" aria-label="Generate preview" title="1024 × 1024 · medium quality"><i className="ri-arrow-up-line" /></button>
+                <button type="button" onClick={() => submit("preview")} disabled={!canSend} className={`flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-primary-700 text-white shadow-sm transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:bg-background-300 disabled:text-foreground-400 ${isRefinement ? "px-3" : "w-8"}`} aria-label={isRefinement ? "Generate Changes" : "Generate preview"} title="1024 × 1024 · medium quality"><i className={isRefinement ? "ri-sparkling-2-fill" : "ri-arrow-up-line"} />{isRefinement && <span className="text-[9px] font-bold">Generate Changes</span>}</button>
               </div>
             )}
           </div>
