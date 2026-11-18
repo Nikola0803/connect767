@@ -10,6 +10,35 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     expect(container.querySelectorAll('[data-sleeve-extension="Mixed"] path')).toHaveLength(0);
   });
 
+  it.each(["front", "back"])("extends both %s sleeves from the existing cuff boundary and preserves wrist trim", (view) => {
+    const { container } = render(
+      <ApprovedUniformGraphic sport="soccer" view={view} sleeve="Long" colors={{ sleeveStrip: "#f15a37" }} />,
+    );
+    const extensions = container.querySelectorAll('[data-sleeve-extension="Long"] [data-long-sleeve-side]');
+    expect(extensions).toHaveLength(2);
+    const expectedBoundaryStarts = view === "front"
+      ? ["M105,260", "M560,260"]
+      : ["M609.5,260", "M1062.5,260"];
+    extensions.forEach((extension, index) => {
+      expect(extension.getAttribute("d")).toMatch(new RegExp(`^${expectedBoundaryStarts[index]}`));
+    });
+    expect(container.querySelectorAll('[data-long-sleeve-cuff]')).toHaveLength(2);
+    // The selected long sleeve replaces the short cuff; only the wrist trim
+    // remains after the sleeve continues from the existing shirt boundary.
+    expect(container.querySelectorAll('[data-garment-tint="flat-color"] [data-garment-zone="sleeveStrip"]')).toHaveLength(0);
+    for (const cuff of container.querySelectorAll('[data-long-sleeve-cuff]')) {
+      expect(cuff.getAttribute("stroke")).toBe("#f15a37");
+    }
+  });
+
+  it("renders the selected long sleeve and its end trim in the side view", () => {
+    const { container } = render(
+      <ApprovedUniformGraphic sport="soccer" view="side" sleeve="Long" colors={{ sleeve: "#f4f1e8", sleeveStrip: "#00c8c8" }} />,
+    );
+    expect(container.querySelector('[data-sleeve-extension="Long"] [data-long-sleeve-side="right"]')).not.toBeNull();
+    expect(container.querySelector('[data-long-sleeve-cuff="right"]').getAttribute("fill")).toBe("#00c8c8");
+  });
+
   it.each(["front", "side", "back"])("uses the same full-strength sleeve tint on the %s view", (view) => {
     const { container } = render(<ApprovedUniformGraphic sport="soccer" view={view} colors={{ body: "#8888ff", sleeve: "#111111" }} />);
     const sleeveTint = [...container.querySelectorAll('[data-garment-tint="fabric-multiply"]')]

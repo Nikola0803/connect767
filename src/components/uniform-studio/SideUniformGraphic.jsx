@@ -19,6 +19,8 @@ export const SIDE_REGIONS = {
     width: 887, height: 1774, bottomStart: 754, socksStart: 1125, shirtHem: 730, bottomHem: 1080,
     sleeve: "M369 38 C297 68 252 149 253 240 L281 363 C325 391 380 390 430 368 C441 284 441 212 423 158 C414 105 389 63 369 38 Z",
     sleeveEnd: "M302 337 C338 329 395 332 434 346 L430 369 C391 389 337 381 303 363 Z",
+    longSleeve: "M303 363 C337 381 391 389 430 369 C428 455 420 543 406 628 C381 642 348 641 326 626 C318 540 310 452 303 363 Z",
+    longSleeveEnd: "M326 626 C348 641 381 642 406 628 L405 654 C380 668 350 667 328 652 Z",
     collar: "M370 17 C424 27 481 70 515 115 L500 136 C461 92 407 58 353 46 Z",
   },
   basketball: { width: 1159, height: 1358, bottomStart: 766, shirtHem: 742, bottomHem: 1232 },
@@ -33,12 +35,14 @@ export const SIDE_REGIONS = {
   },
   cricket: {
     width: 887, height: 1774, bottomStart: 754, shirtHem: 724, bottomHem: 1737,
+    nativeSleeve: "long",
     sleeve: "M367 73 C312 110 281 177 294 269 L327 467 C353 580 388 665 438 722 L509 712 C488 635 471 551 466 460 L467 264 C473 174 433 105 367 73 Z",
     sleeveEnd: "M429 697 L500 676 L514 722 L447 744 Z",
     collar: "M368 27 C423 34 495 82 534 120 L509 142 C467 103 411 76 360 68 Z",
   },
   goalkeeper: {
     width: 819, height: 1920, bottomStart: 803, socksStart: 1190, shirtHem: 777, bottomHem: 1148,
+    nativeSleeve: "long",
     sleeve: "M312 52 C244 88 221 166 229 278 L257 470 C291 605 350 718 418 790 L495 771 C472 676 444 590 434 481 L444 263 C453 160 398 83 312 52 Z",
     sleeveEnd: "M406 756 L478 733 L501 782 L431 805 Z",
     collar: "M307 17 C375 25 451 75 493 135 L475 151 C430 99 365 61 300 50 Z",
@@ -69,6 +73,7 @@ export default function SideUniformGraphic({
   colors = {},
   garmentPattern,
   highlightZone = null,
+  sleeve: sleeveStyle = "Short",
   side = "right",
   focus = "full",
   viewKey = "side",
@@ -94,6 +99,7 @@ export default function SideUniformGraphic({
       && (!garmentPattern.view || ["side", "both", "all"].includes(garmentPattern.view)),
   );
   const sleeveCropHeight = Math.min(height, Math.max(region.bottomStart + 90, height * 0.44));
+  const showLongSleeve = sleeveStyle === "Long" && region.nativeSleeve !== "long" && region.longSleeve;
 
   return (
     <svg
@@ -114,6 +120,12 @@ export default function SideUniformGraphic({
 
       <image href={asset} x="0" y="0" width={width} height={height} />
 
+      {showLongSleeve && (
+        <g data-sleeve-extension="Long" opacity={opacityFor("sleeve")}>
+          <path data-long-sleeve-side={side} d={region.longSleeve} fill={sleeve} />
+        </g>
+      )}
+
       {/* Composite the zone fills first, then multiply the resulting palette
           onto the photograph once. Separate multiply groups mix sleeve and
           body colors together instead of replacing the sleeve color. */}
@@ -124,9 +136,22 @@ export default function SideUniformGraphic({
         <rect data-garment-zone="shirtStrip" x="0" y={region.shirtHem} width={width} height={region.bottomStart - region.shirtHem} fill={shirtEnd} opacity={opacityFor("shirtStrip")} />
         <rect data-garment-zone="shortsStrip" x="0" y={region.bottomHem} width={width} height="24" fill={shortsEnd} opacity={opacityFor("shortsStrip")} />
         {region.sleeve && <path data-garment-zone="sleeve" d={region.sleeve} fill={sleeve} stroke={sleeve} strokeWidth="6" strokeLinejoin="round" opacity={opacityFor("sleeve")} />}
-        {region.sleeveEnd && <path data-garment-zone="sleeveStrip" d={region.sleeveEnd} fill={sleeveEnd} stroke={sleeveEnd} strokeWidth="3" strokeLinejoin="round" opacity={opacityFor("sleeveStrip")} />}
+        {region.sleeveEnd && !showLongSleeve && <path data-garment-zone="sleeveStrip" d={region.sleeveEnd} fill={sleeveEnd} stroke={sleeveEnd} strokeWidth="3" strokeLinejoin="round" opacity={opacityFor("sleeveStrip")} />}
         {region.collar && <path data-garment-zone="collar" d={region.collar} fill={collar} stroke={collar} strokeWidth="3" strokeLinejoin="round" opacity={opacityFor("collar")} />}
       </Tint>
+
+      {showLongSleeve && (
+        <path
+          data-garment-zone="sleeveStrip"
+          data-long-sleeve-cuff={side}
+          d={region.longSleeveEnd}
+          fill={sleeveEnd}
+          stroke={sleeveEnd}
+          strokeWidth="3"
+          strokeLinejoin="round"
+          opacity={opacityFor("sleeveStrip")}
+        />
+      )}
 
       {patternApplies && (
         <g mask={`url(#${maskId})`} opacity="0.76" data-ai-garment-pattern={garmentPattern.key}>
