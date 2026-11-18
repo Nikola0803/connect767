@@ -77,6 +77,7 @@ export default function AIUniformComposer({
   const [historyOpen, setHistoryOpen] = useState(false);
   const [resetMenuOpen, setResetMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [versionMenuOpen, setVersionMenuOpen] = useState(false);
   const dark = false;
   const [dragging, setDragging] = useState(false);
   const [feedback, setFeedback] = useState("");
@@ -110,7 +111,24 @@ export default function AIUniformComposer({
     setHistoryOpen(false);
     setResetMenuOpen(false);
     setSettingsOpen(false);
+    setVersionMenuOpen(false);
   };
+
+  useEffect(() => {
+    const dismissBannerPopovers = (event) => {
+      if (event.target.closest?.("[data-ai-popover], [data-ai-popover-trigger]")) return;
+      closePopovers();
+    };
+    const dismissWithEscape = (event) => {
+      if (event.key === "Escape") closePopovers();
+    };
+    document.addEventListener("pointerdown", dismissBannerPopovers);
+    document.addEventListener("keydown", dismissWithEscape);
+    return () => {
+      document.removeEventListener("pointerdown", dismissBannerPopovers);
+      document.removeEventListener("keydown", dismissWithEscape);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSurfacePointerDown = (event) => {
     if (event.target.closest("[data-ai-popover], [data-ai-popover-trigger]")) return;
@@ -196,15 +214,15 @@ export default function AIUniformComposer({
       <button type="button" onClick={() => fileInputRef.current?.click()} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-white/10 px-2.5 text-[8px] font-bold text-white/70 transition hover:bg-white/10 hover:text-white"><i className="ri-image-add-line text-[10px]" /> Reference</button>
       <button type="button" onClick={() => { setSettingsOpen((value) => !value); setHistoryOpen(false); setResetMenuOpen(false); setToolsOpen(false); }} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-white/10 px-2.5 text-[8px] font-bold text-white/70 transition hover:bg-white/10 hover:text-white" aria-expanded={settingsOpen}><i className="ri-equalizer-2-line text-[10px]" /> AI controls</button>
       <button type="button" onClick={() => textareaRef.current?.focus()} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-primary-300/25 bg-primary-500/10 px-2.5 text-[8px] font-bold text-primary-100 transition hover:bg-primary-500/20 hover:text-white"><i className="ri-magic-line text-[10px]" /> Refine with AI</button>
-      {mode === "uniform" && uniformPlan && <details className="group relative">
-        <summary className="inline-flex h-7 cursor-pointer list-none items-center gap-1.5 rounded-md border border-white/10 px-2.5 text-[8px] font-bold text-white/70 transition hover:bg-white/10 hover:text-white [&::-webkit-details-marker]:hidden"><i className="ri-git-branch-line text-[10px]" /> Versions <i className="ri-arrow-down-s-line" /></summary>
-        <div className="absolute right-0 top-[calc(100%+.4rem)] z-50 grid w-52 gap-1 rounded-xl border border-background-200 bg-white p-2 text-foreground-950 shadow-2xl" data-ai-popover>
+      {mode === "uniform" && uniformPlan && <div className="relative" data-ai-popover>
+        <button type="button" onClick={() => { setVersionMenuOpen((value) => !value); setResetMenuOpen(false); setHistoryOpen(false); setToolsOpen(false); setSettingsOpen(false); }} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-white/10 px-2.5 text-[8px] font-bold text-white/70 transition hover:bg-white/10 hover:text-white" aria-label="Versions" aria-expanded={versionMenuOpen} aria-haspopup="menu" data-ai-popover-trigger><i className="ri-git-branch-line text-[10px]" /> Versions <i className="ri-arrow-down-s-line" /></button>
+        {versionMenuOpen && <div className="absolute right-0 top-[calc(100%+.4rem)] z-50 grid w-52 gap-1 rounded-xl border border-background-200 bg-white p-2 text-foreground-950 shadow-2xl" data-ai-popover role="menu" aria-label="Version controls">
           <button type="button" onClick={() => previousVersion && onRestoreVersion?.(previousVersion)} disabled={!previousVersion || generating} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40"><i className="ri-arrow-left-line" /> Previous version</button>
           <button type="button" onClick={() => onCompareVersions?.(comparisonActive ? null : previousVersion)} disabled={!previousVersion || generating} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40"><i className="ri-split-cells-horizontal" /> {comparisonActive ? "Close comparison" : "Compare versions"}</button>
           <button type="button" onClick={() => originalVersion && onRestoreVersion?.(originalVersion)} disabled={!originalVersion || versions.length < 2 || generating} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40"><i className="ri-restart-line" /> Restore original</button>
           <button type="button" onClick={onGenerateVariation} disabled={generating || connection !== "connected"} className="flex cursor-pointer items-center gap-2 rounded-lg bg-primary-50 px-3 py-2 text-left text-[9px] font-bold text-primary-800 hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-40"><i className="ri-refresh-line" /> New variation</button>
-        </div>
-      </details>}
+        </div>}
+      </div>}
       {mode === "uniform" && uniformPlan && <button type="button" onClick={onSavePreview} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-primary-300/30 bg-primary-600 px-2.5 text-[8px] font-bold text-white transition hover:bg-primary-500"><i className="ri-check-line text-[10px]" /> Save design</button>}
     </div>,
     toolbarTarget,
