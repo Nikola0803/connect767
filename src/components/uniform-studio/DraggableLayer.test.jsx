@@ -33,6 +33,41 @@ describe("DraggableLayer", () => {
     expect(onChange).toHaveBeenCalledWith("text-1", { text: "CONNECT\n767" });
   });
 
+  it("renders the selected text case, alignment, spacing, weight and effects", () => {
+    render(
+      <DraggableLayer
+        layer={{
+          ...layer,
+          id: "styled-text",
+          type: "text",
+          text: "Team Name",
+          color: "#ffffff",
+          textTransform: "none",
+          textAlign: "left",
+          fontWeight: 900,
+          italic: true,
+          letterSpacing: 2.4,
+          outline: true,
+          shadow: true,
+        }}
+        stageRef={{ current: document.createElement("div") }}
+        selected
+        onSelect={vi.fn()}
+        onChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Team Name")).toHaveStyle({
+      textTransform: "none",
+      textAlign: "left",
+      fontWeight: "900",
+      fontStyle: "italic",
+      letterSpacing: "2.4px",
+      WebkitTextStroke: "1.5px #1b1a16",
+      textShadow: "0 3px 6px rgba(0,0,0,0.38)",
+    });
+  });
+
   it("allows production text to shrink below the former six-point minimum", () => {
     const onChange = vi.fn();
     render(

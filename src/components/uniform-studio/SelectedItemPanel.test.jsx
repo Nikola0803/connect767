@@ -16,6 +16,8 @@ describe("SelectedItemPanel", () => {
   it("edits, reflows, and deletes selected multiline text", () => {
     const onTextChange = vi.fn();
     const onLayoutChange = vi.fn();
+    const onStyleChange = vi.fn();
+    const onColorChange = vi.fn();
     const onDelete = vi.fn();
     render(
       <SelectedItemPanel
@@ -23,8 +25,9 @@ describe("SelectedItemPanel", () => {
         placement={null}
         onTextChange={onTextChange}
         onLayoutChange={onLayoutChange}
-        onColorChange={vi.fn()}
+        onColorChange={onColorChange}
         onFontChange={vi.fn()}
+        onStyleChange={onStyleChange}
         onGradientChange={vi.fn()}
         onScaleChange={vi.fn()}
         onRotateChange={vi.fn()}
@@ -34,10 +37,26 @@ describe("SelectedItemPanel", () => {
 
     fireEvent.change(screen.getByLabelText("Wording"), { target: { value: "CONNECT\n767" } });
     fireEvent.click(screen.getByRole("button", { name: "Use single line text" }));
+    fireEvent.change(screen.getByLabelText("Letter case"), { target: { value: "none" } });
+    fireEvent.change(screen.getByLabelText("Weight"), { target: { value: "900" } });
+    fireEvent.click(screen.getByRole("button", { name: "Align text left" }));
+    fireEvent.click(screen.getByRole("button", { name: "Italic text" }));
+    fireEvent.click(screen.getByRole("button", { name: "Outline text" }));
+    fireEvent.click(screen.getByRole("button", { name: "Shadow text" }));
+    fireEvent.change(screen.getByLabelText("Letter spacing"), { target: { value: "2.4" } });
+    fireEvent.change(screen.getByLabelText("Custom text colour"), { target: { value: "#123456" } });
     fireEvent.click(screen.getByRole("button", { name: "Remove selected text" }));
 
     expect(onTextChange).toHaveBeenCalledWith("text-1", "CONNECT\n767");
     expect(onLayoutChange).toHaveBeenCalledWith("text-1", "single-line");
+    expect(onStyleChange).toHaveBeenCalledWith("text-1", { textTransform: "none" });
+    expect(onStyleChange).toHaveBeenCalledWith("text-1", { fontWeight: 900 });
+    expect(onStyleChange).toHaveBeenCalledWith("text-1", { textAlign: "left" });
+    expect(onStyleChange).toHaveBeenCalledWith("text-1", { italic: true });
+    expect(onStyleChange).toHaveBeenCalledWith("text-1", { outline: true });
+    expect(onStyleChange).toHaveBeenCalledWith("text-1", { shadow: true });
+    expect(onStyleChange).toHaveBeenCalledWith("text-1", { letterSpacing: 2.4 });
+    expect(onColorChange).toHaveBeenCalledWith("text-1", "#123456");
     expect(onDelete).toHaveBeenCalledWith("text-1");
     const size = screen.getByLabelText("Size");
     expect(size).toHaveAttribute("min", "0.5");

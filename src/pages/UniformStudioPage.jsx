@@ -2296,10 +2296,10 @@ export default function UniformStudioPage() {
                   </div>
                   <p className="mt-1 text-xs text-foreground-500">{activeToolConfig?.hint || workflowStep.description}</p>
                 </div>}
-                <div className={`min-h-0 flex-1 ${activeTool === "ai" ? "flex flex-col overflow-hidden" : "overflow-y-auto"} ${activeTool === "ai" ? "" : activeTool === "design" ? "p-3" : "p-5"}`}>
+                <div className={`min-h-0 flex-1 ${activeTool === "ai" ? "flex flex-col overflow-hidden" : "overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"} ${activeTool === "ai" ? "" : activeTool === "design" ? "p-3 pb-20" : "p-5 pb-24"}`}>
                 {activeTool !== "ai" && (
                   <div className="mb-4">
-                    <GarmentCapabilitySummary capabilities={garmentCapabilities} />
+                    <GarmentCapabilitySummary capabilities={garmentCapabilities} compact />
                   </div>
                 )}
                 {selectedLayer && <SelectedItemPanel
@@ -2309,6 +2309,7 @@ export default function UniformStudioPage() {
                   onLayoutChange={updateTextLayout}
                   onColorChange={(id, color) => updateLayer(id, { color })}
                   onFontChange={(id, fontFamily) => updateLayer(id, { fontFamily })}
+                  onStyleChange={updateLayer}
                   onGradientChange={(id, patch) => updateLayer(id, patch)}
                   onScaleChange={stageMode === "3d" ? setLayerScale : setLayerSize2d}
                   onRotateChange={stageMode === "3d" ? rotateLayer : rotateLayer2d}
@@ -2444,6 +2445,7 @@ export default function UniformStudioPage() {
           onLayoutChange={updateTextLayout}
           onColorChange={(id, color) => updateLayer(id, { color })}
           onFontChange={(id, fontFamily) => updateLayer(id, { fontFamily })}
+          onStyleChange={updateLayer}
           onGradientChange={(id, patch) => updateLayer(id, patch)}
           onScaleChange={stageMode === "3d" ? setLayerScale : setLayerSize2d}
           onRotateChange={stageMode === "3d" ? rotateLayer : rotateLayer2d}
