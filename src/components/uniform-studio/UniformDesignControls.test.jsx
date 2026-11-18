@@ -6,7 +6,7 @@ import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
 import { DesignPanel, LayersPanel, OptionsPanel, StudioBackgroundPanel, UniformSetupPanel } from "./StudioPanels";
 
 describe("uniform design controls", () => {
-  it("offers twenty quick colourways and applies the selected palette", () => {
+  it("offers twenty-eight quick colourways, including white-shirt presets, and applies the selected palette", () => {
     const onApplyColourway = vi.fn();
     render(
       <LayersPanel
@@ -16,9 +16,12 @@ describe("uniform design controls", () => {
       />,
     );
 
-    expect(screen.getAllByRole("button", { name: /Apply .* colourway/ })).toHaveLength(20);
-    fireEvent.click(screen.getByRole("button", { name: "Apply Teal & Coral colourway" }));
-    expect(onApplyColourway).toHaveBeenCalledWith(["#0f766e", "#fb7185", "#f8fafc"]);
+    expect(screen.getAllByRole("button", { name: /Apply .* colourway/ })).toHaveLength(28);
+    for (const name of ["White & Navy", "White & Royal", "White & Red", "White & Forest", "White & Gold", "White & Maroon", "White & Purple", "White & Teal"]) {
+      expect(screen.getByRole("button", { name: `Apply ${name} colourway` })).toBeVisible();
+    }
+    fireEvent.click(screen.getByRole("button", { name: "Apply White & Navy colourway" }));
+    expect(onApplyColourway).toHaveBeenCalledWith(["#ffffff", "#0c2340", "#0c2340"]);
   });
 
   it("restores full garment colors after leaving a picker, including focus restored by a native color dialog", () => {
