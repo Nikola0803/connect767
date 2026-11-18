@@ -1821,6 +1821,14 @@ const presetColourways = [
   { key: "blackout", label: "Blackout", colors: ["#1b1a16", "#3d3d3d", "#9b9b9b"] },
   { key: "sky", label: "Sky", colors: ["#1f5c7a", "#ffffff", "#e4583a"] },
   { key: "sand", label: "Sand", colors: ["#d9c7b8", "#7a6a53", "#ffffff"] },
+  { key: "white-navy", label: "White & Navy", colors: ["#ffffff", "#0c2340", "#0c2340"] },
+  { key: "white-royal", label: "White & Royal", colors: ["#ffffff", "#1d4ed8", "#1d4ed8"] },
+  { key: "white-red", label: "White & Red", colors: ["#ffffff", "#c0392b", "#1b1a16"] },
+  { key: "white-forest", label: "White & Forest", colors: ["#ffffff", "#0c8a57", "#086b44"] },
+  { key: "white-gold", label: "White & Gold", colors: ["#ffffff", "#e4a11b", "#0c2340"] },
+  { key: "white-maroon", label: "White & Maroon", colors: ["#ffffff", "#7f1d1d", "#7f1d1d"] },
+  { key: "white-purple", label: "White & Purple", colors: ["#ffffff", "#5b21b6", "#5b21b6"] },
+  { key: "white-teal", label: "White & Teal", colors: ["#ffffff", "#0f766e", "#0f766e"] },
   { key: "royal-white", label: "Royal", colors: ["#1d4ed8", "#ffffff", "#0f172a"] },
   { key: "maroon-gold", label: "Maroon", colors: ["#7f1d1d", "#d4af37", "#f8fafc"] },
   { key: "purple-gold", label: "Purple", colors: ["#5b21b6", "#f4c430", "#ffffff"] },
@@ -1867,7 +1875,7 @@ export function LayersPanel({
       <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400 mb-3">
         Quick colourways
       </h3>
-      <div className="grid grid-cols-3 gap-2 mb-5">
+      <div className="grid grid-cols-3 gap-2 mb-5" aria-label="Quick uniform colourways">
         {presetColourways.map((p) => (
           <button
             key={p.key}
@@ -1878,8 +1886,8 @@ export function LayersPanel({
             className="rounded-lg border border-background-200/70 hover:border-primary-400 hover:ring-2 hover:ring-primary-100 transition-all cursor-pointer overflow-hidden"
           >
             <span className="flex h-8">
-              {p.colors.map((c) => (
-                <span key={c} className="flex-1" style={{ backgroundColor: c }} />
+              {p.colors.map((c, index) => (
+                <span key={`${p.key}-${index}`} className="flex-1" style={{ backgroundColor: c }} />
               ))}
             </span>
             <span className="block text-[10px] font-label text-foreground-600 py-1 px-1 truncate">
