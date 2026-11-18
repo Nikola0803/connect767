@@ -534,21 +534,24 @@ export default function ApprovedUniformGraphic({
           />}
         </TintLayer>
 
-        {!isSleeveless && <TintLayer mask={jerseyMaskId} fill={sleeveEnd} opacity={opacityFor("sleeveStrip")}>
+        {/* Sleeve cuffs must replace the photographed source color. The soccer
+            source has black cuff pixels, so multiply blending can never show a
+            selected bright color there (orange × black remains black). */}
+        {!isSleeveless && <TintLayer mask={jerseyMaskId} fill={sleeveEnd} opacity={opacityFor("sleeveStrip")} blendMode="normal">
         {(fill) => (
           <>
               {region.sleeveEndPolygons ? (
                 <>
-                  <path d={polygonPath(region.sleeveEndPolygons.left)} fill={fill} />
-                  <path d={polygonPath(region.sleeveEndPolygons.right)} fill={fill} />
+                  <path data-garment-zone="sleeveStrip" d={polygonPath(region.sleeveEndPolygons.left)} fill={fill} />
+                  <path data-garment-zone="sleeveStrip" d={polygonPath(region.sleeveEndPolygons.right)} fill={fill} />
                 </>
               ) : (
                 <>
                   {(!hasLeftLongSleeve || nativeLongSleeve) && (
-                    <path d={baseSleevePath("left", true, hasLeftLongSleeve ? longSleeveBottom : shortSleeveBottom)} fill={fill} />
+                    <path data-garment-zone="sleeveStrip" d={baseSleevePath("left", true, hasLeftLongSleeve ? longSleeveBottom : shortSleeveBottom)} fill={fill} />
                   )}
                   {(!hasRightLongSleeve || nativeLongSleeve) && (
-                    <path d={baseSleevePath("right", true, hasRightLongSleeve ? longSleeveBottom : shortSleeveBottom)} fill={fill} />
+                    <path data-garment-zone="sleeveStrip" d={baseSleevePath("right", true, hasRightLongSleeve ? longSleeveBottom : shortSleeveBottom)} fill={fill} />
                   )}
                 </>
               )}
