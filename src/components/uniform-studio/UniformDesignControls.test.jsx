@@ -3,9 +3,24 @@ import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { defaultZoneColors, normalizeZoneColors } from "../../data/uniforms";
 import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
-import { DesignPanel, OptionsPanel, StudioBackgroundPanel, UniformSetupPanel } from "./StudioPanels";
+import { DesignPanel, LayersPanel, OptionsPanel, StudioBackgroundPanel, UniformSetupPanel } from "./StudioPanels";
 
 describe("uniform design controls", () => {
+  it("offers twenty quick colourways and applies the selected palette", () => {
+    const onApplyColourway = vi.fn();
+    render(
+      <LayersPanel
+        layers={[]}
+        view="front"
+        onApplyColourway={onApplyColourway}
+      />,
+    );
+
+    expect(screen.getAllByRole("button", { name: /Apply .* colourway/ })).toHaveLength(20);
+    fireEvent.click(screen.getByRole("button", { name: "Apply Teal & Coral colourway" }));
+    expect(onApplyColourway).toHaveBeenCalledWith(["#0f766e", "#fb7185", "#f8fafc"]);
+  });
+
   it("restores full garment colors after leaving a picker, including focus restored by a native color dialog", () => {
     function Preview() {
       const [highlightZone, setHighlightZone] = useState(null);
