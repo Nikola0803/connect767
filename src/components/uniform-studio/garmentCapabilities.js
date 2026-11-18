@@ -1,4 +1,4 @@
-const placementTools = ["text", "logo", "skins"];
+const placementTools = ["text", "logo", "remove-bg", "skins"];
 
 const zone = (id, label, views, tools = ["design", ...placementTools]) => ({
   id,
@@ -105,7 +105,10 @@ export function detectGarmentCapabilities({
       item.tools.forEach((tool) => verifiedTools.add(tool));
     }
     if (profile.correctionCapable && hasVerifiedTracedZones(zoneModel)) verifiedTools.add("zones");
-    if (layerCount > 0) verifiedTools.add("layers");
+    // Layers is a valid production-surface tool even before the first item is
+    // added: its empty state explains what will appear there and keeps the
+    // Step 2 navigation stable as artwork is created.
+    verifiedTools.add("layers");
   }
 
   return {

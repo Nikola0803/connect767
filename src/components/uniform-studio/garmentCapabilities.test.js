@@ -20,6 +20,7 @@ describe("garment capability detection", () => {
     expect(result.canUse("ai")).toBe(true);
     expect(result.canUse("text")).toBe(false);
     expect(result.canUse("logo")).toBe(false);
+    expect(result.canUse("remove-bg")).toBe(false);
     expect(result.canUse("layers")).toBe(false);
   });
 
@@ -35,8 +36,20 @@ describe("garment capability detection", () => {
     expect(result.canUse("zones")).toBe(true);
     expect(result.canUse("text")).toBe(true);
     expect(result.canUse("logo")).toBe(true);
+    expect(result.canUse("remove-bg")).toBe(true);
     expect(result.canUse("layers")).toBe(true);
     expect(firstSupportedTool(["zones", "design"], result)).toBe("zones");
+  });
+
+  it("keeps the production Layers panel available before artwork is added", () => {
+    const result = detectGarmentCapabilities({
+      sport: "soccer",
+      canvasMode: "production",
+      zoneModel: tracedZones,
+      layerCount: 0,
+    });
+
+    expect(result.canUse("layers")).toBe(true);
   });
 
   it.each(["sleeve-left", "sleeve-right"])("exposes placement tools for the verified %s zone", (view) => {
