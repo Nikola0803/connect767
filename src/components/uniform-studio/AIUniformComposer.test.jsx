@@ -43,9 +43,6 @@ function renderComposer(overrides = {}) {
     onRestoreVersion: vi.fn(),
     onCompareVersions: vi.fn(),
     onGenerateVariation: vi.fn(),
-    onConvertToEditable: vi.fn(),
-    conversionAvailable: false,
-    conversionReason: "Structured garment data is incomplete.",
     onSavePreview: vi.fn(),
     ...overrides,
   };
@@ -150,7 +147,7 @@ describe("AIUniformComposer", () => {
     expect(screen.getByText("Preview Only")).toBeInTheDocument();
     expect(screen.getByText("AI Editing Available")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Refine with AI" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Convert to Editable Design" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Convert to Editable Design" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Save image to project" }));
     expect(props.onSavePreview).toHaveBeenCalledTimes(1);
   });
