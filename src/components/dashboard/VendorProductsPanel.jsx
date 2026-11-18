@@ -586,6 +586,8 @@ export default function VendorProductsPanel({ listings = [], initialListingId = 
           {orders.map((o) => (
             <div
               key={o.id}
+              role="article"
+              aria-label={`Order ${o.productName}`}
               className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 rounded-xl border border-background-200/70 bg-background-50 p-4 sm:p-5"
             >
               <div className="flex-1 min-w-0">

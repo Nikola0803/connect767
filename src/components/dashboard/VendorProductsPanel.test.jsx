@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import VendorProductsPanel from "./VendorProductsPanel";
@@ -79,9 +79,10 @@ describe("VendorProductsPanel storefront fees", () => {
     expect(screen.getByText(/Connect767 retains 10% of each product price/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("tab", { name: /Payouts/i }));
     expect(await screen.findByText("Island Gift Box")).toBeInTheDocument();
-    expect(screen.getByText("−$10.00")).toBeInTheDocument();
-    expect(screen.getByText("$102.00")).toBeInTheDocument();
-    expect(screen.getByText(/Payout pending/i)).toBeInTheDocument();
+    const order = within(screen.getByRole("article", { name: "Order Island Gift Box" }));
+    expect(order.getByText("−$10.00")).toBeInTheDocument();
+    expect(order.getByText("$102.00")).toBeInTheDocument();
+    expect(order.getByText(/Payout pending/i)).toBeInTheDocument();
   });
 
   it("warns sellers to configure payouts before offering products", async () => {
