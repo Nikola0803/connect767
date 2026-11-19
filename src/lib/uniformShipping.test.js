@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { uniformShippingRate } from "./uniformShipping";
+import { uniformAiDesignerFee, uniformShippingRate } from "./uniformShipping";
 
 describe("Custom Uniform Studio shipping zones", () => {
   it.each(["US", "CA", "MX"])("charges North America rates for %s", (country) => {
@@ -14,6 +14,13 @@ describe("Custom Uniform Studio shipping zones", () => {
 
   it("does not quote unsupported destinations", () => {
     expect(uniformShippingRate("GB", 22)).toBeNull();
+  });
+
+  it("adds the fixed AI Designer fee only below $1,500 after shipping", () => {
+    expect(uniformAiDesignerFee(1177, 300)).toBe(100);
+    expect(uniformAiDesignerFee(899, 600)).toBe(100);
+    expect(uniformAiDesignerFee(1200, 300)).toBe(0);
+    expect(uniformAiDesignerFee(1177, 600)).toBe(0);
   });
 });
 

@@ -15,7 +15,7 @@ import { hasPaidBookingRate } from "../lib/payoutSettings";
 import { normalizeBookingRateRules } from "../lib/bookingRates";
 import { allIndustries } from "./industries";
 import { createListingSearchText } from "../lib/listingSearch";
-import { uniformShippingRate } from "../lib/uniformShipping";
+import { uniformAiDesignerFee, uniformShippingRate } from "../lib/uniformShipping";
 
 // Industry slugs from the canonical taxonomy. The Add Listing wizard submits
 // an *industry* slug (e.g. "accounting-and-bookkeeping"); a plugin bug
@@ -1385,13 +1385,16 @@ export async function quoteUniformCheckout(order, email, shipping) {
       : 0;
     const rate = uniformShippingRate(shipping?.country, rosterUnits + extraUnits + supporterUnits);
     if (!rate) throw new Error("Custom Uniform Studio shipping is available only in North America and the Caribbean.");
+    const designerFee = uniformAiDesignerFee(subtotal, rate.amount);
     return {
       subtotal,
       tax: 0,
       shipping: rate.amount,
       shippingLabel: rate.label,
       shippingZone: rate.zone,
-      total: subtotal + rate.amount,
+      designerFee,
+      designerFeeLabel: "Connect767 AI Designer Fee",
+      total: subtotal + rate.amount + designerFee,
       currency: "USD",
       demo: true,
     };
