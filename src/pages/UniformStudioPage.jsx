@@ -165,7 +165,7 @@ const studioWorkflow = [
   {
     key: "design",
     label: "Design",
-    description: "Uniform, colors & artwork",
+    description: "Create and refine with AI",
     icon: "ri-pencil-ruler-2-line",
     step: 1,
     defaultTool: "ai",
@@ -390,7 +390,7 @@ export default function UniformStudioPage() {
   const [aiDesignApplied, setAiDesignApplied] = useState(false);
   const [aiDesignerMode, setAiDesignerMode] = useState("uniform");
   const [aiCanvasMode, setAiCanvasMode] = useState("concept");
-  const [studioMode, setStudioMode] = useState(STUDIO_MODES.EDITABLE);
+  const [studioMode, setStudioMode] = useState(STUDIO_MODES.AI_OUTPUT);
   const [conversionError, setConversionError] = useState("");
   const aiConceptViewportRef = useRef(null);
   const [aiConceptViewportWidth, setAiConceptViewportWidth] = useState(null);
@@ -570,7 +570,7 @@ export default function UniformStudioPage() {
   }), [activeSport, view, aiCanvasMode, aiWorkspaceConcept?.src, hasUploadedReference, zoneModel, layers.length]);
   // Gate every entry path, including saved links and artwork selection.
   const selectedWorkflowStep = studioWorkflow.find((step) => step.tools.includes(selectedTool));
-  const gatedTool = strictAIPreview
+  const gatedTool = strictAIPreview && selectedWorkflowStep?.key === "design"
     ? "ai"
     : !hasSelectedFit && selectedWorkflowStep?.step > 1 ? "ai" : selectedTool;
   const requestedWorkflowIndex = Math.max(
@@ -876,7 +876,7 @@ export default function UniformStudioPage() {
     setAiComparisonPlan(null);
     setAiDesignApplied(false);
     setSockQuantityOverride(null);
-    setStudioMode(STUDIO_MODES.EDITABLE);
+    setStudioMode(STUDIO_MODES.AI_OUTPUT);
   };
 
   useEffect(() => {
@@ -1168,7 +1168,7 @@ export default function UniformStudioPage() {
       setAiVersions([]);
       setAiComparisonPlan(null);
       setAiDesignApplied(false);
-      if (studioMode !== STUDIO_MODES.AI_GENERATING) setStudioMode(STUDIO_MODES.EDITABLE);
+      if (studioMode !== STUDIO_MODES.AI_GENERATING) setStudioMode(STUDIO_MODES.AI_OUTPUT);
       return;
     }
     if (plan) {
@@ -1183,7 +1183,7 @@ export default function UniformStudioPage() {
       setAiComparisonPlan(null);
       setConversionError("");
       setAiDesignApplied(false);
-      setAiCanvasMode(plan.conceptImage?.src ? "concept" : "production");
+      setAiCanvasMode("concept");
       setStageMode("edit");
       setView("front");
       setSelectedLayerId(null);
@@ -1203,13 +1203,13 @@ export default function UniformStudioPage() {
     setStudioMode((current) => (
       current === STUDIO_MODES.AI_GENERATING && (aiWorkspaceConcept?.src || aiUniformPlan?.conceptImage?.src)
         ? STUDIO_MODES.AI_OUTPUT
-        : current === STUDIO_MODES.AI_GENERATING ? STUDIO_MODES.EDITABLE : current
+        : current === STUDIO_MODES.AI_GENERATING ? STUDIO_MODES.AI_OUTPUT : current
     ));
   };
 
   useEffect(() => {
     if (!aiUniformPlan && !aiWorkspaceConcept && studioMode !== STUDIO_MODES.AI_GENERATING) {
-      setStudioMode(STUDIO_MODES.EDITABLE);
+      setStudioMode(STUDIO_MODES.AI_OUTPUT);
       setAiComparisonPlan(null);
     }
   }, [aiUniformPlan, aiWorkspaceConcept, studioMode]);
@@ -1254,19 +1254,27 @@ export default function UniformStudioPage() {
     && aiCanvasMode === "concept"
     && strictAIPreview,
   );
-  const showingProductionMap = stageMode === "edit" && !showingAIConcept
-    && !(activeTool === "ai" && aiDesignerMode === "uniform" && !aiWorkspaceConcept?.src);
-  const headerCapabilities = getStudioHeaderCapabilities({
+  const showingProductionMap = false;
+  const detectedHeaderCapabilities = getStudioHeaderCapabilities({
     mode: studioMode,
     workspace: workflowStep.key,
     aiDesignerActive: activeTool === "ai",
     hasAIResult: Boolean(aiUniformPlan || aiWorkspaceConcept),
-    canOpenProduction: editablePlanValidation.valid && studioMode !== STUDIO_MODES.AI_GENERATING,
+    canOpenProduction: false,
     hasStorage: Boolean(storageKey),
     showingAIConcept,
     showingProductionMap,
     stageMode,
   });
+  const headerCapabilities = {
+    ...detectedHeaderCapabilities,
+    aiDesigner: workflowStep.key === "design",
+    saveProgress: workflowStep.key !== "design" && detectedHeaderCapabilities.saveProgress,
+    openEditableStudio: false,
+    svgExport: false,
+    settings: false,
+    download: false,
+  };
   useEffect(() => {
     if (!showingAIConcept) {
       setAiConceptViewportWidth(null);
@@ -1941,6 +1949,7 @@ export default function UniformStudioPage() {
   }
 
   const uniformSetupPanel = <UniformSetupPanel
+    aiOnly
     designProps={{ sport: activeSport, collar, setCollar, sleeve, setSleeve, colors: stageColors, setColors: updateGarmentColors, onHoverZone: setHoverZone, twoTone, setTwoTone }}
     optionsProps={{ sport: activeSport, fitType, setFitType, kitType, setKitType, extraTeamShirts, setExtraTeamShirts, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment, showFitAlert: true }}
   />;
@@ -1970,7 +1979,7 @@ export default function UniformStudioPage() {
               setAiComparisonPlan(null);
               setAiDesignApplied(false);
               setAiCanvasMode("concept");
-              setStudioMode(STUDIO_MODES.EDITABLE);
+              setStudioMode(STUDIO_MODES.AI_OUTPUT);
             }}
             className={`${headerIconTileClass} cursor-pointer border-white/10 bg-white/[0.035] text-white/55 hover:bg-white/10 hover:text-white`}
           >
@@ -2302,7 +2311,6 @@ export default function UniformStudioPage() {
                             <div ref={setAiBannerActionsTarget} className="contents" />
                           </div>
                         </div>
-                        {!editablePlanValidation.valid && <p className="mt-1.5 text-right text-[8px] leading-relaxed text-amber-100/70">Production mode unavailable: {editablePlanValidation.reason}</p>}
                         {conversionError && <p role="alert" className="mt-1.5 rounded-lg border border-red-300/25 bg-red-950/30 px-3 py-1.5 text-[8px] leading-relaxed text-red-100">{conversionError}</p>}
                       </section>
                     )}
@@ -2403,7 +2411,7 @@ export default function UniformStudioPage() {
                           </div>
                         </div>
                       </div>
-                    ) : stageMode === "edit" && activeTool === "ai" && aiDesignerMode === "uniform" && !aiWorkspaceConcept?.src ? (
+                    ) : stageMode === "edit" && !aiWorkspaceConcept?.src ? (
                       <div className="flex min-h-0 w-full flex-1 items-stretch justify-center p-1">
                         <div className="flex h-full w-full max-w-none flex-col justify-center rounded-[28px] border border-dashed border-primary-400/35 bg-[radial-gradient(circle_at_50%_0%,rgba(0,116,73,.2),transparent_56%),rgba(255,255,255,.025)] px-6 py-8 text-center shadow-[0_24px_70px_rgba(0,0,0,.2)] sm:px-10 lg:px-14">
                           <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-500 text-3xl text-white shadow-[0_16px_34px_rgba(239,84,53,.24)]">

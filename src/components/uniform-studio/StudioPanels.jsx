@@ -189,7 +189,7 @@ function ColorRow({ label, value, onChange, zone, onHoverZone }) {
   );
 }
 
-export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, colors, setColors, onHoverZone, twoTone, setTwoTone }) {
+export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, colors, setColors, onHoverZone, twoTone, setTwoTone, hideGarmentColors = false }) {
   useEffect(() => () => onHoverZone?.(null), [onHoverZone]);
   const setZone = (zone) => (color) => {
     setColors((current) => ({
@@ -257,7 +257,7 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
         </div>
       )}
 
-      <h3 className="mb-1.5 border-t border-background-200/70 pt-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400">
+      {!hideGarmentColors && <><h3 className="mb-1.5 border-t border-background-200/70 pt-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400">
         Garment colors
       </h3>
       <div className="grid grid-cols-4 gap-1" role="group" aria-label="Garment part colors" onMouseLeave={() => onHoverZone?.(null)}>
@@ -270,7 +270,7 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
           <span className="min-w-0 text-[10px] font-semibold leading-tight text-foreground-800">{zone.label}</span>
           <input type="color" aria-label={`${zone.label} color`} value={colors[zone.key]} onClick={() => onHoverZone?.(null)} onChange={(event) => { setZone(zone.key)(event.target.value); onHoverZone?.(null); }} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
         </label>)}
-      </div>
+      </div></>}
     </div>
   );
 }
@@ -689,10 +689,9 @@ export function OptionsPanel({
   );
 }
 
-export function UniformSetupPanel({ designProps, optionsProps }) {
+export function UniformSetupPanel({ designProps, optionsProps, aiOnly = false }) {
   return <div className="space-y-2">
     <OptionsPanel {...optionsProps} section="fit" />
-    <DesignPanel {...designProps} />
     <section aria-labelledby="production-extras-title" className="overflow-hidden rounded-xl border-2 border-primary-500 bg-background-50 shadow-[0_10px_24px_rgba(0,116,73,.12)]">
       <header className="flex items-center justify-between gap-3 bg-primary-700 px-3.5 py-3 text-white">
         <span className="flex min-w-0 items-center gap-2.5">
@@ -706,7 +705,10 @@ export function UniformSetupPanel({ designProps, optionsProps }) {
           {optionsProps.logoApplication === "Embroidery" ? "Embroidery" : "Sublimation"}{optionsProps.insideCollarMessage ? " + collar" : ""}
         </span>
       </header>
-      <div className="border-t border-primary-600/20 p-3.5"><OptionsPanel {...optionsProps} section="production" /></div>
+      <div className="space-y-3 border-t border-primary-600/20 p-3.5">
+        <DesignPanel {...designProps} hideGarmentColors={aiOnly} />
+        <OptionsPanel {...optionsProps} section="production" />
+      </div>
     </section>
   </div>;
 }
