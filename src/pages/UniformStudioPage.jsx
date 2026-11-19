@@ -66,6 +66,7 @@ import {
   sampleImageEdgeColor,
 } from "../components/uniform-studio/aiPreviewBackground";
 import { skinDataUri } from "../data/skins";
+import { embossConnect767ConceptBackground } from "../components/uniform-studio/aiConceptEmboss";
 import Button from "../components/ui/Button";
 import SelectedItemPanel from "../components/uniform-studio/SelectedItemPanel";
 import {
@@ -419,6 +420,27 @@ export default function UniformStudioPage() {
   });
   // Shown when leaving the studio with unsaved work — see confirmExit below.
   const [exitPrompt, setExitPrompt] = useState(false);
+
+  // Upgrade saved concepts created before deterministic background embossing.
+  // The logo is composited into the image itself, never behind its opaque box.
+  useEffect(() => {
+    const source = aiWorkspaceConcept?.src;
+    if (!source || aiWorkspaceConcept?.backgroundBranding === "connect767-embossed-v1") return undefined;
+    let active = true;
+    embossConnect767ConceptBackground(source).then((brandedSource) => {
+      if (!active || !brandedSource || brandedSource === source) return;
+      const conceptImage = {
+        ...aiWorkspaceConcept,
+        src: brandedSource,
+        backgroundBranding: "connect767-embossed-v1",
+      };
+      setAiWorkspaceConcept(conceptImage);
+      setAiUniformPlan((current) => current?.conceptImage?.src === source
+        ? { ...current, conceptImage }
+        : current);
+    });
+    return () => { active = false; };
+  }, [aiWorkspaceConcept]);
 
   useEffect(() => {
     if (!studioSettingsOpen) return undefined;

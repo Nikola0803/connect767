@@ -19,6 +19,7 @@ import {
 } from "./studioBackgrounds";
 import AIUniformComposer from "./AIUniformComposer";
 import CollarAttachment from "./CollarAttachment";
+import { embossConnect767ConceptBackground } from "./aiConceptEmboss";
 
 /** #rrggbb → {r,g,b}, tolerating a missing leading hash. */
 function hexToRgb(hex) {
@@ -1278,15 +1279,18 @@ export function AIArtworkPanel({
           };
         });
       }
+      const rawConceptSrc = `data:${conceptData.mimeType || "image/png"};base64,${conceptData.b64}`;
+      const brandedConceptSrc = await embossConnect767ConceptBackground(rawConceptSrc);
       onUniformPlanChange?.({
         ...plan,
         productionElements,
         conceptImage: {
-          src: `data:${conceptData.mimeType || "image/png"};base64,${conceptData.b64}`,
+          src: brandedConceptSrc,
           name: `${plan.name} full uniform concept`,
           size: conceptData.size,
           quality: conceptData.quality,
           renderTier: conceptData.renderTier,
+          backgroundBranding: "connect767-embossed-v1",
         },
       });
       savePrompt({
