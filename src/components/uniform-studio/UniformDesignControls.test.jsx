@@ -93,7 +93,7 @@ describe("uniform design controls", () => {
     const setLogoApplication = vi.fn();
     const props = { section: "production", logoApplication: "Sublimated", setLogoApplication, insideCollarMessage: false };
     const { rerender } = render(<OptionsPanel {...props} />);
-    expect(screen.getByText("All uniform prints, including logos, are sublimated and included in the base price.")).toBeVisible();
+    expect(screen.getByText("All prints and logos are sublimated and included.")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Sublimated" })).not.toBeInTheDocument();
     const upgrade = screen.getByRole("checkbox", { name: "Embroidered team logo (+$1.50/kit)" });
     expect(upgrade).not.toBeChecked();
@@ -148,16 +148,16 @@ describe("uniform design controls", () => {
     const { rerender } = render(<DesignPanel {...props} />);
     expect(screen.queryByRole("button", { name: "Crew" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "V-Neck" })).not.toBeInTheDocument();
-    expect(screen.getByText(/Crew and V-Neck styles are designed with the AI tool and included in the base price/i)).toBeVisible();
+    expect(screen.getByText(/Crew and V-Neck included/i)).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /Polo style collar/ }));
     expect(setCollar).toHaveBeenCalledWith("Polo");
     expect(screen.queryByRole("button", { name: "Sleeveless" })).not.toBeInTheDocument();
     expect(screen.queryByRole("checkbox", { name: /Long sleeves/ })).not.toBeInTheDocument();
-    expect(screen.getByText(/Long sleeves add \$2\.00\/kit/i)).toBeVisible();
+    expect(screen.getByText(/Long sleeves \+\$2\.00\/kit/i)).toBeVisible();
     fireEvent.click(screen.getByRole("checkbox", { name: "Mixed Sleeve Team Order" }));
     expect(setSleeve).toHaveBeenCalledWith("Mixed");
     rerender(<DesignPanel {...props} sleeve="Mixed" />);
-    expect(screen.getByText(/combination of short- and long-sleeve jerseys/i)).toBeInTheDocument();
+    expect(screen.getByText(/Choose each player’s sleeve length in Team roster/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("checkbox", { name: "Mixed Sleeve Team Order" }));
     expect(setSleeve).toHaveBeenLastCalledWith("Short");
   });
