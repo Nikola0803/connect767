@@ -185,7 +185,7 @@ const studioWorkflow = [
     label: "Design",
     description: "Create and refine with AI",
     icon: "ri-pencil-ruler-2-line",
-    step: 1,
+    step: 2,
     defaultTool: "ai",
     tools: ["ai"],
   },
@@ -194,7 +194,7 @@ const studioWorkflow = [
     label: "Team roster",
     description: "Names, numbers & sizes",
     icon: "ri-team-line",
-    step: 2,
+    step: 3,
     defaultTool: "roster",
     tools: ["roster"],
   },
@@ -203,7 +203,7 @@ const studioWorkflow = [
     label: "Review & quote",
     description: "Confirm and submit",
     icon: "ri-shopping-bag-3-line",
-    step: 3,
+    step: 4,
     defaultTool: "review",
     tools: ["review"],
   },
@@ -676,7 +676,7 @@ export default function UniformStudioPage() {
 
   const openWorkflowStep = (index) => {
     const nextStep = studioWorkflow[Math.max(0, Math.min(studioWorkflow.length - 1, index))];
-    if (nextStep.step > 1 && !canContinueDesign) return;
+    if (nextStep.key !== "design" && !canContinueDesign) return;
     if (nextStep.key === "review" && !rosterReadyForReview) return;
     setPendingLayer(null);
     setSelectedLayerId(null);
@@ -890,7 +890,7 @@ export default function UniformStudioPage() {
       if (saved.twoTone) setTwoTone(saved.twoTone);
       setFitType(saved.fitTypeConfirmed === true && fitTypeOptions.includes(saved.fitType) ? saved.fitType : "");
       // Extra shirts are ordered explicitly in Team roster. Discard the former
-      // hidden Step 1 quantity so legacy projects cannot add an invisible charge.
+      // hidden Step 2 quantity so legacy projects cannot add an invisible charge.
       setKitType("Full");
       setExtraTeamShirts([]);
       if (saved.logoApplication) setLogoApplication(saved.logoApplication);
@@ -1911,8 +1911,8 @@ export default function UniformStudioPage() {
                 creates a complete Front / Side / Back concept while the existing order steps stay intact.
               </p>
             </div>
-            <ol className="grid grid-cols-3 overflow-hidden rounded-2xl border border-background-300 bg-background-50 shadow-sm">
-              {["Design", "Team roster", "Review & quote"].map((label, index) => (
+            <ol className="grid grid-cols-4 overflow-hidden rounded-2xl border border-background-300 bg-background-50 shadow-sm">
+              {["Category", "Design", "Team roster", "Review & quote"].map((label, index) => (
                 <li
                   key={label}
                   className="flex min-w-0 flex-col gap-1 border-l border-background-200 px-3 py-3 first:border-l-0"
@@ -2118,25 +2118,9 @@ export default function UniformStudioPage() {
           Back
         </button>
         <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
-          <span className="hidden truncate text-sm font-semibold text-background-50/85 lg:inline">
+          <span className="truncate text-sm font-semibold text-background-50/85">
             {aiUniformPlan?.name || (template?.slug === "blank-canvas" ? "AI Uniform" : template?.name) || "AI Uniform"}
           </span>
-          <span className="hidden text-background-50/20 lg:inline">/</span>
-          <label className="inline-flex h-9 min-w-0 items-center gap-1.5 rounded-lg border border-primary-400/35 bg-primary-950/45 px-2.5 text-primary-100 shadow-[0_8px_20px_rgba(0,0,0,.14)]">
-            <i className={`${sports.find((item) => item.slug === activeSport)?.icon || "ri-shirt-line"} shrink-0 text-sm`} aria-hidden="true" />
-            <span className="hidden text-[9px] font-bold uppercase tracking-[0.12em] text-primary-300 xl:inline">Category</span>
-            <select
-              aria-label="Design category"
-              value={activeSport}
-              onChange={(event) => changeDesignCategory(event.target.value)}
-              className="min-w-0 max-w-[150px] cursor-pointer appearance-none bg-transparent pr-4 text-xs font-bold text-white outline-none [color-scheme:dark] sm:max-w-[190px]"
-            >
-              {sports.map((sport) => (
-                <option key={sport.slug} value={sport.slug} className="bg-[#151610] text-white">{categoryDetails[sport.slug]?.title || sport.label}</option>
-              ))}
-            </select>
-            <i className="ri-arrow-down-s-line -ml-3 shrink-0 text-xs text-primary-300" aria-hidden="true" />
-          </label>
           <span className="hidden shrink-0 items-center gap-1.5 rounded-full border border-primary-500/20 bg-primary-950/35 px-2.5 py-1 text-[10px] font-semibold text-primary-200/90 xl:inline-flex">
             <span className="h-1.5 w-1.5 rounded-full bg-primary-400" /> Auto-saved
           </span>
@@ -2251,11 +2235,38 @@ export default function UniformStudioPage() {
         aria-label="Uniform order progress"
         className="relative z-30 flex-shrink-0 border-b border-white/[0.06] bg-[#12130f] px-3 py-2.5 sm:px-5"
       >
-        <div className="mx-auto flex max-w-6xl items-center gap-1.5 overflow-x-auto py-0.5">
+        <div className="mx-auto flex max-w-[1500px] items-center gap-1.5 overflow-x-auto py-0.5">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5">
+            <label className="group flex min-w-[190px] flex-1 cursor-pointer items-center gap-2.5 rounded-xl border border-primary-400/45 bg-primary-700 px-3 py-2 text-left text-white shadow-[0_8px_22px_rgba(0,116,73,0.2)]">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/15 text-xs font-bold">1</span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-1.5 whitespace-nowrap text-[11px] font-bold">
+                  <i className={`${sports.find((item) => item.slug === activeSport)?.icon || "ri-shirt-line"} text-xs opacity-80`} aria-hidden="true" />
+                  Category
+                </span>
+                <span className="relative mt-0.5 block">
+                  <select
+                    aria-label="Design category"
+                    value={activeSport}
+                    onChange={(event) => changeDesignCategory(event.target.value)}
+                    className="w-full cursor-pointer appearance-none bg-transparent pr-5 text-[9px] font-semibold text-white/75 outline-none [color-scheme:dark]"
+                  >
+                    {sports.map((sport) => (
+                      <option key={sport.slug} value={sport.slug} className="bg-[#151610] text-white">{categoryDetails[sport.slug]?.title || sport.label}</option>
+                    ))}
+                  </select>
+                  <i className="ri-arrow-down-s-line pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-xs text-white/70" aria-hidden="true" />
+                </span>
+              </span>
+            </label>
+            <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-primary-500/35 bg-primary-950/50 text-sm text-primary-300">
+              <i className="ri-arrow-right-line" />
+            </span>
+          </div>
           {studioWorkflow.map((step, index) => {
             const active = index === workflowIndex;
             const complete = index < workflowIndex;
-            const locked = (step.step > 1 && !canContinueDesign) || (step.key === "review" && !rosterReadyForReview);
+            const locked = (step.key !== "design" && !canContinueDesign) || (step.key === "review" && !rosterReadyForReview);
             return (
               <div key={step.key} className="flex min-w-0 flex-1 items-center gap-1.5">
                 <button
@@ -3018,7 +3029,7 @@ function SupporterJerseySelector({
             </span>
           </span>
           <span className="mt-0.5 block text-[11px] font-label text-foreground-500">
-            Same team design without player numbers. Price shown in Step 1.
+            Same team design without player numbers. Price shown in Step 2.
           </span>
         </span>
       </label>
@@ -3166,7 +3177,7 @@ function RosterTool({
     <div>
       <div className="mb-3 flex items-center justify-between rounded-lg bg-primary-50 px-3 py-2 text-[11px] font-label text-primary-800">
         <span className="font-semibold">Fit type: {fitType}</span>
-        <span>Sizes follow the Step 1 fit selection</span>
+        <span>Sizes follow the Step 2 fit selection</span>
       </div>
 
       <div id="roster-minimum-status" role="status" className={`mb-4 rounded-xl border px-3 py-2.5 ${unitCount >= minimumKits ? "border-primary-200 bg-primary-50" : validationAttempted ? "border-accent-400 bg-accent-50 ring-2 ring-accent-200" : "border-background-300 bg-background-100/60"}`}>

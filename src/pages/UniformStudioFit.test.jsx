@@ -69,7 +69,7 @@ describe("required uniform fit selection", () => {
     for (const button of screen.getAllByRole("button", { name: /AI Designer/ })) expect(button).toBeEnabled();
   });
 
-  it("keeps Step 1 AI-only and hides the legacy manual design tools", () => {
+  it("keeps Step 2 AI-only and hides the legacy manual design tools", () => {
     const progress = openStudio("ai");
     const header = within(screen.getByRole("button", { name: "Back" }).closest("header"));
     expect(header.getByRole("button", { name: /AI Designer/ })).toBeEnabled();
@@ -220,7 +220,7 @@ describe("required uniform fit selection", () => {
     expect(screen.queryByText("Enter the player's name before adding this roster row.")).not.toBeInTheDocument();
   });
 
-  it("moves supporter jersey quantities to Team roster and uses the Step 1 Shirt Only price", () => {
+  it("moves supporter jersey quantities to Team roster and uses the Step 2 Shirt Only price", () => {
     const progress = openStudio("design");
     const setup = openUniformSetup();
     const shirtOnlyButton = setup.getByRole("button", { name: /^Shirt Only/ });

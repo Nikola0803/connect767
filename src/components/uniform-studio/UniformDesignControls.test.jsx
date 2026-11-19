@@ -68,7 +68,7 @@ describe("uniform design controls", () => {
     expect(screen.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent("Includes shirt, shorts and socks");
     expect(screen.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("Extra team and supporter jerseys use this price");
   });
-  it("keeps extra-shirt quantities out of Step 1", () => {
+  it("keeps extra-shirt quantities out of Step 2", () => {
     const setKitType = vi.fn();
     const options = { fitType: "Men", setFitType: vi.fn(), kitType: "Shirt", setKitType, logoApplication: "Sublimated", setLogoApplication: vi.fn(), insideCollarMessage: false, setInsideCollarMessage: vi.fn(), insideCollarText: "", setInsideCollarText: vi.fn() };
     render(<OptionsPanel {...options} section="fit" />);

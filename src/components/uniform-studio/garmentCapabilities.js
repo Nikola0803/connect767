@@ -107,7 +107,7 @@ export function detectGarmentCapabilities({
     if (profile.correctionCapable && hasVerifiedTracedZones(zoneModel)) verifiedTools.add("zones");
     // Layers is a valid production-surface tool even before the first item is
     // added: its empty state explains what will appear there and keeps the
-    // Keep Step 1 Design navigation stable as artwork is created.
+    // Keep Step 2 Design navigation stable as artwork is created.
     verifiedTools.add("layers");
   }
 
