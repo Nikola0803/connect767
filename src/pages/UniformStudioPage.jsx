@@ -77,6 +77,7 @@ import DemoModeNotice from "../components/DemoModeNotice";
 import PaypalButton from "../components/PaypalButton";
 import { isLiveApi } from "../lib/config";
 import { UNIFORM_SHIPPING_COUNTRIES, uniformShippingRate } from "../lib/uniformShipping";
+import { uniformAddressRegions, validateUniformShippingAddress } from "../lib/uniformAddress";
 import {
   captureUniformPaypalOrder,
   confirmUniformPayment,
@@ -486,6 +487,8 @@ export default function UniformStudioPage() {
   const [insideCollarMessage, setInsideCollarMessage] = useState(false);
   const [insideCollarText, setInsideCollarText] = useState("");
   const [insideCollarAttachment, setInsideCollarAttachment] = useState(null);
+  const [designValidationAttempted, setDesignValidationAttempted] = useState(false);
+  const [rosterValidationAttempted, setRosterValidationAttempted] = useState(false);
   const insideCollarRequirementMet = !insideCollarMessage || Boolean(
     insideCollarText.trim() || insideCollarAttachment?.src,
   );
@@ -647,6 +650,20 @@ export default function UniformStudioPage() {
 
   const continueWorkflow = () => {
     if (workflowIndex === studioWorkflow.length - 1) return;
+    if (workflowStep.key === "design" && !canContinueDesign) {
+      setDesignValidationAttempted(true);
+      const target = document.getElementById(hasSelectedFit ? "inside-collar-content-warning" : "fit-selection-required");
+      target?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      target?.querySelector?.("button, input, select")?.focus();
+      return;
+    }
+    if (workflowStep.key === "roster" && !rosterReadyForReview) {
+      setRosterValidationAttempted(true);
+      const target = document.getElementById(minimumKitsMet ? "socks-quantity-warning" : "roster-entry-form");
+      target?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      target?.querySelector?.("input, button, select")?.focus();
+      return;
+    }
     openWorkflowStep(workflowIndex + 1);
   };
 
@@ -1966,7 +1983,7 @@ export default function UniformStudioPage() {
   const uniformSetupPanel = <UniformSetupPanel
     aiOnly
     designProps={{ sport: activeSport, collar, setCollar, sleeve, setSleeve, colors: stageColors, setColors: updateGarmentColors, onHoverZone: setHoverZone, twoTone, setTwoTone }}
-    optionsProps={{ sport: activeSport, fitType, setFitType, kitType, setKitType, extraTeamShirts, setExtraTeamShirts, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment, showFitAlert: true }}
+    optionsProps={{ sport: activeSport, fitType, setFitType, kitType, setKitType, extraTeamShirts, setExtraTeamShirts, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment, showFitAlert: true, highlightMissing: designValidationAttempted }}
   />;
 
   const headerTileClass = "inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition";
@@ -2313,9 +2330,8 @@ export default function UniformStudioPage() {
                         <button
                           type="button"
                           onClick={continueWorkflow}
-                          disabled={!canContinueDesign}
                           title={designContinueTitle}
-                          className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,116,73,.22)] transition hover:bg-primary-500 disabled:cursor-not-allowed disabled:bg-background-300 disabled:text-foreground-500 disabled:shadow-none"
+                          className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,116,73,.22)] transition hover:bg-primary-500"
                         >
                           Continue to Team roster <i className="ri-arrow-right-line text-base" aria-hidden="true" />
                         </button>
@@ -2671,6 +2687,7 @@ export default function UniformStudioPage() {
                     setSocksQuantity={setSockQuantityOverride}
                     requiredSocksQuantity={requiredSocksQuantity}
                     socksQuantityValid={socksQuantityValid}
+                    validationAttempted={rosterValidationAttempted}
                     fanJerseyAdded={fanJerseyAdded}
                     setFanJerseyAdded={setFanJerseyAdded}
                     supporterJerseys={supporterJerseys}
@@ -2813,6 +2830,7 @@ export default function UniformStudioPage() {
             setSocksQuantity={setSockQuantityOverride}
             requiredSocksQuantity={requiredSocksQuantity}
             socksQuantityValid={socksQuantityValid}
+            validationAttempted={rosterValidationAttempted}
             fanJerseyAdded={fanJerseyAdded}
             setFanJerseyAdded={setFanJerseyAdded}
             supporterJerseys={supporterJerseys}
@@ -2866,9 +2884,8 @@ export default function UniformStudioPage() {
           <button
             type="button"
             onClick={continueWorkflow}
-            disabled={(studioWorkflow[workflowIndex + 1].step > 1 && !canContinueDesign) || (workflowStep.key === "roster" && !rosterReadyForReview)}
             title={studioWorkflow[workflowIndex + 1].step > 1 ? designContinueTitle : undefined}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,116,73,0.22)] transition hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,116,73,0.22)] transition hover:bg-primary-500 cursor-pointer"
           >
             Continue to {studioWorkflow[workflowIndex + 1].label}
             <i className="ri-arrow-right-line" />
@@ -2998,6 +3015,7 @@ function RosterTool({
   setSocksQuantity,
   requiredSocksQuantity = 0,
   socksQuantityValid = true,
+  validationAttempted = false,
   fanJerseyAdded,
   setFanJerseyAdded,
   supporterJerseys,
@@ -3059,7 +3077,7 @@ function RosterTool({
         <span>Sizes follow the Step 1 fit selection</span>
       </div>
 
-      <div role="status" className={`mb-4 rounded-xl border px-3 py-2.5 ${unitCount >= minimumKits ? "border-primary-200 bg-primary-50" : "border-background-300 bg-background-100/60"}`}>
+      <div id="roster-minimum-status" role="status" className={`mb-4 rounded-xl border px-3 py-2.5 ${unitCount >= minimumKits ? "border-primary-200 bg-primary-50" : validationAttempted ? "border-accent-400 bg-accent-50 ring-2 ring-accent-200" : "border-background-300 bg-background-100/60"}`}>
         <div className="flex items-center gap-2.5">
           <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${unitCount >= minimumKits ? "bg-primary-600 text-white" : "bg-background-200 text-foreground-400"}`}>
             <i className={unitCount >= minimumKits ? "ri-check-line" : "ri-team-line"} />
@@ -3158,11 +3176,19 @@ function RosterTool({
         </div>
       )}
 
-      <div className="space-y-3 mb-4">
+      <div id="roster-entry-form" data-validation-highlight={validationAttempted && unitCount < minimumKits ? "true" : undefined} className={`space-y-3 mb-4 rounded-xl border p-3 transition ${validationAttempted && unitCount < minimumKits ? "border-accent-400 bg-accent-50/60 ring-2 ring-accent-200" : "border-transparent p-0"}`}>
+        {validationAttempted && unitCount < minimumKits && (
+          <p role="alert" className="text-[11px] font-semibold text-accent-800">
+            {rosterEntry.name.trim()
+              ? "Click Add player to include this row in the team total."
+              : `Add player details until the ${minimumKits}-kit minimum is reached.`}
+          </p>
+        )}
         <Input
           placeholder="Name"
           aria-label="Name"
-          aria-invalid={Boolean(rosterError)}
+          error={Boolean(rosterError) || (validationAttempted && unitCount < minimumKits && !rosterEntry.name.trim())}
+          aria-invalid={Boolean(rosterError) || (validationAttempted && unitCount < minimumKits && !rosterEntry.name.trim())}
           aria-describedby={rosterError ? "roster-name-error" : undefined}
           required
           value={rosterEntry.name}
@@ -3402,17 +3428,16 @@ function ReviewOrderTool({
   const [totals, setTotals] = useState(null);
   const [calculating, setCalculating] = useState(false);
   const [checkoutError, setCheckoutError] = useState(null);
+  const [addressValidationAttempted, setAddressValidationAttempted] = useState(false);
   const [cardSession, setCardSession] = useState(null);
   const [startingCard, setStartingCard] = useState(false);
   const [placingLocalOrder, setPlacingLocalOrder] = useState(false);
   const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact.email.trim());
-  const shippingComplete = Boolean(
-    shipping.firstName.trim() && shipping.lastName.trim() && shipping.address1.trim() &&
-    shipping.city.trim() && shipping.country.trim() && selectedShippingRate &&
-    (selectedShippingRate.zone !== "north-america" || shipping.postcode.trim()) &&
-    (shipping.country !== "US" || shipping.state.trim())
-  );
+  const addressValidation = validateUniformShippingAddress(shipping);
+  const addressRegions = uniformAddressRegions(shipping.country);
+  const shippingComplete = Boolean(selectedShippingRate && addressValidation.valid);
   const canCheckout = minimumKitsMet && emailValid && shippingComplete && (!fanJerseyAdded || supporterCount > 0);
+  const canCalculate = minimumKitsMet && emailValid && (!fanJerseyAdded || supporterCount > 0);
 
   useEffect(() => {
     getCheckoutConfig()
@@ -3435,7 +3460,10 @@ function ReviewOrderTool({
   }, [canCheckout, totals]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const updateShipping = (field) => (event) => {
-    setShipping((current) => ({ ...current, [field]: event.target.value }));
+    const value = event.target.value;
+    setShipping((current) => field === "country"
+      ? { ...current, country: value, state: "", postcode: "" }
+      : { ...current, [field]: value });
     setTotals(null);
     setCardSession(null);
   };
@@ -3449,8 +3477,15 @@ function ReviewOrderTool({
   });
 
   const calculateTotal = async () => {
-    if (!canCheckout) {
-      setCheckoutError(!minimumKitsMet ? `Minimum order: ${minimumKits} full kits.` : "Enter a valid email and complete the delivery address first.");
+    setAddressValidationAttempted(true);
+    if (!minimumKitsMet || !emailValid || (fanJerseyAdded && supporterCount < 1) || !shippingComplete) {
+      setCheckoutError(!minimumKitsMet
+        ? `Minimum order: ${minimumKits} full kits.`
+        : !emailValid
+          ? "Enter a valid contact email address."
+          : fanJerseyAdded && supporterCount < 1
+            ? "Add at least one supporter jersey or remove that option."
+            : addressValidation.message || "Complete the delivery address first.");
       return;
     }
     setCalculating(true);
@@ -3638,14 +3673,21 @@ function ReviewOrderTool({
         <h3 className="text-sm font-semibold text-foreground-900">Delivery address</h3>
         <p className="mb-3 mt-1 text-[11px] font-label text-foreground-500">Custom-uniform shipping is calculated from this address and {shippingUnitCount} total order unit{shippingUnitCount === 1 ? "" : "s"}.</p>
         <div className="grid grid-cols-2 gap-2">
-          <Input placeholder="First name *" aria-label="Shipping first name" autoComplete="given-name" value={shipping.firstName} onChange={updateShipping("firstName")} />
-          <Input placeholder="Last name *" aria-label="Shipping last name" autoComplete="family-name" value={shipping.lastName} onChange={updateShipping("lastName")} />
+          <Input error={addressValidationAttempted && addressValidation.errors.firstName} aria-invalid={addressValidationAttempted && Boolean(addressValidation.errors.firstName)} placeholder="First name *" aria-label="Shipping first name" autoComplete="given-name" value={shipping.firstName} onChange={updateShipping("firstName")} />
+          <Input error={addressValidationAttempted && addressValidation.errors.lastName} aria-invalid={addressValidationAttempted && Boolean(addressValidation.errors.lastName)} placeholder="Last name *" aria-label="Shipping last name" autoComplete="family-name" value={shipping.lastName} onChange={updateShipping("lastName")} />
           <Input className="col-span-2" placeholder="Company (optional)" aria-label="Shipping company" autoComplete="organization" value={shipping.company} onChange={updateShipping("company")} />
-          <Input className="col-span-2" placeholder="Street address *" aria-label="Shipping street address" autoComplete="address-line1" value={shipping.address1} onChange={updateShipping("address1")} />
+          <Input error={addressValidationAttempted && addressValidation.errors.address1} aria-invalid={addressValidationAttempted && Boolean(addressValidation.errors.address1)} className="col-span-2" placeholder="Street address *" aria-label="Shipping street address" autoComplete="address-line1" value={shipping.address1} onChange={updateShipping("address1")} />
           <Input className="col-span-2" placeholder="Apartment, suite or unit" aria-label="Shipping address line two" autoComplete="address-line2" value={shipping.address2} onChange={updateShipping("address2")} />
-          <Input placeholder="City *" aria-label="Shipping city" autoComplete="address-level2" value={shipping.city} onChange={updateShipping("city")} />
-          <Input placeholder={shipping.country === "US" ? "State *" : "Region / parish"} aria-label="Shipping region" autoComplete="address-level1" value={shipping.state} onChange={updateShipping("state")} />
-          <Input placeholder={selectedShippingRate?.zone === "north-america" ? "Postal code *" : "Postal code (optional)"} aria-label="Shipping postal code" autoComplete="postal-code" value={shipping.postcode} onChange={updateShipping("postcode")} />
+          <Input error={addressValidationAttempted && addressValidation.errors.city} aria-invalid={addressValidationAttempted && Boolean(addressValidation.errors.city)} placeholder="City *" aria-label="Shipping city" autoComplete="address-level2" value={shipping.city} onChange={updateShipping("city")} />
+          {addressRegions.length ? (
+            <Select error={addressValidationAttempted && addressValidation.errors.state} aria-invalid={addressValidationAttempted && Boolean(addressValidation.errors.state)} aria-label="Shipping region" autoComplete="address-level1" value={shipping.state} onChange={updateShipping("state")}>
+              <option value="">{shipping.country === "CA" ? "Province / territory *" : "State *"}</option>
+              {addressRegions.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+            </Select>
+          ) : (
+            <Input placeholder="Region / parish" aria-label="Shipping region" autoComplete="address-level1" value={shipping.state} onChange={updateShipping("state")} />
+          )}
+          <Input error={addressValidationAttempted && addressValidation.errors.postcode} aria-invalid={addressValidationAttempted && Boolean(addressValidation.errors.postcode)} placeholder={shipping.country === "US" ? "ZIP code *" : shipping.country === "CA" ? "Postal code *" : shipping.country === "MX" ? "Postal code *" : "Postal code (optional)"} aria-label="Shipping postal code" autoComplete="postal-code" value={shipping.postcode} onChange={updateShipping("postcode")} />
           <Select aria-label="Shipping country" value={shipping.country} onChange={updateShipping("country")}>
             {UNIFORM_SHIPPING_COUNTRIES.map((zone) => (
               <optgroup key={zone.label} label={zone.label}>
@@ -3654,13 +3696,18 @@ function ReviewOrderTool({
             ))}
           </Select>
         </div>
+        {addressValidationAttempted && !addressValidation.valid && (
+          <p role="alert" className="mt-2 rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-[11px] font-semibold text-accent-900">
+            {addressValidation.message}
+          </p>
+        )}
         {selectedShippingRate && (
           <div role="note" className="mt-3 rounded-xl border border-primary-200 bg-primary-50 px-3 py-2.5 text-[11px] leading-relaxed text-primary-900">
             <span className="font-semibold">{selectedShippingRate.zoneLabel} zone:</span>{" "}
             ${selectedShippingRate.amount.toFixed(2)} shipping for {shippingUnitCount < 50 ? "orders under 50 units" : "orders of 50 units or more"}.
           </div>
         )}
-        <Button type="button" variant="secondary" className="mt-3 w-full" onClick={calculateTotal} disabled={!canCheckout || calculating} icon="ri-calculator-line">
+        <Button type="button" variant="secondary" className="mt-3 w-full" onClick={calculateTotal} disabled={!canCalculate || calculating} icon="ri-calculator-line">
           {calculating ? "Calculating…" : totals ? "Recalculate total" : "Calculate tax, shipping & total"}
         </Button>
       </div>
