@@ -11,13 +11,10 @@ function openStudio(step = "design") {
 }
 
 function openUniformSetup() {
-  fireEvent.click(screen.getByRole("button", { name: "Open uniform and order setup" }));
-  return within(screen.getByRole("dialog", { name: "Uniform & order setup" }));
+  return within(screen.getByRole("complementary", { name: "Uniform & order setup" }));
 }
 
-function closeUniformSetup() {
-  fireEvent.click(screen.getByRole("button", { name: "Close uniform and order setup" }));
-}
+function closeUniformSetup() {}
 
 describe("required uniform fit selection", () => {
   beforeEach(() => window.localStorage.clear());
@@ -40,11 +37,8 @@ describe("required uniform fit selection", () => {
     expect(screen.queryByRole("button", { name: "Uniform setup" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Text" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Logo" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Uniform & order setup")).not.toBeInTheDocument();
-    fireEvent.click(header.getByRole("button", { name: "Open uniform and order setup" }));
-    expect(screen.getByRole("dialog", { name: "Uniform & order setup" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Close uniform and order setup" }));
-    expect(screen.queryByRole("dialog", { name: "Uniform & order setup" })).not.toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: "Uniform & order setup" })).toBeVisible();
+    expect(header.queryByRole("button", { name: "Open uniform and order setup" })).not.toBeInTheDocument();
   });
 
   it.each(["Men", "Women", "Youth"])("unlocks Step 2 Team roster after selecting %s in Design", (fit) => {

@@ -166,6 +166,11 @@ export default function AIUniformComposer({
     try { await navigator.clipboard.writeText(text); } catch { /* Clipboard access can be blocked by the browser. */ }
   };
 
+  const focusCommandPrompt = () => {
+    textareaRef.current?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
+    textareaRef.current?.focus();
+  };
+
   const hasConversation = promptHistory.length > 0 || uniformPlan || artworkPreview || generating;
   const previousVersion = versions.length > 1 ? versions[versions.length - 2] : null;
   const originalVersion = versions[0] || null;
@@ -210,7 +215,7 @@ export default function AIUniformComposer({
       </div>
       <button type="button" onClick={() => { setHistoryOpen((value) => !value); setResetMenuOpen(false); setToolsOpen(false); setSettingsOpen(false); }} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-white/10 px-2.5 text-[8px] font-bold text-white/70 transition hover:bg-white/10 hover:text-white" aria-expanded={historyOpen}><i className="ri-history-line text-[10px]" /> History</button>
       <button type="button" onClick={() => fileInputRef.current?.click()} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-white/10 px-2.5 text-[8px] font-bold text-white/70 transition hover:bg-white/10 hover:text-white"><i className="ri-image-add-line text-[10px]" /> Reference</button>
-      <button type="button" onClick={() => textareaRef.current?.focus()} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-primary-300/25 bg-primary-500/10 px-2.5 text-[8px] font-bold text-primary-100 transition hover:bg-primary-500/20 hover:text-white"><i className="ri-magic-line text-[10px]" /> Refine with AI</button>
+      <button type="button" onClick={focusCommandPrompt} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-primary-300/25 bg-primary-500/10 px-2.5 text-[8px] font-bold text-primary-100 transition hover:bg-primary-500/20 hover:text-white"><i className="ri-magic-line text-[10px]" /> Refine with AI</button>
       {mode === "uniform" && uniformPlan && <div className="relative" data-ai-popover>
         <button type="button" onClick={() => { setVersionMenuOpen((value) => !value); setResetMenuOpen(false); setHistoryOpen(false); setToolsOpen(false); setSettingsOpen(false); }} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-white/10 px-2.5 text-[8px] font-bold text-white/70 transition hover:bg-white/10 hover:text-white" aria-label="Versions" aria-expanded={versionMenuOpen} aria-haspopup="menu" data-ai-popover-trigger><i className="ri-git-branch-line text-[10px]" /> Versions <i className="ri-arrow-down-s-line" /></button>
         {versionMenuOpen && <div className="absolute right-0 top-[calc(100%+.4rem)] z-50 grid w-52 gap-1 rounded-xl border border-background-200 bg-white p-2 text-foreground-950 shadow-2xl" data-ai-popover role="menu" aria-label="Version controls">
@@ -341,16 +346,16 @@ export default function AIUniformComposer({
         </aside>
       )}
 
-      <div ref={conversationRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4" aria-live="polite">
+      <div ref={conversationRef} className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4" aria-live="polite">
         {!hasConversation ? <EmptyConversation dark={dark} /> : (
           <div className="mx-auto max-w-xl space-y-4">
             {[...promptHistory].reverse().map((entry) => (
               <div key={entry.id} className="space-y-2">
-                <div className="ml-auto max-w-[88%] rounded-2xl rounded-br-md bg-primary-700 px-3.5 py-2.5 text-[11px] leading-relaxed text-white shadow-sm">
+                <div className="ml-auto max-w-[88%] break-words rounded-2xl rounded-br-md bg-primary-700 px-3.5 py-2.5 text-[11px] leading-relaxed text-white shadow-sm">
                   {entry.prompt}
                 </div>
                 {entry.response && (
-                  <div className={`max-w-[92%] rounded-2xl rounded-bl-md border px-3.5 py-3 text-[11px] leading-relaxed ${card}`}>
+                  <div className={`max-w-[92%] break-words rounded-2xl rounded-bl-md border px-3.5 py-3 text-[11px] leading-relaxed ${card}`}>
                     <div className="mb-1.5 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-primary-700"><img src={AI_LOGO_SRC} alt="Connect767 AI" className="h-5 w-5 object-contain" /> AI response</div>
                     <p className={muted}>{entry.response}</p>
                     <div className="mt-2 flex items-center gap-1 text-foreground-400">
@@ -381,7 +386,7 @@ export default function AIUniformComposer({
         )}
       </div>
 
-      <div className={`relative flex-shrink-0 border-t p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] ${dark ? "border-white/10 bg-[#11140f]" : "border-background-200 bg-[#f8f7f2]"}`}>
+      <div role="region" aria-label="AI command prompt" className={`relative min-w-0 flex-shrink-0 border-t px-2 py-2 pb-[max(.5rem,env(safe-area-inset-bottom))] sm:px-3 sm:py-3 sm:pb-[max(.75rem,env(safe-area-inset-bottom))] ${dark ? "border-white/10 bg-[#11140f]" : "border-background-200 bg-[#f8f7f2]"}`}>
         {error && <div role="alert" className="mb-2 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[10px] text-red-700"><span>{error}</span><button type="button" onClick={onRetry} className="shrink-0 cursor-pointer font-bold underline">Retry</button></div>}
 
         {settingsOpen && (
@@ -397,7 +402,7 @@ export default function AIUniformComposer({
         )}
 
         {toolsOpen && (
-          <div data-ai-popover className={`absolute bottom-[calc(100%-4px)] left-3 z-30 w-64 overflow-hidden rounded-2xl border p-2 shadow-2xl ${card}`} role="menu" aria-label="AI composer tools">
+          <div data-ai-popover className={`absolute bottom-[calc(100%-4px)] left-2 right-2 z-30 overflow-hidden rounded-2xl border p-2 shadow-2xl sm:left-3 sm:right-auto sm:w-64 ${card}`} role="menu" aria-label="AI composer tools">
             <button type="button" onClick={() => { fileInputRef.current?.click(); setToolsOpen(false); }} className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-700"><i className="ri-image-add-line" /></span><span><strong className="block text-[10px]">Upload inspiration image</strong><span className={`text-[8px] ${muted}`}>PNG, JPG or WebP · up to 10 MB</span></span></button>
             {mode === "artwork" && <button type="button" onClick={() => { onModeChange("uniform"); setToolsOpen(false); }} className="mt-1 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-700"><i className="ri-shirt-line" /></span><span><strong className="block text-[10px]">Design full uniform</strong><span className={`text-[8px] ${muted}`}>Return to the complete kit designer</span></span></button>}
             {mode === "uniform" && !uniformPlan && <button type="button" onClick={() => { onModeChange("artwork"); setToolsOpen(false); }} className="mt-1 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-50 text-accent-600"><i className="ri-image-edit-line" /></span><span><strong className="block text-[10px]">Create transparent artwork</strong><span className={`text-[8px] ${muted}`}>Generate artwork to place on the kit</span></span></button>}
@@ -409,7 +414,7 @@ export default function AIUniformComposer({
           onDragOver={(event) => event.preventDefault()}
           onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false); }}
           onDrop={acceptDroppedFile}
-          className={`relative mx-auto max-w-xl rounded-[22px] border bg-white shadow-[0_10px_30px_rgba(31,43,35,.09)] transition ${dragging ? "border-primary-500 ring-4 ring-primary-100" : "border-background-300 focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-100"}`}
+          className={`relative mx-auto w-full min-w-0 max-w-xl rounded-[22px] border bg-white shadow-[0_10px_30px_rgba(31,43,35,.09)] transition ${dragging ? "border-primary-500 ring-4 ring-primary-100" : "border-background-300 focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-100"}`}
         >
           {dragging && <div className="absolute inset-1 z-10 flex items-center justify-center rounded-[18px] border-2 border-dashed border-primary-400 bg-primary-50/95 text-xs font-bold text-primary-800"><i className="ri-upload-cloud-2-line mr-2" /> Drop an image to use as reference</div>}
           {reference && <div className="flex items-center gap-2 border-b border-background-200 px-3 py-2"><img src={reference.src} alt="Attached uniform reference" className="h-9 w-9 rounded-lg border border-background-200 object-cover" /><div className="min-w-0 flex-1"><strong className="block truncate text-[9px] text-foreground-700">{reference.name}</strong><span className="block text-[8px] text-foreground-400">Reference image</span></div><button type="button" onClick={onRemoveReference} className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-foreground-400 hover:bg-red-50 hover:text-red-600" aria-label="Remove reference image"><i className="ri-close-line" /></button></div>}
@@ -421,10 +426,10 @@ export default function AIUniformComposer({
             placeholder={isRefinement ? "Describe only what should change…" : MODE_COPY[mode].placeholder}
             maxLength={mode === "uniform" ? 900 : 600}
             rows={2}
-            className="block min-h-[48px] w-full resize-none overflow-y-auto rounded-t-[22px] bg-transparent px-4 pb-1.5 pt-3 text-xs leading-relaxed text-foreground-950 outline-none placeholder:text-foreground-400"
+            className="block min-h-[48px] w-full min-w-0 resize-none overflow-y-auto rounded-t-[22px] bg-transparent px-4 pb-1.5 pt-3 text-xs leading-relaxed text-foreground-950 outline-none placeholder:text-foreground-400"
             aria-label="Message Connect767 AI"
           />
-          <div className="flex items-center justify-between gap-2 px-2 pb-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 px-2 pb-2">
             <div className="flex min-w-0 items-center gap-1.5">
               <button type="button" onClick={() => { setToolsOpen((value) => !value); setHistoryOpen(false); setResetMenuOpen(false); setSettingsOpen(false); }} className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-background-200 bg-background-50 text-sm text-foreground-700 transition hover:bg-background-100" aria-label="Add attachment or AI tool" aria-expanded={toolsOpen} data-ai-popover-trigger><i className={toolsOpen ? "ri-close-line" : "ri-add-line"} /></button>
               <button type="button" onClick={() => { setSettingsOpen((value) => !value); setHistoryOpen(false); setResetMenuOpen(false); setToolsOpen(false); }} className="inline-flex h-8 w-8 cursor-pointer items-center justify-center gap-1 rounded-full border border-background-200 bg-background-50 text-[9px] font-bold text-foreground-600 hover:bg-background-100 sm:w-auto sm:px-2.5" data-ai-popover-trigger><i className="ri-equalizer-2-line" /><span className="hidden sm:inline">Controls</span></button>
@@ -432,11 +437,11 @@ export default function AIUniformComposer({
             {generating ? (
               <button type="button" onClick={onStop} className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-foreground-950 text-white transition hover:bg-red-600" aria-label="Stop generating"><i className="ri-stop-fill" /></button>
             ) : (
-              <button type="button" onClick={() => submit("proof")} disabled={!canSend} className={`flex h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-primary-700 text-white shadow-sm transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:bg-background-300 disabled:text-foreground-400 ${isRefinement ? "px-3" : "w-8"}`} aria-label={isRefinement ? "Generate Changes" : "Generate preview"} title="Highest-quality image output"><i className={isRefinement ? "ri-sparkling-2-fill" : "ri-arrow-up-line"} />{isRefinement && <span className="text-[9px] font-bold">Generate Changes</span>}</button>
+              <button type="button" onClick={() => submit("proof")} disabled={!canSend} className={`ml-auto flex h-8 max-w-full shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-primary-700 text-white shadow-sm transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:bg-background-300 disabled:text-foreground-400 ${isRefinement ? "px-3" : "w-8"}`} aria-label={isRefinement ? "Generate Changes" : "Generate preview"} title="Highest-quality image output"><i className={isRefinement ? "ri-sparkling-2-fill" : "ri-arrow-up-line"} />{isRefinement && <span className="whitespace-nowrap text-[9px] font-bold">Generate Changes</span>}</button>
             )}
           </div>
         </div>
-        <p className={`mt-2 text-center text-[8px] ${muted}`}>Highest-quality rendering is always enabled · Shift + Enter for a new line · AI concepts require production review</p>
+        <p className={`mx-auto mt-2 max-w-md break-words px-1 text-center text-[8px] leading-relaxed ${muted}`}>Highest-quality rendering is always enabled · Shift + Enter for a new line · AI concepts require production review</p>
       </div>
     </section>
   );
