@@ -2288,18 +2288,18 @@ export default function UniformStudioPage() {
       <div className="flex min-h-0 flex-1 flex-col bg-[radial-gradient(circle_at_48%_42%,rgba(36,45,36,0.32),transparent_38%),linear-gradient(135deg,#10110f_0%,#151610_52%,#10110f_100%)] md:flex-row">
                   {workflowStep.key === "design" && (
                     <aside aria-labelledby="uniform-order-setup-title" className="flex max-h-[45dvh] min-h-0 w-full min-w-0 max-w-none flex-shrink-0 flex-col border-b border-background-300 bg-[#f8f7f2] text-foreground-950 shadow-[0_18px_44px_rgba(0,0,0,.2)] md:max-h-none md:w-[360px] md:min-w-[340px] md:max-w-[380px] md:border-b-0 md:border-r md:shadow-[18px_0_44px_rgba(0,0,0,.2)] xl:w-[380px]">
-                      <header className="flex flex-shrink-0 items-center gap-3 border-b border-background-200 bg-white px-4 py-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-700 text-white"><i className="ri-shirt-line" /></span>
-                        <span className="min-w-0"><h2 id="uniform-order-setup-title" className="font-heading text-base font-semibold">Uniform &amp; order setup</h2><p className="truncate text-[9px] text-foreground-500">Fit, kit, collar, sleeves, colours and production extras</p></span>
+                      <header className="flex flex-shrink-0 items-center gap-2.5 border-b border-background-200 bg-white px-3 py-2">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-700 text-sm text-white"><i className="ri-shirt-line" /></span>
+                        <span className="min-w-0"><h2 id="uniform-order-setup-title" className="font-heading text-[15px] font-semibold leading-tight">Uniform &amp; order setup</h2><p className="truncate text-[8px] text-foreground-500">Fit, kit, collar, sleeves, colours and production extras</p></span>
                       </header>
-                      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">{uniformSetupPanel}</div>
-                      <footer className="flex-shrink-0 border-t border-background-200 bg-white p-3 shadow-[0_-10px_28px_rgba(31,43,35,.08)]">
+                      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">{uniformSetupPanel}</div>
+                      <footer className="flex-shrink-0 border-t border-background-200 bg-white p-2 shadow-[0_-10px_28px_rgba(31,43,35,.08)]">
                         <button
                           type="button"
                           onClick={continueWorkflow}
                           disabled={!hasSelectedFit}
                           title={!hasSelectedFit ? "Select Men, Women or Youth before continuing" : undefined}
-                          className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 py-3 text-sm font-bold text-white shadow-[0_10px_22px_rgba(0,116,73,.22)] transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-background-300 disabled:text-foreground-500 disabled:shadow-none"
+                          className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary-700 px-3 py-2 text-xs font-bold text-white shadow-[0_8px_18px_rgba(0,116,73,.2)] transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-background-300 disabled:text-foreground-500 disabled:shadow-none"
                         >
                           Continue to Team roster <i className="ri-arrow-right-line text-base" aria-hidden="true" />
                         </button>
