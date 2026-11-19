@@ -148,12 +148,12 @@ describe("uniform design controls", () => {
     const { rerender } = render(<DesignPanel {...props} />);
     expect(screen.queryByRole("button", { name: "Crew" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "V-Neck" })).not.toBeInTheDocument();
-    expect(screen.getByText(/Crew and V-Neck included/i)).toBeVisible();
+    expect(screen.getByText(/Crew, V-Neck and short sleeves included in base price/i)).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /Polo style collar/ }));
     expect(setCollar).toHaveBeenCalledWith("Polo");
     expect(screen.queryByRole("button", { name: "Sleeveless" })).not.toBeInTheDocument();
     expect(screen.queryByRole("checkbox", { name: /Long sleeves/ })).not.toBeInTheDocument();
-    expect(screen.getByText(/Long sleeves \+\$2\.00\/kit/i)).toBeVisible();
+    expect(screen.queryByText(/^Long sleeves \+\$2\.00\/kit/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("checkbox", { name: "Mixed Sleeve Team Order" }));
     expect(setSleeve).toHaveBeenCalledWith("Mixed");
     rerender(<DesignPanel {...props} sleeve="Mixed" />);

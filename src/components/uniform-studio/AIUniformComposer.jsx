@@ -101,7 +101,9 @@ export default function AIUniformComposer({
   }, [promptHistory.length, uniformPlan, artworkPreview, generating]);
 
   const submit = (requestedTier = "proof") => {
-    if (canSend && !generating) onSend(requestedTier);
+    if (!canSend || generating) return;
+    onSend(requestedTier);
+    onPromptChange("");
   };
 
   const closePopovers = () => {
@@ -179,7 +181,7 @@ export default function AIUniformComposer({
   const muted = dark ? "text-white/50" : "text-foreground-500";
 
   const bannerCommands = toolbarTarget ? createPortal(
-    <div className="relative flex shrink-0 flex-nowrap items-center justify-center gap-1.5" data-ai-popover>
+    <div className="relative flex shrink-0 flex-nowrap items-center justify-start gap-1.5" data-ai-popover>
       <div className="relative flex h-7 overflow-visible rounded-md border border-primary-300/25 bg-primary-500/10 text-primary-100">
         <button
           type="button"
@@ -452,19 +454,17 @@ export default function AIUniformComposer({
             className="block min-h-[48px] w-full min-w-0 resize-none overflow-y-auto rounded-t-[22px] bg-transparent px-4 pb-1.5 pt-3 text-xs leading-relaxed text-foreground-950 outline-none placeholder:text-foreground-400"
             aria-label="Message Connect767 AI"
           />
-          <div className="flex min-w-0 flex-wrap items-center gap-2 px-2 pb-2">
+          <div className="flex min-w-0 flex-wrap items-center justify-start gap-2 px-2 pb-2">
             <div className="flex min-w-0 items-center gap-1.5">
               <button type="button" onClick={() => { setToolsOpen((value) => !value); setHistoryOpen(false); setResetMenuOpen(false); setSettingsOpen(false); }} className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-background-200 bg-background-50 text-sm text-foreground-700 transition hover:bg-background-100" aria-label="Add attachment or AI tool" aria-expanded={toolsOpen} data-ai-popover-trigger><i className={toolsOpen ? "ri-close-line" : "ri-add-line"} /></button>
               <button type="button" onClick={() => { setSettingsOpen((value) => !value); setHistoryOpen(false); setResetMenuOpen(false); setToolsOpen(false); }} className="inline-flex h-8 w-8 cursor-pointer items-center justify-center gap-1 rounded-full border border-background-200 bg-background-50 text-[9px] font-bold text-foreground-600 hover:bg-background-100 sm:w-auto sm:px-2.5" data-ai-popover-trigger><i className="ri-equalizer-2-line" /><span className="hidden sm:inline">Controls</span></button>
             </div>
-            {generating ? (
+            {generating && (
               <button type="button" onClick={onStop} className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-foreground-950 text-white transition hover:bg-red-600" aria-label="Stop generating"><i className="ri-stop-fill" /></button>
-            ) : (
-              <button type="button" onClick={() => submit("proof")} disabled={!canSend} className={`ml-auto flex h-8 max-w-full shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-primary-700 text-white shadow-sm transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:bg-background-300 disabled:text-foreground-400 ${isRefinement ? "px-3" : "w-8"}`} aria-label={isRefinement ? "Generate Changes" : "Generate preview"} title="Highest-quality image output"><i className={isRefinement ? "ri-sparkling-2-fill" : "ri-arrow-up-line"} />{isRefinement && <span className="whitespace-nowrap text-[9px] font-bold">Generate Changes</span>}</button>
             )}
           </div>
         </div>
-        <p className={`mx-auto mt-2 max-w-md break-words px-1 text-center text-[8px] leading-relaxed ${muted}`}>Highest-quality rendering is always enabled · Shift + Enter for a new line · AI concepts require production review</p>
+        <p className={`mx-auto mt-2 max-w-md break-words px-1 text-center text-[8px] leading-relaxed ${muted}`}>Enter to generate · Shift + Enter for a new line · Highest-quality rendering enabled</p>
       </div>
     </section>
   );
