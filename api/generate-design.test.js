@@ -65,9 +65,12 @@ describe("AI design generation endpoint", () => {
     expect(prompt).toContain("complete front view, strict 90-degree side view, and complete back view");
     expect(prompt).toContain("shorts or trousers");
     expect(prompt).toContain("socks");
-    expect(prompt).toContain("one perfectly uniform flat solid terracotta studio background (#B74327)");
+    expect(prompt).toContain("one perfectly uniform flat solid warm-white background (#F5F0E7)");
     expect(prompt).toContain("Connect767 C-and-AI emblem");
     expect(prompt).toContain("behind and partially obscured by the uniforms");
+    expect(prompt).toContain("match the background colour exactly");
+    expect(prompt).toContain("no black, white, coloured, metallic, or glossy fill");
+    expect(prompt).toContain("Do not recolour the background");
   });
 
   it("reports connection health without exposing the key", async () => {

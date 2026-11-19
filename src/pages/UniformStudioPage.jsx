@@ -97,14 +97,14 @@ const CONNECT767_AI_TEMPLATE_LOGO = "https://admin.connect767.com/wp-content/upl
 
 function EmbossedAIWorkspaceBackdrop() {
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-hidden bg-[#b74327]">
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-hidden">
       <img
         src={CONNECT767_AI_TEMPLATE_LOGO}
         alt=""
         data-testid="ai-workspace-watermark"
         loading="lazy"
         decoding="async"
-        className="w-[58%] max-w-[760px] select-none opacity-[0.3] mix-blend-multiply grayscale contrast-150 [filter:grayscale(1)_sepia(.35)_drop-shadow(-3px_-3px_2px_rgba(255,165,116,.38))_drop-shadow(4px_4px_3px_rgba(74,19,8,.62))]"
+        className="w-[58%] max-w-[760px] select-none opacity-[0.22] mix-blend-overlay grayscale contrast-150 [filter:grayscale(1)_drop-shadow(-3px_-3px_2px_rgba(255,255,255,.42))_drop-shadow(4px_4px_3px_rgba(0,0,0,.48))]"
       />
     </div>
   );
@@ -2469,7 +2469,7 @@ export default function UniformStudioPage() {
                       </div>
                     ) : stageMode === "edit" && !aiWorkspaceConcept?.src ? (
                       <div className="flex min-h-0 w-full flex-1 items-stretch justify-center p-1">
-                        <div className="relative flex h-full w-full max-w-none flex-col justify-center overflow-hidden rounded-[28px] border border-dashed border-primary-400/35 px-6 py-8 text-center shadow-[0_24px_70px_rgba(0,0,0,.2)] sm:px-10 lg:px-14">
+                        <div className="relative flex h-full w-full max-w-none flex-col justify-center overflow-hidden rounded-[28px] border border-dashed border-primary-400/35 bg-[radial-gradient(circle_at_50%_0%,rgba(0,116,73,.2),transparent_56%),rgba(255,255,255,.025)] px-6 py-8 text-center shadow-[0_24px_70px_rgba(0,0,0,.2)] sm:px-10 lg:px-14">
                           <EmbossedAIWorkspaceBackdrop />
                           <span className="relative z-10 mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-500 text-3xl text-white shadow-[0_16px_34px_rgba(239,84,53,.24)]">
                             <i className="ri-sparkling-2-fill" />
