@@ -107,6 +107,28 @@ describe("uniform design controls", () => {
     fireEvent.click(upgrade);
     expect(setLogoApplication).toHaveBeenLastCalledWith("Sublimated");
   });
+  it("warns when inside-collar customization has neither a message nor an attachment", () => {
+    const baseProps = {
+      section: "production",
+      logoApplication: "Sublimated",
+      setLogoApplication: vi.fn(),
+      insideCollarMessage: true,
+      setInsideCollarMessage: vi.fn(),
+      setInsideCollarText: vi.fn(),
+      setInsideCollarAttachment: vi.fn(),
+    };
+    const { rerender } = render(
+      <OptionsPanel {...baseProps} insideCollarText="" insideCollarAttachment={null} />,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("Enter an inside-collar message or attach a logo/artwork file.");
+    expect(screen.getByPlaceholderText("Message for the inside collar")).toHaveAttribute("aria-invalid", "true");
+
+    rerender(<OptionsPanel {...baseProps} insideCollarText="TEAM" insideCollarAttachment={null} />);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    rerender(<OptionsPanel {...baseProps} insideCollarText="" insideCollarAttachment={{ name: "logo.png", type: "image/png", src: "data:image/png;base64,AA==" }} />);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
   it("picks colors directly on garment tiles without a separate editor", () => {
     const setColors = vi.fn();
     const onHoverZone = vi.fn();

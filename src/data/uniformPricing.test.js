@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { BASE_KIT_PRICE, SHIRT_ONLY_PRICE, extraTeamShirtCount, normalizeExtraTeamShirts, kitUnitPrice, mixedSleeveSurcharge, minimumFullKitsFor, fullKitCount } from "./uniforms";
+import { BASE_KIT_PRICE, SHIRT_ONLY_PRICE, extraTeamShirtCount, normalizeExtraTeamShirts, kitAddOnBreakdown, kitUnitPrice, mixedSleeveSurcharge, minimumFullKitsFor, fullKitCount } from "./uniforms";
 
 describe("full-kit minimums", () => {
   it.each([["soccer", 22], ["basketball", 10], ["cricket", 15], ["netball", 10]])("requires %s's confirmed minimum of %i kits", (sport, minimum) => {
@@ -35,5 +35,19 @@ describe("sleeve pricing", () => {
     expect(mixedSleeveSurcharge("Mixed", roster)).toBe(6);
     expect(mixedSleeveSurcharge("Short", roster)).toBe(0);
     expect(mixedSleeveSurcharge("Long", roster)).toBe(0);
+  });
+  it("itemizes every selected production add-on separately from the $35 base kit", () => {
+    expect(kitAddOnBreakdown({
+      sleeve: "Long",
+      collar: "Polo",
+      insideCollarMessage: true,
+      logoApplication: "Embroidery",
+      unitCount: 22,
+    })).toEqual([
+      { key: "long-sleeves", label: "Long sleeves", count: 22, unitPrice: 2, total: 44 },
+      { key: "polo-collars", label: "Polo-style collars", count: 22, unitPrice: 2, total: 44 },
+      { key: "inside-collar", label: "Inside-collar logo/message", count: 22, unitPrice: 1, total: 22 },
+      { key: "embroidery", label: "Embroidered team logo", count: 22, unitPrice: 1.5, total: 33 },
+    ]);
   });
 });

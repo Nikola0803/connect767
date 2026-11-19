@@ -548,6 +548,12 @@ export function OptionsPanel({
   extraTeamShirts = [{ size: "M", quantity: 1 }], setExtraTeamShirts,
   section = "all", showFitAlert = true,
 }) {
+  const insideCollarContentMissing = Boolean(
+    insideCollarMessage
+    && !insideCollarText?.trim()
+    && !insideCollarAttachment?.src,
+  );
+
   return (
     <div>
       {section !== "production" && <>
@@ -656,9 +662,16 @@ export function OptionsPanel({
             placeholder="Message for the inside collar"
             value={insideCollarText}
             onChange={(e) => setInsideCollarText(e.target.value)}
+            aria-invalid={insideCollarContentMissing}
+            aria-describedby={insideCollarContentMissing ? "inside-collar-content-warning" : undefined}
             className="w-full px-3 py-2 text-sm rounded-lg border border-background-300 bg-background-50 text-foreground-950 placeholder-foreground-400 focus:outline-none focus:border-primary-400 font-label"
           />
           <CollarAttachment attachment={insideCollarAttachment} onChange={setInsideCollarAttachment} />
+          {insideCollarContentMissing && (
+            <p id="inside-collar-content-warning" role="alert" className="mt-2 rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-900">
+              Enter an inside-collar message or attach a logo/artwork file.
+            </p>
+          )}
           </>
         )}
       </div>
