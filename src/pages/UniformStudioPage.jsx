@@ -2437,7 +2437,6 @@ export default function UniformStudioPage() {
                           onPointerCancel={() => { aiConceptDragRef.current = null; }}
                           style={{ touchAction: "none", backgroundColor: aiConceptBackground }}
                         >
-                          <EmbossedAIWorkspaceBackdrop />
                           {aiComparisonPlan?.conceptImage?.src ? (
                             <div className="relative z-10 grid max-h-full max-w-full grid-cols-2 gap-px bg-foreground-900 p-px">
                               <figure className="relative min-w-0 bg-[#f5f0e7]" style={{ backgroundColor: aiComparisonBackgrounds.previous }}>
