@@ -73,6 +73,7 @@ export default function SideUniformGraphic({
   colors = {},
   garmentPattern,
   highlightZone = null,
+  collar: collarStyle = "Crew",
   sleeve: sleeveStyle = "Short",
   side = "right",
   focus = "full",
@@ -80,6 +81,11 @@ export default function SideUniformGraphic({
 }) {
   const uid = useId().replaceAll(":", "");
   const maskId = `approved-side-${uid}`;
+  const collarFabricId = `approved-side-collar-${uid}`;
+  const shirtEdgeId = `approved-side-shirt-edge-${uid}`;
+  const sleeveEdgeId = `approved-side-sleeve-edge-${uid}`;
+  const shortsEdgeId = `approved-side-shorts-edge-${uid}`;
+  const sockEdgeId = `approved-side-sock-edge-${uid}`;
   const asset = SIDE_ASSET_BY_SPORT[sport] || SIDE_ASSET_BY_SPORT.other;
   const region = SIDE_REGIONS[sport] || SIDE_REGIONS.other;
   const { width, height } = region;
@@ -88,8 +94,8 @@ export default function SideUniformGraphic({
   const sleeve = colors.sleeve || body;
   const bottom = colors.shorts || body;
   const socks = colors.socks || body;
-  const collar = colors.collar || body;
-  const sleeveEnd = colors.sleeveStrip || colors.trim || collar;
+  const collarColor = colors.collar || body;
+  const sleeveEnd = colors.sleeveStrip || colors.trim || collarColor;
   const shirtEnd = colors.shirtStrip || colors.trim || body;
   const shortsEnd = colors.shortsStrip || colors.trim || bottom;
   const opacityFor = (zone, base = 1) => (highlightZone && highlightZone !== zone ? base * 0.24 : base);
@@ -100,6 +106,12 @@ export default function SideUniformGraphic({
   );
   const sleeveCropHeight = Math.min(height, Math.max(region.bottomStart + 90, height * 0.44));
   const showLongSleeve = sleeveStyle === "Long" && region.nativeSleeve !== "long" && region.longSleeve;
+  // Soccer front/back use a 46px edge on a 1358px source. Preserve that
+  // finished-band proportion on the taller side photograph.
+  const shirtEdgeDepth = sport === "soccer"
+    ? Math.round(height * (46 / 1358))
+    : Math.max(18, region.bottomStart - region.shirtHem);
+  const shirtHem = region.bottomStart - shirtEdgeDepth;
 
   return (
     <svg
@@ -116,6 +128,20 @@ export default function SideUniformGraphic({
       aria-label={focus === "sleeve" ? `${sport} ${side} sleeve` : `${sport} complete uniform side`}
     >
       <defs>
+        <linearGradient id={collarFabricId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={collarColor} />
+          <stop offset="0.3" stopColor="#ffffff" stopOpacity="0.22" />
+          <stop offset="0.64" stopColor={collarColor} />
+          <stop offset="1" stopColor="#000000" stopOpacity="0.22" />
+        </linearGradient>
+        {[[shirtEdgeId, shirtEnd], [sleeveEdgeId, sleeveEnd], [shortsEdgeId, shortsEnd], [sockEdgeId, socks]].map(([id, color]) => (
+          <linearGradient key={id} id={id} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#ffffff" stopOpacity="0.26" />
+            <stop offset="0.2" stopColor={color} />
+            <stop offset="0.72" stopColor={color} />
+            <stop offset="1" stopColor="#000000" stopOpacity="0.24" />
+          </linearGradient>
+        ))}
         <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width={width} height={height} style={{ maskType: "alpha" }}>
           <image href={asset} x="0" y="0" width={width} height={height} />
         </mask>
@@ -130,12 +156,26 @@ export default function SideUniformGraphic({
         <rect data-garment-zone="body" x="0" y="0" width={width} height={region.bottomStart} fill={body} opacity={opacityFor("body")} />
         <rect data-garment-zone="shorts" x="0" y={region.bottomStart} width={width} height={socksStart - region.bottomStart} fill={bottom} opacity={opacityFor("shorts")} />
         {socksStart < height && <rect data-garment-zone="socks" x="0" y={socksStart} width={width} height={height - socksStart} fill={socks} opacity={opacityFor("socks")} />}
-        <rect data-garment-zone="shirtStrip" x="0" y={region.shirtHem} width={width} height={region.bottomStart - region.shirtHem} fill={shirtEnd} opacity={opacityFor("shirtStrip")} />
-        <rect data-garment-zone="shortsStrip" x="0" y={region.bottomHem} width={width} height="24" fill={shortsEnd} opacity={opacityFor("shortsStrip")} />
+        <rect data-garment-zone="shirtStrip" data-edge-color={shirtEnd} data-edge-depth={shirtEdgeDepth} x="0" y={shirtHem} width={width} height={shirtEdgeDepth} fill={`url(#${shirtEdgeId})`} opacity={opacityFor("shirtStrip")} />
+        <rect data-garment-zone="shortsStrip" data-edge-color={shortsEnd} x="0" y={region.bottomHem} width={width} height="24" fill={`url(#${shortsEdgeId})`} opacity={opacityFor("shortsStrip")} />
         {region.sleeve && <path data-garment-zone="sleeve" d={region.sleeve} fill={sleeve} stroke={sleeve} strokeWidth="6" strokeLinejoin="round" opacity={opacityFor("sleeve")} />}
-        {region.sleeveEnd && !showLongSleeve && <path data-garment-zone="sleeveStrip" d={region.sleeveEnd} fill={sleeveEnd} stroke={sleeveEnd} strokeWidth="3" strokeLinejoin="round" opacity={opacityFor("sleeveStrip")} />}
-        {region.collar && <path data-garment-zone="collar" d={region.collar} fill={collar} stroke={collar} strokeWidth="3" strokeLinejoin="round" opacity={opacityFor("collar")} />}
+        {region.sleeveEnd && !showLongSleeve && <path data-garment-zone="sleeveStrip" data-edge-color={sleeveEnd} d={region.sleeveEnd} fill={`url(#${sleeveEdgeId})`} stroke={sleeveEnd} strokeWidth="2" strokeLinejoin="round" opacity={opacityFor("sleeveStrip")} />}
       </Tint>
+
+      {region.collar && <g data-collar-shape={collarStyle} opacity={opacityFor("collar")}>
+        {collarStyle === "Polo" && <path d={region.collar} transform="translate(0 9)" fill="#171512" fillOpacity="0.24" />}
+        <path data-garment-zone="collar" data-collar-part="side-band" d={region.collar} fill={`url(#${collarFabricId})`} stroke={collarColor} strokeWidth="2" strokeLinejoin="round" opacity={opacityFor("collar")} />
+        {collarStyle === "V-Neck" && <path d={region.collar} fill="none" stroke="#171512" strokeOpacity="0.4" strokeWidth="4" strokeLinecap="round" />}
+        {collarStyle === "Polo" && <path d={region.collar} transform="translate(0 7)" fill={`url(#${collarFabricId})`} stroke={collarColor} strokeWidth="1.5" strokeLinejoin="round" />}
+        <path d={region.collar} fill="none" stroke="#ffffff" strokeOpacity="0.24" strokeWidth="1.5" strokeLinecap="round" />
+      </g>}
+
+      <g mask={`url(#${maskId})`} pointerEvents="none" data-edge-detail="side-view">
+        <line x1="0" x2={width} y1={shirtHem} y2={shirtHem} stroke="#ffffff" strokeOpacity="0.22" strokeWidth="1.5" />
+        <line x1="0" x2={width} y1={region.bottomStart - 2} y2={region.bottomStart - 2} stroke="#171512" strokeOpacity="0.22" strokeWidth="1.5" />
+        <line x1="0" x2={width} y1={region.bottomHem} y2={region.bottomHem} stroke="#ffffff" strokeOpacity="0.18" strokeWidth="1.25" />
+        {socksStart < height && <><rect data-sock-opening="complete" data-edge-color={socks} x="0" y={socksStart} width={width} height="18" fill={`url(#${sockEdgeId})`} /><line x1="0" x2={width} y1={socksStart + 2} y2={socksStart + 2} stroke="#ffffff" strokeOpacity="0.22" strokeWidth="1.5" /></>}
+      </g>
 
       {showLongSleeve && (
         <g data-sleeve-replacement="Long" opacity={opacityFor("sleeve")}>
@@ -147,8 +187,9 @@ export default function SideUniformGraphic({
         <path
           data-garment-zone="sleeveStrip"
           data-long-sleeve-cuff={side}
+          data-edge-color={sleeveEnd}
           d={region.longSleeveEnd}
-          fill={sleeveEnd}
+          fill={`url(#${sleeveEdgeId})`}
           stroke={sleeveEnd}
           strokeWidth="3"
           strokeLinejoin="round"
