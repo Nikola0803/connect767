@@ -235,11 +235,10 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
             Polo style collar <span className="ml-1 font-normal">(+${ADD_ON_PRICES.collarPolo.toFixed(2)}/kit)</span>
           </button>
         </div>
-        <p className="mt-1 text-[11px] leading-snug text-foreground-500">Crew and V-Neck included.</p>
       </div>
       {config.sleeveOptions && (
         <div className="mb-1.5">
-          <p className="mb-1 text-xs text-foreground-500">Short sleeves included. Long sleeves +${ADD_ON_PRICES.sleeveLong.toFixed(2)}/kit.</p>
+          <p className="mb-1 text-xs text-foreground-500">Crew, V-Neck and short sleeves included in base price.</p>
           <div role="group" aria-label="Sleeve options">
             <label className="flex min-h-8 cursor-pointer items-center gap-1.5 text-xs font-semibold leading-snug text-foreground-800">
               <input type="checkbox" checked={sleeve === "Mixed"} onChange={(event) => setSleeve(event.target.checked ? "Mixed" : "Short")} className="accent-primary-600" />

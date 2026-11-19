@@ -78,14 +78,15 @@ describe("AIUniformComposer", () => {
 
     fireEvent.keyDown(message, { key: "Enter" });
     expect(props.onSend).toHaveBeenCalledWith("proof");
+    expect(props.onPromptChange).toHaveBeenCalledWith("");
   });
 
-  it("uses highest-quality output for the standard preview action", () => {
-    const props = renderComposer();
-
+  it("uses Enter as the only generation action", () => {
+    renderComposer();
     expect(screen.queryByRole("button", { name: "Render high-quality proof" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Generate preview" }));
-    expect(props.onSend).toHaveBeenCalledWith("proof");
+    expect(screen.queryByRole("button", { name: "Generate preview" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Generate Changes" })).not.toBeInTheDocument();
+    expect(screen.getByText(/Enter to generate/i)).toBeVisible();
   });
 
   it("shows only tools supported by the uniform AI backend", () => {
