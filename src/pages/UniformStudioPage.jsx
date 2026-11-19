@@ -396,6 +396,7 @@ export default function UniformStudioPage() {
   const [aiConceptViewportWidth, setAiConceptViewportWidth] = useState(null);
   const [aiBannerActionsTarget, setAiBannerActionsTarget] = useState(null);
   const [uniformSetupOpen, setUniformSetupOpen] = useState(false);
+  const [studioSettingsOpen, setStudioSettingsOpen] = useState(false);
   const [aiConceptBackground, setAiConceptBackground] = useState(AI_PREVIEW_BACKGROUND_FALLBACK);
   const [aiComparisonBackgrounds, setAiComparisonBackgrounds] = useState({
     previous: AI_PREVIEW_BACKGROUND_FALLBACK,
@@ -412,6 +413,15 @@ export default function UniformStudioPage() {
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [uniformSetupOpen]);
+
+  useEffect(() => {
+    if (!studioSettingsOpen) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setStudioSettingsOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [studioSettingsOpen]);
 
   useEffect(() => {
     setAiConceptBackground(AI_PREVIEW_BACKGROUND_FALLBACK);
@@ -2117,42 +2127,21 @@ export default function UniformStudioPage() {
             <i className="ri-download-2-line" />
             <span className="hidden sm:inline">{exporting ? "Exporting…" : "Download"}</span>
           </button>}
-          {headerCapabilities.settings && <details className="group relative" onKeyDown={(event) => {
-            if (event.key === "Escape") event.currentTarget.open = false;
-          }} onBlur={(event) => {
-            if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false;
-          }}>
-            <summary aria-label="Studio settings" className={`${headerTileClass} cursor-pointer list-none border-white/10 bg-white/5 text-background-50/75 hover:bg-white/10 [&::-webkit-details-marker]:hidden`}>
+          {headerCapabilities.settings && <button
+            type="button"
+            onClick={() => setStudioSettingsOpen(true)}
+            aria-label="Studio settings"
+            aria-haspopup="dialog"
+            aria-expanded={studioSettingsOpen}
+            className={`${headerTileClass} cursor-pointer border-white/10 bg-white/5 text-background-50/75 hover:bg-white/10`}
+          >
               <i className="ri-settings-3-line" aria-hidden="true" />
               <span className="hidden sm:inline">Settings</span>
-            </summary>
-            <div className="absolute right-0 top-full z-50 mt-2 max-h-[70dvh] w-[min(340px,calc(100vw-24px))] overflow-y-auto rounded-2xl border border-background-300 bg-background-50 p-4 text-foreground-900 shadow-2xl">
-              {headerCapabilities.openEditableStudio && (
-                <div className="mb-4 border-b border-background-200 pb-4">
-                  <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.15em] text-foreground-500">Workspace mode</p>
-                  <button
-                    type="button"
-                    onClick={convertAIToEditableDesign}
-                    disabled={!editablePlanValidation.valid || studioMode === STUDIO_MODES.AI_GENERATING}
-                    title={editablePlanValidation.reason}
-                    className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-primary-300 bg-primary-700 px-3 py-3 text-left text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:border-background-300 disabled:bg-background-200 disabled:text-foreground-400"
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15"><i className="ri-layout-grid-line" /></span>
-                    <span className="min-w-0 flex-1">
-                      <strong className="block text-xs">Open Production Mode</strong>
-                      <span className="block text-[9px] text-white/70">Convert this preview to an editable production design</span>
-                    </span>
-                    <i className="ri-arrow-right-line" />
-                  </button>
-                </div>
-              )}
-              <StudioBackgroundPanel studioBackground={studioBackground} setStudioBackground={setStudioBackground} />
-            </div>
-          </details>}
+          </button>}
         </div>
       </header>
 
-      {!strictAIPreview && <nav
+      <nav
         aria-label="Uniform order progress"
         className="relative z-30 flex-shrink-0 border-b border-white/[0.06] bg-[#12130f] px-3 py-2.5 sm:px-5"
       >
@@ -2213,11 +2202,55 @@ export default function UniformStudioPage() {
             );
           })}
         </div>
-      </nav>}
+      </nav>
+
+      {studioSettingsOpen && (
+        <div
+          className="fixed inset-0 z-[75] flex justify-end bg-foreground-950/55 backdrop-blur-[2px]"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setStudioSettingsOpen(false);
+          }}
+        >
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="studio-settings-title"
+            className="flex h-full w-full max-w-[390px] flex-col border-l border-background-300 bg-[#f8f7f2] text-foreground-950 shadow-[-24px_0_70px_rgba(0,0,0,.38)]"
+          >
+            <header className="flex items-center justify-between gap-4 border-b border-background-200 bg-white px-5 py-4">
+              <span className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-700 text-white"><i className="ri-settings-3-line" /></span>
+                <span><h2 id="studio-settings-title" className="font-heading text-lg font-semibold">Studio settings</h2><p className="text-[10px] text-foreground-500">Workspace mode and canvas appearance</p></span>
+              </span>
+              <button type="button" onClick={() => setStudioSettingsOpen(false)} aria-label="Close studio settings" className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-background-300 bg-background-50 text-foreground-600 hover:bg-background-100"><i className="ri-close-line text-lg" /></button>
+            </header>
+            <div className="min-h-0 flex-1 overflow-y-auto p-5">
+              {headerCapabilities.openEditableStudio && (
+                <div className="mb-5 border-b border-background-200 pb-5">
+                  <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.15em] text-foreground-500">Workspace mode</p>
+                  <button
+                    type="button"
+                    onClick={() => { setStudioSettingsOpen(false); convertAIToEditableDesign(); }}
+                    disabled={!editablePlanValidation.valid || studioMode === STUDIO_MODES.AI_GENERATING}
+                    title={editablePlanValidation.reason}
+                    className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-primary-300 bg-primary-700 px-3 py-3 text-left text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:border-background-300 disabled:bg-background-200 disabled:text-foreground-400"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15"><i className="ri-layout-grid-line" /></span>
+                    <span className="min-w-0 flex-1"><strong className="block text-xs">Open Production Mode</strong><span className="block text-[9px] text-white/70">Convert this preview to an editable production design</span></span>
+                    <i className="ri-arrow-right-line" />
+                  </button>
+                </div>
+              )}
+              <StudioBackgroundPanel studioBackground={studioBackground} setStudioBackground={setStudioBackground} />
+            </div>
+          </aside>
+        </div>
+      )}
 
       {uniformSetupOpen && (
         <div
-          className="fixed inset-0 z-[70] flex justify-end bg-foreground-950/60 backdrop-blur-[2px]"
+          className="fixed inset-0 z-[70] flex justify-start bg-foreground-950/60 backdrop-blur-[2px]"
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setUniformSetupOpen(false);
@@ -2227,7 +2260,7 @@ export default function UniformStudioPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="uniform-order-setup-title"
-            className="flex h-full w-full max-w-[500px] flex-col border-l border-background-300 bg-[#f8f7f2] text-foreground-950 shadow-[-24px_0_70px_rgba(0,0,0,.38)]"
+            className="flex h-full w-full max-w-[500px] flex-col border-r border-background-300 bg-[#f8f7f2] text-foreground-950 shadow-[24px_0_70px_rgba(0,0,0,.38)]"
           >
             <header className="flex flex-shrink-0 items-center justify-between gap-4 border-b border-background-200 bg-white px-5 py-4">
               <span className="flex min-w-0 items-center gap-3">
