@@ -22,6 +22,8 @@ export const SIDE_REGIONS = {
     longSleeve: "M369 38 C297 68 252 149 253 240 L281 363 C290 455 305 545 326 626 C348 641 381 642 406 628 C420 540 428 455 430 368 C441 284 441 212 423 158 C414 105 389 63 369 38 Z",
     longSleeveEnd: "M326 626 C348 641 381 642 406 628 L405 654 C380 668 350 667 328 652 Z",
     collar: "M370 17 C424 27 481 70 515 115 L500 136 C461 92 407 58 353 46 Z",
+    collarOrigin: [370, 17], collarScale: 0.74,
+    collarSeam: "M382 28 C411 34 445 54 466 76",
   },
   basketball: { width: 1159, height: 1358, bottomStart: 766, shirtHem: 742, bottomHem: 1232 },
   // Netball is a one-piece court dress. Only the concealed fitted shorts at
@@ -32,6 +34,7 @@ export const SIDE_REGIONS = {
     sleeve: "M333 122 C263 155 225 232 232 322 L275 442 C315 473 392 480 438 445 C450 356 456 274 429 208 C411 168 368 133 333 122 Z",
     sleeveEnd: "M275 414 C323 391 396 398 439 426 L438 449 C391 478 319 474 277 448 Z",
     collar: "M334 80 C403 90 479 140 516 196 L491 211 C449 155 386 122 319 116 Z",
+    collarOrigin: [334, 80], collarScale: 0.78,
   },
   cricket: {
     width: 887, height: 1774, bottomStart: 754, shirtHem: 724, bottomHem: 1737,
@@ -39,6 +42,7 @@ export const SIDE_REGIONS = {
     sleeve: "M367 73 C312 110 281 177 294 269 L327 467 C353 580 388 665 438 722 L509 712 C488 635 471 551 466 460 L467 264 C473 174 433 105 367 73 Z",
     sleeveEnd: "M429 697 L500 676 L514 722 L447 744 Z",
     collar: "M368 27 C423 34 495 82 534 120 L509 142 C467 103 411 76 360 68 Z",
+    collarOrigin: [368, 27], collarScale: 0.78,
   },
   goalkeeper: {
     width: 819, height: 1920, bottomStart: 803, socksStart: 1190, shirtHem: 777, bottomHem: 1148,
@@ -46,12 +50,14 @@ export const SIDE_REGIONS = {
     sleeve: "M312 52 C244 88 221 166 229 278 L257 470 C291 605 350 718 418 790 L495 771 C472 676 444 590 434 481 L444 263 C453 160 398 83 312 52 Z",
     sleeveEnd: "M406 756 L478 733 L501 782 L431 805 Z",
     collar: "M307 17 C375 25 451 75 493 135 L475 151 C430 99 365 61 300 50 Z",
+    collarOrigin: [307, 17], collarScale: 0.78,
   },
   other: {
     width: 1159, height: 1358, bottomStart: 857, shirtHem: 831, bottomHem: 1232,
     sleeve: "M475 122 C416 162 392 226 402 308 L440 445 C475 477 555 480 600 451 C613 375 618 292 596 226 C572 174 525 139 475 122 Z",
     sleeveEnd: "M447 423 C489 409 559 412 601 432 L596 457 C552 480 490 476 450 453 Z",
     collar: "M479 71 C548 77 628 130 671 187 L645 211 C600 162 534 131 468 118 Z",
+    collarOrigin: [479, 71], collarScale: 0.78,
   },
 };
 
@@ -117,6 +123,11 @@ export default function SideUniformGraphic({
   // a 1358px source; scale those canonical measurements for this photograph.
   const shortsEdgeDepth = Math.round(height * (18 / 1358));
   const sleeveEdgeDepth = Math.round(height * (20 / 1358));
+  const collarOrigin = region.collarOrigin || [0, 0];
+  const collarScale = region.collarScale || 1;
+  const collarTransform = collarScale === 1
+    ? undefined
+    : `translate(${collarOrigin[0]} ${collarOrigin[1]}) scale(${collarScale}) translate(${-collarOrigin[0]} ${-collarOrigin[1]})`;
 
   return (
     <svg
@@ -167,10 +178,10 @@ export default function SideUniformGraphic({
         {region.sleeveEnd && !showLongSleeve && <path data-garment-zone="sleeveStrip" data-edge-color={sleeveEnd} data-sleeve-edge-width="20" data-edge-depth={sleeveEdgeDepth} d={region.sleeveEnd} fill={`url(#${sleeveEdgeId})`} stroke={sleeveEnd} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" paintOrder="stroke fill" opacity={opacityFor("sleeveStrip")} />}
       </Tint>
 
-      {region.collar && <g data-collar-shape={collarStyle} opacity={opacityFor("collar")}>
+      {region.collar && <g data-collar-shape={collarStyle} data-collar-scale={collarScale} transform={collarTransform} opacity={opacityFor("collar")}>
         {collarStyle === "Polo" && <path d={region.collar} transform="translate(0 9)" fill="#171512" fillOpacity="0.24" />}
         <path data-garment-zone="collar" data-collar-part="side-band" d={region.collar} fill={collarColor} stroke={collarColor} strokeWidth="2" strokeLinejoin="round" opacity={opacityFor("collar")} />
-        {collarStyle === "V-Neck" && <path d={region.collar} fill="none" stroke="#171512" strokeOpacity="0.4" strokeWidth="4" strokeLinecap="round" />}
+        {collarStyle !== "Polo" && region.collarSeam && <path data-collar-part="side-inner-seam" d={region.collarSeam} fill="none" stroke="#171512" strokeOpacity="0.42" strokeWidth="3" strokeLinecap="round" />}
       </g>}
 
       <g mask={`url(#${maskId})`} pointerEvents="none" data-edge-detail="side-view">
