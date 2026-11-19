@@ -395,7 +395,6 @@ export default function UniformStudioPage() {
   const aiConceptViewportRef = useRef(null);
   const [aiConceptViewportWidth, setAiConceptViewportWidth] = useState(null);
   const [aiBannerActionsTarget, setAiBannerActionsTarget] = useState(null);
-  const [uniformSetupOpen, setUniformSetupOpen] = useState(false);
   const [studioSettingsOpen, setStudioSettingsOpen] = useState(false);
   const [aiConceptBackground, setAiConceptBackground] = useState(AI_PREVIEW_BACKGROUND_FALLBACK);
   const [aiComparisonBackgrounds, setAiComparisonBackgrounds] = useState({
@@ -404,15 +403,6 @@ export default function UniformStudioPage() {
   });
   // Shown when leaving the studio with unsaved work — see confirmExit below.
   const [exitPrompt, setExitPrompt] = useState(false);
-
-  useEffect(() => {
-    if (!uniformSetupOpen) return undefined;
-    const closeOnEscape = (event) => {
-      if (event.key === "Escape") setUniformSetupOpen(false);
-    };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [uniformSetupOpen]);
 
   useEffect(() => {
     if (!studioSettingsOpen) return undefined;
@@ -2044,16 +2034,6 @@ export default function UniformStudioPage() {
               <span className="sm:hidden">AI</span>
             </button>
           )}
-          {headerCapabilities.uniformOrder && <button
-            type="button"
-            onClick={() => setUniformSetupOpen(true)}
-            className={`${headerTileClass} cursor-pointer border-primary-400/45 bg-primary-950/55 text-primary-100 hover:border-primary-300 hover:bg-primary-900`}
-            aria-label="Open uniform and order setup"
-          >
-            <i className="ri-shirt-line" />
-            <span className="hidden lg:inline">Uniform &amp; order</span>
-            <span className="lg:hidden">Setup</span>
-          </button>}
           {headerCapabilities.refineAI && (
             <button
               type="button"
@@ -2248,42 +2228,6 @@ export default function UniformStudioPage() {
         </div>
       )}
 
-      {uniformSetupOpen && (
-        <div
-          className="fixed inset-0 z-[70] flex justify-start bg-foreground-950/60 backdrop-blur-[2px]"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setUniformSetupOpen(false);
-          }}
-        >
-          <aside
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="uniform-order-setup-title"
-            className="flex h-full w-full max-w-[500px] flex-col border-r border-background-300 bg-[#f8f7f2] text-foreground-950 shadow-[24px_0_70px_rgba(0,0,0,.38)]"
-          >
-            <header className="flex flex-shrink-0 items-center justify-between gap-4 border-b border-background-200 bg-white px-5 py-4">
-              <span className="flex min-w-0 items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-700 text-white"><i className="ri-shirt-line" /></span>
-                <span className="min-w-0">
-                  <h2 id="uniform-order-setup-title" className="font-heading text-lg font-semibold">Uniform &amp; order setup</h2>
-                  <p className="text-[10px] text-foreground-500">Fit, kit, collar, sleeves, colours and production extras</p>
-                </span>
-              </span>
-              <button
-                type="button"
-                onClick={() => setUniformSetupOpen(false)}
-                className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-background-300 bg-background-50 text-foreground-600 hover:bg-background-100 hover:text-foreground-950"
-                aria-label="Close uniform and order setup"
-              >
-                <i className="ri-close-line text-lg" />
-              </button>
-            </header>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 pb-24">{uniformSetupPanel}</div>
-          </aside>
-        </div>
-      )}
-
       {exitPrompt && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-foreground-950/70 backdrop-blur-sm px-4">
           <div
@@ -2333,7 +2277,16 @@ export default function UniformStudioPage() {
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 bg-[radial-gradient(circle_at_48%_42%,rgba(36,45,36,0.32),transparent_38%),linear-gradient(135deg,#10110f_0%,#151610_52%,#10110f_100%)]">
+      <div className="flex min-h-0 flex-1 flex-col bg-[radial-gradient(circle_at_48%_42%,rgba(36,45,36,0.32),transparent_38%),linear-gradient(135deg,#10110f_0%,#151610_52%,#10110f_100%)] md:flex-row">
+                  {workflowStep.key === "design" && (
+                    <aside aria-labelledby="uniform-order-setup-title" className="flex max-h-[45dvh] min-h-0 w-full min-w-0 max-w-none flex-shrink-0 flex-col border-b border-background-300 bg-[#f8f7f2] text-foreground-950 shadow-[0_18px_44px_rgba(0,0,0,.2)] md:max-h-none md:w-[360px] md:min-w-[340px] md:max-w-[380px] md:border-b-0 md:border-r md:shadow-[18px_0_44px_rgba(0,0,0,.2)] xl:w-[380px]">
+                      <header className="flex flex-shrink-0 items-center gap-3 border-b border-background-200 bg-white px-4 py-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-700 text-white"><i className="ri-shirt-line" /></span>
+                        <span className="min-w-0"><h2 id="uniform-order-setup-title" className="font-heading text-base font-semibold">Uniform &amp; order setup</h2><p className="truncate text-[9px] text-foreground-500">Fit, kit, collar, sleeves, colours and production extras</p></span>
+                      </header>
+                      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 pb-20">{uniformSetupPanel}</div>
+                    </aside>
+                  )}
                   {/* Canvas */}
                   <div className={`flex min-w-0 flex-1 flex-col items-center overflow-hidden ${activeTool === "ai" ? "gap-2 px-2 py-2 md:px-3 xl:px-4" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
                     {strictAIPreview && (
@@ -2343,10 +2296,7 @@ export default function UniformStudioPage() {
                         aria-labelledby="ai-preview-title"
                       >
                         <div className="flex flex-col items-center gap-1.5">
-                          <div className="flex flex-wrap items-baseline justify-center gap-x-2 text-center">
-                            <h2 id="ai-preview-title" className="font-heading text-base font-semibold leading-tight text-white">Preview Only</h2>
-                            <span className="text-[8px] font-black uppercase tracking-[0.16em] text-amber-200">Manual Editing Unavailable.</span>
-                          </div>
+                          <h2 id="ai-preview-title" className="text-center text-[10px] font-black uppercase tracking-[0.16em] text-amber-100">Preview Only Editable via AI Prompts</h2>
 
                           <div className="flex w-full min-w-0 flex-nowrap items-center justify-center gap-1.5 overflow-visible">
                             <div ref={setAiBannerActionsTarget} className="contents" />
@@ -2601,7 +2551,6 @@ export default function UniformStudioPage() {
                   onDelete={removeLayer}
                 />}
 
-                {activeTool === "design" && uniformSetupPanel}
                 {activeTool === "zones" && (
                   <ZoneEditorPanel
                     view={view}
@@ -2743,7 +2692,6 @@ export default function UniformStudioPage() {
           onDelete={removeLayer}
         />}
 
-        {activeTool === "design" && uniformSetupPanel}
         {activeTool === "zones" && (
           <ZoneEditorPanel
             view={view}
