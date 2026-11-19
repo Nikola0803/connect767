@@ -17,6 +17,8 @@ class C767_Uniform_Checkout
     const NAMESPACE_ = 'connect767/v1';
     const BASE_KIT_PRICE = 35.00;
     const EXTRA_TEAM_SHIRT_PRICE = 12.00;
+    const NORTH_AMERICA_COUNTRIES = ['US', 'CA', 'MX'];
+    const CARIBBEAN_COUNTRIES = ['AI', 'AG', 'AW', 'BS', 'BB', 'BQ', 'VG', 'KY', 'CU', 'CW', 'DM', 'DO', 'GD', 'GP', 'HT', 'JM', 'MQ', 'MS', 'PR', 'BL', 'KN', 'LC', 'MF', 'VC', 'SX', 'TT', 'TC', 'VI'];
 
     public static function init()
     {
@@ -388,18 +390,20 @@ class C767_Uniform_Checkout
         $order->set_address($shipping, 'shipping');
         $order->calculate_totals(false);
 
-        $shipping_rate = C767_WooCommerce::calculate_shipping_rate($order, $shipping);
+        $shipping_units = $unit_count + $extra_shirt_count + $supporter_count;
+        $shipping_rate = self::uniform_shipping_rate($shipping['country'] ?? '', $shipping_units);
         if (is_wp_error($shipping_rate)) {
             $order->delete(true);
             return $shipping_rate;
         }
 
         $shipping_item = new WC_Order_Item_Shipping();
-        $shipping_item->set_method_title($shipping_rate->get_label());
-        $shipping_item->set_method_id($shipping_rate->get_method_id());
-        $shipping_item->set_instance_id($shipping_rate->get_instance_id());
-        $shipping_item->set_total((float) $shipping_rate->get_cost());
-        $shipping_item->set_taxes($shipping_rate->get_taxes());
+        $shipping_item->set_method_title($shipping_rate['label']);
+        $shipping_item->set_method_id('c767_uniform_zone_rate');
+        $shipping_item->set_instance_id(0);
+        $shipping_item->set_total($shipping_rate['amount']);
+        $shipping_item->add_meta_data('Shipping zone', $shipping_rate['zoneLabel'], true);
+        $shipping_item->add_meta_data('Total order units', $shipping_units, true);
         $order->add_item($shipping_item);
         $order->calculate_taxes($shipping);
         $order->calculate_totals(false);
@@ -410,6 +414,8 @@ class C767_Uniform_Checkout
         $order->update_meta_data('_c767_uniform_unit_count', $unit_count);
         $order->update_meta_data('_c767_uniform_unit_price', $unit_price);
         $order->update_meta_data('_c767_uniform_supporter_count', $supporter_count);
+        $order->update_meta_data('_c767_uniform_shipping_zone', $shipping_rate['zone']);
+        $order->update_meta_data('_c767_uniform_shipping_units', $shipping_units);
 
         $design_payload = $payload;
         $design_payload['kitType'] = 'Full';
@@ -471,6 +477,36 @@ class C767_Uniform_Checkout
             $price += 1.50;
         }
         return round($price, 2);
+    }
+
+    private static function uniform_shipping_rate($country, $unit_count)
+    {
+        $country = strtoupper(sanitize_text_field((string) $country));
+        $unit_count = max(0, absint($unit_count));
+        $high_volume = $unit_count >= 50;
+
+        if (in_array($country, self::NORTH_AMERICA_COUNTRIES, true)) {
+            return [
+                'zone' => 'north-america',
+                'zoneLabel' => 'North America',
+                'amount' => $high_volume ? 450.00 : 300.00,
+                'label' => 'North America uniform shipping · ' . ($high_volume ? '50+' : 'under 50') . ' units',
+            ];
+        }
+        if (in_array($country, self::CARIBBEAN_COUNTRIES, true)) {
+            return [
+                'zone' => 'caribbean',
+                'zoneLabel' => 'Caribbean',
+                'amount' => $high_volume ? 800.00 : 600.00,
+                'label' => 'Caribbean uniform shipping · ' . ($high_volume ? '50+' : 'under 50') . ' units',
+            ];
+        }
+
+        return new WP_Error(
+            'c767_uniform_shipping_zone_unavailable',
+            'Custom Uniform Studio shipping is available only in North America and the Caribbean.',
+            ['status' => 400]
+        );
     }
 
     private static function uniform_product()
