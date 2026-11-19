@@ -38,6 +38,15 @@ describe("required uniform fit selection", () => {
     expect(screen.queryByRole("button", { name: "Text" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Logo" })).not.toBeInTheDocument();
     expect(screen.getByRole("complementary", { name: "Uniform & order setup" })).toBeVisible();
+    const productionExtras = screen.getByRole("region", { name: "Production extras" });
+    expect(within(productionExtras).getByRole("group", { name: "Collar options" })).toBeVisible();
+    expect(within(productionExtras).getByRole("group", { name: "Sleeve options" })).toBeVisible();
+    expect(screen.queryByRole("group", { name: "Garment part colors" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Open Production Mode" })).not.toBeInTheDocument();
+    expect(header.queryByRole("button", { name: "Save progress" })).not.toBeInTheDocument();
+    expect(header.queryByRole("button", { name: "SVG" })).not.toBeInTheDocument();
+    expect(header.queryByRole("button", { name: "Download" })).not.toBeInTheDocument();
+    expect(header.queryByRole("button", { name: "Settings" })).not.toBeInTheDocument();
     expect(header.queryByRole("button", { name: "Open uniform and order setup" })).not.toBeInTheDocument();
   });
 
