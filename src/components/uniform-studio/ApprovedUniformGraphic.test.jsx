@@ -42,8 +42,9 @@ describe("ApprovedUniformGraphic trim isolation", () => {
   });
 
   it("keeps Polo wings and placket on the front while rendering only a rear band on the back", () => {
+    const collarColor = "#20d860";
     const { container, rerender } = render(
-      <ApprovedUniformGraphic sport="soccer" view="front" collar="Polo" />,
+      <ApprovedUniformGraphic sport="soccer" view="front" collar="Polo" colors={{ collar: collarColor }} />,
     );
     expect(container.querySelector('[data-collar-part="polo-left-wing"]')).toBeInTheDocument();
     expect(container.querySelector('[data-collar-part="polo-right-wing"]')).toBeInTheDocument();
@@ -54,13 +55,16 @@ describe("ApprovedUniformGraphic trim isolation", () => {
       expect(wing.getAttribute("stroke-linecap")).toBe("round");
       expect(wing.getAttribute("stroke-linejoin")).toBe("round");
       expect(wing.getAttribute("filter")).toBeNull();
+      expect(wing.getAttribute("fill")).toBe(collarColor);
     }
+    expect(container.querySelector('[data-collar-part="polo-placket"]').getAttribute("fill")).toBe(collarColor);
 
-    rerender(<ApprovedUniformGraphic sport="soccer" view="back" collar="Polo" />);
+    rerender(<ApprovedUniformGraphic sport="soccer" view="back" collar="Polo" colors={{ collar: collarColor }} />);
     expect(container.querySelector('[data-collar-part="polo-left-wing"]')).not.toBeInTheDocument();
     expect(container.querySelector('[data-collar-part="polo-right-wing"]')).not.toBeInTheDocument();
     expect(container.querySelector('[data-collar-part="polo-placket"]')).not.toBeInTheDocument();
     expect(container.querySelector('[data-collar-part="polo-back-band"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-collar-part="polo-back-band"]').getAttribute("fill")).toBe(collarColor);
     expect(container.querySelector('[data-collar-part="polo-back-seam"]')).toBeInTheDocument();
   });
 
@@ -240,6 +244,8 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     for (const cuff of cuffs) {
       expect(cuff.getAttribute("fill")).toMatch(/^url\(#approved-sleeve-edge-/);
       expect(cuff.getAttribute("data-edge-color")).toBe(sleeveEnd);
+      if (view === "back") expect(cuff.getAttribute("transform")).toBe("translate(579.5 0)");
+      else expect(cuff.getAttribute("transform")).toBeNull();
     }
     expect(cuffs[0].parentElement.getAttribute("data-garment-tint")).toBe("flat-color");
     expect(cuffs[0].parentElement.style.mixBlendMode).toBe("normal");
@@ -468,7 +474,7 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     expect(shortsEdge.getAttribute("data-shorts-edge-width")).toBe("18");
     expect(shortsEdge.getAttribute("transform")).toBe("translate(0 0)");
     expect(shortsEdge.querySelectorAll("path")).toHaveLength(2);
-    expect(shortsEdge.querySelector("path").getAttribute("d")).toContain("M155,822 C200,842");
+    expect(shortsEdge.querySelector("path").getAttribute("d")).toContain("M155,792 C200,812");
     expect(shortsEdge.querySelector("path").getAttribute("fill")).toMatch(/^url\(#approved-shorts-edge-/);
     expect(shortsEdge.getAttribute("data-edge-color")).toBe("#1B1A16");
     expect(shortsEdge.parentElement.style.mixBlendMode).toBe("normal");
