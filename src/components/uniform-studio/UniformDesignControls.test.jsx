@@ -119,6 +119,8 @@ describe("uniform design controls", () => {
     );
     expect(screen.getByRole("alert")).toHaveTextContent("Enter an inside-collar message or attach a logo/artwork file.");
     expect(screen.getByPlaceholderText("Message for the inside collar")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("Inside-collar message").closest("label")).toHaveTextContent("*");
+    expect(screen.getByLabelText("Attach collar logo or artwork").closest("label")).toHaveTextContent("*");
 
     rerender(<OptionsPanel {...baseProps} insideCollarText="TEAM" insideCollarAttachment={null} />);
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();

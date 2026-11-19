@@ -3578,6 +3578,15 @@ function ReviewOrderTool({
           <div className="flex justify-between"><span>Subtotal</span><span>${(totals?.subtotal ?? grandTotal).toFixed(2)}</span></div>
           <div className="flex justify-between"><span>Tax</span><span>{totals ? `$${totals.tax.toFixed(2)}` : "—"}</span></div>
           <div className="flex justify-between"><span>{totals?.shippingLabel || "Shipping"}</span><span>{totals ? `$${totals.shipping.toFixed(2)}` : "—"}</span></div>
+          {totals?.designerFee > 0 && (
+            <div className="flex justify-between gap-3 text-background-50/90">
+              <span>
+                <span className="block font-semibold">{totals.designerFeeLabel || "Connect767 AI Designer Fee"}</span>
+                <span className="block text-[10px] font-normal text-background-50/55">Applies when subtotal + shipping is under $1,500.</span>
+              </span>
+              <span>${totals.designerFee.toFixed(2)}</span>
+            </div>
+          )}
           {totals && <div className="mt-2 flex justify-between border-t border-white/15 pt-2 text-sm font-bold"><span>Total</span><span>${totals.total.toFixed(2)}</span></div>}
         </div>
       </div>

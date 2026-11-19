@@ -17,6 +17,9 @@ class C767_Uniform_Checkout
     const NAMESPACE_ = 'connect767/v1';
     const BASE_KIT_PRICE = 35.00;
     const EXTRA_TEAM_SHIRT_PRICE = 12.00;
+    const AI_DESIGNER_FEE = 100.00;
+    const AI_DESIGNER_FEE_THRESHOLD = 1500.00;
+    const AI_DESIGNER_FEE_LABEL = 'Connect767 AI Designer Fee';
     const NORTH_AMERICA_COUNTRIES = ['US', 'CA', 'MX'];
     const CARIBBEAN_COUNTRIES = ['AI', 'AG', 'AW', 'BS', 'BB', 'BQ', 'VG', 'KY', 'CU', 'CW', 'DM', 'DO', 'GD', 'GP', 'HT', 'JM', 'MQ', 'MS', 'PR', 'BL', 'KN', 'LC', 'MF', 'VC', 'SX', 'TT', 'TC', 'VI'];
 
@@ -147,6 +150,16 @@ class C767_Uniform_Checkout
             return $token;
         }
 
+        $designer_fee = self::designer_fee_total($order);
+        $breakdown = [
+            'item_total' => ['currency_code' => strtoupper($order->get_currency()), 'value' => number_format((float) $order->get_subtotal(), 2, '.', '')],
+            'shipping' => ['currency_code' => strtoupper($order->get_currency()), 'value' => number_format((float) $order->get_shipping_total(), 2, '.', '')],
+            'tax_total' => ['currency_code' => strtoupper($order->get_currency()), 'value' => number_format((float) $order->get_total_tax(), 2, '.', '')],
+        ];
+        if ($designer_fee > 0) {
+            $breakdown['handling'] = ['currency_code' => strtoupper($order->get_currency()), 'value' => number_format($designer_fee, 2, '.', '')];
+        }
+
         $paypal_order = C767_PayPal_Checkout::paypal_request('POST', '/v2/checkout/orders', $token, [
             'intent' => 'CAPTURE',
             'purchase_units' => [[
@@ -154,11 +167,7 @@ class C767_Uniform_Checkout
                 'amount' => [
                     'currency_code' => strtoupper($order->get_currency()),
                     'value' => number_format((float) $order->get_total(), 2, '.', ''),
-                    'breakdown' => [
-                        'item_total' => ['currency_code' => strtoupper($order->get_currency()), 'value' => number_format((float) $order->get_subtotal(), 2, '.', '')],
-                        'shipping' => ['currency_code' => strtoupper($order->get_currency()), 'value' => number_format((float) $order->get_shipping_total(), 2, '.', '')],
-                        'tax_total' => ['currency_code' => strtoupper($order->get_currency()), 'value' => number_format((float) $order->get_total_tax(), 2, '.', '')],
-                    ],
+                    'breakdown' => $breakdown,
                 ],
             ]],
         ]);
@@ -405,6 +414,15 @@ class C767_Uniform_Checkout
         $shipping_item->add_meta_data('Shipping zone', $shipping_rate['zoneLabel'], true);
         $shipping_item->add_meta_data('Total order units', $shipping_units, true);
         $order->add_item($shipping_item);
+
+        if (((float) $order->get_subtotal() + (float) $shipping_rate['amount']) < self::AI_DESIGNER_FEE_THRESHOLD) {
+            $designer_fee_item = new WC_Order_Item_Fee();
+            $designer_fee_item->set_name(self::AI_DESIGNER_FEE_LABEL);
+            $designer_fee_item->set_amount(self::AI_DESIGNER_FEE);
+            $designer_fee_item->set_total(self::AI_DESIGNER_FEE);
+            $designer_fee_item->set_tax_status('none');
+            $order->add_item($designer_fee_item);
+        }
         $order->calculate_taxes($shipping);
         $order->calculate_totals(false);
         if (!$temporary) {
@@ -540,13 +558,27 @@ class C767_Uniform_Checkout
     {
         $shipping_items = $order->get_items('shipping');
         $shipping_item = $shipping_items ? reset($shipping_items) : null;
+        $designer_fee = self::designer_fee_total($order);
         return [
             'subtotal' => round((float) $order->get_subtotal(), 2),
             'tax' => round((float) $order->get_total_tax(), 2),
             'shipping' => round((float) $order->get_shipping_total(), 2),
             'shippingLabel' => $shipping_item ? $shipping_item->get_method_title() : 'Shipping',
+            'designerFee' => $designer_fee,
+            'designerFeeLabel' => self::AI_DESIGNER_FEE_LABEL,
             'total' => round((float) $order->get_total(), 2),
             'currency' => $order->get_currency(),
         ];
+    }
+
+    private static function designer_fee_total(WC_Order $order)
+    {
+        $total = 0.00;
+        foreach ($order->get_items('fee') as $fee_item) {
+            if ($fee_item->get_name() === self::AI_DESIGNER_FEE_LABEL) {
+                $total += (float) $fee_item->get_total();
+            }
+        }
+        return round($total, 2);
     }
 }

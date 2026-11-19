@@ -27,6 +27,14 @@ export const UNIFORM_SHIPPING_COUNTRIES = [
 const NORTH_AMERICA = new Set(UNIFORM_SHIPPING_COUNTRIES[0].countries.map(([code]) => code));
 const CARIBBEAN = new Set(UNIFORM_SHIPPING_COUNTRIES[1].countries.map(([code]) => code));
 
+export const AI_DESIGNER_FEE = 100;
+export const AI_DESIGNER_FEE_THRESHOLD = 1500;
+
+export function uniformAiDesignerFee(subtotal, shipping) {
+  const postShippingTotal = Math.max(0, Number(subtotal) || 0) + Math.max(0, Number(shipping) || 0);
+  return postShippingTotal < AI_DESIGNER_FEE_THRESHOLD ? AI_DESIGNER_FEE : 0;
+}
+
 export function uniformShippingRate(country, unitCount) {
   const code = String(country || "").trim().toUpperCase();
   const units = Math.max(0, Math.floor(Number(unitCount) || 0));

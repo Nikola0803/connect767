@@ -649,15 +649,19 @@ export function OptionsPanel({
         </div>
         {insideCollarMessage && (
           <>
-          <input
-            type="text"
-            placeholder="Message for the inside collar"
-            value={insideCollarText}
-            onChange={(e) => setInsideCollarText(e.target.value)}
-            aria-invalid={insideCollarContentMissing}
-            aria-describedby={insideCollarContentMissing ? "inside-collar-content-warning" : undefined}
-            className="w-full rounded-lg border border-background-300 bg-background-50 px-3 py-2 text-sm text-foreground-950 placeholder-foreground-400 focus:border-primary-400 focus:outline-none font-label"
-          />
+          <label className="block text-xs font-semibold text-foreground-800">
+            Inside-collar message <span className="text-red-600" aria-hidden="true">*</span>
+            <input
+              type="text"
+              aria-label="Inside-collar message"
+              placeholder="Message for the inside collar"
+              value={insideCollarText}
+              onChange={(e) => setInsideCollarText(e.target.value)}
+              aria-invalid={insideCollarContentMissing}
+              aria-describedby={insideCollarContentMissing ? "inside-collar-content-warning" : undefined}
+              className="mt-1.5 w-full rounded-lg border border-background-300 bg-background-50 px-3 py-2 text-sm text-foreground-950 placeholder-foreground-400 focus:border-primary-400 focus:outline-none font-label"
+            />
+          </label>
           <CollarAttachment attachment={insideCollarAttachment} onChange={setInsideCollarAttachment} />
           {insideCollarContentMissing && (
             <p id="inside-collar-content-warning" role="alert" className="mt-2 rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-900">
