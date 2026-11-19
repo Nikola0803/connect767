@@ -32,6 +32,32 @@ describe("required uniform fit selection", () => {
     );
   });
 
+  it("uses one studio category selector and loads every category template", () => {
+    openStudio("ai");
+    const selector = screen.getByRole("combobox", { name: "Design category" });
+    expect(Array.from(selector.options).map((option) => option.textContent)).toEqual([
+      "Soccer",
+      "Basketball",
+      "Netball",
+      "Cricket",
+      "Goal Keeper",
+      "Clothing & Other",
+    ]);
+
+    const categoryTemplates = [
+      ["basketball", "Shooter Tank"],
+      ["netball", "Court Dress"],
+      ["cricket", "Matchday Long Sleeve"],
+      ["goalkeeper", "Guardian Pro"],
+      ["other", "Performance Polo"],
+      ["soccer", "Classic Crew"],
+    ];
+    for (const [sport, templateName] of categoryTemplates) {
+      fireEvent.change(selector, { target: { value: sport } });
+      expect(screen.getAllByText(templateName).length).toBeGreaterThan(0);
+    }
+  });
+
   it("starts in the combined Design step and requires fit before Team roster", () => {
     const progress = openStudio("ai");
     const setup = openUniformSetup();
@@ -283,7 +309,7 @@ describe("required uniform fit selection", () => {
   });
 
   it.each([false, true])("restores only a previously confirmed fit (confirmed: %s)", async (confirmed) => {
-    window.localStorage.setItem("c767:studio:soccer:blank-canvas", JSON.stringify({ fitType: "Men", fitTypeConfirmed: confirmed, zoneModel: { front: [], back: [] } }));
+    window.localStorage.setItem("c767:studio:soccer:classic-crew", JSON.stringify({ fitType: "Men", fitTypeConfirmed: confirmed, zoneModel: { front: [], back: [] } }));
     render(<MemoryRouter initialEntries={["/uniforms"]}><UniformStudioPage /></MemoryRouter>);
     await act(async () => { fireEvent.click(screen.getByRole("heading", { name: "Soccer", exact: true }).closest("button")); });
     const progress = within(screen.getByRole("navigation", { name: "Uniform order progress" }));

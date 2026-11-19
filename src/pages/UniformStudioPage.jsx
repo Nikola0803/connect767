@@ -312,6 +312,10 @@ const categoryDetails = {
   other: { title: "Clothing & Other", description: "Polos, training wear, club clothing and any custom garment idea." },
 };
 
+const primaryTemplateForSport = (sportSlug) => templates.find(
+  (candidate) => candidate.sportSlug === sportSlug && candidate.slug !== "blank-canvas",
+) || templates.find((candidate) => candidate.slug === "blank-canvas");
+
 const downloadDataUrl = (dataUrl, filename) => {
   const link = document.createElement("a");
   link.download = filename;
@@ -1006,7 +1010,14 @@ export default function UniformStudioPage() {
     }));
   };
 
-  const hasWork = layers.length > 0 || Object.keys(placements3d).length > 0;
+  const hasWork = Boolean(
+    layers.length
+    || Object.keys(placements3d).length
+    || aiUniformPlan
+    || aiWorkspaceConcept?.src
+    || roster.length
+    || hasSelectedFit,
+  );
 
   // Closing the tab or hitting the browser's back button bypasses the in-app
   // prompt entirely, so the native one covers that path. Browsers ignore
@@ -1050,8 +1061,36 @@ export default function UniformStudioPage() {
     setActiveTool("ai");
     setAiDesignerMode("uniform");
     setAiCanvasMode("concept");
+    setAiUniformPlan(null);
+    setAiWorkspaceConcept(null);
+    setAiVersions([]);
+    setAiComparisonPlan(null);
+    setAiDesignApplied(false);
+    setHasUploadedReference(false);
+    setStudioMode(STUDIO_MODES.AI_OUTPUT);
+    setRosterEntry(newRosterEntry());
+    setRoster([]);
+    setSockQuantityOverride(null);
+    setKitType(kitTypeOptions[0]);
+    setExtraTeamShirts([]);
+    setFanJerseyAdded(false);
+    setSupporterJerseys([newSupporterJersey()]);
+    setLogoApplication("Sublimated");
+    setInsideCollarMessage(false);
+    setInsideCollarText("");
+    setInsideCollarAttachment(null);
+    setDesignValidationAttempted(false);
+    setRosterValidationAttempted(false);
     // Pick up where they left off on this exact kit, if they were here before.
     restoreSaved(`c767:studio:${sportSlug}:${t.slug}`, sportSlug);
+  };
+
+  const changeDesignCategory = (sportSlug) => {
+    if (sportSlug === activeSport) return;
+    const nextTemplate = primaryTemplateForSport(sportSlug);
+    if (!nextTemplate) return;
+    if (hasWork && !window.confirm("Changing category loads its matching template. Your current category design is saved and can be restored when you return. Continue?")) return;
+    selectTemplate(nextTemplate, sportSlug);
   };
 
   const TOOL_FOR_LAYER = { text: "text", skin: "skins", logo: "logo", clipart: "logo" };
@@ -1973,11 +2012,7 @@ export default function UniformStudioPage() {
                       key={sport.slug}
                       type="button"
                       onClick={() => {
-                        selectTemplate({
-                          slug: "blank-canvas",
-                          defaultCollar: uniformTemplate.defaultCollar,
-                          defaultSleeve: uniformTemplate.defaultSleeve,
-                        }, sport.slug);
+                        selectTemplate(uniformTemplate, sport.slug);
                       }}
                       className="group overflow-hidden rounded-[24px] border border-background-300 bg-background-50 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:border-primary-400 hover:shadow-[0_20px_42px_rgba(0,116,73,0.11)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 cursor-pointer"
                     >
@@ -2082,15 +2117,27 @@ export default function UniformStudioPage() {
           <i className="ri-arrow-left-line" />
           Back
         </button>
-        <div className="hidden min-w-0 items-center gap-2 sm:flex">
-          <span className="truncate text-sm font-semibold text-background-50/85">
+        <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
+          <span className="hidden truncate text-sm font-semibold text-background-50/85 lg:inline">
             {aiUniformPlan?.name || (template?.slug === "blank-canvas" ? "AI Uniform" : template?.name) || "AI Uniform"}
           </span>
-          <span className="text-background-50/20">/</span>
-          <span className="truncate text-xs font-medium text-background-50/45">
-            {sports.find((s) => s.slug === activeSport)?.label}
-          </span>
-          <span className="ml-2 inline-flex shrink-0 items-center gap-1.5 rounded-full border border-primary-500/20 bg-primary-950/35 px-2.5 py-1 text-[10px] font-semibold text-primary-200/90">
+          <span className="hidden text-background-50/20 lg:inline">/</span>
+          <label className="inline-flex h-9 min-w-0 items-center gap-1.5 rounded-lg border border-primary-400/35 bg-primary-950/45 px-2.5 text-primary-100 shadow-[0_8px_20px_rgba(0,0,0,.14)]">
+            <i className={`${sports.find((item) => item.slug === activeSport)?.icon || "ri-shirt-line"} shrink-0 text-sm`} aria-hidden="true" />
+            <span className="hidden text-[9px] font-bold uppercase tracking-[0.12em] text-primary-300 xl:inline">Category</span>
+            <select
+              aria-label="Design category"
+              value={activeSport}
+              onChange={(event) => changeDesignCategory(event.target.value)}
+              className="min-w-0 max-w-[150px] cursor-pointer appearance-none bg-transparent pr-4 text-xs font-bold text-white outline-none [color-scheme:dark] sm:max-w-[190px]"
+            >
+              {sports.map((sport) => (
+                <option key={sport.slug} value={sport.slug} className="bg-[#151610] text-white">{categoryDetails[sport.slug]?.title || sport.label}</option>
+              ))}
+            </select>
+            <i className="ri-arrow-down-s-line -ml-3 shrink-0 text-xs text-primary-300" aria-hidden="true" />
+          </label>
+          <span className="hidden shrink-0 items-center gap-1.5 rounded-full border border-primary-500/20 bg-primary-950/35 px-2.5 py-1 text-[10px] font-semibold text-primary-200/90 xl:inline-flex">
             <span className="h-1.5 w-1.5 rounded-full bg-primary-400" /> Auto-saved
           </span>
         </div>
@@ -2662,6 +2709,9 @@ export default function UniformStudioPage() {
                 {activeTool === "ai" && (
                   <AIArtworkPanel
                     sport={sports.find((item) => item.slug === activeSport)?.label || "Team sport"}
+                    templateName={template?.name}
+                    templateDescription={template?.description}
+                    templateImage={template?.image}
                     colors={colors}
                     collar={collar}
                     sleeve={sleeve}
@@ -2805,6 +2855,9 @@ export default function UniformStudioPage() {
         {activeTool === "ai" && (
           <AIArtworkPanel
             sport={sports.find((item) => item.slug === activeSport)?.label || "Team sport"}
+            templateName={template?.name}
+            templateDescription={template?.description}
+            templateImage={template?.image}
             colors={colors}
             collar={collar}
             sleeve={sleeve}
