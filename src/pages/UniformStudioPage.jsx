@@ -91,7 +91,7 @@ import {
 
 const emptyUniformShipping = {
   firstName: "", lastName: "", company: "", address1: "", address2: "",
-  city: "", state: "", postcode: "", country: "DM", phone: "",
+  city: "", state: "", postcode: "", country: "DM", email: "", phone: "",
 };
 let uniformStripePromise = null;
 const getUniformStripe = (key) => {
@@ -555,7 +555,7 @@ export default function UniformStudioPage() {
       return;
     }
     setContact({ name: "Riverside FC", email: "orders@example.com", phone: "(767) 555-0100", club: "Riverside FC", notes: "" });
-    setShipping({ firstName: "Avery", lastName: "Miller", company: "Riverside FC", address1: "10 Stadium Road", address2: "", city: "Roseau", state: "Saint George", postcode: "00109", country: "DM", phone: "(767) 555-0100" });
+    setShipping({ firstName: "Avery", lastName: "Miller", company: "Riverside FC", address1: "10 Stadium Road", address2: "", city: "Roseau", state: "Saint George", postcode: "00109", country: "DM", email: "orders@example.com", phone: "(767) 555-0100" });
     setFanJerseyAdded(true);
     setSupporterJerseys([{ size: "M", quantity: 2 }, { size: "L", quantity: 1 }]);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -3429,15 +3429,27 @@ function ReviewOrderTool({
   const [calculating, setCalculating] = useState(false);
   const [checkoutError, setCheckoutError] = useState(null);
   const [addressValidationAttempted, setAddressValidationAttempted] = useState(false);
+  const [useDifferentOrderContact, setUseDifferentOrderContact] = useState(false);
+  const [quoteContactRequested, setQuoteContactRequested] = useState(false);
   const [cardSession, setCardSession] = useState(null);
   const [startingCard, setStartingCard] = useState(false);
   const [placingLocalOrder, setPlacingLocalOrder] = useState(false);
-  const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact.email.trim());
+  const shippingContact = {
+    name: `${shipping.firstName || ""} ${shipping.lastName || ""}`.trim(),
+    email: shipping.email || "",
+    phone: shipping.phone || "",
+    club: shipping.company || "",
+    notes: "",
+  };
+  const showOrderContact = useDifferentOrderContact || quoteContactRequested;
+  const checkoutContact = showOrderContact ? contact : shippingContact;
+  const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(checkoutContact.email.trim());
+  const contactNameValid = checkoutContact.name.trim().length > 1;
   const addressValidation = validateUniformShippingAddress(shipping);
   const addressRegions = uniformAddressRegions(shipping.country);
   const shippingComplete = Boolean(selectedShippingRate && addressValidation.valid);
-  const canCheckout = minimumKitsMet && emailValid && shippingComplete && (!fanJerseyAdded || supporterCount > 0);
-  const canCalculate = minimumKitsMet && emailValid && (!fanJerseyAdded || supporterCount > 0);
+  const canCheckout = minimumKitsMet && contactNameValid && emailValid && shippingComplete && (!fanJerseyAdded || supporterCount > 0);
+  const canCalculate = minimumKitsMet && (!fanJerseyAdded || supporterCount > 0);
 
   useEffect(() => {
     getCheckoutConfig()
@@ -3453,7 +3465,7 @@ function ReviewOrderTool({
   useEffect(() => {
     if (!import.meta.env.DEV || !window.location.search.includes("preview=checkout") || !canCheckout || totals) return;
     setCalculating(true);
-    quoteUniformCheckout({ ...orderPayload, fanJerseyAdded, supporterJerseys, grandTotal }, contact.email, shipping)
+    quoteUniformCheckout({ ...orderPayload, contact: checkoutContact, fanJerseyAdded, supporterJerseys, grandTotal }, checkoutContact.email, shipping)
       .then(setTotals)
       .catch((err) => setCheckoutError(err.message || "Couldn't calculate the preview total."))
       .finally(() => setCalculating(false));
@@ -3472,26 +3484,29 @@ function ReviewOrderTool({
     ...orderPayload,
     fanJerseyAdded,
     supporterJerseys: fanJerseyAdded ? supporterJerseys : [],
+    contact: checkoutContact,
     grandTotal,
     previewImage: await capturePreview(),
   });
 
   const calculateTotal = async () => {
     setAddressValidationAttempted(true);
-    if (!minimumKitsMet || !emailValid || (fanJerseyAdded && supporterCount < 1) || !shippingComplete) {
+    if (!minimumKitsMet || !contactNameValid || !emailValid || (fanJerseyAdded && supporterCount < 1) || !shippingComplete) {
       setCheckoutError(!minimumKitsMet
         ? `Minimum order: ${minimumKits} full kits.`
-        : !emailValid
-          ? "Enter a valid contact email address."
+        : !contactNameValid
+          ? "Enter the order contact name."
+          : !emailValid
+            ? "Enter a valid contact email address."
           : fanJerseyAdded && supporterCount < 1
             ? "Add at least one supporter jersey or remove that option."
-            : addressValidation.message || "Complete the delivery address first.");
+            : addressValidation.message || "Complete the shipping address first.");
       return;
     }
     setCalculating(true);
     setCheckoutError(null);
     try {
-      setTotals(await quoteUniformCheckout({ ...orderPayload, fanJerseyAdded, supporterJerseys, grandTotal }, contact.email, shipping));
+      setTotals(await quoteUniformCheckout({ ...orderPayload, contact: checkoutContact, fanJerseyAdded, supporterJerseys, grandTotal }, checkoutContact.email, shipping));
     } catch (err) {
       setCheckoutError(err.message || "Couldn't calculate tax and shipping.");
     } finally {
@@ -3504,7 +3519,7 @@ function ReviewOrderTool({
     setStartingCard(true);
     setCheckoutError(null);
     try {
-      setCardSession(await createUniformPaymentIntent(await completeOrderPayload(), contact.email, shipping));
+      setCardSession(await createUniformPaymentIntent(await completeOrderPayload(), checkoutContact.email, shipping));
     } catch (err) {
       setCheckoutError(err.message || "Couldn't start card payment.");
     } finally {
@@ -3519,7 +3534,7 @@ function ReviewOrderTool({
     try {
       const result = await createUniformLocalDominicaOrder(
         await completeOrderPayload(),
-        contact.email,
+        checkoutContact.email,
         shipping,
       );
       window.location.assign(`/checkout/thank-you?order=${result.orderId}&payment=local-dominica`);
@@ -3627,54 +3642,13 @@ function ReviewOrderTool({
       </div>
 
       <div className="border-t border-background-200 pt-5">
-        <h3 className="text-sm font-semibold text-foreground-900">Order contact</h3>
-        <p className="mb-3 mt-1 text-[11px] font-label text-foreground-500">
-          We send the receipt, production proof and order updates here.
-        </p>
-        <div className="space-y-2">
-          <Input
-            placeholder="Your name *"
-            aria-label="Your name"
-            value={contact.name}
-            onChange={(event) => setContact((current) => ({ ...current, name: event.target.value }))}
-          />
-          <Input
-            type="email"
-            placeholder="Email address *"
-            aria-label="Email address"
-            value={contact.email}
-            onChange={(event) => setContact((current) => ({ ...current, email: event.target.value }))}
-          />
-          <div className="grid grid-cols-2 gap-2">
-            <Input
-              placeholder="Phone"
-              aria-label="Phone number"
-              value={contact.phone}
-              onChange={(event) => setContact((current) => ({ ...current, phone: event.target.value }))}
-            />
-            <Input
-              placeholder="Club / team"
-              aria-label="Club or team name"
-              value={contact.club}
-              onChange={(event) => setContact((current) => ({ ...current, club: event.target.value }))}
-            />
-          </div>
-          <Textarea
-            rows={2}
-            placeholder="Deadline, delivery destination or production notes…"
-            aria-label="Additional order notes"
-            value={contact.notes}
-            onChange={(event) => setContact((current) => ({ ...current, notes: event.target.value }))}
-          />
-        </div>
-      </div>
-
-      <div className="mt-5 border-t border-background-200 pt-5">
-        <h3 className="text-sm font-semibold text-foreground-900">Delivery address</h3>
+        <h3 className="text-sm font-semibold text-foreground-900">Shipping Address</h3>
         <p className="mb-3 mt-1 text-[11px] font-label text-foreground-500">Custom-uniform shipping is calculated from this address and {shippingUnitCount} total order unit{shippingUnitCount === 1 ? "" : "s"}.</p>
         <div className="grid grid-cols-2 gap-2">
           <Input error={addressValidationAttempted && addressValidation.errors.firstName} aria-invalid={addressValidationAttempted && Boolean(addressValidation.errors.firstName)} placeholder="First name *" aria-label="Shipping first name" autoComplete="given-name" value={shipping.firstName} onChange={updateShipping("firstName")} />
           <Input error={addressValidationAttempted && addressValidation.errors.lastName} aria-invalid={addressValidationAttempted && Boolean(addressValidation.errors.lastName)} placeholder="Last name *" aria-label="Shipping last name" autoComplete="family-name" value={shipping.lastName} onChange={updateShipping("lastName")} />
+          <Input className="col-span-2" type="email" error={addressValidationAttempted && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(shipping.email || "").trim())} aria-invalid={addressValidationAttempted && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(shipping.email || "").trim())} placeholder="Email address *" aria-label="Shipping email address" autoComplete="email" value={shipping.email || ""} onChange={updateShipping("email")} />
+          <Input className="col-span-2" placeholder="Phone number" aria-label="Shipping phone number" autoComplete="tel" value={shipping.phone || ""} onChange={updateShipping("phone")} />
           <Input className="col-span-2" placeholder="Company (optional)" aria-label="Shipping company" autoComplete="organization" value={shipping.company} onChange={updateShipping("company")} />
           <Input error={addressValidationAttempted && addressValidation.errors.address1} aria-invalid={addressValidationAttempted && Boolean(addressValidation.errors.address1)} className="col-span-2" placeholder="Street address *" aria-label="Shipping street address" autoComplete="address-line1" value={shipping.address1} onChange={updateShipping("address1")} />
           <Input className="col-span-2" placeholder="Apartment, suite or unit" aria-label="Shipping address line two" autoComplete="address-line2" value={shipping.address2} onChange={updateShipping("address2")} />
@@ -3700,6 +3674,63 @@ function ReviewOrderTool({
           <p role="alert" className="mt-2 rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-[11px] font-semibold text-accent-900">
             {addressValidation.message}
           </p>
+        )}
+        <label className="mt-3 flex cursor-pointer items-center gap-2 rounded-xl border border-background-200 bg-background-50 px-3 py-2.5 text-xs font-semibold text-foreground-800">
+          <input
+            type="checkbox"
+            checked={useDifferentOrderContact}
+            onChange={(event) => setUseDifferentOrderContact(event.target.checked)}
+            className="h-4 w-4 rounded border-background-300 text-primary-600 focus:ring-primary-500"
+          />
+          If different from shipping address
+        </label>
+        {showOrderContact && (
+          <div className="mt-3 rounded-2xl border border-background-200 bg-background-50 p-3.5">
+            <h3 className="text-sm font-semibold text-foreground-900">Order contact</h3>
+            <p className="mb-3 mt-1 text-[11px] font-label text-foreground-500">
+              We send the receipt, production proof and order updates here.
+            </p>
+            <div className="space-y-2">
+              <Input
+                error={addressValidationAttempted && !contactNameValid}
+                aria-invalid={addressValidationAttempted && !contactNameValid}
+                placeholder="Contact name *"
+                aria-label="Order contact name"
+                value={contact.name}
+                onChange={(event) => setContact((current) => ({ ...current, name: event.target.value }))}
+              />
+              <Input
+                type="email"
+                error={addressValidationAttempted && !emailValid}
+                aria-invalid={addressValidationAttempted && !emailValid}
+                placeholder="Email address *"
+                aria-label="Order contact email address"
+                value={contact.email}
+                onChange={(event) => setContact((current) => ({ ...current, email: event.target.value }))}
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  placeholder="Phone"
+                  aria-label="Order contact phone number"
+                  value={contact.phone}
+                  onChange={(event) => setContact((current) => ({ ...current, phone: event.target.value }))}
+                />
+                <Input
+                  placeholder="Club / team"
+                  aria-label="Club or team name"
+                  value={contact.club}
+                  onChange={(event) => setContact((current) => ({ ...current, club: event.target.value }))}
+                />
+              </div>
+              <Textarea
+                rows={2}
+                placeholder="Deadline, delivery destination or production notes…"
+                aria-label="Additional order notes"
+                value={contact.notes}
+                onChange={(event) => setContact((current) => ({ ...current, notes: event.target.value }))}
+              />
+            </div>
+          </div>
         )}
         {selectedShippingRate && (
           <div role="note" className="mt-3 rounded-xl border border-primary-200 bg-primary-50 px-3 py-2.5 text-[11px] leading-relaxed text-primary-900">
@@ -3801,7 +3832,7 @@ function ReviewOrderTool({
                 clientId={config.paypalClientId}
                 disabled={!isLiveApi || !canCheckout}
                 createOrder={async () => {
-                  const result = await createUniformPaypalOrder(await completeOrderPayload(), contact.email, shipping);
+                  const result = await createUniformPaypalOrder(await completeOrderPayload(), checkoutContact.email, shipping);
                   return { orderId: result.orderId, paypalOrderId: result.paypalOrderId, accessToken: result.accessToken };
                 }}
                 captureOrder={captureUniformPaypalOrder}
@@ -3829,8 +3860,15 @@ function ReviewOrderTool({
           </div>
         )}
 
-        <Button type="button" variant="secondary" disabled={!minimumKitsMet || submitting} onClick={onRequestQuote} icon="ri-file-list-3-line" className="w-full">
-          {submitting ? "Submitting…" : "Request a quote instead"}
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={!minimumKitsMet || submitting}
+          onClick={() => (showOrderContact ? onRequestQuote() : setQuoteContactRequested(true))}
+          icon="ri-file-list-3-line"
+          className="w-full"
+        >
+          {submitting ? "Submitting…" : quoteContactRequested ? "Send quote request" : "Request a quote instead"}
         </Button>
         <p className="mt-2 text-center text-[10px] font-label leading-relaxed text-foreground-400">Payments are processed securely by Stripe or PayPal. The production team confirms artwork before manufacturing.</p>
       </div>

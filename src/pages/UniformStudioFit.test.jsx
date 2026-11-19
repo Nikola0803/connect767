@@ -226,6 +226,31 @@ describe("required uniform fit selection", () => {
     expect(screen.getAllByText(/22 full kits/).length).toBeGreaterThan(0);
   });
 
+  it("uses the shipping contact by default and reveals a different order contact only when requested", () => {
+    const progress = openStudio("design");
+    fireEvent.click(openUniformSetup().getByRole("button", { name: "Men", exact: true }));
+    fireEvent.click(progress.getByRole("button", { name: /Team roster/ }));
+    fireEvent.change(screen.getAllByRole("textbox", { name: "Name" })[0], { target: { value: "Minimum order" } });
+    fireEvent.change(screen.getAllByRole("spinbutton", { name: "Player quantity" })[0], { target: { value: "22" } });
+    fireEvent.click(screen.getAllByRole("button", { name: "Add player" })[0]);
+    fireEvent.click(progress.getByRole("button", { name: /Review & quote/ }));
+
+    expect(screen.getAllByRole("heading", { name: "Shipping Address" }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("heading", { name: "Delivery address" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("textbox", { name: "Shipping phone number" }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("heading", { name: "Order contact" })).not.toBeInTheDocument();
+
+    const differentContact = screen.getAllByRole("checkbox", { name: "If different from shipping address" })[0];
+    fireEvent.click(differentContact);
+    expect(screen.getAllByRole("heading", { name: "Order contact" }).length).toBeGreaterThan(0);
+    fireEvent.click(differentContact);
+    expect(screen.queryByRole("heading", { name: "Order contact" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Request a quote instead" })[0]);
+    expect(screen.getAllByRole("heading", { name: "Order contact" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: "Send quote request" }).length).toBeGreaterThan(0);
+  });
+
   it("offers Short or Long for each player when Mixed Sleeve Team Order is selected", () => {
     const progress = openStudio("design");
     const setup = openUniformSetup();
