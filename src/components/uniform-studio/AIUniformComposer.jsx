@@ -207,7 +207,7 @@ export default function AIUniformComposer({
           <i className="ri-arrow-down-s-line" />
         </button>
         {resetMenuOpen && (
-          <div className="absolute right-0 top-[calc(100%+.4rem)] z-50 w-52 overflow-hidden rounded-xl border border-background-200 bg-white p-1.5 text-foreground-950 shadow-2xl" role="menu" aria-label="Design reset options" data-ai-popover>
+          <div className="absolute left-0 top-[calc(100%+.4rem)] z-50 w-52 overflow-hidden rounded-xl border border-background-200 bg-white p-1.5 text-foreground-950 shadow-2xl" role="menu" aria-label="Design reset options" data-ai-popover>
             <p className="px-3 pb-1 pt-1.5 text-[8px] font-bold uppercase tracking-[0.14em] text-foreground-500">Create new</p>
             <button type="button" onClick={() => startDesign("uniform")} className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-primary-50 hover:text-primary-800" role="menuitem"><i className="ri-shirt-line text-sm" /><span className="flex min-w-0 flex-1 items-center justify-between gap-2"><span>Full uniform</span>{mode === "uniform" && <i className="ri-check-line text-primary-700" />}</span></button>
             <button type="button" onClick={() => startDesign("artwork")} className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-primary-50 hover:text-primary-800" role="menuitem"><i className="ri-image-edit-line text-sm" /><span className="flex min-w-0 flex-1 items-center justify-between gap-2"><span>Transparent artwork</span>{mode === "artwork" && <i className="ri-check-line text-primary-700" />}</span></button>

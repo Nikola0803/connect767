@@ -48,8 +48,8 @@ export async function embossConnect767ConceptBackground(dataUrl) {
     maskCanvas.width = canvas.width; maskCanvas.height = canvas.height;
     const maskContext = maskCanvas.getContext("2d", { willReadFrequently: true });
     if (!maskContext) return dataUrl;
-    const maxWidth = canvas.width * 0.72;
-    const maxHeight = canvas.height * 0.82;
+    const maxWidth = canvas.width * 0.9;
+    const maxHeight = canvas.height * 0.94;
     const scale = Math.min(maxWidth / logo.width, maxHeight / logo.height);
     const logoWidth = logo.width * scale;
     const logoHeight = logo.height * scale;
