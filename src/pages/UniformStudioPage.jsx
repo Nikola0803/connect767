@@ -61,6 +61,10 @@ import {
   DEFAULT_STUDIO_BACKGROUND,
   normalizeStudioBackground,
 } from "../components/uniform-studio/studioBackgrounds";
+import {
+  AI_PREVIEW_BACKGROUND_FALLBACK,
+  sampleImageEdgeColor,
+} from "../components/uniform-studio/aiPreviewBackground";
 import { skinDataUri } from "../data/skins";
 import Button from "../components/ui/Button";
 import SelectedItemPanel from "../components/uniform-studio/SelectedItemPanel";
@@ -392,6 +396,11 @@ export default function UniformStudioPage() {
   const [aiConceptViewportWidth, setAiConceptViewportWidth] = useState(null);
   const [aiBannerActionsTarget, setAiBannerActionsTarget] = useState(null);
   const [uniformSetupOpen, setUniformSetupOpen] = useState(false);
+  const [aiConceptBackground, setAiConceptBackground] = useState(AI_PREVIEW_BACKGROUND_FALLBACK);
+  const [aiComparisonBackgrounds, setAiComparisonBackgrounds] = useState({
+    previous: AI_PREVIEW_BACKGROUND_FALLBACK,
+    current: AI_PREVIEW_BACKGROUND_FALLBACK,
+  });
   // Shown when leaving the studio with unsaved work — see confirmExit below.
   const [exitPrompt, setExitPrompt] = useState(false);
 
@@ -403,6 +412,14 @@ export default function UniformStudioPage() {
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [uniformSetupOpen]);
+
+  useEffect(() => {
+    setAiConceptBackground(AI_PREVIEW_BACKGROUND_FALLBACK);
+    setAiComparisonBackgrounds({
+      previous: AI_PREVIEW_BACKGROUND_FALLBACK,
+      current: AI_PREVIEW_BACKGROUND_FALLBACK,
+    });
+  }, [aiWorkspaceConcept?.src, aiComparisonPlan?.conceptImage?.src]);
   const placeLayer3d = (layerId, placement) =>
     setPlacements3d((prev) => ({ ...prev, [layerId]: placement }));
 
@@ -1241,6 +1258,8 @@ export default function UniformStudioPage() {
     && !(activeTool === "ai" && aiDesignerMode === "uniform" && !aiWorkspaceConcept?.src);
   const headerCapabilities = getStudioHeaderCapabilities({
     mode: studioMode,
+    workspace: workflowStep.key,
+    aiDesignerActive: activeTool === "ai",
     hasAIResult: Boolean(aiUniformPlan || aiWorkspaceConcept),
     canOpenProduction: editablePlanValidation.valid && studioMode !== STUDIO_MODES.AI_GENERATING,
     hasStorage: Boolean(storageKey),
@@ -1929,7 +1948,7 @@ export default function UniformStudioPage() {
   const headerTileClass = "inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition";
   const headerIconTileClass = "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition";
   const renderCanvasControls = () => {
-    if (!headerCapabilities.openAIPreview && !headerCapabilities.openEditableStudio && !headerCapabilities.discardAI && !headerCapabilities.viewport) return null;
+    if (!headerCapabilities.openAIPreview && !headerCapabilities.discardAI && !headerCapabilities.viewport) return null;
     return (
       <div className="flex max-w-full shrink-0 flex-nowrap items-center justify-end gap-2">
         {headerCapabilities.openAIPreview && <button
@@ -1938,13 +1957,6 @@ export default function UniformStudioPage() {
           className={`${headerTileClass} min-w-[104px] cursor-pointer border-accent-400/55 bg-accent-500 text-white hover:bg-accent-600`}
         >
           AI 3D Preview
-        </button>}
-        {headerCapabilities.openEditableStudio && <button
-          type="button"
-          onClick={convertAIToEditableDesign}
-          className={`${headerTileClass} min-w-[104px] cursor-pointer border-primary-400 bg-primary-600 text-white hover:bg-primary-500`}
-        >
-          Editable Studio
         </button>}
         {headerCapabilities.discardAI && (
           <button
@@ -2022,7 +2034,7 @@ export default function UniformStudioPage() {
               <span className="sm:hidden">AI</span>
             </button>
           )}
-          <button
+          {headerCapabilities.uniformOrder && <button
             type="button"
             onClick={() => setUniformSetupOpen(true)}
             className={`${headerTileClass} cursor-pointer border-primary-400/45 bg-primary-950/55 text-primary-100 hover:border-primary-300 hover:bg-primary-900`}
@@ -2031,8 +2043,8 @@ export default function UniformStudioPage() {
             <i className="ri-shirt-line" />
             <span className="hidden lg:inline">Uniform &amp; order</span>
             <span className="lg:hidden">Setup</span>
-          </button>
-          {aiUniformPlan && (
+          </button>}
+          {headerCapabilities.refineAI && (
             <button
               type="button"
               onClick={openAIDesigner}
@@ -2115,6 +2127,25 @@ export default function UniformStudioPage() {
               <span className="hidden sm:inline">Settings</span>
             </summary>
             <div className="absolute right-0 top-full z-50 mt-2 max-h-[70dvh] w-[min(340px,calc(100vw-24px))] overflow-y-auto rounded-2xl border border-background-300 bg-background-50 p-4 text-foreground-900 shadow-2xl">
+              {headerCapabilities.openEditableStudio && (
+                <div className="mb-4 border-b border-background-200 pb-4">
+                  <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.15em] text-foreground-500">Workspace mode</p>
+                  <button
+                    type="button"
+                    onClick={convertAIToEditableDesign}
+                    disabled={!editablePlanValidation.valid || studioMode === STUDIO_MODES.AI_GENERATING}
+                    title={editablePlanValidation.reason}
+                    className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-primary-300 bg-primary-700 px-3 py-3 text-left text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:border-background-300 disabled:bg-background-200 disabled:text-foreground-400"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15"><i className="ri-layout-grid-line" /></span>
+                    <span className="min-w-0 flex-1">
+                      <strong className="block text-xs">Open Production Mode</strong>
+                      <span className="block text-[9px] text-white/70">Convert this preview to an editable production design</span>
+                    </span>
+                    <i className="ri-arrow-right-line" />
+                  </button>
+                </div>
+              )}
               <StudioBackgroundPanel studioBackground={studioBackground} setStudioBackground={setStudioBackground} />
             </div>
           </details>}
@@ -2286,21 +2317,6 @@ export default function UniformStudioPage() {
 
                           <div className="flex w-full min-w-0 flex-nowrap items-center justify-center gap-1.5 overflow-visible">
                             <div ref={setAiBannerActionsTarget} className="contents" />
-                            <button
-                              type="button"
-                              onClick={convertAIToEditableDesign}
-                              disabled={!editablePlanValidation.valid || studioMode === STUDIO_MODES.AI_GENERATING}
-                              title={editablePlanValidation.reason}
-                              aria-label="Convert to Editable Design"
-                              className="group inline-flex min-h-9 min-w-[230px] shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary-300/35 bg-primary-600 px-3 py-1.5 text-left text-white shadow-[0_8px_22px_rgba(0,116,73,.28)] transition hover:-translate-y-0.5 hover:bg-primary-500 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/10 disabled:text-white/40 disabled:shadow-none"
-                            >
-                              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/15 text-xs"><i className="ri-layout-grid-line" /></span>
-                              <span className="min-w-0 flex-1">
-                                <strong className="block text-[10px] font-extrabold leading-tight">Open Production Mode</strong>
-                                <span className="block text-[8px] leading-tight text-white/65">Editable production design</span>
-                              </span>
-                              <i className="ri-arrow-right-line text-sm transition-transform group-hover:translate-x-0.5" />
-                            </button>
                           </div>
                         </div>
                         {!editablePlanValidation.valid && <p className="mt-1.5 text-right text-[8px] leading-relaxed text-amber-100/70">Production mode unavailable: {editablePlanValidation.reason}</p>}
@@ -2373,16 +2389,16 @@ export default function UniformStudioPage() {
                             }
                           }}
                           onPointerCancel={() => { aiConceptDragRef.current = null; }}
-                          style={{ touchAction: "none" }}
+                          style={{ touchAction: "none", backgroundColor: aiConceptBackground }}
                         >
                           {aiComparisonPlan?.conceptImage?.src ? (
                             <div className="grid max-h-full max-w-full grid-cols-2 gap-px bg-foreground-900 p-px">
-                              <figure className="relative min-w-0 bg-[#f5f0e7]">
-                                <img src={aiComparisonPlan.conceptImage.src} alt="Previous AI-generated uniform version" draggable="false" className="block max-h-full w-full select-none object-contain" />
+                              <figure className="relative min-w-0 bg-[#f5f0e7]" style={{ backgroundColor: aiComparisonBackgrounds.previous }}>
+                                <img src={aiComparisonPlan.conceptImage.src} alt="Previous AI-generated uniform version" draggable="false" className="block max-h-full w-full select-none object-contain" onLoad={(event) => setAiComparisonBackgrounds((current) => ({ ...current, previous: sampleImageEdgeColor(event.currentTarget) }))} />
                                 <figcaption className="absolute left-3 top-3 rounded-full bg-foreground-950/75 px-3 py-1 text-[9px] font-bold text-white">Previous</figcaption>
                               </figure>
-                              <figure className="relative min-w-0 bg-[#f5f0e7]">
-                                <img src={aiWorkspaceConcept.src} alt="Current AI-generated uniform version" draggable="false" className="block max-h-full w-full select-none object-contain" />
+                              <figure className="relative min-w-0 bg-[#f5f0e7]" style={{ backgroundColor: aiComparisonBackgrounds.current }}>
+                                <img src={aiWorkspaceConcept.src} alt="Current AI-generated uniform version" draggable="false" className="block max-h-full w-full select-none object-contain" onLoad={(event) => setAiComparisonBackgrounds((current) => ({ ...current, current: sampleImageEdgeColor(event.currentTarget) }))} />
                                 <figcaption className="absolute left-3 top-3 rounded-full bg-primary-800/85 px-3 py-1 text-[9px] font-bold text-white">Current</figcaption>
                               </figure>
                             </div>
@@ -2392,6 +2408,7 @@ export default function UniformStudioPage() {
                               alt={`${aiUniformPlan?.name || aiWorkspaceConcept?.name || "AI generated"} complete front, side and back uniform concept`}
                               draggable="false"
                               className="block max-h-full max-w-full select-none object-contain will-change-transform"
+                              onLoad={(event) => setAiConceptBackground(sampleImageEdgeColor(event.currentTarget))}
                               style={{
                                 transform: `translate3d(${aiConceptPan.x}px, ${aiConceptPan.y}px, 0) scale(${zoom})`,
                                 transformOrigin: "center",

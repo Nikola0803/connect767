@@ -17,6 +17,8 @@ export const canUseManualEditing = (mode) => mode === STUDIO_MODES.EDITABLE;
  */
 export function getStudioHeaderCapabilities({
   mode,
+  workspace = "design",
+  aiDesignerActive = false,
   hasAIResult = false,
   canOpenProduction = false,
   hasStorage = false,
@@ -25,20 +27,24 @@ export function getStudioHeaderCapabilities({
   stageMode = "edit",
 } = {}) {
   const editable = canUseManualEditing(mode);
+  const designWorkspace = workspace === "design";
   const flatCanvas = stageMode === "edit";
-  const hasVisibleCanvas = flatCanvas && (showingAIConcept || showingProductionMap);
+  const hasVisibleCanvas = designWorkspace && flatCanvas && (showingAIConcept || showingProductionMap);
+  const preview = isAIPreviewMode(mode);
 
   return {
-    aiDesigner: editable,
-    openAIPreview: editable && hasAIResult,
-    openEditableStudio: isAIPreviewMode(mode) && hasAIResult && canOpenProduction,
-    discardAI: hasAIResult,
+    aiDesigner: designWorkspace && editable && !hasAIResult,
+    uniformOrder: designWorkspace,
+    refineAI: designWorkspace && editable && !aiDesignerActive && hasAIResult && showingProductionMap,
+    openAIPreview: designWorkspace && editable && hasAIResult && showingProductionMap,
+    openEditableStudio: designWorkspace && preview && hasAIResult && canOpenProduction,
+    discardAI: designWorkspace && preview && hasAIResult,
     viewport: hasVisibleCanvas,
     saveProgress: Boolean(hasStorage),
-    svgExport: editable && flatCanvas && showingProductionMap,
-    fullscreen: showingAIConcept,
+    svgExport: designWorkspace && editable && flatCanvas && showingProductionMap,
+    fullscreen: designWorkspace && showingAIConcept,
     download: hasVisibleCanvas,
-    settings: editable,
+    settings: designWorkspace && hasVisibleCanvas,
   };
 }
 

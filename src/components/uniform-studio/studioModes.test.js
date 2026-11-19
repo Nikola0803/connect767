@@ -51,6 +51,8 @@ describe("uniform studio modes", () => {
       showingAIConcept: true,
     })).toEqual({
       aiDesigner: false,
+      uniformOrder: true,
+      refineAI: false,
       openAIPreview: false,
       openEditableStudio: true,
       discardAI: true,
@@ -59,7 +61,7 @@ describe("uniform studio modes", () => {
       svgExport: false,
       fullscreen: true,
       download: true,
-      settings: false,
+      settings: true,
     });
   });
 
@@ -71,10 +73,12 @@ describe("uniform studio modes", () => {
       hasStorage: true,
       showingProductionMap: true,
     })).toEqual({
-      aiDesigner: true,
+      aiDesigner: false,
+      uniformOrder: true,
+      refineAI: true,
       openAIPreview: true,
       openEditableStudio: false,
-      discardAI: true,
+      discardAI: false,
       viewport: true,
       saveProgress: true,
       svgExport: true,
@@ -82,6 +86,44 @@ describe("uniform studio modes", () => {
       download: true,
       settings: true,
     });
+  });
+
+  it("replaces the AI Designer entry with Refine after a production design exists", () => {
+    const capabilities = getStudioHeaderCapabilities({
+      mode: STUDIO_MODES.EDITABLE,
+      workspace: "design",
+      hasAIResult: true,
+      showingProductionMap: true,
+    });
+    expect(capabilities.aiDesigner).toBe(false);
+    expect(capabilities.refineAI).toBe(true);
+    expect(capabilities.uniformOrder).toBe(true);
+  });
+
+  it("keeps roster and review headers free of design-only controls", () => {
+    for (const workspace of ["roster", "review"]) {
+      expect(getStudioHeaderCapabilities({
+        mode: STUDIO_MODES.EDITABLE,
+        workspace,
+        hasAIResult: true,
+        canOpenProduction: true,
+        hasStorage: true,
+        showingProductionMap: true,
+      })).toEqual({
+        aiDesigner: false,
+        uniformOrder: false,
+        refineAI: false,
+        openAIPreview: false,
+        openEditableStudio: false,
+        discardAI: false,
+        viewport: false,
+        saveProgress: true,
+        svgExport: false,
+        fullscreen: false,
+        download: false,
+        settings: false,
+      });
+    }
   });
 
   it("hides canvas actions while an AI preview has no render target", () => {
