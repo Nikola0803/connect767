@@ -149,6 +149,7 @@ export default function ApprovedUniformGraphic({
     return (
       <SideUniformGraphic
         sport={sport}
+        collar={collar}
         sleeve={sleeveStyle}
         colors={colors}
         garmentPattern={garmentPattern}
@@ -169,6 +170,12 @@ export default function ApprovedUniformGraphic({
   const socksMaskId = `approved-socks-${uid}`;
   const socksClipId = `approved-socks-clip-${uid}`;
   const shapeMaskId = `approved-kit-shape-${uid}`;
+  const collarFabricId = `approved-collar-fabric-${uid}`;
+  const collarShadowId = `approved-collar-shadow-${uid}`;
+  const shirtEdgeId = `approved-shirt-edge-${uid}`;
+  const sleeveEdgeId = `approved-sleeve-edge-${uid}`;
+  const shortsEdgeId = `approved-shorts-edge-${uid}`;
+  const sockEdgeId = `approved-sock-edge-${uid}`;
   const asset = APPROVED_ASSETS[sport] || APPROVED_ASSETS.other;
   const baseRegion = KIT_REGIONS[sport] || KIT_REGIONS.other;
   const spriteWidth = baseRegion.spriteWidth || SPRITE_WIDTH;
@@ -294,6 +301,29 @@ export default function ApprovedUniformGraphic({
       aria-label={`${sport} complete uniform ${view}`}
     >
       <defs>
+        <linearGradient id={collarFabricId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={collarColor} />
+          <stop offset="0.28" stopColor="#ffffff" stopOpacity="0.24" />
+          <stop offset="0.58" stopColor={collarColor} />
+          <stop offset="1" stopColor="#000000" stopOpacity="0.22" />
+        </linearGradient>
+        <linearGradient id={collarShadowId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#171512" stopOpacity="0.5" />
+          <stop offset="1" stopColor="#171512" stopOpacity="0.82" />
+        </linearGradient>
+        {[
+          [shirtEdgeId, shirtEnd],
+          [sleeveEdgeId, sleeveEnd],
+          [shortsEdgeId, shortsEnd],
+          [sockEdgeId, socks],
+        ].map(([id, color]) => (
+          <linearGradient key={id} id={id} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#ffffff" stopOpacity="0.28" />
+            <stop offset="0.2" stopColor={color} />
+            <stop offset="0.72" stopColor={color} />
+            <stop offset="1" stopColor="#000000" stopOpacity="0.24" />
+          </linearGradient>
+        ))}
         {/* Match the side view's alpha mask. A luminance mask weakens the
             tint over photographed folds and makes dark sleeves look gray. */}
         <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width={spriteWidth} height={spriteHeight} style={{ maskType: "alpha" }}>
@@ -543,12 +573,13 @@ export default function ApprovedUniformGraphic({
             it reaches both outer contours without leaving white end pixels. */}
         <TintLayer
           mask={jerseyMaskId}
-          fill={shirtEnd}
+          fill={`url(#${shirtEdgeId})`}
           opacity={opacityFor("shirtStrip")}
           blendMode="normal"
         >
           {(fill) => <rect
             data-shirt-edge="complete"
+            data-edge-color={shirtEnd}
             x={offset}
             y={region.shirtEndStart ?? region.bottomStart - 18}
             width={halfWidth}
@@ -560,16 +591,16 @@ export default function ApprovedUniformGraphic({
         {/* Sleeve cuffs must replace the photographed source color. The soccer
             source has black cuff pixels, so multiply blending can never show a
             selected bright color there (orange × black remains black). */}
-        {!isSleeveless && <TintLayer mask={jerseyMaskId} fill={sleeveEnd} opacity={opacityFor("sleeveStrip")} blendMode="normal">
+        {!isSleeveless && <TintLayer mask={jerseyMaskId} fill={`url(#${sleeveEdgeId})`} opacity={opacityFor("sleeveStrip")} blendMode="normal">
         {(fill) => (
           <>
               {region.sleeveEndPolygons ? (
                 <>
                   {(!hasLeftLongSleeve || nativeLongSleeve) && (
-                    <path data-garment-zone="sleeveStrip" d={polygonPath(region.sleeveEndPolygons.left)} fill={fill} />
+                    <path data-garment-zone="sleeveStrip" data-edge-color={sleeveEnd} d={polygonPath(region.sleeveEndPolygons.left)} fill={fill} />
                   )}
                   {(!hasRightLongSleeve || nativeLongSleeve) && (
-                    <path data-garment-zone="sleeveStrip" d={polygonPath(region.sleeveEndPolygons.right)} fill={fill} />
+                    <path data-garment-zone="sleeveStrip" data-edge-color={sleeveEnd} d={polygonPath(region.sleeveEndPolygons.right)} fill={fill} />
                   )}
                 </>
               ) : (
@@ -591,13 +622,14 @@ export default function ApprovedUniformGraphic({
             without stacking a second editable-zone color over it. */}
         <TintLayer
           mask={shortsMaskId}
-          fill={shortsEnd}
+          fill={`url(#${shortsEdgeId})`}
           opacity={opacityFor("shortsStrip")}
           blendMode="normal"
         >
         {(fill) => region.shortsEndPaths ? (
           <g
             data-shorts-edge="complete"
+            data-edge-color={shortsEnd}
             data-shorts-edge-width="18"
             transform={`translate(${offset + (region.shortsEndShiftX || 0)} 0)`}
           >
@@ -606,6 +638,7 @@ export default function ApprovedUniformGraphic({
         ) : (
           <rect
             data-shorts-edge="complete"
+            data-edge-color={shortsEnd}
             x={offset}
             y={bottomEnd - 22}
             width={halfWidth}
@@ -614,6 +647,25 @@ export default function ApprovedUniformGraphic({
           />
         )}
         </TintLayer>
+
+        {/* Fine highlights and shadows make the flat color zones read as
+            folded fabric edges without changing the chosen trim colors. */}
+        <g mask={`url(#${jerseyMaskId})`} pointerEvents="none" data-edge-detail="shirt-and-sleeves">
+          <line x1={offset} x2={offset + halfWidth} y1={region.shirtEndStart ?? region.bottomStart - 18} y2={region.shirtEndStart ?? region.bottomStart - 18} stroke="#ffffff" strokeOpacity="0.24" strokeWidth="1.5" />
+          <line x1={offset} x2={offset + halfWidth} y1={region.bottomStart - 2} y2={region.bottomStart - 2} stroke="#171512" strokeOpacity="0.24" strokeWidth="1.5" />
+          {region.sleeveEndPolygons && !hasLeftLongSleeve && <path d={polygonPath(region.sleeveEndPolygons.left)} fill="none" stroke="#ffffff" strokeOpacity="0.2" strokeWidth="1.25" />}
+          {region.sleeveEndPolygons && !hasRightLongSleeve && <path d={polygonPath(region.sleeveEndPolygons.right)} fill="none" stroke="#ffffff" strokeOpacity="0.2" strokeWidth="1.25" />}
+        </g>
+        <g mask={`url(#${shortsMaskId})`} pointerEvents="none" data-edge-detail="shorts">
+          {region.shortsEndPaths
+            ? <g transform={`translate(${offset + (region.shortsEndShiftX || 0)} 0)`}>{region.shortsEndPaths.map((path) => <path key={`detail-${path}`} d={path} fill="none" stroke="#ffffff" strokeOpacity="0.18" strokeWidth="1.25" />)}</g>
+            : <line x1={offset} x2={offset + halfWidth} y1={bottomEnd - 22} y2={bottomEnd - 22} stroke="#ffffff" strokeOpacity="0.2" strokeWidth="1.5" />}
+        </g>
+        {region.socksStart && <g mask={`url(#${socksMaskId})`} pointerEvents="none" data-edge-detail="socks">
+          <rect data-sock-opening="complete" data-edge-color={socks} x={offset} y={region.socksStart} width={halfWidth} height="18" fill={`url(#${sockEdgeId})`} />
+          <line x1={offset} x2={offset + halfWidth} y1={region.socksStart + 2} y2={region.socksStart + 2} stroke="#ffffff" strokeOpacity="0.22" strokeWidth="1.5" />
+          <line x1={offset} x2={offset + halfWidth} y1={region.socksStart + 17} y2={region.socksStart + 17} stroke="#171512" strokeOpacity="0.18" strokeWidth="1" />
+        </g>}
       </g>
 
       {!isSleeveless && !nativeLongSleeve && sleeveStyle === "Long" && (
@@ -649,9 +701,9 @@ export default function ApprovedUniformGraphic({
         </g>
       )}
 
-      {/* Collar controls need to change the visible cut, not only a stored
-          option. These clean vector overlays sit over the photographed collar
-          and deliberately differ enough to be obvious at editor scale. */}
+      {/* Perspective-aware collar overlays: a masked source cleanup, fabric
+          gradient, inner depth, edge highlight and seam replace the previous
+          flat geometric stickers. */}
       {!(sport === "netball" && collar === "Crew") && <g
         opacity={opacityFor("collar")}
         data-collar-shape={collar}
@@ -674,18 +726,21 @@ export default function ApprovedUniformGraphic({
             <path
               data-collar-part="v-neck-band"
               d={vNeck
-                ? `M${collarCenterX - vNeck.outerHalf},${vNeck.outerTop} L${collarCenterX},${vNeck.outerPoint} L${collarCenterX + vNeck.outerHalf},${vNeck.outerTop} L${collarCenterX + vNeck.innerHalf},${vNeck.innerTop} L${collarCenterX},${vNeck.innerPoint} L${collarCenterX - vNeck.innerHalf},${vNeck.innerTop} Z`
-                : `M${collarCenterX - 55},${region.collarY - 16} L${collarCenterX},${region.collarY + 50} L${collarCenterX + 55},${region.collarY - 16} L${collarCenterX + 40},${region.collarY - 22} L${collarCenterX},${region.collarY + 29} L${collarCenterX - 40},${region.collarY - 22} Z`}
-              fill={collarColor}
+                ? `M${collarCenterX - vNeck.outerHalf},${vNeck.outerTop} Q${collarCenterX - 20},${vNeck.outerPoint - 13} ${collarCenterX},${vNeck.outerPoint} Q${collarCenterX + 20},${vNeck.outerPoint - 13} ${collarCenterX + vNeck.outerHalf},${vNeck.outerTop} L${collarCenterX + vNeck.innerHalf},${vNeck.innerTop} Q${collarCenterX + 13},${vNeck.innerPoint - 8} ${collarCenterX},${vNeck.innerPoint} Q${collarCenterX - 13},${vNeck.innerPoint - 8} ${collarCenterX - vNeck.innerHalf},${vNeck.innerTop} Z`
+                : `M${collarCenterX - 55},${region.collarY - 16} Q${collarCenterX - 18},${region.collarY + 40} ${collarCenterX},${region.collarY + 50} Q${collarCenterX + 18},${region.collarY + 40} ${collarCenterX + 55},${region.collarY - 16} L${collarCenterX + 40},${region.collarY - 22} Q${collarCenterX + 12},${region.collarY + 21} ${collarCenterX},${region.collarY + 29} Q${collarCenterX - 12},${region.collarY + 21} ${collarCenterX - 40},${region.collarY - 22} Z`}
+              fill={`url(#${collarFabricId})`}
+              stroke={collarColor}
+              strokeWidth="2"
+              strokeLinejoin="round"
             />
           )}
-          {collar === "Crew" && <ellipse cx={collarCenterX} cy={region.collarY} rx="54" ry="31" fill={collarColor} />}
+          {collar === "Crew" && <ellipse data-collar-part="crew-band" cx={collarCenterX} cy={region.collarY} rx="54" ry="31" fill={`url(#${collarFabricId})`} stroke={collarColor} strokeWidth="2" />}
           {collar === "Polo" && (
             <>
-              <path d={`M${collarCenterX - 58},${region.collarY - 17} L${collarCenterX - 7},${region.collarY + 25} L${collarCenterX - 41},${region.collarY + 38} Z`} fill={collarColor} />
-              <path d={`M${collarCenterX + 58},${region.collarY - 17} L${collarCenterX + 7},${region.collarY + 25} L${collarCenterX + 41},${region.collarY + 38} Z`} fill={collarColor} />
+              <path data-collar-part="polo-left-wing" d={`M${collarCenterX - 61},${region.collarY - 18} C${collarCenterX - 46},${region.collarY - 7} ${collarCenterX - 26},${region.collarY + 12} ${collarCenterX - 8},${region.collarY + 24} C${collarCenterX - 18},${region.collarY + 31} ${collarCenterX - 30},${region.collarY + 38} ${collarCenterX - 43},${region.collarY + 43} C${collarCenterX - 47},${region.collarY + 18} ${collarCenterX - 54},${region.collarY - 1} ${collarCenterX - 61},${region.collarY - 18} Z`} fill={`url(#${collarFabricId})`} stroke={collarColor} strokeWidth="2" strokeLinejoin="round" />
+              <path data-collar-part="polo-right-wing" d={`M${collarCenterX + 61},${region.collarY - 18} C${collarCenterX + 46},${region.collarY - 7} ${collarCenterX + 26},${region.collarY + 12} ${collarCenterX + 8},${region.collarY + 24} C${collarCenterX + 18},${region.collarY + 31} ${collarCenterX + 30},${region.collarY + 38} ${collarCenterX + 43},${region.collarY + 43} C${collarCenterX + 47},${region.collarY + 18} ${collarCenterX + 54},${region.collarY - 1} ${collarCenterX + 61},${region.collarY - 18} Z`} fill={`url(#${collarFabricId})`} stroke={collarColor} strokeWidth="2" strokeLinejoin="round" />
               {view === "front" && (
-                <rect x={collarCenterX - 8} y={region.collarY + 15} width="16" height="63" rx="4" fill={collarColor} />
+                <rect data-collar-part="polo-placket" x={collarCenterX - 8} y={region.collarY + 17} width="16" height="61" rx="5" fill={`url(#${collarFabricId})`} stroke={collarColor} strokeWidth="1.5" />
               )}
             </>
           )}
@@ -694,30 +749,35 @@ export default function ApprovedUniformGraphic({
           <path
             data-collar-part="v-neck-opening"
             d={vNeck
-              ? `M${collarCenterX - vNeck.innerHalf},${vNeck.innerTop} L${collarCenterX},${vNeck.innerPoint} L${collarCenterX + vNeck.innerHalf},${vNeck.innerTop}`
-              : `M${collarCenterX - 35},${region.collarY - 12} L${collarCenterX},${region.collarY + 29} L${collarCenterX + 35},${region.collarY - 12}`}
+              ? `M${collarCenterX - vNeck.innerHalf},${vNeck.innerTop} Q${collarCenterX - 13},${vNeck.innerPoint - 8} ${collarCenterX},${vNeck.innerPoint} Q${collarCenterX + 13},${vNeck.innerPoint - 8} ${collarCenterX + vNeck.innerHalf},${vNeck.innerTop}`
+              : `M${collarCenterX - 35},${region.collarY - 12} Q${collarCenterX - 12},${region.collarY + 21} ${collarCenterX},${region.collarY + 29} Q${collarCenterX + 12},${region.collarY + 21} ${collarCenterX + 35},${region.collarY - 12}`}
             fill="none"
-            stroke="#171512"
-            strokeOpacity="0.72"
-            strokeWidth="5"
+            stroke={`url(#${collarShadowId})`}
+            strokeWidth="4"
+            strokeLinecap="round"
             strokeLinejoin="round"
           />
         )}
         {collar === "Crew" && (
-          <ellipse cx={collarCenterX} cy={region.collarY - 1} rx="39" ry="18" fill="#171512" fillOpacity="0.72" />
+          <>
+            <ellipse data-collar-part="crew-opening" cx={collarCenterX} cy={region.collarY - 1} rx="39" ry="18" fill={`url(#${collarShadowId})`} />
+            <path data-collar-part="crew-highlight" d={`M${collarCenterX - 45},${region.collarY - 5} Q${collarCenterX},${region.collarY - 29} ${collarCenterX + 45},${region.collarY - 5}`} fill="none" stroke="#ffffff" strokeOpacity="0.3" strokeWidth="2" strokeLinecap="round" />
+            <path data-collar-part="crew-seam" d={`M${collarCenterX - 45},${region.collarY + 9} Q${collarCenterX},${region.collarY + 31} ${collarCenterX + 45},${region.collarY + 9}`} fill="none" stroke="#171512" strokeOpacity="0.25" strokeWidth="1.5" strokeDasharray="3 3" />
+          </>
         )}
         {collar === "Polo" && view === "front" && (
           <>
-            <circle cx={collarCenterX} cy={region.collarY + 37} r="3" fill={body} />
-            <circle cx={collarCenterX} cy={region.collarY + 57} r="3" fill={body} />
+            <line x1={collarCenterX} y1={region.collarY + 23} x2={collarCenterX} y2={region.collarY + 72} stroke="#171512" strokeOpacity="0.25" strokeWidth="1" />
+            <circle cx={collarCenterX} cy={region.collarY + 39} r="3.2" fill={body} stroke="#171512" strokeOpacity="0.38" />
+            <circle cx={collarCenterX} cy={region.collarY + 59} r="3.2" fill={body} stroke="#171512" strokeOpacity="0.38" />
           </>
         )}
       </g>}
 
       {!isSleeveless && !nativeLongSleeve && (
         <g opacity={opacityFor("sleeveStrip")}>
-          {hasLeftLongSleeve && <path data-long-sleeve-cuff="left" d={longCuffPath("left")} fill="none" stroke={sleeveEnd} strokeWidth="18" strokeLinecap="round" />}
-          {hasRightLongSleeve && <path data-long-sleeve-cuff="right" d={longCuffPath("right")} fill="none" stroke={sleeveEnd} strokeWidth="18" strokeLinecap="round" />}
+          {hasLeftLongSleeve && <><path data-long-sleeve-cuff="left" data-edge-color={sleeveEnd} d={longCuffPath("left")} fill="none" stroke={`url(#${sleeveEdgeId})`} strokeWidth="18" strokeLinecap="round" /><path d={longCuffPath("left")} fill="none" stroke="#ffffff" strokeOpacity="0.22" strokeWidth="1.5" strokeLinecap="round" /></>}
+          {hasRightLongSleeve && <><path data-long-sleeve-cuff="right" data-edge-color={sleeveEnd} d={longCuffPath("right")} fill="none" stroke={`url(#${sleeveEdgeId})`} strokeWidth="18" strokeLinecap="round" /><path d={longCuffPath("right")} fill="none" stroke="#ffffff" strokeOpacity="0.22" strokeWidth="1.5" strokeLinecap="round" /></>}
         </g>
       )}
     </svg>

@@ -29,6 +29,18 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     }
   });
 
+  it("renders every selected collar shape with perspective treatment on the side view", () => {
+    for (const collar of ["Crew", "V-Neck", "Polo"]) {
+      const { container, unmount } = render(
+        <ApprovedUniformGraphic sport="soccer" view="side" collar={collar} />,
+      );
+      const collarLayer = container.querySelector(`[data-collar-shape="${collar}"]`);
+      expect(collarLayer).toBeInTheDocument();
+      expect(collarLayer.querySelector('[data-collar-part="side-band"]')).toBeInTheDocument();
+      unmount();
+    }
+  });
+
   it.each(["front", "back"])("replaces both %s sleeves from the shoulder boundary and preserves wrist trim", (view) => {
     const { container } = render(
       <ApprovedUniformGraphic sport="soccer" view={view} sleeve="Long" colors={{ sleeveStrip: "#f15a37" }} />,
@@ -50,7 +62,8 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     // remains after the sleeve continues from the existing shirt boundary.
     expect(container.querySelectorAll('[data-garment-tint="flat-color"] [data-garment-zone="sleeveStrip"]')).toHaveLength(0);
     for (const cuff of container.querySelectorAll('[data-long-sleeve-cuff]')) {
-      expect(cuff.getAttribute("stroke")).toBe("#f15a37");
+      expect(cuff.getAttribute("stroke")).toMatch(/^url\(#approved-sleeve-edge-/);
+      expect(cuff.getAttribute("data-edge-color")).toBe("#f15a37");
     }
   });
 
@@ -61,7 +74,9 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     const replacement = container.querySelector('[data-sleeve-replacement="Long"] [data-long-sleeve-side="right"]');
     expect(replacement).not.toBeNull();
     expect(replacement.getAttribute("d")).toMatch(/^M369 38/);
-    expect(container.querySelector('[data-long-sleeve-cuff="right"]').getAttribute("fill")).toBe("#00c8c8");
+    const cuff = container.querySelector('[data-long-sleeve-cuff="right"]');
+    expect(cuff.getAttribute("fill")).toMatch(/^url\(#approved-side-sleeve-edge-/);
+    expect(cuff.getAttribute("data-edge-color")).toBe("#00c8c8");
   });
 
   it.each(["front", "side", "back"])("uses the same full-strength sleeve tint on the %s view", (view) => {
@@ -104,13 +119,13 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     const frontPatch = container.querySelector('[data-collar-patch="source-cleanup"]');
     const frontOpening = container.querySelector('[data-collar-part="v-neck-opening"]');
     expect(frontPatch.getAttribute("cx")).toBe("334");
-    expect(frontOpening.getAttribute("d")).toBe("M282,187 L334,242 L386,187");
+    expect(frontOpening.getAttribute("d")).toBe("M282,187 Q321,234 334,242 Q347,234 386,187");
 
     rerender(<ApprovedUniformGraphic sport="basketball" view="back" collar="V-Neck" />);
     const backPatch = container.querySelector('[data-collar-patch="source-cleanup"]');
     const backOpening = container.querySelector('[data-collar-part="v-neck-opening"]');
     expect(backPatch.getAttribute("cx")).toBe("836.5");
-    expect(backOpening.getAttribute("d")).toBe("M787.5,173 L836.5,222 L885.5,173");
+    expect(backOpening.getAttribute("d")).toBe("M787.5,173 Q823.5,214 836.5,222 Q849.5,214 885.5,173");
   });
 
   it("aligns side color boundaries with each image's native dimensions", () => {
@@ -124,13 +139,32 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     }
   });
 
+  it("matches the soccer shirt-end thickness across front, side and back views", () => {
+    const { container, rerender } = render(<ApprovedUniformGraphic sport="soccer" view="front" />);
+    const front = container.querySelector('[data-shirt-edge="complete"]');
+    const frontRatio = Number(front.getAttribute("height")) / 1358;
+
+    rerender(<ApprovedUniformGraphic sport="soccer" view="side" />);
+    const side = container.querySelector('[data-garment-zone="shirtStrip"]');
+    const sideRatio = Number(side.getAttribute("height")) / SIDE_REGIONS.soccer.height;
+
+    rerender(<ApprovedUniformGraphic sport="soccer" view="back" />);
+    const back = container.querySelector('[data-shirt-edge="complete"]');
+    const backRatio = Number(back.getAttribute("height")) / 1358;
+
+    expect(Math.abs(frontRatio - sideRatio)).toBeLessThan(0.001);
+    expect(backRatio).toBe(frontRatio);
+  });
+
   it("composites side colors once so the sleeve never multiplies into the body color", () => {
     const colors = { body: "#17384e", sleeve: "#ed430d", shorts: "#22cc88", collar: "#ffcc00", sleeveStrip: "#112233" };
     const { container, rerender } = render(<ApprovedUniformGraphic sport="soccer" view="side" colors={colors} />);
     expect(container.querySelectorAll('[data-garment-tint="fabric-multiply"]')).toHaveLength(1);
-    for (const key of ["body", "sleeve", "shorts", "collar", "sleeveStrip"]) {
+    for (const key of ["body", "sleeve", "shorts"]) {
       expect(container.querySelector(`[data-garment-zone="${key}"]`).getAttribute("fill")).toBe(colors[key]);
     }
+    expect(container.querySelector('[data-garment-zone="collar"]').getAttribute("fill")).toMatch(/^url\(#approved-side-collar-/);
+    expect(container.querySelector('[data-garment-zone="sleeveStrip"]').getAttribute("data-edge-color")).toBe(colors.sleeveStrip);
     rerender(<ApprovedUniformGraphic sport="soccer" view="side" colors={{ ...colors, body: "#ff0000" }} />);
     expect(container.querySelector('[data-garment-zone="body"]').getAttribute("fill")).toBe("#ff0000");
     expect(container.querySelector('[data-garment-zone="sleeve"]').getAttribute("fill")).toBe(colors.sleeve);
@@ -144,7 +178,10 @@ describe("ApprovedUniformGraphic trim isolation", () => {
 
     const cuffs = container.querySelectorAll('[data-garment-zone="sleeveStrip"]');
     expect(cuffs).toHaveLength(2);
-    for (const cuff of cuffs) expect(cuff.getAttribute("fill")).toBe(sleeveEnd);
+    for (const cuff of cuffs) {
+      expect(cuff.getAttribute("fill")).toMatch(/^url\(#approved-sleeve-edge-/);
+      expect(cuff.getAttribute("data-edge-color")).toBe(sleeveEnd);
+    }
     expect(cuffs[0].parentElement.getAttribute("data-garment-tint")).toBe("flat-color");
     expect(cuffs[0].parentElement.style.mixBlendMode).toBe("normal");
   });
@@ -262,7 +299,8 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     expect(rightSock.getAttribute("fill-opacity")).toBe("0");
     expect(leftSock.getAttribute("mask")).toContain("approved-socks-");
     expect(leftCuff.getAttribute("fill-opacity")).toBe("0");
-    expect(shirtHem.getAttribute("fill")).toBe("#E4553D");
+    expect(shirtHem.getAttribute("fill")).toMatch(/^url\(#approved-shirt-edge-/);
+    expect(shirtHem.getAttribute("data-edge-color")).toBe("#E4553D");
 
     const socksMask = container.querySelector('mask[id^="approved-socks-"]');
     const socksClip = container.querySelector('clipPath[id^="approved-socks-clip-"]');
@@ -372,7 +410,8 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     expect(shortsEdge.getAttribute("transform")).toBe("translate(0 0)");
     expect(shortsEdge.querySelectorAll("path")).toHaveLength(2);
     expect(shortsEdge.querySelector("path").getAttribute("d")).toContain("M155,792 C200,812");
-    expect(shortsEdge.querySelector("path").getAttribute("fill")).toBe("#1B1A16");
+    expect(shortsEdge.querySelector("path").getAttribute("fill")).toMatch(/^url\(#approved-shorts-edge-/);
+    expect(shortsEdge.getAttribute("data-edge-color")).toBe("#1B1A16");
     expect(shortsEdge.parentElement.style.mixBlendMode).toBe("normal");
   });
 });
