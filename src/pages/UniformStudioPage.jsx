@@ -391,8 +391,18 @@ export default function UniformStudioPage() {
   const aiConceptViewportRef = useRef(null);
   const [aiConceptViewportWidth, setAiConceptViewportWidth] = useState(null);
   const [aiBannerActionsTarget, setAiBannerActionsTarget] = useState(null);
+  const [uniformSetupOpen, setUniformSetupOpen] = useState(false);
   // Shown when leaving the studio with unsaved work — see confirmExit below.
   const [exitPrompt, setExitPrompt] = useState(false);
+
+  useEffect(() => {
+    if (!uniformSetupOpen) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setUniformSetupOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [uniformSetupOpen]);
   const placeLayer3d = (layerId, placement) =>
     setPlacements3d((prev) => ({ ...prev, [layerId]: placement }));
 
@@ -2012,6 +2022,28 @@ export default function UniformStudioPage() {
               <span className="sm:hidden">AI</span>
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => setUniformSetupOpen(true)}
+            className={`${headerTileClass} cursor-pointer border-primary-400/45 bg-primary-950/55 text-primary-100 hover:border-primary-300 hover:bg-primary-900`}
+            aria-label="Open uniform and order setup"
+          >
+            <i className="ri-shirt-line" />
+            <span className="hidden lg:inline">Uniform &amp; order</span>
+            <span className="lg:hidden">Setup</span>
+          </button>
+          {aiUniformPlan && (
+            <button
+              type="button"
+              onClick={openAIDesigner}
+              className={`${headerTileClass} cursor-pointer border-primary-400/45 bg-primary-700 text-white hover:border-primary-300 hover:bg-primary-600`}
+              aria-label="Refine uniform with AI"
+            >
+              <i className="ri-magic-line" />
+              <span className="hidden lg:inline">Refine with AI</span>
+              <span className="lg:hidden">Refine</span>
+            </button>
+          )}
           {renderCanvasControls()}
           {headerCapabilities.saveProgress && <button
             type="button"
@@ -2152,6 +2184,42 @@ export default function UniformStudioPage() {
         </div>
       </nav>}
 
+      {uniformSetupOpen && (
+        <div
+          className="fixed inset-0 z-[70] flex justify-end bg-foreground-950/60 backdrop-blur-[2px]"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setUniformSetupOpen(false);
+          }}
+        >
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="uniform-order-setup-title"
+            className="flex h-full w-full max-w-[500px] flex-col border-l border-background-300 bg-[#f8f7f2] text-foreground-950 shadow-[-24px_0_70px_rgba(0,0,0,.38)]"
+          >
+            <header className="flex flex-shrink-0 items-center justify-between gap-4 border-b border-background-200 bg-white px-5 py-4">
+              <span className="flex min-w-0 items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-700 text-white"><i className="ri-shirt-line" /></span>
+                <span className="min-w-0">
+                  <h2 id="uniform-order-setup-title" className="font-heading text-lg font-semibold">Uniform &amp; order setup</h2>
+                  <p className="text-[10px] text-foreground-500">Fit, kit, collar, sleeves, colours and production extras</p>
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setUniformSetupOpen(false)}
+                className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-background-300 bg-background-50 text-foreground-600 hover:bg-background-100 hover:text-foreground-950"
+                aria-label="Close uniform and order setup"
+              >
+                <i className="ri-close-line text-lg" />
+              </button>
+            </header>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 pb-24">{uniformSetupPanel}</div>
+          </aside>
+        </div>
+      )}
+
       {exitPrompt && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-foreground-950/70 backdrop-blur-sm px-4">
           <div
@@ -2256,7 +2324,7 @@ export default function UniformStudioPage() {
                       <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden">
                         <div
                           ref={aiConceptViewportRef}
-                          className="relative inline-flex max-h-full max-w-full cursor-grab overflow-hidden rounded-2xl border border-white/10 bg-white shadow-[0_26px_70px_rgba(0,0,0,.34)] outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-primary-400"
+                          className="relative inline-flex max-h-full max-w-full cursor-grab overflow-hidden rounded-2xl border border-white/10 bg-[#f5f0e7] shadow-[0_26px_70px_rgba(0,0,0,.34)] outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-primary-400"
                           role="group"
                           tabIndex={0}
                           aria-label="Interactive AI uniform concept. Drag to pan, use the mouse wheel or toolbar to zoom, and use arrow keys to move the design."
@@ -2309,11 +2377,11 @@ export default function UniformStudioPage() {
                         >
                           {aiComparisonPlan?.conceptImage?.src ? (
                             <div className="grid max-h-full max-w-full grid-cols-2 gap-px bg-foreground-900 p-px">
-                              <figure className="relative min-w-0 bg-white">
+                              <figure className="relative min-w-0 bg-[#f5f0e7]">
                                 <img src={aiComparisonPlan.conceptImage.src} alt="Previous AI-generated uniform version" draggable="false" className="block max-h-full w-full select-none object-contain" />
                                 <figcaption className="absolute left-3 top-3 rounded-full bg-foreground-950/75 px-3 py-1 text-[9px] font-bold text-white">Previous</figcaption>
                               </figure>
-                              <figure className="relative min-w-0 bg-white">
+                              <figure className="relative min-w-0 bg-[#f5f0e7]">
                                 <img src={aiWorkspaceConcept.src} alt="Current AI-generated uniform version" draggable="false" className="block max-h-full w-full select-none object-contain" />
                                 <figcaption className="absolute left-3 top-3 rounded-full bg-primary-800/85 px-3 py-1 text-[9px] font-bold text-white">Current</figcaption>
                               </figure>
@@ -2528,9 +2596,7 @@ export default function UniformStudioPage() {
                     onRestoreAIVersion={restoreAIVersion}
                     onCompareVersions={setAiComparisonPlan}
                     comparisonActive={Boolean(aiComparisonPlan)}
-                    onSavePreview={saveProgress}
                     toolbarTarget={aiBannerActionsTarget}
-                    setupPanel={uniformSetupPanel}
                     hasExistingArtwork={layers.some(
                       (layer) => ["text", "logo", "clipart"].includes(layer.type) && !layer.source?.startsWith("ai-uniform"),
                     )}
@@ -2672,8 +2738,6 @@ export default function UniformStudioPage() {
             onRestoreAIVersion={restoreAIVersion}
             onCompareVersions={setAiComparisonPlan}
             comparisonActive={Boolean(aiComparisonPlan)}
-            onSavePreview={saveProgress}
-            setupPanel={uniformSetupPanel}
             hasExistingArtwork={layers.some(
               (layer) => ["text", "logo", "clipart"].includes(layer.type) && !layer.source?.startsWith("ai-uniform"),
             )}

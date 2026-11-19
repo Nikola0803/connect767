@@ -10,6 +10,15 @@ function openStudio(step = "design") {
   return within(screen.getByRole("navigation", { name: "Uniform order progress" }));
 }
 
+function openUniformSetup() {
+  fireEvent.click(screen.getByRole("button", { name: "Open uniform and order setup" }));
+  return within(screen.getByRole("dialog", { name: "Uniform & order setup" }));
+}
+
+function closeUniformSetup() {
+  fireEvent.click(screen.getByRole("button", { name: "Close uniform and order setup" }));
+}
+
 describe("required uniform fit selection", () => {
   beforeEach(() => window.localStorage.clear());
 
@@ -31,27 +40,34 @@ describe("required uniform fit selection", () => {
     expect(screen.queryByRole("button", { name: "Uniform setup" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Text" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Logo" })).not.toBeInTheDocument();
-    expect(screen.getAllByText("Uniform & order setup").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Uniform & order setup")).not.toBeInTheDocument();
+    fireEvent.click(header.getByRole("button", { name: "Open uniform and order setup" }));
+    expect(screen.getByRole("dialog", { name: "Uniform & order setup" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Close uniform and order setup" }));
+    expect(screen.queryByRole("dialog", { name: "Uniform & order setup" })).not.toBeInTheDocument();
   });
 
   it.each(["Men", "Women", "Youth"])("unlocks Step 2 Team roster after selecting %s in Design", (fit) => {
     const progress = openStudio("ai");
     fireEvent.click(progress.getByRole("button", { name: /Design/ }));
     expect(progress.getByRole("button", { name: /Design/ })).toHaveAttribute("aria-current", "step");
-    expect(screen.getAllByRole("alert")[0]).toHaveTextContent("Select a fit to continue to Team roster");
-    fireEvent.click(screen.getAllByRole("button", { name: fit, exact: true })[0]);
+    const setup = openUniformSetup();
+    expect(setup.getByRole("alert")).toHaveTextContent("Select a fit to continue to Team roster");
+    fireEvent.click(setup.getByRole("button", { name: fit, exact: true }));
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(progress.getByRole("button", { name: /Team roster/ })).toBeEnabled();
     const saved = JSON.parse(window.localStorage.getItem("c767:studio:soccer:blank-canvas"));
     expect(saved.fitType).toBe(fit);
     expect(saved.fitTypeConfirmed).toBe(true);
+    closeUniformSetup();
     fireEvent.click(screen.getByRole("button", { name: /Continue to Team roster/ }));
     expect(progress.getByRole("button", { name: /Team roster/ })).toHaveAttribute("aria-current", "step");
   });
 
   it("uses one jersey number, fit-linked garment sizes and an order-level socks quantity", () => {
     const progress = openStudio("design");
-    fireEvent.click(screen.getAllByRole("button", { name: "Men", exact: true })[0]);
+    fireEvent.click(openUniformSetup().getByRole("button", { name: "Men", exact: true }));
+    closeUniformSetup();
     fireEvent.click(progress.getByRole("button", { name: /Team roster/ }));
 
     expect(screen.getAllByText("Fit type: Men").length).toBeGreaterThan(0);
@@ -71,7 +87,8 @@ describe("required uniform fit selection", () => {
 
   it("validates the player name and adds a completed roster row", () => {
     const progress = openStudio("design");
-    fireEvent.click(screen.getAllByRole("button", { name: "Men", exact: true })[0]);
+    fireEvent.click(openUniformSetup().getByRole("button", { name: "Men", exact: true }));
+    closeUniformSetup();
     fireEvent.click(progress.getByRole("button", { name: /Team roster/ }));
 
     const addButtons = screen.getAllByRole("button", { name: "Add player" });
@@ -89,12 +106,14 @@ describe("required uniform fit selection", () => {
 
   it("moves supporter jersey quantities to Team roster and uses the Step 1 Shirt Only price", () => {
     const progress = openStudio("design");
-    const shirtOnlyButtons = screen.getAllByRole("button", { name: /^Shirt Only/ });
-    expect(shirtOnlyButtons[0]).toHaveTextContent("$12.00");
-    expect(shirtOnlyButtons[0]).toHaveTextContent("supporter jerseys use this price");
+    const setup = openUniformSetup();
+    const shirtOnlyButton = setup.getByRole("button", { name: /^Shirt Only/ });
+    expect(shirtOnlyButton).toHaveTextContent("$12.00");
+    expect(shirtOnlyButton).toHaveTextContent("supporter jerseys use this price");
     expect(screen.queryByText("Add Fan/Supporter Jerseys")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Men", exact: true })[0]);
+    fireEvent.click(setup.getByRole("button", { name: "Men", exact: true }));
+    closeUniformSetup();
     fireEvent.click(progress.getByRole("button", { name: /Team roster/ }));
 
     const socksHeading = screen.getAllByText("Socks")[0];
@@ -114,8 +133,10 @@ describe("required uniform fit selection", () => {
 
   it("offers Short or Long for each player when Mixed team order is selected", () => {
     const progress = openStudio("design");
-    fireEvent.click(screen.getAllByRole("button", { name: "Men", exact: true })[0]);
-    fireEvent.click(screen.getAllByRole("checkbox", { name: "Mixed team order" })[0]);
+    const setup = openUniformSetup();
+    fireEvent.click(setup.getByRole("button", { name: "Men", exact: true }));
+    fireEvent.click(setup.getByRole("checkbox", { name: "Mixed team order" }));
+    closeUniformSetup();
     fireEvent.click(progress.getByRole("button", { name: /Team roster/ }));
 
     expect(screen.getAllByRole("textbox", { name: "Name" }).length).toBeGreaterThan(0);
