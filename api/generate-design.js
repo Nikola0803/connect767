@@ -127,9 +127,10 @@ export function buildPrompt(brief) {
       "Show three coordinated views side by side: the complete front view, strict 90-degree side view, and complete back view of the same uniform.",
       "Each view must include every applicable garment piece, including the jersey or dress, shorts or trousers, and socks when the sport uses socks.",
       "Keep all three uniforms fully visible, equally scaled, centred, and separated.",
-      "Use one perfectly uniform flat solid warm-white background (#F5F0E7) covering the entire image edge to edge. Do not add white side gutters, vertical bands, stripes, panels, gradients, vignettes, horizon lines, frames, or any change in background tone.",
+      "Use one perfectly uniform flat solid terracotta studio background (#B74327) covering the entire image edge to edge. Do not add side gutters, vertical bands, stripes, panels, gradients, vignettes, horizon lines, frames, or any change in background tone.",
+      "Emboss one large, subtle, monochrome Connect767 C-and-AI emblem into the exact centre of the background, like a debossed metal studio wall. Keep it behind and partially obscured by the uniforms, with shallow raised edges and soft same-colour highlights and shadows. It is studio branding only: never print it on the garment and do not repeat it elsewhere.",
       "Use realistic performance fabric, stitching, seams, folds, highlights, and shadows while keeping the colors, trims, pattern, and design identity clearly readable.",
-      "Do not show a person, mannequin head, hands, shoes, props, watermark, colour swatches, UI, presentation board, cropped garment, or duplicate angle.",
+      "Do not show a person, mannequin head, hands, shoes, props, any watermark other than the required embossed Connect767 studio emblem, colour swatches, UI, presentation board, cropped garment, or duplicate angle.",
       "This is a customer-facing full-uniform design proof, not a manufacturing pattern or technical cut file.",
     ].filter(Boolean).join(" ");
   }
