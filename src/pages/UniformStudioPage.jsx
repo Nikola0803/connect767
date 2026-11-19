@@ -93,6 +93,22 @@ const emptyUniformShipping = {
   firstName: "", lastName: "", company: "", address1: "", address2: "",
   city: "", state: "", postcode: "", country: "DM", email: "", phone: "",
 };
+const CONNECT767_AI_TEMPLATE_LOGO = "https://admin.connect767.com/wp-content/uploads/2026/11/Glossy-Neon-C-AI-Logo.png";
+
+function EmbossedAIWorkspaceBackdrop() {
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-hidden bg-[#b74327]">
+      <img
+        src={CONNECT767_AI_TEMPLATE_LOGO}
+        alt=""
+        data-testid="ai-workspace-watermark"
+        loading="lazy"
+        decoding="async"
+        className="w-[58%] max-w-[760px] select-none opacity-[0.3] mix-blend-multiply grayscale contrast-150 [filter:grayscale(1)_sepia(.35)_drop-shadow(-3px_-3px_2px_rgba(255,165,116,.38))_drop-shadow(4px_4px_3px_rgba(74,19,8,.62))]"
+      />
+    </div>
+  );
+}
 let uniformStripePromise = null;
 const getUniformStripe = (key) => {
   if (!uniformStripePromise) uniformStripePromise = loadStripe(key);
@@ -1878,7 +1894,7 @@ export default function UniformStudioPage() {
                     <img
                       src={categoryTemplate.image}
                       alt={`${categoryTemplate.name} ${categorySport.label} uniform template`}
-                      className="h-full w-full object-contain drop-shadow-[0_18px_20px_rgba(25,40,32,0.16)] transition-transform duration-300 group-hover:scale-[1.035]"
+                      className="relative z-10 h-full w-full object-contain drop-shadow-[0_18px_20px_rgba(25,40,32,0.16)] transition-transform duration-300 group-hover:scale-[1.035]"
                     />
                   </div>
                   <div className="p-6">
@@ -1949,7 +1965,7 @@ export default function UniformStudioPage() {
                           alt={`${uniformTemplate.name} ${sport.label} uniform template`}
                           loading="lazy"
                           decoding="async"
-                          className="h-full w-full object-contain drop-shadow-[0_18px_20px_rgba(25,40,32,0.16)] transition-transform duration-300 group-hover:scale-[1.045]"
+                          className="relative z-10 h-full w-full object-contain drop-shadow-[0_18px_20px_rgba(25,40,32,0.16)] transition-transform duration-300 group-hover:scale-[1.045]"
                         />
                       </div>
                       <div className="flex min-h-40 flex-col p-5">
@@ -2421,8 +2437,9 @@ export default function UniformStudioPage() {
                           onPointerCancel={() => { aiConceptDragRef.current = null; }}
                           style={{ touchAction: "none", backgroundColor: aiConceptBackground }}
                         >
+                          <EmbossedAIWorkspaceBackdrop />
                           {aiComparisonPlan?.conceptImage?.src ? (
-                            <div className="grid max-h-full max-w-full grid-cols-2 gap-px bg-foreground-900 p-px">
+                            <div className="relative z-10 grid max-h-full max-w-full grid-cols-2 gap-px bg-foreground-900 p-px">
                               <figure className="relative min-w-0 bg-[#f5f0e7]" style={{ backgroundColor: aiComparisonBackgrounds.previous }}>
                                 <img src={aiComparisonPlan.conceptImage.src} alt="Previous AI-generated uniform version" draggable="false" className="block max-h-full w-full select-none object-contain" onLoad={(event) => setAiComparisonBackgrounds((current) => ({ ...current, previous: sampleImageEdgeColor(event.currentTarget) }))} />
                                 <figcaption className="absolute left-3 top-3 rounded-full bg-foreground-950/75 px-3 py-1 text-[9px] font-bold text-white">Previous</figcaption>
@@ -2437,7 +2454,7 @@ export default function UniformStudioPage() {
                               src={aiWorkspaceConcept.src}
                               alt={`${aiUniformPlan?.name || aiWorkspaceConcept?.name || "AI generated"} complete front, side and back uniform concept`}
                               draggable="false"
-                              className="block max-h-full max-w-full select-none object-contain will-change-transform"
+                              className="relative z-10 block max-h-full max-w-full select-none object-contain will-change-transform"
                               onLoad={(event) => setAiConceptBackground(sampleImageEdgeColor(event.currentTarget))}
                               style={{
                                 transform: `translate3d(${aiConceptPan.x}px, ${aiConceptPan.y}px, 0) scale(${zoom})`,
@@ -2452,14 +2469,15 @@ export default function UniformStudioPage() {
                       </div>
                     ) : stageMode === "edit" && !aiWorkspaceConcept?.src ? (
                       <div className="flex min-h-0 w-full flex-1 items-stretch justify-center p-1">
-                        <div className="flex h-full w-full max-w-none flex-col justify-center rounded-[28px] border border-dashed border-primary-400/35 bg-[radial-gradient(circle_at_50%_0%,rgba(0,116,73,.2),transparent_56%),rgba(255,255,255,.025)] px-6 py-8 text-center shadow-[0_24px_70px_rgba(0,0,0,.2)] sm:px-10 lg:px-14">
-                          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-500 text-3xl text-white shadow-[0_16px_34px_rgba(239,84,53,.24)]">
+                        <div className="relative flex h-full w-full max-w-none flex-col justify-center overflow-hidden rounded-[28px] border border-dashed border-primary-400/35 px-6 py-8 text-center shadow-[0_24px_70px_rgba(0,0,0,.2)] sm:px-10 lg:px-14">
+                          <EmbossedAIWorkspaceBackdrop />
+                          <span className="relative z-10 mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-500 text-3xl text-white shadow-[0_16px_34px_rgba(239,84,53,.24)]">
                             <i className="ri-sparkling-2-fill" />
                           </span>
-                          <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.2em] text-primary-300">AI-first uniform studio</p>
-                          <h2 className="mx-auto mt-2 max-w-3xl font-heading text-3xl font-semibold leading-tight text-white sm:text-4xl xl:text-5xl">Your generated uniform will appear here</h2>
-                          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-background-50/55">Add a team name and design brief in the AI Designer panel. You can also upload a reference image, lock any details you want to keep, and generate a complete Front / Side / Back concept.</p>
-                          <div className="mx-auto mt-7 grid w-full max-w-3xl gap-3 text-left sm:grid-cols-3">
+                          <p className="relative z-10 mt-6 text-[10px] font-bold uppercase tracking-[0.2em] text-white/80">AI-first uniform studio</p>
+                          <h2 className="relative z-10 mx-auto mt-2 max-w-3xl font-heading text-3xl font-semibold leading-tight text-white sm:text-4xl xl:text-5xl">Your generated uniform will appear here</h2>
+                          <p className="relative z-10 mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-white/70">Add a team name and design brief in the AI Designer panel. You can also upload a reference image, lock any details you want to keep, and generate a complete Front / Side / Back concept.</p>
+                          <div className="relative z-10 mx-auto mt-7 grid w-full max-w-3xl gap-3 text-left sm:grid-cols-3">
                             {[
                               ["ri-image-add-line", "Reference", "Optional inspiration image"],
                               ["ri-quill-pen-line", "Describe", "Colors, style and identity"],
@@ -3631,7 +3649,7 @@ function ReviewOrderTool({
           {totals?.designerFee > 0 && (
             <div className="flex justify-between gap-3 text-background-50/90">
               <span>
-                <span className="block font-semibold">{totals.designerFeeLabel || "Connect767 AI Designer Fee"}</span>
+                <span className="block font-semibold">{totals.designerFeeLabel || "Connect767 Design Fee"}</span>
                 <span className="block text-[10px] font-normal text-background-50/55">Applies when subtotal + shipping is under $1,500.</span>
               </span>
               <span>${totals.designerFee.toFixed(2)}</span>
@@ -3639,6 +3657,10 @@ function ReviewOrderTool({
           )}
           {totals && <div className="mt-2 flex justify-between border-t border-white/15 pt-2 text-sm font-bold"><span>Total</span><span>${totals.total.toFixed(2)}</span></div>}
         </div>
+        <p className="mt-3 flex items-center gap-2 border-t border-white/15 pt-3 text-[11px] font-semibold text-background-50/80">
+          <i className="ri-information-line text-sm" aria-hidden="true" />
+          Custom design uniforms are non-refundable.
+        </p>
       </div>
 
       <div className="border-t border-background-200 pt-5">

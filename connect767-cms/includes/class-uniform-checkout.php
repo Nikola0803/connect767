@@ -17,9 +17,9 @@ class C767_Uniform_Checkout
     const NAMESPACE_ = 'connect767/v1';
     const BASE_KIT_PRICE = 35.00;
     const EXTRA_TEAM_SHIRT_PRICE = 12.00;
-    const AI_DESIGNER_FEE = 100.00;
+    const AI_DESIGNER_FEE = 50.00;
     const AI_DESIGNER_FEE_THRESHOLD = 1500.00;
-    const AI_DESIGNER_FEE_LABEL = 'Connect767 AI Designer Fee';
+    const AI_DESIGNER_FEE_LABEL = 'Connect767 Design Fee';
     const NORTH_AMERICA_COUNTRIES = ['US', 'CA', 'MX'];
     const CARIBBEAN_COUNTRIES = ['AI', 'AG', 'AW', 'BS', 'BB', 'BQ', 'VG', 'KY', 'CU', 'CW', 'DM', 'DO', 'GD', 'GP', 'HT', 'JM', 'MQ', 'MS', 'PR', 'BL', 'KN', 'LC', 'MF', 'VC', 'SX', 'TT', 'TC', 'VI'];
 

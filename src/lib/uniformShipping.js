@@ -27,7 +27,7 @@ export const UNIFORM_SHIPPING_COUNTRIES = [
 const NORTH_AMERICA = new Set(UNIFORM_SHIPPING_COUNTRIES[0].countries.map(([code]) => code));
 const CARIBBEAN = new Set(UNIFORM_SHIPPING_COUNTRIES[1].countries.map(([code]) => code));
 
-export const AI_DESIGNER_FEE = 100;
+export const AI_DESIGNER_FEE = 50;
 export const AI_DESIGNER_FEE_THRESHOLD = 1500;
 
 export function uniformAiDesignerFee(subtotal, shipping) {

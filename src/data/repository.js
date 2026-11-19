@@ -1388,14 +1388,14 @@ function normalizeUniformCheckoutTotals(totals, requireServerFee = false) {
   const serverHasFee = Object.prototype.hasOwnProperty.call(totals || {}, "designerFee");
   const serverFee = serverHasFee ? Number(totals.designerFee) || 0 : 0;
   if (requireServerFee && expectedFee === AI_DESIGNER_FEE && serverFee !== AI_DESIGNER_FEE) {
-    throw new Error("Checkout is updating the Connect767 AI Designer Fee. Please try again shortly.");
+    throw new Error("Checkout is updating the Connect767 Design Fee. Please try again shortly.");
   }
   if (serverHasFee) return totals;
 
   return {
     ...totals,
     designerFee: expectedFee,
-    designerFeeLabel: "Connect767 AI Designer Fee",
+    designerFeeLabel: "Connect767 Design Fee",
     total: (Number(totals.total) || subtotal + shipping) + expectedFee,
   };
 }
@@ -1419,7 +1419,7 @@ export async function quoteUniformCheckout(order, email, shipping) {
       shippingLabel: rate.label,
       shippingZone: rate.zone,
       designerFee,
-      designerFeeLabel: "Connect767 AI Designer Fee",
+      designerFeeLabel: "Connect767 Design Fee",
       total: subtotal + rate.amount + designerFee,
       currency: "USD",
       demo: true,

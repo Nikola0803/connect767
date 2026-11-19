@@ -120,14 +120,14 @@ describe("shop checkout payloads", () => {
     expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ order, email: "coach@example.com", shipping });
   });
 
-  it("adds the AI Designer fee to legacy quote responses below the threshold", async () => {
+  it("adds the Connect767 Design Fee to legacy quote responses below the threshold", async () => {
     fetch.mockResolvedValueOnce({
       ok: true,
       text: async () => JSON.stringify({ subtotal: 929, shipping: 300, tax: 0, total: 1229, currency: "USD" }),
     });
 
     const totals = await quoteUniformCheckout({ roster: [{ name: "Team", quantity: 22 }] }, "coach@example.com", shipping);
-    expect(totals).toMatchObject({ designerFee: 100, total: 1329 });
+    expect(totals).toMatchObject({ designerFee: 50, total: 1279 });
   });
 
   it("blocks payment when the checkout server has not enforced the required fee", async () => {
@@ -137,7 +137,7 @@ describe("shop checkout payloads", () => {
     });
 
     await expect(createUniformPaymentIntent({ roster: [{ name: "Team", quantity: 22 }] }, "coach@example.com", shipping))
-      .rejects.toThrow("Checkout is updating the Connect767 AI Designer Fee");
+      .rejects.toThrow("Checkout is updating the Connect767 Design Fee");
   });
 
   it("uses the same server-authoritative uniform payload for Stripe and PayPal", async () => {

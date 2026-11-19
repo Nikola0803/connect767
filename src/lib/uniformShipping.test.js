@@ -16,9 +16,9 @@ describe("Custom Uniform Studio shipping zones", () => {
     expect(uniformShippingRate("GB", 22)).toBeNull();
   });
 
-  it("adds the fixed AI Designer fee only below $1,500 after shipping", () => {
-    expect(uniformAiDesignerFee(1177, 300)).toBe(100);
-    expect(uniformAiDesignerFee(899, 600)).toBe(100);
+  it("adds the fixed Connect767 Design Fee only below $1,500 after shipping", () => {
+    expect(uniformAiDesignerFee(1177, 300)).toBe(50);
+    expect(uniformAiDesignerFee(899, 600)).toBe(50);
     expect(uniformAiDesignerFee(1200, 300)).toBe(0);
     expect(uniformAiDesignerFee(1177, 600)).toBe(0);
   });

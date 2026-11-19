@@ -19,6 +19,19 @@ function closeUniformSetup() {}
 describe("required uniform fit selection", () => {
   beforeEach(() => window.localStorage.clear());
 
+  it("keeps the category entrance clean without workspace branding", () => {
+    render(<MemoryRouter initialEntries={["/uniforms"]}><UniformStudioPage /></MemoryRouter>);
+    expect(screen.queryByTestId("ai-workspace-watermark")).not.toBeInTheDocument();
+  });
+
+  it("places the embossed Connect767 AI logo inside the design workspace", () => {
+    openStudio("ai");
+    expect(screen.getByTestId("ai-workspace-watermark")).toHaveAttribute(
+      "src",
+      "https://admin.connect767.com/wp-content/uploads/2026/11/Glossy-Neon-C-AI-Logo.png",
+    );
+  });
+
   it("starts in the combined Design step and requires fit before Team roster", () => {
     const progress = openStudio("ai");
     const setup = openUniformSetup();
@@ -236,6 +249,7 @@ describe("required uniform fit selection", () => {
     fireEvent.click(progress.getByRole("button", { name: /Review & quote/ }));
 
     expect(screen.getAllByRole("heading", { name: "Shipping Address" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Custom design uniforms are non-refundable.").length).toBeGreaterThan(0);
     expect(screen.queryByRole("heading", { name: "Delivery address" })).not.toBeInTheDocument();
     expect(screen.getAllByRole("textbox", { name: "Shipping phone number" }).length).toBeGreaterThan(0);
     expect(screen.queryByRole("heading", { name: "Order contact" })).not.toBeInTheDocument();
