@@ -41,6 +41,40 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     }
   });
 
+  it.each(["Crew", "V-Neck", "Polo"])("uses one solid selected color for the %s collar in every view", (collar) => {
+    const collarColor = "#f15a37";
+    for (const view of ["front", "side", "back"]) {
+      const { container, unmount } = render(
+        <ApprovedUniformGraphic sport="soccer" view={view} collar={collar} colors={{ collar: collarColor }} />,
+      );
+      const part = view === "side"
+        ? "side-band"
+        : collar === "Polo"
+          ? (view === "front" ? "polo-left-wing" : "polo-back-band")
+          : collar === "Crew"
+            ? (view === "front" ? "crew-band" : "crew-back-band")
+            : (view === "front" ? "v-neck-band" : "v-neck-back-band");
+      const band = container.querySelector(`[data-collar-part="${part}"]`);
+      expect(band).toBeInTheDocument();
+      expect(band.getAttribute("fill")).toBe(collarColor);
+      unmount();
+    }
+  });
+
+  it.each(["Crew", "V-Neck"])("uses distinct front and rear geometry for the %s collar", (collar) => {
+    const { container, rerender } = render(
+      <ApprovedUniformGraphic sport="soccer" view="front" collar={collar} />,
+    );
+    const frontPart = collar === "Crew" ? "crew-band" : "v-neck-band";
+    const backPart = collar === "Crew" ? "crew-back-band" : "v-neck-back-band";
+    expect(container.querySelector(`[data-collar-part="${frontPart}"]`)).toBeInTheDocument();
+    expect(container.querySelector(`[data-collar-part="${backPart}"]`)).not.toBeInTheDocument();
+
+    rerender(<ApprovedUniformGraphic sport="soccer" view="back" collar={collar} />);
+    expect(container.querySelector(`[data-collar-part="${frontPart}"]`)).not.toBeInTheDocument();
+    expect(container.querySelector(`[data-collar-part="${backPart}"]`)).toBeInTheDocument();
+  });
+
   it("keeps Polo wings and placket on the front while rendering only a rear band on the back", () => {
     const collarColor = "#20d860";
     const { container, rerender } = render(
@@ -150,9 +184,10 @@ describe("ApprovedUniformGraphic trim isolation", () => {
 
     rerender(<ApprovedUniformGraphic sport="basketball" view="back" collar="V-Neck" />);
     const backPatch = container.querySelector('[data-collar-patch="source-cleanup"]');
-    const backOpening = container.querySelector('[data-collar-part="v-neck-opening"]');
+    const backOpening = container.querySelector('[data-collar-part="v-neck-back-opening"]');
     expect(backPatch.getAttribute("cx")).toBe("836.5");
-    expect(backOpening.getAttribute("d")).toBe("M787.5,173 Q823.5,214 836.5,222 Q849.5,214 885.5,173");
+    expect(backOpening.getAttribute("d")).toContain("836.5");
+    expect(container.querySelector('[data-collar-part="v-neck-opening"]')).not.toBeInTheDocument();
   });
 
   it("aligns side color boundaries with each image's native dimensions", () => {
@@ -226,7 +261,7 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     for (const key of ["body", "sleeve", "shorts"]) {
       expect(container.querySelector(`[data-garment-zone="${key}"]`).getAttribute("fill")).toBe(colors[key]);
     }
-    expect(container.querySelector('[data-garment-zone="collar"]').getAttribute("fill")).toMatch(/^url\(#approved-side-collar-/);
+    expect(container.querySelector('[data-garment-zone="collar"]').getAttribute("fill")).toBe(colors.collar);
     expect(container.querySelector('[data-garment-zone="sleeveStrip"]').getAttribute("data-edge-color")).toBe(colors.sleeveStrip);
     rerender(<ApprovedUniformGraphic sport="soccer" view="side" colors={{ ...colors, body: "#ff0000" }} />);
     expect(container.querySelector('[data-garment-zone="body"]').getAttribute("fill")).toBe("#ff0000");
