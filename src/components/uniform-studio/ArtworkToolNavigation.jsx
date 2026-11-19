@@ -11,7 +11,7 @@ function ArtworkToolIcon({ tool }) {
 }
 
 /**
- * Presents every tool in the combined Step 1 Design workspace. The
+ * Presents every tool in the combined Step 2 Design workspace. The
  * caller passes its capability-filtered tools so unavailable editing actions
  * never appear for preview-only or unsupported garment surfaces.
  */
@@ -21,7 +21,7 @@ export default function ArtworkToolNavigation({ tools, activeTool, onSelect }) {
   return (
     <div className="flex-shrink-0 border-b border-black/[0.07] bg-[#f7f5ef]/95 px-3 pb-2.5 pt-2 backdrop-blur-xl">
       <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary-700">
-        Step 1 · Design
+        Step 2 · Design
       </p>
       <nav className="mt-2 grid grid-cols-4 gap-1" aria-label="Design tools">
         {tools.map((tool) => {
