@@ -85,9 +85,9 @@ describe("uniform design controls", () => {
     render(<UniformSetupPanel designProps={{ sport: "soccer", collar: "Crew", setCollar: vi.fn(), sleeve: "Short", setSleeve: vi.fn(), colors: defaultZoneColors, setColors: vi.fn() }} optionsProps={{ fitType: "Men", setFitType: vi.fn(), kitType: "Full", setKitType: vi.fn(), logoApplication: "Sublimated", setLogoApplication: vi.fn(), insideCollarMessage: false, setInsideCollarMessage, insideCollarText: "", setInsideCollarText: vi.fn() }} />);
     expect(screen.getByRole("button", { name: /^Full Kit/ })).toBeVisible();
     expect(screen.getByLabelText("Shirt body color")).toBeInTheDocument();
-    const summary = screen.getByText("Production extras");
-    expect(summary.closest("details")).not.toHaveAttribute("open");
-    fireEvent.click(summary.closest("summary"));
+    const productionHeading = screen.getByRole("heading", { name: "Production extras" });
+    expect(productionHeading).toBeVisible();
+    expect(productionHeading.closest("details")).toBeNull();
     expect(screen.getByRole("checkbox", { name: /Embroidered team logo/ })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Yes" }));
     expect(setInsideCollarMessage).toHaveBeenCalledWith(true);

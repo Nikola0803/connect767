@@ -693,13 +693,21 @@ export function UniformSetupPanel({ designProps, optionsProps }) {
   return <div className="space-y-2">
     <OptionsPanel {...optionsProps} section="fit" />
     <DesignPanel {...designProps} />
-    <details className="group rounded-xl border border-primary-300 bg-primary-50 shadow-sm">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-sm font-bold text-primary-900 [&::-webkit-details-marker]:hidden">
-        <span className="flex min-w-0 items-center gap-2.5"><i className="ri-settings-4-line text-lg text-primary-700" aria-hidden="true" /><span>Production extras<span className="mt-0.5 block text-[11px] font-normal text-primary-800">{optionsProps.logoApplication === "Embroidery" ? "Embroidery" : "Sublimated logo included"}{optionsProps.insideCollarMessage ? " · Collar customization" : ""}</span></span></span>
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-800"><i className="ri-arrow-down-s-line transition-transform group-open:rotate-180" aria-hidden="true" /></span>
-      </summary>
-      <div className="rounded-b-xl border-t border-primary-200 bg-background-50 p-3"><OptionsPanel {...optionsProps} section="production" /></div>
-    </details>
+    <section aria-labelledby="production-extras-title" className="overflow-hidden rounded-xl border-2 border-primary-500 bg-background-50 shadow-[0_10px_24px_rgba(0,116,73,.12)]">
+      <header className="flex items-center justify-between gap-3 bg-primary-700 px-3.5 py-3 text-white">
+        <span className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15"><i className="ri-settings-4-line text-lg" aria-hidden="true" /></span>
+          <span>
+            <h3 id="production-extras-title" className="text-sm font-extrabold">Production extras</h3>
+            <span className="mt-0.5 block text-[10px] font-medium text-white/75">Logo finish and inside-collar customization</span>
+          </span>
+        </span>
+        <span className="shrink-0 rounded-full border border-white/20 bg-white/10 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-white/90">
+          {optionsProps.logoApplication === "Embroidery" ? "Embroidery" : "Sublimation"}{optionsProps.insideCollarMessage ? " + collar" : ""}
+        </span>
+      </header>
+      <div className="border-t border-primary-600/20 p-3.5"><OptionsPanel {...optionsProps} section="production" /></div>
+    </section>
   </div>;
 }
 
