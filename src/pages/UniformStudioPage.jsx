@@ -2834,7 +2834,7 @@ function SupporterJerseySelector({
         />
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center justify-between gap-2">
-            <span id="supporter-jerseys-heading" className="text-sm font-semibold text-foreground-900">Add supporter jerseys</span>
+            <span id="supporter-jerseys-heading" className="text-sm font-semibold text-foreground-900">Add Fan/Supporter Jerseys</span>
             <span className="rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-bold text-primary-800">
               Shirt Only · ${SHIRT_ONLY_PRICE.toFixed(2)} each
             </span>
@@ -3237,13 +3237,6 @@ function RosterTool({
         </div>
       )}
 
-      <SupporterJerseySelector
-        fanJerseyAdded={fanJerseyAdded}
-        setFanJerseyAdded={setFanJerseyAdded}
-        supporterJerseys={supporterJerseys}
-        setSupporterJerseys={setSupporterJerseys}
-      />
-
       {hasSocks && (
         <div className="mb-4 flex items-center justify-between gap-4 rounded-xl border border-background-200/70 bg-background-100/50 px-4 py-3">
           <span className="text-sm font-semibold text-foreground-900">Socks</span>
@@ -3261,6 +3254,13 @@ function RosterTool({
           </label>
         </div>
       )}
+
+      <SupporterJerseySelector
+        fanJerseyAdded={fanJerseyAdded}
+        setFanJerseyAdded={setFanJerseyAdded}
+        supporterJerseys={supporterJerseys}
+        setSupporterJerseys={setSupporterJerseys}
+      />
 
     </div>
   );
