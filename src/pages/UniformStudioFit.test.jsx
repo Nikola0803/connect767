@@ -80,6 +80,26 @@ describe("required uniform fit selection", () => {
     expect(progress.getByRole("button", { name: /Team roster/ })).toHaveAttribute("aria-current", "step");
   });
 
+  it("requires an inside-collar message or attachment before Step 2", () => {
+    const progress = openStudio("design");
+    const setup = openUniformSetup();
+    fireEvent.click(setup.getByRole("button", { name: "Men", exact: true }));
+    fireEvent.click(setup.getByRole("button", { name: "Yes", exact: true }));
+
+    expect(setup.getByRole("alert")).toHaveTextContent("Enter an inside-collar message or attach a logo/artwork file.");
+    expect(progress.getByRole("button", { name: /Team roster/ })).toBeDisabled();
+    for (const button of screen.getAllByRole("button", { name: /Continue to Team roster/ })) {
+      expect(button).toBeDisabled();
+    }
+
+    fireEvent.change(setup.getByPlaceholderText("Message for the inside collar"), { target: { value: "ONE TEAM" } });
+    expect(setup.queryByRole("alert")).not.toBeInTheDocument();
+    expect(progress.getByRole("button", { name: /Team roster/ })).toBeEnabled();
+    expect(setup.getByRole("button", { name: /Continue to Team roster/ })).toBeEnabled();
+    fireEvent.click(setup.getByRole("button", { name: /Continue to Team roster/ }));
+    expect(progress.getByRole("button", { name: /Team roster/ })).toHaveAttribute("aria-current", "step");
+  });
+
   it("uses one jersey number, fit-linked garment sizes and an order-level socks quantity", () => {
     const progress = openStudio("design");
     fireEvent.click(openUniformSetup().getByRole("button", { name: "Men", exact: true }));
@@ -99,6 +119,30 @@ describe("required uniform fit selection", () => {
     }
     expect(screen.getAllByText("Socks").length).toBeGreaterThan(0);
     expect(screen.getAllByRole("spinbutton", { name: "Socks quantity" }).length).toBeGreaterThan(0);
+  });
+
+  it("requires one socks quantity per full kit before Review & quote", () => {
+    const progress = openStudio("design");
+    fireEvent.click(openUniformSetup().getByRole("button", { name: "Men", exact: true }));
+    fireEvent.click(progress.getByRole("button", { name: /Team roster/ }));
+
+    fireEvent.change(screen.getAllByRole("textbox", { name: "Name" })[0], { target: { value: "Minimum team" } });
+    fireEvent.change(screen.getAllByRole("spinbutton", { name: "Player quantity" })[0], { target: { value: "22" } });
+    fireEvent.click(screen.getAllByRole("button", { name: "Add player" })[0]);
+
+    const socksInput = screen.getAllByRole("spinbutton", { name: "Socks quantity" })[0];
+    expect(socksInput).toHaveValue(22);
+    expect(socksInput).toHaveAttribute("min", "22");
+    expect(socksInput).toHaveAttribute("max", "22");
+    expect(progress.getByRole("button", { name: /Review & quote/ })).toBeEnabled();
+
+    fireEvent.change(socksInput, { target: { value: "0" } });
+    expect(screen.getAllByRole("alert")[0]).toHaveTextContent("Socks quantity must be 22 to match the full-kit order.");
+    expect(progress.getByRole("button", { name: /Review & quote/ })).toBeDisabled();
+
+    fireEvent.change(socksInput, { target: { value: "22" } });
+    expect(screen.queryByText("Socks quantity must be 22 to match the full-kit order.")).not.toBeInTheDocument();
+    expect(progress.getByRole("button", { name: /Review & quote/ })).toBeEnabled();
   });
 
   it("validates the player name and adds a completed roster row", () => {
@@ -147,6 +191,22 @@ describe("required uniform fit selection", () => {
     fireEvent.click(progress.getByRole("button", { name: /Review & quote/ }));
     expect(screen.queryByText("Add Fan/Supporter Jerseys")).not.toBeInTheDocument();
     expect(screen.getAllByText(/1 supporter jersey × \$12\.00/).length).toBeGreaterThan(0);
+  });
+
+  it("does not add a hidden extra-shirt charge when Shirt Only pricing is viewed", () => {
+    const progress = openStudio("design");
+    const setup = openUniformSetup();
+    fireEvent.click(setup.getByRole("button", { name: /^Shirt Only/ }));
+    fireEvent.click(setup.getByRole("button", { name: "Men", exact: true }));
+    fireEvent.click(progress.getByRole("button", { name: /Team roster/ }));
+
+    fireEvent.change(screen.getAllByRole("textbox", { name: "Name" })[0], { target: { value: "Minimum order" } });
+    fireEvent.change(screen.getAllByRole("spinbutton", { name: "Player quantity" })[0], { target: { value: "22" } });
+    fireEvent.click(screen.getAllByRole("button", { name: "Add player" })[0]);
+    fireEvent.click(progress.getByRole("button", { name: /Review & quote/ }));
+
+    expect(screen.queryByText(/^\d+ extra shirts? × \$12\.00$/i)).not.toBeInTheDocument();
+    expect(screen.getAllByText(/22 full kits/).length).toBeGreaterThan(0);
   });
 
   it("offers Short or Long for each player when Mixed Sleeve Team Order is selected", () => {
