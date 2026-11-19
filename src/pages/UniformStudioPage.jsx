@@ -74,6 +74,7 @@ import { Input, Select, Textarea } from "../components/ui/FormField";
 import DemoModeNotice from "../components/DemoModeNotice";
 import PaypalButton from "../components/PaypalButton";
 import { isLiveApi } from "../lib/config";
+import { UNIFORM_SHIPPING_COUNTRIES, uniformShippingRate } from "../lib/uniformShipping";
 import {
   captureUniformPaypalOrder,
   confirmUniformPayment,
@@ -3313,6 +3314,8 @@ function ReviewOrderTool({
   const extraShirtTotal = extraShirtCount * SHIRT_ONLY_PRICE;
   const extraShirtsKey = JSON.stringify(orderPayload.extraTeamShirts || []);
   const grandTotal = kitsTotal + supporterTotal + extraShirtTotal;
+  const shippingUnitCount = unitCount + extraShirtCount + supporterCount;
+  const selectedShippingRate = uniformShippingRate(shipping.country, shippingUnitCount);
   const sportLabel = sports.find((sport) => sport.slug === activeSport)?.label || activeSport;
   const [config, setConfig] = useState(null);
   const [totals, setTotals] = useState(null);
@@ -3324,7 +3327,8 @@ function ReviewOrderTool({
   const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact.email.trim());
   const shippingComplete = Boolean(
     shipping.firstName.trim() && shipping.lastName.trim() && shipping.address1.trim() &&
-    shipping.city.trim() && shipping.postcode.trim() && shipping.country.trim() &&
+    shipping.city.trim() && shipping.country.trim() && selectedShippingRate &&
+    (selectedShippingRate.zone !== "north-america" || shipping.postcode.trim()) &&
     (shipping.country !== "US" || shipping.state.trim())
   );
   const canCheckout = minimumKitsMet && emailValid && shippingComplete && (!fanJerseyAdded || supporterCount > 0);
@@ -3542,7 +3546,7 @@ function ReviewOrderTool({
 
       <div className="mt-5 border-t border-background-200 pt-5">
         <h3 className="text-sm font-semibold text-foreground-900">Delivery address</h3>
-        <p className="mb-3 mt-1 text-[11px] font-label text-foreground-500">Tax and shipping are calculated from this address before payment.</p>
+        <p className="mb-3 mt-1 text-[11px] font-label text-foreground-500">Custom-uniform shipping is calculated from this address and {shippingUnitCount} total order unit{shippingUnitCount === 1 ? "" : "s"}.</p>
         <div className="grid grid-cols-2 gap-2">
           <Input placeholder="First name *" aria-label="Shipping first name" autoComplete="given-name" value={shipping.firstName} onChange={updateShipping("firstName")} />
           <Input placeholder="Last name *" aria-label="Shipping last name" autoComplete="family-name" value={shipping.lastName} onChange={updateShipping("lastName")} />
@@ -3551,12 +3555,21 @@ function ReviewOrderTool({
           <Input className="col-span-2" placeholder="Apartment, suite or unit" aria-label="Shipping address line two" autoComplete="address-line2" value={shipping.address2} onChange={updateShipping("address2")} />
           <Input placeholder="City *" aria-label="Shipping city" autoComplete="address-level2" value={shipping.city} onChange={updateShipping("city")} />
           <Input placeholder={shipping.country === "US" ? "State *" : "Region / parish"} aria-label="Shipping region" autoComplete="address-level1" value={shipping.state} onChange={updateShipping("state")} />
-          <Input placeholder="Postal code *" aria-label="Shipping postal code" autoComplete="postal-code" value={shipping.postcode} onChange={updateShipping("postcode")} />
+          <Input placeholder={selectedShippingRate?.zone === "north-america" ? "Postal code *" : "Postal code (optional)"} aria-label="Shipping postal code" autoComplete="postal-code" value={shipping.postcode} onChange={updateShipping("postcode")} />
           <Select aria-label="Shipping country" value={shipping.country} onChange={updateShipping("country")}>
-            <option value="DM">Dominica</option>
-            <option value="US">United States</option>
+            {UNIFORM_SHIPPING_COUNTRIES.map((zone) => (
+              <optgroup key={zone.label} label={zone.label}>
+                {zone.countries.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+              </optgroup>
+            ))}
           </Select>
         </div>
+        {selectedShippingRate && (
+          <div role="note" className="mt-3 rounded-xl border border-primary-200 bg-primary-50 px-3 py-2.5 text-[11px] leading-relaxed text-primary-900">
+            <span className="font-semibold">{selectedShippingRate.zoneLabel} zone:</span>{" "}
+            ${selectedShippingRate.amount.toFixed(2)} shipping for {shippingUnitCount < 50 ? "orders under 50 units" : "orders of 50 units or more"}.
+          </div>
+        )}
         <Button type="button" variant="secondary" className="mt-3 w-full" onClick={calculateTotal} disabled={!canCheckout || calculating} icon="ri-calculator-line">
           {calculating ? "Calculating…" : totals ? "Recalculate total" : "Calculate tax, shipping & total"}
         </Button>

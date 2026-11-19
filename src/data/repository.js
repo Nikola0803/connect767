@@ -15,6 +15,7 @@ import { hasPaidBookingRate } from "../lib/payoutSettings";
 import { normalizeBookingRateRules } from "../lib/bookingRates";
 import { allIndustries } from "./industries";
 import { createListingSearchText } from "../lib/listingSearch";
+import { uniformShippingRate } from "../lib/uniformShipping";
 
 // Industry slugs from the canonical taxonomy. The Add Listing wizard submits
 // an *industry* slug (e.g. "accounting-and-bookkeeping"); a plugin bug
@@ -1377,13 +1378,20 @@ export async function submitUniformQuote(payload) {
 export async function quoteUniformCheckout(order, email, shipping) {
   if (!isLiveApi) {
     const subtotal = Number(order?.grandTotal || 0);
-    const shippingCost = subtotal > 0 ? 12 : 0;
+    const rosterUnits = (order?.roster || []).reduce((total, entry) => total + Math.max(0, Number(entry?.quantity) || 0), 0);
+    const extraUnits = (order?.extraTeamShirts || []).reduce((total, entry) => total + Math.max(0, Number(entry?.quantity) || 0), 0);
+    const supporterUnits = order?.fanJerseyAdded
+      ? (order?.supporterJerseys || []).reduce((total, entry) => total + Math.max(0, Number(entry?.quantity) || 0), 0)
+      : 0;
+    const rate = uniformShippingRate(shipping?.country, rosterUnits + extraUnits + supporterUnits);
+    if (!rate) throw new Error("Custom Uniform Studio shipping is available only in North America and the Caribbean.");
     return {
       subtotal,
       tax: 0,
-      shipping: shippingCost,
-      shippingLabel: "Standard shipping (preview)",
-      total: subtotal + shippingCost,
+      shipping: rate.amount,
+      shippingLabel: rate.label,
+      shippingZone: rate.zone,
+      total: subtotal + rate.amount,
       currency: "USD",
       demo: true,
     };
