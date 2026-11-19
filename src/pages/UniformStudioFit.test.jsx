@@ -21,15 +21,17 @@ describe("required uniform fit selection", () => {
     for (const button of screen.getAllByRole("button", { name: /AI Designer/ })) expect(button).toBeEnabled();
   });
 
-  it("shows header controls only when the active mode has a working target", () => {
+  it("keeps Step 1 AI-only and hides the legacy manual design tools", () => {
     const progress = openStudio("ai");
     const header = within(screen.getByRole("button", { name: "Back" }).closest("header"));
     expect(header.getByRole("button", { name: /AI Designer/ })).toBeEnabled();
     expect(header.queryByRole("button", { name: "Zoom out" })).not.toBeInTheDocument();
     fireEvent.click(progress.getByRole("button", { name: /Design/ }));
-    expect(header.getByRole("button", { name: "Zoom out" })).toBeEnabled();
-    expect(header.getByRole("button", { name: "Zoom in" })).toBeEnabled();
-    expect(screen.getAllByRole("button", { name: "Zoom out" })).toHaveLength(1);
+    expect(header.queryByRole("button", { name: "Zoom out" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Uniform setup" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Text" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Logo" })).not.toBeInTheDocument();
+    expect(screen.getAllByText("Uniform & order setup").length).toBeGreaterThan(0);
   });
 
   it.each(["Men", "Women", "Youth"])("unlocks Step 2 Team roster after selecting %s in Design", (fit) => {
