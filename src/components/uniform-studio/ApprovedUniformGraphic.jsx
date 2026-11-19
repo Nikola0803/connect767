@@ -214,7 +214,14 @@ export default function ApprovedUniformGraphic({
     // same shoulder and armhole as the short sleeve, then continues to the
     // wrist. Starting at the photographed cuff merely adds a second forearm
     // below the existing short sleeve and leaves a visible horizontal join.
-    const shoulderTop = sleevePolygon?.[0]
+    // Start the replacement at the shirt body's real collar-side shoulder
+    // anchor. The source sleeve masks begin a few pixels above that point to
+    // make tinting forgiving; using those mask coordinates for the visible
+    // long-sleeve path creates a pale triangular cap above the front/back
+    // shoulder. Sharing the body's anchor makes both pieces meet at one seam.
+    const bodyShoulderTop = region.bodyPolygon?.[left ? 0 : 1];
+    const shoulderTop = bodyShoulderTop
+      || sleevePolygon?.[0]
       || [left ? region.bodyLeft - 110 : region.bodyRight + 110, region.shirtTop + 102];
     const armhole = sleevePolygon?.at(-1)
       || [left ? region.bodyLeft + 7 : region.bodyRight - 7, region.shirtTop + 122];
