@@ -225,32 +225,25 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
         Collar &amp; sleeves
       </h3>
       <div className="mb-1.5">
-        <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="Collar options">
-          {config.collarOptions.map((option) => (
-            <button
-              key={option}
-              type="button"
-              aria-pressed={collar === option}
-              onClick={() => setCollar(option)}
-              className={`min-h-9 rounded-lg border px-2 py-1 text-[11px] font-semibold leading-tight transition ${collar === option ? "border-primary-600 bg-primary-600 text-white" : "border-background-300 bg-background-50 text-foreground-800 hover:border-primary-300"}`}
-            >
-              {option}{option === "Polo" && <span className="block text-[9px] font-normal">+${ADD_ON_PRICES.collarPolo.toFixed(2)}/kit</span>}
-            </button>
-          ))}
+        <div role="group" aria-label="Collar options">
+          <button
+            type="button"
+            aria-pressed={collar === "Polo"}
+            onClick={() => setCollar(collar === "Polo" ? "Crew" : "Polo")}
+            className={`min-h-10 w-full rounded-lg border px-3 py-1.5 text-[11px] font-semibold leading-tight transition ${collar === "Polo" ? "border-primary-600 bg-primary-600 text-white" : "border-background-300 bg-background-50 text-foreground-800 hover:border-primary-300"}`}
+          >
+            Polo style collar <span className="ml-1 font-normal">(+${ADD_ON_PRICES.collarPolo.toFixed(2)}/kit)</span>
+          </button>
         </div>
-        <p className="mt-1 text-[11px] leading-snug text-foreground-500">Crew and V-Neck are included in the base price.</p>
+        <p className="mt-1 text-[11px] leading-snug text-foreground-500">Crew and V-Neck styles are designed with the AI tool and included in the base price.</p>
       </div>
       {config.sleeveOptions && (
         <div className="mb-1.5">
-          <p className="mb-1 text-xs text-foreground-500">Short sleeves included in the base price.</p>
-          <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-x-2" role="group" aria-label="Sleeve options">
-            <label className="flex min-h-8 cursor-pointer items-center gap-1.5 text-xs font-semibold leading-snug text-foreground-800">
-              <input type="checkbox" checked={sleeve === "Long"} onChange={(event) => setSleeve(event.target.checked ? "Long" : "Short")} className="accent-primary-600" />
-              <span>Long sleeves <span className="font-normal">(+${ADD_ON_PRICES.sleeveLong.toFixed(2)}/kit)</span></span>
-            </label>
+          <p className="mb-1 text-xs text-foreground-500">Short sleeves are included in the base price. Long sleeves add ${ADD_ON_PRICES.sleeveLong.toFixed(2)}/kit.</p>
+          <div role="group" aria-label="Sleeve options">
             <label className="flex min-h-8 cursor-pointer items-center gap-1.5 text-xs font-semibold leading-snug text-foreground-800">
               <input type="checkbox" checked={sleeve === "Mixed"} onChange={(event) => setSleeve(event.target.checked ? "Mixed" : "Short")} className="accent-primary-600" />
-              Mixed team order
+              Mixed Sleeve Team Order
             </label>
           </div>
           {sleeve === "Mixed" && <p className="mt-1 text-xs leading-snug text-foreground-500">Team order with a combination of short- and long-sleeve jerseys. Choose each player’s sleeve length in Team roster; only long-sleeve kits add $2.00 each.</p>}
@@ -617,15 +610,6 @@ export function OptionsPanel({
             </button>
           ))}
         </div>
-        {kitType === "Shirt" && <div className="mt-3 space-y-2">
-          <p className="text-xs text-foreground-600">Add extra shirts to your full-kit team order.</p>
-          {extraTeamShirts.map((row, index) => <div key={index} className="flex items-end gap-2">
-            <label className="min-w-0 flex-1 text-[11px] text-foreground-600">Size<select aria-label={`Extra shirt size ${index + 1}`} value={row.size} onChange={(event) => { const size = event.target.value; setExtraTeamShirts?.((rows) => rows.map((item, i) => i === index ? { ...item, size } : item)); }} className="mt-1 block w-full rounded-lg border border-background-300 bg-background-50 p-2 text-xs text-foreground-900">{shirtSizeOptions.map((size) => <option key={size} value={size} disabled={extraTeamShirts.some((item, i) => i !== index && item.size === size)}>{size}</option>)}</select></label>
-            <label className="w-20 text-[11px] text-foreground-600">Quantity<input type="number" min="1" max="99" aria-label={`Extra shirt quantity ${index + 1}`} value={row.quantity} onChange={(event) => { const quantity = Math.max(1, Math.min(99, parseInt(event.target.value, 10) || 1)); setExtraTeamShirts?.((rows) => rows.map((item, i) => i === index ? { ...item, quantity } : item)); }} className="mt-1 block w-full rounded-lg border border-background-300 bg-background-50 p-2 text-xs text-foreground-900" /></label>
-            <button type="button" aria-label={`Remove extra shirt size ${index + 1}`} onClick={() => { if (extraTeamShirts.length === 1) setKitType("Full"); else setExtraTeamShirts?.((rows) => rows.filter((_, i) => i !== index)); }} className="cursor-pointer p-2 text-foreground-500"><i className="ri-close-line" aria-hidden="true" /></button>
-          </div>)}
-          {extraTeamShirts.length < shirtSizeOptions.length && <button type="button" onClick={() => setExtraTeamShirts?.((rows) => [...rows, { size: shirtSizeOptions.find((size) => !rows.some((row) => row.size === size)), quantity: 1 }])} className="cursor-pointer text-xs font-semibold text-primary-700">+ Add another size</button>}
-        </div>}
       </div>
 
       </>}
@@ -1033,7 +1017,6 @@ export function AIArtworkPanel({
   onRestoreAIVersion,
   onCompareVersions,
   comparisonActive = false,
-  toolbarTarget,
 }) {
   const [mode, setMode] = useState("uniform");
   const [brandName, setBrandName] = useState("");
@@ -1049,6 +1032,7 @@ export function AIArtworkPanel({
   const [promptHistory, setPromptHistory] = useState([]);
   const [archivedPrompts, setArchivedPrompts] = useState([]);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [promptToolbarTarget, setPromptToolbarTarget] = useState(null);
   const [error, setError] = useState("");
   const [renderTier, setRenderTier] = useState("proof");
   const generationControllerRef = useRef(null);
@@ -1453,7 +1437,11 @@ export function AIArtworkPanel({
     };
 
     return (
-      <AIUniformComposer
+      <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
+        <div className="flex-shrink-0 overflow-x-auto border-b border-white/10 bg-[#11140f] px-2 py-2">
+          <div ref={setPromptToolbarTarget} className="min-w-max" aria-label="AI prompt tools" />
+        </div>
+        <AIUniformComposer
         sport={sport}
         mode={mode}
         onModeChange={changeMode}
@@ -1495,8 +1483,9 @@ export function AIArtworkPanel({
         onCompareVersions={onCompareVersions}
         comparisonActive={comparisonActive}
         onGenerateVariation={() => generateUniform("", renderTier)}
-        toolbarTarget={toolbarTarget}
-      />
+        toolbarTarget={promptToolbarTarget}
+        />
+      </div>
     );
   }
 

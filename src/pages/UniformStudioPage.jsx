@@ -394,7 +394,6 @@ export default function UniformStudioPage() {
   const [conversionError, setConversionError] = useState("");
   const aiConceptViewportRef = useRef(null);
   const [aiConceptViewportWidth, setAiConceptViewportWidth] = useState(null);
-  const [aiBannerActionsTarget, setAiBannerActionsTarget] = useState(null);
   const [studioSettingsOpen, setStudioSettingsOpen] = useState(false);
   const [aiConceptBackground, setAiConceptBackground] = useState(AI_PREVIEW_BACKGROUND_FALLBACK);
   const [aiComparisonBackgrounds, setAiComparisonBackgrounds] = useState({
@@ -2293,7 +2292,18 @@ export default function UniformStudioPage() {
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-700 text-white"><i className="ri-shirt-line" /></span>
                         <span className="min-w-0"><h2 id="uniform-order-setup-title" className="font-heading text-base font-semibold">Uniform &amp; order setup</h2><p className="truncate text-[9px] text-foreground-500">Fit, kit, collar, sleeves, colours and production extras</p></span>
                       </header>
-                      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 pb-20">{uniformSetupPanel}</div>
+                      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">{uniformSetupPanel}</div>
+                      <footer className="flex-shrink-0 border-t border-background-200 bg-white p-3 shadow-[0_-10px_28px_rgba(31,43,35,.08)]">
+                        <button
+                          type="button"
+                          onClick={continueWorkflow}
+                          disabled={!hasSelectedFit}
+                          title={!hasSelectedFit ? "Select Men, Women or Youth before continuing" : undefined}
+                          className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 py-3 text-sm font-bold text-white shadow-[0_10px_22px_rgba(0,116,73,.22)] transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-background-300 disabled:text-foreground-500 disabled:shadow-none"
+                        >
+                          Continue to Team roster <i className="ri-arrow-right-line text-base" aria-hidden="true" />
+                        </button>
+                      </footer>
                     </aside>
                   )}
                   {/* Canvas */}
@@ -2307,9 +2317,6 @@ export default function UniformStudioPage() {
                         <div className="flex flex-col items-center gap-1.5">
                           <h2 id="ai-preview-title" className="text-center text-[10px] font-black uppercase tracking-[0.16em] text-amber-100">Preview Only Editable via AI Prompts</h2>
 
-                          <div className="flex w-full min-w-0 flex-nowrap items-center justify-center gap-1.5 overflow-visible">
-                            <div ref={setAiBannerActionsTarget} className="contents" />
-                          </div>
                         </div>
                         {conversionError && <p role="alert" className="mt-1.5 rounded-lg border border-red-300/25 bg-red-950/30 px-3 py-1.5 text-[8px] leading-relaxed text-red-100">{conversionError}</p>}
                       </section>
@@ -2603,7 +2610,6 @@ export default function UniformStudioPage() {
                     onRestoreAIVersion={restoreAIVersion}
                     onCompareVersions={setAiComparisonPlan}
                     comparisonActive={Boolean(aiComparisonPlan)}
-                    toolbarTarget={aiBannerActionsTarget}
                     hasExistingArtwork={layers.some(
                       (layer) => ["text", "logo", "clipart"].includes(layer.type) && !layer.source?.startsWith("ai-uniform"),
                     )}
