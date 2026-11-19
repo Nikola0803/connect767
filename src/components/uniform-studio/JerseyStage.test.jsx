@@ -23,6 +23,7 @@ describe("JerseyStage sleeve placement", () => {
 
     expect(screen.getByRole("group", { name: "Left sleeve artwork surface" })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Right sleeve artwork surface" })).toBeInTheDocument();
+    expect(document.querySelectorAll("[data-uniform-export-view]")).toHaveLength(5);
   });
 
   it.each([

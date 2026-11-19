@@ -553,6 +553,7 @@ export default function ApprovedUniformGraphic({
           <TintLayer mask={socksMaskId} fill={socks} opacity={opacityFor("socks")}>
           {(fill) => (
             <rect
+              data-garment-zone="socks"
               x={offset}
               y={region.socksStart}
               width={halfWidth}

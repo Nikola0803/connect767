@@ -90,6 +90,7 @@ describe("AI full-uniform design endpoint", () => {
   it("instructs the model to use editable zones and solid socks", () => {
     const prompt = buildUniformPrompt(normalizeUniformRequest(validRequest));
     expect(prompt).toContain("Socks must be one solid color");
+    expect(prompt).toContain("Never place logos, text, numbers, patterns");
     expect(prompt).toContain("Do not invent side panels");
     expect(prompt).toContain("Allowed collars");
     expect(prompt).toContain("all three editable surfaces: front, side, and back");

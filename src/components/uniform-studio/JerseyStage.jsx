@@ -67,10 +67,15 @@ const JerseyStage = forwardRef(function JerseyStage(
     const point = e.touches?.[0] ?? e;
     const x = ((point.clientX - rect.left) / rect.width) * 100;
     const y = ((point.clientY - rect.top) / rect.height) * 100;
+    const zoneTarget = e.target?.closest?.("[data-garment-zone], [data-zone-id]");
+    const zoneId = zoneTarget?.getAttribute("data-garment-zone")
+      || zoneTarget?.getAttribute("data-zone-id")
+      || "";
     onCommitPending?.({
       x: Math.max(4, Math.min(96, x)),
       y: Math.max(4, Math.min(96, y)),
       view: side,
+      ...(zoneId ? { zone: zoneId.includes("sock") ? "socks" : zoneId } : {}),
     });
   };
 
@@ -101,6 +106,7 @@ const JerseyStage = forwardRef(function JerseyStage(
               </button>
               <div
                 ref={sideRef}
+                data-uniform-export-view={side}
                 onMouseDown={(event) => handleStageDown(event, side)}
                 onTouchStart={(event) => handleStageDown(event, side)}
                 style={{
@@ -179,6 +185,7 @@ const JerseyStage = forwardRef(function JerseyStage(
                         </button>
                         <div
                           ref={sleeveSurface.ref}
+                          data-uniform-export-view={sleeveSurface.key}
                           role="group"
                           aria-label={`${sleeveSurface.label} artwork surface`}
                           onMouseDown={(event) => handleStageDown(event, sleeveSurface.key)}
