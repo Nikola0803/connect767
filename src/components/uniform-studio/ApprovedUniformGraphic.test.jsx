@@ -75,6 +75,33 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     expect(container.querySelector(`[data-collar-part="${backPart}"]`)).toBeInTheDocument();
   });
 
+  it("fits the soccer collar cleanup and bands to the photographed neckline", () => {
+    const { container, rerender } = render(
+      <ApprovedUniformGraphic sport="soccer" view="front" collar="Crew" />,
+    );
+    const frontPatch = container.querySelector('[data-collar-patch="source-cleanup"]');
+    const frontBand = container.querySelector('[data-collar-part="crew-band"]');
+    expect(frontPatch.getAttribute("rx")).toBe("47");
+    expect(frontPatch.getAttribute("ry")).toBe("30");
+    expect(Number(frontBand.getAttribute("rx"))).toBeLessThan(40);
+
+    rerender(<ApprovedUniformGraphic sport="soccer" view="back" collar="Crew" />);
+    const backPatch = container.querySelector('[data-collar-patch="source-cleanup"]');
+    expect(backPatch.getAttribute("rx")).toBe("45");
+    expect(backPatch.getAttribute("ry")).toBe("25");
+    expect(container.querySelector('[data-collar-part="crew-back-band"]')).toBeInTheDocument();
+  });
+
+  it("scales the soccer side collar around the photographed neck anchor", () => {
+    const { container } = render(
+      <ApprovedUniformGraphic sport="soccer" view="side" collar="V-Neck" />,
+    );
+    const collarLayer = container.querySelector('[data-collar-shape="V-Neck"]');
+    expect(collarLayer.getAttribute("data-collar-scale")).toBe("0.74");
+    expect(collarLayer.getAttribute("transform")).toContain("scale(0.74)");
+    expect(collarLayer.querySelector('[data-collar-part="side-inner-seam"]')).toBeInTheDocument();
+  });
+
   it("keeps Polo wings and placket on the front while rendering only a rear band on the back", () => {
     const collarColor = "#20d860";
     const { container, rerender } = render(
@@ -425,7 +452,7 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     expect(sockTint.querySelector('rect[fill="#1B1A16"]')).not.toBeNull();
   });
 
-  it("clips the full-width shirt hem to the jersey instead of the shorts", () => {
+  it("renders one shirt-end band without painting a separate body-cleanup color", () => {
     const { container } = render(
       <ApprovedUniformGraphic
         sport="soccer"
@@ -446,11 +473,7 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     expect(shirtHem.getAttribute("y")).toBe("550");
     expect(shirtHem.getAttribute("width")).toBe("579.5");
     expect(shirtHem.getAttribute("height")).toBe("30");
-    expect(shirtBodyCleanup.getAttribute("x")).toBe("0");
-    expect(shirtBodyCleanup.getAttribute("y")).toBe("510");
-    expect(shirtBodyCleanup.getAttribute("height")).toBe("40");
-    expect(shirtBodyCleanup.getAttribute("fill")).toBe("#eeeeee");
-    expect(shirtBodyCleanup.parentElement.style.mixBlendMode).toBe("normal");
+    expect(shirtBodyCleanup).toBeNull();
     expect(editableShirtHem.getAttribute("fill-opacity")).toBe("0");
 
     const jerseyMask = container.querySelector('mask[id^="approved-jersey-"]');
