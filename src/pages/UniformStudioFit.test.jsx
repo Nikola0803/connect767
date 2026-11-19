@@ -90,21 +90,23 @@ describe("required uniform fit selection", () => {
     const shirtOnlyButtons = screen.getAllByRole("button", { name: /^Shirt Only/ });
     expect(shirtOnlyButtons[0]).toHaveTextContent("$12.00");
     expect(shirtOnlyButtons[0]).toHaveTextContent("supporter jerseys use this price");
-    expect(screen.queryByText("Add supporter jerseys")).not.toBeInTheDocument();
+    expect(screen.queryByText("Add Fan/Supporter Jerseys")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getAllByRole("button", { name: "Men", exact: true })[0]);
     fireEvent.click(progress.getByRole("button", { name: /Team roster/ }));
 
-    expect(screen.getAllByText("Add supporter jerseys").length).toBeGreaterThan(0);
+    const socksHeading = screen.getAllByText("Socks")[0];
+    const supporterHeading = screen.getAllByText("Add Fan/Supporter Jerseys")[0];
+    expect(socksHeading.compareDocumentPosition(supporterHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getAllByText("Shirt Only · $12.00 each").length).toBeGreaterThan(0);
-    fireEvent.click(screen.getAllByRole("checkbox", { name: /Add supporter jerseys/ })[0]);
+    fireEvent.click(screen.getAllByRole("checkbox", { name: /Add Fan\/Supporter Jerseys/ })[0]);
     expect(screen.getAllByRole("combobox", { name: "Supporter jersey size 1" }).length).toBeGreaterThan(0);
 
     fireEvent.change(screen.getAllByRole("textbox", { name: "Name" })[0], { target: { value: "Minimum order" } });
     fireEvent.change(screen.getAllByRole("spinbutton", { name: "Player quantity" })[0], { target: { value: "22" } });
     fireEvent.click(screen.getAllByRole("button", { name: "Add player" })[0]);
     fireEvent.click(progress.getByRole("button", { name: /Review & quote/ }));
-    expect(screen.queryByText("Add supporter jerseys")).not.toBeInTheDocument();
+    expect(screen.queryByText("Add Fan/Supporter Jerseys")).not.toBeInTheDocument();
     expect(screen.getAllByText(/1 supporter jersey × \$12\.00/).length).toBeGreaterThan(0);
   });
 
