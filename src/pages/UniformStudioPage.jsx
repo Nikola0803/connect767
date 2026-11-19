@@ -3481,7 +3481,7 @@ function ReviewOrderTool({
           </span>
         </div>
         <div className="mt-3 space-y-1 border-t border-white/15 pt-3 text-xs text-background-50/70">
-          <div className="flex justify-between"><span>{unitCount} full kits × ${BASE_KIT_PRICE.toFixed(2)}</span><span>${baseKitsTotal.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span>{unitCount} full kits (Shirts, Shorts, &amp; Pants) × ${BASE_KIT_PRICE.toFixed(2)}</span><span>${baseKitsTotal.toFixed(2)}</span></div>
           {kitAddOns.map((item) => (
             <div key={item.key} className="flex justify-between gap-3">
               <span>{item.label} · {item.count} × ${item.unitPrice.toFixed(2)}</span>

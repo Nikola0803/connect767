@@ -214,14 +214,13 @@ export default function ApprovedUniformGraphic({
     // same shoulder and armhole as the short sleeve, then continues to the
     // wrist. Starting at the photographed cuff merely adds a second forearm
     // below the existing short sleeve and leaves a visible horizontal join.
-    // Start the replacement at the shirt body's real collar-side shoulder
-    // anchor. The source sleeve masks begin a few pixels above that point to
-    // make tinting forgiving; using those mask coordinates for the visible
-    // long-sleeve path creates a pale triangular cap above the front/back
-    // shoulder. Sharing the body's anchor makes both pieces meet at one seam.
-    const bodyShoulderTop = region.bodyPolygon?.[left ? 0 : 1];
-    const shoulderTop = bodyShoulderTop
-      || sleevePolygon?.[0]
+    // Cover the complete photographed shoulder cap in front/back views. The
+    // source sleeve begins slightly above the torso polygon; starting at the
+    // torso anchor leaves those original edge pixels visible around a long
+    // sleeve. Reuse the sleeve's real top anchor, then slightly overpaint the
+    // path edge below so antialiased source pixels cannot form a grey rim.
+    const shoulderTop = sleevePolygon?.[0]
+      || region.bodyPolygon?.[left ? 0 : 1]
       || [left ? region.bodyLeft - 110 : region.bodyRight + 110, region.shirtTop + 102];
     const armhole = sleevePolygon?.at(-1)
       || [left ? region.bodyLeft + 7 : region.bodyRight - 7, region.shirtTop + 122];
@@ -616,8 +615,8 @@ export default function ApprovedUniformGraphic({
 
       {!isSleeveless && !nativeLongSleeve && sleeveStyle === "Long" && (
         <g opacity={opacityFor("sleeve")} data-sleeve-replacement="Long">
-          {hasLeftLongSleeve && <path data-long-sleeve-side="left" d={longSleevePath("left")} fill={sleeve} />}
-          {hasRightLongSleeve && <path data-long-sleeve-side="right" d={longSleevePath("right")} fill={sleeve} />}
+          {hasLeftLongSleeve && <path data-long-sleeve-side="left" d={longSleevePath("left")} fill={sleeve} stroke={sleeve} strokeWidth="4" strokeLinejoin="round" />}
+          {hasRightLongSleeve && <path data-long-sleeve-side="right" d={longSleevePath("right")} fill={sleeve} stroke={sleeve} strokeWidth="4" strokeLinejoin="round" />}
         </g>
       )}
 

@@ -144,11 +144,17 @@ describe("uniform design controls", () => {
     fireEvent.change(screen.getByLabelText("Sleeve ends color"), { target: { value: "#123456" } });
     expect(setColors.mock.calls.at(-1)[0](defaultZoneColors).sleeveStrip).toBe("#123456");
   });
-  it("offers optional Polo and mixed sleeves without Crew, V-Neck or Sleeveless buttons", () => {
+  it("offers Crew, V-Neck and Polo collar choices with mixed sleeve controls", () => {
     const setSleeve = vi.fn();
-    const props = { sport: "soccer", collar: "Crew", setCollar: vi.fn(), sleeve: "Short", setSleeve, colors: defaultZoneColors, setColors: vi.fn() };
+    const setCollar = vi.fn();
+    const props = { sport: "soccer", collar: "Crew", setCollar, sleeve: "Short", setSleeve, colors: defaultZoneColors, setColors: vi.fn() };
     const { rerender } = render(<DesignPanel {...props} />);
-    expect(screen.queryByRole("button", { name: /Crew|V-Neck|Sleeveless/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Crew" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "V-Neck" }));
+    fireEvent.click(screen.getByRole("button", { name: /Polo/ }));
+    expect(setCollar).toHaveBeenNthCalledWith(1, "V-Neck");
+    expect(setCollar).toHaveBeenNthCalledWith(2, "Polo");
+    expect(screen.queryByRole("button", { name: "Sleeveless" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("checkbox", { name: "Mixed team order" }));
     expect(setSleeve).toHaveBeenCalledWith("Mixed");
     rerender(<DesignPanel {...props} sleeve="Mixed" />);
@@ -235,8 +241,11 @@ describe("uniform design controls", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("checkbox", { name: /Polo/ }));
+    expect(screen.getByRole("button", { name: "Crew" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "V-Neck" }));
+    fireEvent.click(screen.getByRole("button", { name: /Polo/ }));
     fireEvent.click(screen.getByRole("checkbox", { name: /Long sleeves/ }));
+    expect(setCollar).toHaveBeenCalledWith("V-Neck");
     expect(setCollar).toHaveBeenCalledWith("Polo");
     expect(setSleeve).toHaveBeenCalledWith("Long");
 
