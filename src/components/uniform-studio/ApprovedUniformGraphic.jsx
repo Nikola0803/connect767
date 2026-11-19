@@ -214,13 +214,12 @@ export default function ApprovedUniformGraphic({
     // same shoulder and armhole as the short sleeve, then continues to the
     // wrist. Starting at the photographed cuff merely adds a second forearm
     // below the existing short sleeve and leaves a visible horizontal join.
-    // Cover the complete photographed shoulder cap in front/back views. The
-    // source sleeve begins slightly above the torso polygon; starting at the
-    // torso anchor leaves those original edge pixels visible around a long
-    // sleeve. Reuse the sleeve's real top anchor, then slightly overpaint the
-    // path edge below so antialiased source pixels cannot form a grey rim.
-    const shoulderTop = sleevePolygon?.[0]
-      || region.bodyPolygon?.[left ? 0 : 1]
+    // The long sleeve begins at the natural torso-to-sleeve seam. The small
+    // photographed cap above this point is repainted separately inside the
+    // jersey alpha mask; extending this vector up to that cap produces sharp
+    // collar-side spikes and an unnaturally square shoulder.
+    const shoulderTop = region.bodyPolygon?.[left ? 0 : 1]
+      || sleevePolygon?.[0]
       || [left ? region.bodyLeft - 110 : region.bodyRight + 110, region.shirtTop + 102];
     const armhole = sleevePolygon?.at(-1)
       || [left ? region.bodyLeft + 7 : region.bodyRight - 7, region.shirtTop + 122];
@@ -286,7 +285,11 @@ export default function ApprovedUniformGraphic({
       data-uniform-view={view}
       viewBox={`${offset} 0 ${halfWidth} ${spriteHeight}`}
       preserveAspectRatio="xMidYMid meet"
+      shapeRendering="geometricPrecision"
+      textRendering="geometricPrecision"
+      colorInterpolation="sRGB"
       className="h-full w-full overflow-hidden"
+      style={{ imageRendering: "auto" }}
       role="img"
       aria-label={`${sport} complete uniform ${view}`}
     >
@@ -615,8 +618,12 @@ export default function ApprovedUniformGraphic({
 
       {!isSleeveless && !nativeLongSleeve && sleeveStyle === "Long" && (
         <g opacity={opacityFor("sleeve")} data-sleeve-replacement="Long">
-          {hasLeftLongSleeve && <path data-long-sleeve-side="left" d={longSleevePath("left")} fill={sleeve} stroke={sleeve} strokeWidth="4" strokeLinejoin="round" />}
-          {hasRightLongSleeve && <path data-long-sleeve-side="right" d={longSleevePath("right")} fill={sleeve} stroke={sleeve} strokeWidth="4" strokeLinejoin="round" />}
+          <g mask={`url(#${jerseyMaskId})`} data-long-sleeve-shoulder-caps="masked">
+            {hasLeftLongSleeve && <path data-long-sleeve-shoulder="left" d={baseSleevePath("left")} fill={sleeve} />}
+            {hasRightLongSleeve && <path data-long-sleeve-shoulder="right" d={baseSleevePath("right")} fill={sleeve} />}
+          </g>
+          {hasLeftLongSleeve && <path data-long-sleeve-side="left" d={longSleevePath("left")} fill={sleeve} />}
+          {hasRightLongSleeve && <path data-long-sleeve-side="right" d={longSleevePath("right")} fill={sleeve} />}
         </g>
       )}
 

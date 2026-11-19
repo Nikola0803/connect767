@@ -107,8 +107,11 @@ export default function SideUniformGraphic({
       data-sleeve-side={focus === "sleeve" ? side : undefined}
       viewBox={focus === "sleeve" ? `0 0 ${width} ${sleeveCropHeight}` : `0 0 ${width} ${height}`}
       preserveAspectRatio="xMidYMid meet"
+      shapeRendering="geometricPrecision"
+      textRendering="geometricPrecision"
+      colorInterpolation="sRGB"
       className="h-full w-full overflow-hidden"
-      style={{ transform: side === "left" ? "scaleX(-1)" : undefined }}
+      style={{ transform: side === "left" ? "scaleX(-1)" : undefined, imageRendering: "auto" }}
       role="img"
       aria-label={focus === "sleeve" ? `${sport} ${side} sleeve` : `${sport} complete uniform side`}
     >

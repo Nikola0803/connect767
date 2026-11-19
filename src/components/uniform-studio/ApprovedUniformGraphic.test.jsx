@@ -5,6 +5,15 @@ import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
 import { SIDE_ASSET_BY_SPORT, SIDE_REGIONS } from "./SideUniformGraphic";
 
 describe("ApprovedUniformGraphic trim isolation", () => {
+  it.each(["front", "side", "back"])("uses precision rendering for the %s preview", (view) => {
+    const { container } = render(<ApprovedUniformGraphic sport="soccer" view={view} />);
+    const svg = container.querySelector("svg");
+    expect(svg).toHaveAttribute("shape-rendering", "geometricPrecision");
+    expect(svg).toHaveAttribute("text-rendering", "geometricPrecision");
+    expect(svg).toHaveAttribute("color-interpolation", "sRGB");
+    expect(svg.style.imageRendering).toBe("auto");
+  });
+
   it("renders Mixed as a matching short-sleeve sample instead of mismatched arms", () => {
     const { container } = render(<ApprovedUniformGraphic sport="soccer" view="front" sleeve="Mixed" />);
     expect(container.querySelectorAll('[data-sleeve-replacement] path')).toHaveLength(0);
@@ -27,13 +36,15 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     const replacements = container.querySelectorAll('[data-sleeve-replacement="Long"] [data-long-sleeve-side]');
     expect(replacements).toHaveLength(2);
     const expectedBoundaryStarts = view === "front"
-      ? ["M275,40", "M391,40"]
-      : ["M775.5,36", "M894.5,36"];
+      ? ["M275,56", "M391,56"]
+      : ["M775.5,52", "M894.5,52"];
     replacements.forEach((replacement, index) => {
       expect(replacement.getAttribute("d")).toMatch(new RegExp(`^${expectedBoundaryStarts[index]}`));
-      expect(replacement.getAttribute("stroke-width")).toBe("4");
-      expect(replacement.getAttribute("stroke")).toBe(replacement.getAttribute("fill"));
+      expect(replacement).not.toHaveAttribute("stroke");
     });
+    const shoulderCaps = container.querySelector('[data-long-sleeve-shoulder-caps="masked"]');
+    expect(shoulderCaps.getAttribute("mask")).toMatch(/^url\(#approved-jersey-/);
+    expect(shoulderCaps.querySelectorAll("[data-long-sleeve-shoulder]")).toHaveLength(2);
     expect(container.querySelectorAll('[data-long-sleeve-cuff]')).toHaveLength(2);
     // The selected long sleeve replaces the short cuff; only the wrist trim
     // remains after the sleeve continues from the existing shirt boundary.
