@@ -75,7 +75,7 @@ export default function AIUniformComposer({
   const [historyOpen, setHistoryOpen] = useState(false);
   const [resetMenuOpen, setResetMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [versionMenuOpen, setVersionMenuOpen] = useState(false);
+  const [toolbarMenuOpen, setToolbarMenuOpen] = useState(false);
   const dark = false;
   const [dragging, setDragging] = useState(false);
   const [feedback, setFeedback] = useState("");
@@ -109,7 +109,7 @@ export default function AIUniformComposer({
     setHistoryOpen(false);
     setResetMenuOpen(false);
     setSettingsOpen(false);
-    setVersionMenuOpen(false);
+    setToolbarMenuOpen(false);
   };
 
   useEffect(() => {
@@ -213,19 +213,41 @@ export default function AIUniformComposer({
           </div>
         )}
       </div>
-      <button type="button" onClick={() => { setHistoryOpen((value) => !value); setResetMenuOpen(false); setToolsOpen(false); setSettingsOpen(false); }} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-white/10 px-2.5 text-[8px] font-bold text-white/70 transition hover:bg-white/10 hover:text-white" aria-expanded={historyOpen}><i className="ri-history-line text-[10px]" /> History</button>
-      <button type="button" onClick={() => fileInputRef.current?.click()} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-white/10 px-2.5 text-[8px] font-bold text-white/70 transition hover:bg-white/10 hover:text-white"><i className="ri-image-add-line text-[10px]" /> Reference</button>
-      <button type="button" onClick={() => startDesign(mode === "uniform" ? "artwork" : "uniform")} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-white/10 px-2.5 text-[8px] font-bold text-white/70 transition hover:bg-white/10 hover:text-white"><i className={mode === "uniform" ? "ri-image-edit-line" : "ri-shirt-line"} /> {mode === "uniform" ? "Artwork" : "Full uniform"}</button>
-      <button type="button" onClick={focusCommandPrompt} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-primary-300/25 bg-primary-500/10 px-2.5 text-[8px] font-bold text-primary-100 transition hover:bg-primary-500/20 hover:text-white"><i className="ri-magic-line text-[10px]" /> Refine with AI</button>
-      {mode === "uniform" && uniformPlan && <div className="relative" data-ai-popover>
-        <button type="button" onClick={() => { setVersionMenuOpen((value) => !value); setResetMenuOpen(false); setHistoryOpen(false); setToolsOpen(false); setSettingsOpen(false); }} className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-white/10 px-2.5 text-[8px] font-bold text-white/70 transition hover:bg-white/10 hover:text-white" aria-label="Versions" aria-expanded={versionMenuOpen} aria-haspopup="menu" data-ai-popover-trigger><i className="ri-git-branch-line text-[10px]" /> Versions <i className="ri-arrow-down-s-line" /></button>
-        {versionMenuOpen && <div className="absolute right-0 top-[calc(100%+.4rem)] z-50 grid w-52 gap-1 rounded-xl border border-background-200 bg-white p-2 text-foreground-950 shadow-2xl" data-ai-popover role="menu" aria-label="Version controls">
-          <button type="button" onClick={() => previousVersion && onRestoreVersion?.(previousVersion)} disabled={!previousVersion || generating} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40"><i className="ri-arrow-left-line" /> Previous version</button>
-          <button type="button" onClick={() => onCompareVersions?.(comparisonActive ? null : previousVersion)} disabled={!previousVersion || generating} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40"><i className="ri-split-cells-horizontal" /> {comparisonActive ? "Close comparison" : "Compare versions"}</button>
-          <button type="button" onClick={() => originalVersion && onRestoreVersion?.(originalVersion)} disabled={!originalVersion || versions.length < 2 || generating} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40"><i className="ri-restart-line" /> Restore original</button>
-          <button type="button" onClick={onGenerateVariation} disabled={generating || connection !== "connected"} className="flex cursor-pointer items-center gap-2 rounded-lg bg-primary-50 px-3 py-2 text-left text-[9px] font-bold text-primary-800 hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-40"><i className="ri-refresh-line" /> New variation</button>
-        </div>}
-      </div>}
+      <div className="relative" data-ai-popover>
+        <button
+          type="button"
+          onClick={() => {
+            setToolbarMenuOpen((value) => !value);
+            setResetMenuOpen(false);
+            setHistoryOpen(false);
+            setToolsOpen(false);
+            setSettingsOpen(false);
+          }}
+          className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-white/10 px-2.5 text-[8px] font-bold text-white/80 transition hover:bg-white/10 hover:text-white"
+          aria-label="AI tools"
+          aria-expanded={toolbarMenuOpen}
+          aria-haspopup="menu"
+          data-ai-popover-trigger
+        >
+          <i className="ri-tools-line text-[10px]" /> AI tools <i className="ri-arrow-down-s-line" />
+        </button>
+        {toolbarMenuOpen && (
+          <div className="absolute right-0 top-[calc(100%+.4rem)] z-50 grid w-56 gap-1 rounded-xl border border-background-200 bg-white p-2 text-foreground-950 shadow-2xl" data-ai-popover role="menu" aria-label="AI prompt tools menu">
+            <button type="button" onClick={() => { setToolbarMenuOpen(false); setHistoryOpen(true); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className="ri-history-line text-sm" /> History</button>
+            <button type="button" onClick={() => { setToolbarMenuOpen(false); fileInputRef.current?.click(); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className="ri-image-add-line text-sm" /> Reference</button>
+            <button type="button" onClick={() => startDesign(mode === "uniform" ? "artwork" : "uniform")} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className={`${mode === "uniform" ? "ri-image-edit-line" : "ri-shirt-line"} text-sm`} /> {mode === "uniform" ? "Artwork" : "Full uniform"}</button>
+            <button type="button" onClick={() => { setToolbarMenuOpen(false); focusCommandPrompt(); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold text-primary-800 hover:bg-primary-50" role="menuitem"><i className="ri-magic-line text-sm" /> Refine with AI</button>
+            {mode === "uniform" && uniformPlan && <>
+              <div className="my-1 border-t border-background-200" />
+              <p className="px-3 pb-1 pt-1 text-[8px] font-bold uppercase tracking-[0.14em] text-foreground-500">Versions</p>
+              <button type="button" onClick={() => { setToolbarMenuOpen(false); previousVersion && onRestoreVersion?.(previousVersion); }} disabled={!previousVersion || generating} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className="ri-arrow-left-line" /> Previous version</button>
+              <button type="button" onClick={() => { setToolbarMenuOpen(false); onCompareVersions?.(comparisonActive ? null : previousVersion); }} disabled={!previousVersion || generating} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className="ri-split-cells-horizontal" /> {comparisonActive ? "Close comparison" : "Compare versions"}</button>
+              <button type="button" onClick={() => { setToolbarMenuOpen(false); originalVersion && onRestoreVersion?.(originalVersion); }} disabled={!originalVersion || versions.length < 2 || generating} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className="ri-restart-line" /> Restore original</button>
+              <button type="button" onClick={() => { setToolbarMenuOpen(false); onGenerateVariation?.(); }} disabled={generating || connection !== "connected"} className="flex cursor-pointer items-center gap-2 rounded-lg bg-primary-50 px-3 py-2 text-left text-[9px] font-bold text-primary-800 hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className="ri-refresh-line" /> New variation</button>
+            </>}
+          </div>
+        )}
+      </div>
     </div>,
     toolbarTarget,
   ) : null;

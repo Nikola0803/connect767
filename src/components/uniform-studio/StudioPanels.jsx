@@ -235,18 +235,18 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
             Polo style collar <span className="ml-1 font-normal">(+${ADD_ON_PRICES.collarPolo.toFixed(2)}/kit)</span>
           </button>
         </div>
-        <p className="mt-1 text-[11px] leading-snug text-foreground-500">Crew and V-Neck styles are designed with the AI tool and included in the base price.</p>
+        <p className="mt-1 text-[11px] leading-snug text-foreground-500">Crew and V-Neck included.</p>
       </div>
       {config.sleeveOptions && (
         <div className="mb-1.5">
-          <p className="mb-1 text-xs text-foreground-500">Short sleeves are included in the base price. Long sleeves add ${ADD_ON_PRICES.sleeveLong.toFixed(2)}/kit.</p>
+          <p className="mb-1 text-xs text-foreground-500">Short sleeves included. Long sleeves +${ADD_ON_PRICES.sleeveLong.toFixed(2)}/kit.</p>
           <div role="group" aria-label="Sleeve options">
             <label className="flex min-h-8 cursor-pointer items-center gap-1.5 text-xs font-semibold leading-snug text-foreground-800">
               <input type="checkbox" checked={sleeve === "Mixed"} onChange={(event) => setSleeve(event.target.checked ? "Mixed" : "Short")} className="accent-primary-600" />
               Mixed Sleeve Team Order
             </label>
           </div>
-          {sleeve === "Mixed" && <p className="mt-1 text-xs leading-snug text-foreground-500">Team order with a combination of short- and long-sleeve jerseys. Choose each player’s sleeve length in Team roster; only long-sleeve kits add $2.00 each.</p>}
+          {sleeve === "Mixed" && <p className="mt-1 text-xs leading-snug text-foreground-500">Choose each player’s sleeve length in Team roster. Long-sleeve kits add $2.00 each.</p>}
         </div>
       )}
 
@@ -617,7 +617,7 @@ export function OptionsPanel({
       {section === "all" && <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400 mb-3 pt-2 border-t border-background-200/70">Production extras</h3>}
       <div className="mb-3">
         <p className="mb-3 text-xs leading-relaxed text-foreground-600">
-          All uniform prints, including logos, are sublimated and included in the base price.
+          All prints and logos are sublimated and included.
         </p>
         <label className="flex cursor-pointer items-start gap-2 text-xs font-semibold text-foreground-800">
           <input type="checkbox" checked={logoApplication === "Embroidery"} onChange={(event) => setLogoApplication(event.target.checked ? "Embroidery" : "Sublimated")} className="mt-0.5 accent-primary-600" />
@@ -1438,8 +1438,8 @@ export function AIArtworkPanel({
 
     return (
       <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
-        <div className="flex-shrink-0 overflow-x-auto border-b border-white/10 bg-[#11140f] px-2 py-2">
-          <div ref={setPromptToolbarTarget} className="min-w-max" aria-label="AI prompt tools" />
+        <div className="relative z-20 flex-shrink-0 overflow-visible border-b border-white/10 bg-[#11140f] px-2 py-2">
+          <div ref={setPromptToolbarTarget} className="w-full" aria-label="AI prompt tools" />
         </div>
         <AIUniformComposer
         sport={sport}
