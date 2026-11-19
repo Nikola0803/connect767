@@ -15,7 +15,7 @@ import { hasPaidBookingRate } from "../lib/payoutSettings";
 import { normalizeBookingRateRules } from "../lib/bookingRates";
 import { allIndustries } from "./industries";
 import { createListingSearchText } from "../lib/listingSearch";
-import { uniformAiDesignerFee, uniformShippingRate } from "../lib/uniformShipping";
+import { AI_DESIGNER_FEE, uniformAiDesignerFee, uniformShippingRate } from "../lib/uniformShipping";
 
 // Industry slugs from the canonical taxonomy. The Add Listing wizard submits
 // an *industry* slug (e.g. "accounting-and-bookkeeping"); a plugin bug
@@ -1374,6 +1374,32 @@ export async function submitUniformQuote(payload) {
   return customClient.post("/uniform-quotes", payload);
 }
 
+/**
+ * Keep quotes correct while a newly deployed frontend is waiting for the
+ * matching WordPress plugin update. Payment creation remains server-gated so
+ * an outdated backend can never silently undercharge the order.
+ */
+function normalizeUniformCheckoutTotals(totals, requireServerFee = false) {
+  const subtotal = Number(totals?.subtotal);
+  const shipping = Number(totals?.shipping);
+  if (!Number.isFinite(subtotal) || !Number.isFinite(shipping)) return totals;
+
+  const expectedFee = uniformAiDesignerFee(subtotal, shipping);
+  const serverHasFee = Object.prototype.hasOwnProperty.call(totals || {}, "designerFee");
+  const serverFee = serverHasFee ? Number(totals.designerFee) || 0 : 0;
+  if (requireServerFee && expectedFee === AI_DESIGNER_FEE && serverFee !== AI_DESIGNER_FEE) {
+    throw new Error("Checkout is updating the Connect767 AI Designer Fee. Please try again shortly.");
+  }
+  if (serverHasFee) return totals;
+
+  return {
+    ...totals,
+    designerFee: expectedFee,
+    designerFeeLabel: "Connect767 AI Designer Fee",
+    total: (Number(totals.total) || subtotal + shipping) + expectedFee,
+  };
+}
+
 /** Uniform Studio checkout totals, calculated by WooCommerce for the delivery address. */
 export async function quoteUniformCheckout(order, email, shipping) {
   if (!isLiveApi) {
@@ -1399,12 +1425,17 @@ export async function quoteUniformCheckout(order, email, shipping) {
       demo: true,
     };
   }
-  return customClient.post("/uniform-checkout/quote", { order, email, shipping });
+  return normalizeUniformCheckoutTotals(
+    await customClient.post("/uniform-checkout/quote", { order, email, shipping }),
+  );
 }
 
 export async function createUniformPaymentIntent(order, email, shipping) {
   if (!isLiveApi) throw new Error("Payment requires the live WooCommerce backend.");
-  return customClient.post("/uniform-checkout/intent", { order, email, shipping });
+  return normalizeUniformCheckoutTotals(
+    await customClient.post("/uniform-checkout/intent", { order, email, shipping }),
+    true,
+  );
 }
 
 export async function confirmUniformPayment(orderId, accessToken) {
@@ -1413,7 +1444,10 @@ export async function confirmUniformPayment(orderId, accessToken) {
 
 export async function createUniformPaypalOrder(order, email, shipping) {
   if (!isLiveApi) throw new Error("Payment requires the live WooCommerce backend.");
-  return customClient.post("/uniform-checkout/paypal/order", { order, email, shipping });
+  return normalizeUniformCheckoutTotals(
+    await customClient.post("/uniform-checkout/paypal/order", { order, email, shipping }),
+    true,
+  );
 }
 
 export async function captureUniformPaypalOrder(orderId, accessToken) {
@@ -1425,7 +1459,10 @@ export async function createUniformLocalDominicaOrder(order, email, shipping) {
     await new Promise((resolve) => setTimeout(resolve, 450));
     return { orderId: "local-preview", status: "on-hold" };
   }
-  return customClient.post("/uniform-checkout/local-dominica", { order, email, shipping });
+  return normalizeUniformCheckoutTotals(
+    await customClient.post("/uniform-checkout/local-dominica", { order, email, shipping }),
+    true,
+  );
 }
 
 /**

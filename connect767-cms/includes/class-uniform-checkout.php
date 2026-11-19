@@ -230,6 +230,10 @@ class C767_Uniform_Checkout
         if (is_wp_error($shipping)) {
             return $shipping;
         }
+        $address_check = self::validate_north_american_address($shipping);
+        if (is_wp_error($address_check)) {
+            return $address_check;
+        }
         if (strtoupper((string) ($shipping['country'] ?? '')) !== 'DM') {
             return new WP_Error(
                 'c767_local_payment_country',
@@ -295,6 +299,11 @@ class C767_Uniform_Checkout
         $shipping = C767_WooCommerce::sanitize_shipping_address((array) $request->get_param('shipping'));
         if (is_wp_error($shipping)) {
             return $shipping;
+        }
+
+        $address_check = self::validate_north_american_address($shipping);
+        if (is_wp_error($address_check)) {
+            return $address_check;
         }
 
         $unit_price = self::authoritative_unit_price($payload);
@@ -525,6 +534,56 @@ class C767_Uniform_Checkout
             'Custom Uniform Studio shipping is available only in North America and the Caribbean.',
             ['status' => 400]
         );
+    }
+
+    private static function validate_north_american_address(array $address)
+    {
+        $country = strtoupper((string) ($address['country'] ?? ''));
+        if (!in_array($country, self::NORTH_AMERICA_COUNTRIES, true)) {
+            return true;
+        }
+
+        $has_two_letters = function ($value) {
+            return preg_match_all('/\p{L}/u', (string) $value, $matches) >= 2;
+        };
+        if (!$has_two_letters($address['first_name'] ?? '')) {
+            return new WP_Error('c767_invalid_shipping_first_name', 'Enter a valid recipient first name.', ['status' => 400]);
+        }
+        if (!$has_two_letters($address['last_name'] ?? '')) {
+            return new WP_Error('c767_invalid_shipping_last_name', 'Enter a valid recipient last name.', ['status' => 400]);
+        }
+
+        $street = (string) ($address['address_1'] ?? '');
+        $numbered_street = preg_match('/\d/', $street) && $has_two_letters($street);
+        $po_box = preg_match('/\bP(?:OST)?\.?\s*O(?:FFICE)?\.?\s*BOX\s+\d+/i', $street);
+        if (!$numbered_street && !$po_box) {
+            return new WP_Error('c767_invalid_shipping_street', 'Enter a complete street address with a building number.', ['status' => 400]);
+        }
+        if (!$has_two_letters($address['city'] ?? '')) {
+            return new WP_Error('c767_invalid_shipping_city', 'Enter a valid city.', ['status' => 400]);
+        }
+
+        $states = WC()->countries->get_states($country);
+        $state = strtoupper((string) ($address['state'] ?? ''));
+        if (!$state || !isset($states[$state])) {
+            $region_name = $country === 'CA' ? 'Canadian province or territory' : ($country === 'MX' ? 'Mexican state' : 'U.S. state');
+            return new WP_Error('c767_invalid_uniform_shipping_region', 'Choose a valid ' . $region_name . '.', ['status' => 400]);
+        }
+
+        $postcode = strtoupper(trim((string) ($address['postcode'] ?? '')));
+        $valid_postcode = $country === 'US'
+            ? preg_match('/^\d{5}(?:-\d{4})?$/', $postcode)
+            : ($country === 'CA'
+                ? preg_match('/^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][ -]?\d[ABCEGHJ-NPRSTV-Z]\d$/', $postcode)
+                : preg_match('/^\d{5}$/', $postcode));
+        if (!$valid_postcode) {
+            $message = $country === 'US'
+                ? 'Enter a valid U.S. ZIP code.'
+                : ($country === 'CA' ? 'Enter a valid Canadian postal code.' : 'Enter a valid 5-digit Mexican postal code.');
+            return new WP_Error('c767_invalid_uniform_shipping_postcode', $message, ['status' => 400]);
+        }
+
+        return true;
     }
 
     private static function uniform_product()

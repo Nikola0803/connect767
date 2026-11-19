@@ -547,7 +547,7 @@ export function OptionsPanel({
   insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText,
   insideCollarAttachment, setInsideCollarAttachment,
   extraTeamShirts = [{ size: "M", quantity: 1 }], setExtraTeamShirts,
-  section = "all", showFitAlert = true,
+  section = "all", showFitAlert = true, highlightMissing = false,
 }) {
   const insideCollarContentMissing = Boolean(
     insideCollarMessage
@@ -558,13 +558,13 @@ export function OptionsPanel({
   return (
     <div>
       {section !== "production" && <>
-      {showFitAlert && !fitTypeOptions.includes(fitType) && <div role="alert" className="mb-2 flex items-center gap-2 rounded-lg border border-accent-400 bg-accent-50 px-2.5 py-1.5 text-accent-950">
+      {showFitAlert && !fitTypeOptions.includes(fitType) && <div id="fit-selection-required" role="alert" className={`mb-2 flex items-center gap-2 rounded-lg border border-accent-400 bg-accent-50 px-2.5 py-1.5 text-accent-950 ${highlightMissing ? "ring-2 ring-accent-300" : ""}`}>
         <i className="ri-error-warning-fill shrink-0 text-sm text-accent-600" aria-hidden="true" />
         <p className="text-xs font-semibold leading-tight">Select a fit to continue to Team roster.</p>
       </div>}
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <span className="text-xs font-semibold text-foreground-800">Fit type <span className="ml-1 text-[10px] font-normal text-accent-700">Required</span></span>
-        <div className="flex gap-2 flex-wrap" role="group" aria-label="Fit type (required)">
+        <div data-validation-highlight={highlightMissing && !fitTypeOptions.includes(fitType) ? "true" : undefined} className={`flex gap-2 flex-wrap rounded-lg ${highlightMissing && !fitTypeOptions.includes(fitType) ? "ring-2 ring-accent-300" : ""}`} role="group" aria-label="Fit type (required)">
           {fitTypeOptions.map((f) => (
             <button
               key={f}

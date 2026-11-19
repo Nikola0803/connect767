@@ -24,8 +24,9 @@ describe("required uniform fit selection", () => {
     const setup = openUniformSetup();
     expect(progress.getByRole("button", { name: /Design/ })).toHaveAttribute("aria-current", "step");
     expect(progress.getByRole("button", { name: /Team roster/ })).toBeDisabled();
-    for (const button of screen.getAllByRole("button", { name: /Continue to Team roster/ })) expect(button).toBeDisabled();
-    expect(setup.getByRole("button", { name: /Continue to Team roster/ })).toBeDisabled();
+    for (const button of screen.getAllByRole("button", { name: /Continue to Team roster/ })) expect(button).toBeEnabled();
+    fireEvent.click(setup.getByRole("button", { name: /Continue to Team roster/ }));
+    expect(setup.getByRole("group", { name: "Fit type (required)" })).toHaveAttribute("data-validation-highlight", "true");
     for (const button of screen.getAllByRole("button", { name: /AI Designer/ })) expect(button).toBeEnabled();
   });
 
@@ -89,7 +90,7 @@ describe("required uniform fit selection", () => {
     expect(setup.getByRole("alert")).toHaveTextContent("Enter an inside-collar message or attach a logo/artwork file.");
     expect(progress.getByRole("button", { name: /Team roster/ })).toBeDisabled();
     for (const button of screen.getAllByRole("button", { name: /Continue to Team roster/ })) {
-      expect(button).toBeDisabled();
+      expect(button).toBeEnabled();
     }
 
     fireEvent.change(setup.getByPlaceholderText("Message for the inside collar"), { target: { value: "ONE TEAM" } });
@@ -143,6 +144,22 @@ describe("required uniform fit selection", () => {
     fireEvent.change(socksInput, { target: { value: "22" } });
     expect(screen.queryByText("Socks quantity must be 22 to match the full-kit order.")).not.toBeInTheDocument();
     expect(progress.getByRole("button", { name: /Review & quote/ })).toBeEnabled();
+  });
+
+  it("highlights an unadded roster row when Continue cannot advance", () => {
+    const progress = openStudio("design");
+    fireEvent.click(openUniformSetup().getByRole("button", { name: "Men", exact: true }));
+    fireEvent.click(progress.getByRole("button", { name: /Team roster/ }));
+
+    fireEvent.change(screen.getAllByRole("textbox", { name: "Name" })[0], { target: { value: "Draft team row" } });
+    fireEvent.change(screen.getAllByRole("spinbutton", { name: "Player quantity" })[0], { target: { value: "22" } });
+    const continueButton = screen.getAllByRole("button", { name: /Continue to Review & quote/ }).at(-1);
+    expect(continueButton).toBeEnabled();
+    fireEvent.click(continueButton);
+
+    expect(screen.getAllByText("Click Add player to include this row in the team total.").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Click Add player to include this row in the team total.")[0].closest("div")).toHaveAttribute("data-validation-highlight", "true");
+    expect(progress.getByRole("button", { name: /Team roster/ })).toHaveAttribute("aria-current", "step");
   });
 
   it("validates the player name and adds a completed roster row", () => {
