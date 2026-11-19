@@ -21,9 +21,11 @@ describe("required uniform fit selection", () => {
 
   it("starts in the combined Design step and requires fit before Team roster", () => {
     const progress = openStudio("ai");
+    const setup = openUniformSetup();
     expect(progress.getByRole("button", { name: /Design/ })).toHaveAttribute("aria-current", "step");
     expect(progress.getByRole("button", { name: /Team roster/ })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /Continue to Team roster/ })).toBeDisabled();
+    for (const button of screen.getAllByRole("button", { name: /Continue to Team roster/ })) expect(button).toBeDisabled();
+    expect(setup.getByRole("button", { name: /Continue to Team roster/ })).toBeDisabled();
     for (const button of screen.getAllByRole("button", { name: /AI Designer/ })) expect(button).toBeEnabled();
   });
 
@@ -48,6 +50,14 @@ describe("required uniform fit selection", () => {
     expect(header.queryByRole("button", { name: "Download" })).not.toBeInTheDocument();
     expect(header.queryByRole("button", { name: "Settings" })).not.toBeInTheDocument();
     expect(header.queryByRole("button", { name: "Open uniform and order setup" })).not.toBeInTheDocument();
+    const promptTools = within(screen.getAllByLabelText("AI prompt tools")[0]);
+    expect(promptTools.getByRole("button", { name: "New design" })).toBeVisible();
+    expect(promptTools.getByRole("button", { name: "History" })).toBeVisible();
+    expect(promptTools.getByRole("button", { name: "Reference" })).toBeVisible();
+    expect(promptTools.getByRole("button", { name: "Artwork" })).toBeVisible();
+    expect(promptTools.getByRole("button", { name: "Refine with AI" })).toBeVisible();
+    expect(screen.getAllByRole("region", { name: "AI command prompt" })[0]).toBeVisible();
+    expect(screen.getAllByRole("textbox", { name: "Message Connect767 AI" })[0]).toBeVisible();
   });
 
   it.each(["Men", "Women", "Youth"])("unlocks Step 2 Team roster after selecting %s in Design", (fit) => {
@@ -59,11 +69,11 @@ describe("required uniform fit selection", () => {
     fireEvent.click(setup.getByRole("button", { name: fit, exact: true }));
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(progress.getByRole("button", { name: /Team roster/ })).toBeEnabled();
+    expect(setup.getByRole("button", { name: /Continue to Team roster/ })).toBeEnabled();
     const saved = JSON.parse(window.localStorage.getItem("c767:studio:soccer:blank-canvas"));
     expect(saved.fitType).toBe(fit);
     expect(saved.fitTypeConfirmed).toBe(true);
-    closeUniformSetup();
-    fireEvent.click(screen.getByRole("button", { name: /Continue to Team roster/ }));
+    fireEvent.click(setup.getByRole("button", { name: /Continue to Team roster/ }));
     expect(progress.getByRole("button", { name: /Team roster/ })).toHaveAttribute("aria-current", "step");
   });
 
@@ -113,6 +123,8 @@ describe("required uniform fit selection", () => {
     const shirtOnlyButton = setup.getByRole("button", { name: /^Shirt Only/ });
     expect(shirtOnlyButton).toHaveTextContent("$12.00");
     expect(shirtOnlyButton).toHaveTextContent("supporter jerseys use this price");
+    expect(setup.queryByText("Add extra shirts to your full-kit team order.")).not.toBeInTheDocument();
+    expect(setup.queryByLabelText("Extra shirt quantity 1")).not.toBeInTheDocument();
     expect(screen.queryByText("Add Fan/Supporter Jerseys")).not.toBeInTheDocument();
 
     fireEvent.click(setup.getByRole("button", { name: "Men", exact: true }));
@@ -134,11 +146,11 @@ describe("required uniform fit selection", () => {
     expect(screen.getAllByText(/1 supporter jersey × \$12\.00/).length).toBeGreaterThan(0);
   });
 
-  it("offers Short or Long for each player when Mixed team order is selected", () => {
+  it("offers Short or Long for each player when Mixed Sleeve Team Order is selected", () => {
     const progress = openStudio("design");
     const setup = openUniformSetup();
     fireEvent.click(setup.getByRole("button", { name: "Men", exact: true }));
-    fireEvent.click(setup.getByRole("checkbox", { name: "Mixed team order" }));
+    fireEvent.click(setup.getByRole("checkbox", { name: "Mixed Sleeve Team Order" }));
     closeUniformSetup();
     fireEvent.click(progress.getByRole("button", { name: /Team roster/ }));
 

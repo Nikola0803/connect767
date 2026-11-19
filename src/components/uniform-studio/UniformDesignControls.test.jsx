@@ -68,17 +68,14 @@ describe("uniform design controls", () => {
     expect(screen.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent("Includes shirt, shorts and socks");
     expect(screen.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("Extra team and supporter jerseys use this price");
   });
-  it("keeps Full Kit selected when adding extra shirts and allows sizes and quantities", () => {
+  it("keeps extra-shirt quantities out of Step 1", () => {
     const setKitType = vi.fn();
-    const setExtraTeamShirts = vi.fn();
-    const options = { fitType: "Men", setFitType: vi.fn(), kitType: "Shirt", setKitType, extraTeamShirts: [{ size: "M", quantity: 1 }], setExtraTeamShirts, logoApplication: "Sublimated", setLogoApplication: vi.fn(), insideCollarMessage: false, setInsideCollarMessage: vi.fn(), insideCollarText: "", setInsideCollarText: vi.fn() };
+    const options = { fitType: "Men", setFitType: vi.fn(), kitType: "Shirt", setKitType, logoApplication: "Sublimated", setLogoApplication: vi.fn(), insideCollarMessage: false, setInsideCollarMessage: vi.fn(), insideCollarText: "", setInsideCollarText: vi.fn() };
     render(<OptionsPanel {...options} section="fit" />);
     expect(screen.getByRole("button", { name: /^Full Kit/ })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: /^Shirt Only/ })).toHaveAttribute("aria-pressed", "true");
-    fireEvent.change(screen.getByLabelText("Extra shirt quantity 1"), { target: { value: "3" } });
-    expect(setExtraTeamShirts.mock.calls.at(-1)[0](options.extraTeamShirts)).toEqual([{ size: "M", quantity: 3 }]);
-    fireEvent.click(screen.getByRole("button", { name: "Remove extra shirt size 1" }));
-    expect(setKitType).toHaveBeenCalledWith("Full");
+    expect(screen.queryByText("Add extra shirts to your full-kit team order.")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Extra shirt quantity 1")).not.toBeInTheDocument();
   });
   it("combines fit, colors and functioning production extras in uniform setup", () => {
     const setInsideCollarMessage = vi.fn();
@@ -144,26 +141,24 @@ describe("uniform design controls", () => {
     fireEvent.change(screen.getByLabelText("Sleeve ends color"), { target: { value: "#123456" } });
     expect(setColors.mock.calls.at(-1)[0](defaultZoneColors).sleeveStrip).toBe("#123456");
   });
-  it("offers Crew, V-Neck and Polo collar choices with mixed sleeve controls", () => {
+  it("keeps AI-designed base collars out of the controls and offers the paid Polo option", () => {
     const setSleeve = vi.fn();
     const setCollar = vi.fn();
     const props = { sport: "soccer", collar: "Crew", setCollar, sleeve: "Short", setSleeve, colors: defaultZoneColors, setColors: vi.fn() };
     const { rerender } = render(<DesignPanel {...props} />);
-    expect(screen.getByRole("button", { name: "Crew" })).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(screen.getByRole("button", { name: "V-Neck" }));
-    fireEvent.click(screen.getByRole("button", { name: /Polo/ }));
-    expect(setCollar).toHaveBeenNthCalledWith(1, "V-Neck");
-    expect(setCollar).toHaveBeenNthCalledWith(2, "Polo");
+    expect(screen.queryByRole("button", { name: "Crew" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "V-Neck" })).not.toBeInTheDocument();
+    expect(screen.getByText(/Crew and V-Neck styles are designed with the AI tool and included in the base price/i)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /Polo style collar/ }));
+    expect(setCollar).toHaveBeenCalledWith("Polo");
     expect(screen.queryByRole("button", { name: "Sleeveless" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("checkbox", { name: "Mixed team order" }));
+    expect(screen.queryByRole("checkbox", { name: /Long sleeves/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/Long sleeves add \$2\.00\/kit/i)).toBeVisible();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Mixed Sleeve Team Order" }));
     expect(setSleeve).toHaveBeenCalledWith("Mixed");
     rerender(<DesignPanel {...props} sleeve="Mixed" />);
     expect(screen.getByText(/combination of short- and long-sleeve jerseys/i)).toBeInTheDocument();
-    const longSleeves = screen.getByRole("checkbox", { name: /Long sleeves/ });
-    expect(longSleeves).not.toBeChecked();
-    fireEvent.click(longSleeves);
-    expect(setSleeve).toHaveBeenLastCalledWith("Long");
-    fireEvent.click(screen.getByRole("checkbox", { name: "Mixed team order" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Mixed Sleeve Team Order" }));
     expect(setSleeve).toHaveBeenLastCalledWith("Short");
   });
   it("starts the collar in the same color as the blank shirt fabric", () => {
@@ -241,13 +236,11 @@ describe("uniform design controls", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Crew" })).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(screen.getByRole("button", { name: "V-Neck" }));
-    fireEvent.click(screen.getByRole("button", { name: /Polo/ }));
-    fireEvent.click(screen.getByRole("checkbox", { name: /Long sleeves/ }));
-    expect(setCollar).toHaveBeenCalledWith("V-Neck");
+    expect(screen.queryByRole("button", { name: "Crew" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "V-Neck" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Polo style collar/ }));
     expect(setCollar).toHaveBeenCalledWith("Polo");
-    expect(setSleeve).toHaveBeenCalledWith("Long");
+    expect(screen.queryByRole("checkbox", { name: /Long sleeves/ })).not.toBeInTheDocument();
 
     rerender(
       <ApprovedUniformGraphic
