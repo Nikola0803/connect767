@@ -10,6 +10,16 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     expect(container.querySelectorAll('[data-sleeve-replacement] path')).toHaveLength(0);
   });
 
+  it.each(["front", "back"])("renders every selected collar shape on the soccer %s view", (view) => {
+    for (const collar of ["Crew", "V-Neck", "Polo"]) {
+      const { container, unmount } = render(
+        <ApprovedUniformGraphic sport="soccer" view={view} collar={collar} />,
+      );
+      expect(container.querySelector(`[data-collar-shape="${collar}"]`)).toBeInTheDocument();
+      unmount();
+    }
+  });
+
   it.each(["front", "back"])("replaces both %s sleeves from the shoulder boundary and preserves wrist trim", (view) => {
     const { container } = render(
       <ApprovedUniformGraphic sport="soccer" view={view} sleeve="Long" colors={{ sleeveStrip: "#f15a37" }} />,
@@ -17,14 +27,12 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     const replacements = container.querySelectorAll('[data-sleeve-replacement="Long"] [data-long-sleeve-side]');
     expect(replacements).toHaveLength(2);
     const expectedBoundaryStarts = view === "front"
-      ? ["M275,56", "M391,56"]
-      : ["M775.5,52", "M894.5,52"];
+      ? ["M275,40", "M391,40"]
+      : ["M775.5,36", "M894.5,36"];
     replacements.forEach((replacement, index) => {
       expect(replacement.getAttribute("d")).toMatch(new RegExp(`^${expectedBoundaryStarts[index]}`));
-    });
-    const legacyMaskStarts = view === "front" ? ["M275,40", "M391,40"] : ["M775.5,36", "M894.5,36"];
-    replacements.forEach((replacement, index) => {
-      expect(replacement.getAttribute("d")).not.toMatch(new RegExp(`^${legacyMaskStarts[index]}`));
+      expect(replacement.getAttribute("stroke-width")).toBe("4");
+      expect(replacement.getAttribute("stroke")).toBe(replacement.getAttribute("fill"));
     });
     expect(container.querySelectorAll('[data-long-sleeve-cuff]')).toHaveLength(2);
     // The selected long sleeve replaces the short cuff; only the wrist trim

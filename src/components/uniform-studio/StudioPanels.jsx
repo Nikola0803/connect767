@@ -225,11 +225,20 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
         Collar &amp; sleeves
       </h3>
       <div className="mb-1.5">
-        {config.collarOptions.includes("Polo") && <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-foreground-800">
-          <input type="checkbox" checked={collar === "Polo"} onChange={(event) => setCollar(event.target.checked ? "Polo" : "Crew")} className="accent-primary-600" />
-          Polo collar (+${ADD_ON_PRICES.collarPolo.toFixed(2)}/kit)
-        </label>}
-        <p className="mt-1 text-xs leading-snug text-foreground-500">Standard crew or V-Neck collar included in the base price.</p>
+        <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="Collar options">
+          {config.collarOptions.map((option) => (
+            <button
+              key={option}
+              type="button"
+              aria-pressed={collar === option}
+              onClick={() => setCollar(option)}
+              className={`min-h-9 rounded-lg border px-2 py-1 text-[11px] font-semibold leading-tight transition ${collar === option ? "border-primary-600 bg-primary-600 text-white" : "border-background-300 bg-background-50 text-foreground-800 hover:border-primary-300"}`}
+            >
+              {option}{option === "Polo" && <span className="block text-[9px] font-normal">+${ADD_ON_PRICES.collarPolo.toFixed(2)}/kit</span>}
+            </button>
+          ))}
+        </div>
+        <p className="mt-1 text-[11px] leading-snug text-foreground-500">Crew and V-Neck are included in the base price.</p>
       </div>
       {config.sleeveOptions && (
         <div className="mb-1.5">
@@ -251,14 +260,14 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
       <h3 className="mb-1.5 border-t border-background-200/70 pt-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400">
         Garment colors
       </h3>
-      <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="Garment part colors" onMouseLeave={() => onHoverZone?.(null)}>
+      <div className="grid grid-cols-4 gap-1" role="group" aria-label="Garment part colors" onMouseLeave={() => onHoverZone?.(null)}>
         {colorZones.map((zone) => <label key={zone.key}
           onMouseEnter={() => onHoverZone?.(zone.key)} onMouseLeave={() => onHoverZone?.(null)}
           onFocus={() => onHoverZone?.(null)} onBlur={() => onHoverZone?.(null)}
           onPointerCancel={() => onHoverZone?.(null)}
-          className="relative flex min-h-10 min-w-0 cursor-pointer items-center gap-1.5 rounded-lg border border-background-200 bg-background-50 px-2 py-1 text-left transition hover:border-primary-300 focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20">
-          <span className="h-5 w-5 shrink-0 rounded-md border border-black/10" style={{ backgroundColor: colors[zone.key] }} aria-hidden="true" />
-          <span className="min-w-0 text-[11px] font-semibold leading-tight text-foreground-800">{zone.label}</span>
+          className="relative flex min-h-9 min-w-0 cursor-pointer items-center gap-1 rounded-lg border border-background-200 bg-background-50 px-1.5 py-1 text-left transition hover:border-primary-300 focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20">
+          <span className="h-4 w-4 shrink-0 rounded border border-black/10" style={{ backgroundColor: colors[zone.key] }} aria-hidden="true" />
+          <span className="min-w-0 text-[10px] font-semibold leading-tight text-foreground-800">{zone.label}</span>
           <input type="color" aria-label={`${zone.label} color`} value={colors[zone.key]} onClick={() => onHoverZone?.(null)} onChange={(event) => { setZone(zone.key)(event.target.value); onHoverZone?.(null); }} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
         </label>)}
       </div>
