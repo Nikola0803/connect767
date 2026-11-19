@@ -17,10 +17,14 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     const replacements = container.querySelectorAll('[data-sleeve-replacement="Long"] [data-long-sleeve-side]');
     expect(replacements).toHaveLength(2);
     const expectedBoundaryStarts = view === "front"
-      ? ["M275,40", "M391,40"]
-      : ["M775.5,36", "M894.5,36"];
+      ? ["M275,56", "M391,56"]
+      : ["M775.5,52", "M894.5,52"];
     replacements.forEach((replacement, index) => {
       expect(replacement.getAttribute("d")).toMatch(new RegExp(`^${expectedBoundaryStarts[index]}`));
+    });
+    const legacyMaskStarts = view === "front" ? ["M275,40", "M391,40"] : ["M775.5,36", "M894.5,36"];
+    replacements.forEach((replacement, index) => {
+      expect(replacement.getAttribute("d")).not.toMatch(new RegExp(`^${legacyMaskStarts[index]}`));
     });
     expect(container.querySelectorAll('[data-long-sleeve-cuff]')).toHaveLength(2);
     // The selected long sleeve replaces the short cuff; only the wrist trim
