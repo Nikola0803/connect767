@@ -730,19 +730,32 @@ export default function ApprovedUniformGraphic({
                 : `M${collarCenterX - 55},${region.collarY - 16} Q${collarCenterX - 18},${region.collarY + 40} ${collarCenterX},${region.collarY + 50} Q${collarCenterX + 18},${region.collarY + 40} ${collarCenterX + 55},${region.collarY - 16} L${collarCenterX + 40},${region.collarY - 22} Q${collarCenterX + 12},${region.collarY + 21} ${collarCenterX},${region.collarY + 29} Q${collarCenterX - 12},${region.collarY + 21} ${collarCenterX - 40},${region.collarY - 22} Z`}
               fill={`url(#${collarFabricId})`}
               stroke={collarColor}
-              strokeWidth="2"
+              strokeWidth="3"
+              strokeLinecap="round"
               strokeLinejoin="round"
+              paintOrder="stroke fill"
             />
           )}
-          {collar === "Crew" && <ellipse data-collar-part="crew-band" cx={collarCenterX} cy={region.collarY} rx="54" ry="31" fill={`url(#${collarFabricId})`} stroke={collarColor} strokeWidth="2" />}
+          {collar === "Crew" && <ellipse data-collar-part="crew-band" cx={collarCenterX} cy={region.collarY} rx="54" ry="31" fill={`url(#${collarFabricId})`} stroke={collarColor} strokeWidth="3" paintOrder="stroke fill" />}
           {collar === "Polo" && (
-            <>
-              <path data-collar-part="polo-left-wing" d={`M${collarCenterX - 61},${region.collarY - 18} C${collarCenterX - 46},${region.collarY - 7} ${collarCenterX - 26},${region.collarY + 12} ${collarCenterX - 8},${region.collarY + 24} C${collarCenterX - 18},${region.collarY + 31} ${collarCenterX - 30},${region.collarY + 38} ${collarCenterX - 43},${region.collarY + 43} C${collarCenterX - 47},${region.collarY + 18} ${collarCenterX - 54},${region.collarY - 1} ${collarCenterX - 61},${region.collarY - 18} Z`} fill={`url(#${collarFabricId})`} stroke={collarColor} strokeWidth="2" strokeLinejoin="round" />
-              <path data-collar-part="polo-right-wing" d={`M${collarCenterX + 61},${region.collarY - 18} C${collarCenterX + 46},${region.collarY - 7} ${collarCenterX + 26},${region.collarY + 12} ${collarCenterX + 8},${region.collarY + 24} C${collarCenterX + 18},${region.collarY + 31} ${collarCenterX + 30},${region.collarY + 38} ${collarCenterX + 43},${region.collarY + 43} C${collarCenterX + 47},${region.collarY + 18} ${collarCenterX + 54},${region.collarY - 1} ${collarCenterX + 61},${region.collarY - 18} Z`} fill={`url(#${collarFabricId})`} stroke={collarColor} strokeWidth="2" strokeLinejoin="round" />
-              {view === "front" && (
+            view === "front" ? (
+              <>
+                <path data-collar-part="polo-left-wing" d={`M${collarCenterX - 61},${region.collarY - 18} C${collarCenterX - 48},${region.collarY - 8} ${collarCenterX - 29},${region.collarY + 9} ${collarCenterX - 15},${region.collarY + 20} Q${collarCenterX - 8},${region.collarY + 25} ${collarCenterX - 15},${region.collarY + 30} C${collarCenterX - 24},${region.collarY + 35} ${collarCenterX - 33},${region.collarY + 40} ${collarCenterX - 43},${region.collarY + 43} C${collarCenterX - 47},${region.collarY + 19} ${collarCenterX - 54},${region.collarY} ${collarCenterX - 61},${region.collarY - 18} Z`} fill={`url(#${collarFabricId})`} stroke={collarColor} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" paintOrder="stroke fill" />
+                <path data-collar-part="polo-right-wing" d={`M${collarCenterX + 61},${region.collarY - 18} C${collarCenterX + 48},${region.collarY - 8} ${collarCenterX + 29},${region.collarY + 9} ${collarCenterX + 15},${region.collarY + 20} Q${collarCenterX + 8},${region.collarY + 25} ${collarCenterX + 15},${region.collarY + 30} C${collarCenterX + 24},${region.collarY + 35} ${collarCenterX + 33},${region.collarY + 40} ${collarCenterX + 43},${region.collarY + 43} C${collarCenterX + 47},${region.collarY + 19} ${collarCenterX + 54},${region.collarY} ${collarCenterX + 61},${region.collarY - 18} Z`} fill={`url(#${collarFabricId})`} stroke={collarColor} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" paintOrder="stroke fill" />
                 <rect data-collar-part="polo-placket" x={collarCenterX - 8} y={region.collarY + 17} width="16" height="61" rx="5" fill={`url(#${collarFabricId})`} stroke={collarColor} strokeWidth="1.5" />
-              )}
-            </>
+              </>
+            ) : (
+              <path
+                data-collar-part="polo-back-band"
+                d={`M${collarCenterX - 56},${region.collarY - 10} Q${collarCenterX},${region.collarY - 34} ${collarCenterX + 56},${region.collarY - 10} L${collarCenterX + 43},${region.collarY + 12} Q${collarCenterX},${region.collarY - 8} ${collarCenterX - 43},${region.collarY + 12} Z`}
+                fill={`url(#${collarFabricId})`}
+                stroke={collarColor}
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                paintOrder="stroke fill"
+              />
+            )
           )}
         </g>
         {collar === "V-Neck" && (
@@ -771,6 +784,17 @@ export default function ApprovedUniformGraphic({
             <circle cx={collarCenterX} cy={region.collarY + 39} r="3.2" fill={body} stroke="#171512" strokeOpacity="0.38" />
             <circle cx={collarCenterX} cy={region.collarY + 59} r="3.2" fill={body} stroke="#171512" strokeOpacity="0.38" />
           </>
+        )}
+        {collar === "Polo" && view === "back" && (
+          <path
+            data-collar-part="polo-back-seam"
+            d={`M${collarCenterX - 43},${region.collarY + 7} Q${collarCenterX},${region.collarY - 10} ${collarCenterX + 43},${region.collarY + 7}`}
+            fill="none"
+            stroke="#171512"
+            strokeOpacity="0.25"
+            strokeWidth="1.5"
+            strokeDasharray="3 3"
+          />
         )}
       </g>}
 

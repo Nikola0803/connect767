@@ -41,6 +41,29 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     }
   });
 
+  it("keeps Polo wings and placket on the front while rendering only a rear band on the back", () => {
+    const { container, rerender } = render(
+      <ApprovedUniformGraphic sport="soccer" view="front" collar="Polo" />,
+    );
+    expect(container.querySelector('[data-collar-part="polo-left-wing"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-collar-part="polo-right-wing"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-collar-part="polo-placket"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-collar-part="polo-back-band"]')).not.toBeInTheDocument();
+    for (const wing of container.querySelectorAll('[data-collar-part^="polo-"][data-collar-part$="-wing"]')) {
+      expect(wing.getAttribute("d")).toContain(" Q");
+      expect(wing.getAttribute("stroke-linecap")).toBe("round");
+      expect(wing.getAttribute("stroke-linejoin")).toBe("round");
+      expect(wing.getAttribute("filter")).toBeNull();
+    }
+
+    rerender(<ApprovedUniformGraphic sport="soccer" view="back" collar="Polo" />);
+    expect(container.querySelector('[data-collar-part="polo-left-wing"]')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-collar-part="polo-right-wing"]')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-collar-part="polo-placket"]')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-collar-part="polo-back-band"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-collar-part="polo-back-seam"]')).toBeInTheDocument();
+  });
+
   it.each(["front", "back"])("replaces both %s sleeves from the shoulder boundary and preserves wrist trim", (view) => {
     const { container } = render(
       <ApprovedUniformGraphic sport="soccer" view={view} sleeve="Long" colors={{ sleeveStrip: "#f15a37" }} />,
