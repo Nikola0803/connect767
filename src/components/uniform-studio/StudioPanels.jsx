@@ -1025,6 +1025,7 @@ export function AIArtworkPanel({
   comparisonActive = false,
   onSavePreview,
   toolbarTarget,
+  setupPanel,
 }) {
   const [mode, setMode] = useState("uniform");
   const [brandName, setBrandName] = useState("");
@@ -1477,6 +1478,7 @@ export function AIArtworkPanel({
         onPlaceArtwork={onPlace}
         onClearArtwork={() => setPreview(null)}
         preservationControls={preservationControls}
+        setupPanel={setupPanel}
         canUndo={canUndoUniform}
         onUndo={onUndoUniform}
         onNewChat={startNewChat}

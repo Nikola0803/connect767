@@ -30,12 +30,7 @@ import {
 import JerseyStage from "../components/uniform-studio/JerseyStage";
 import ProductionViewport from "../components/uniform-studio/ProductionViewport";
 import useGarmentColors from "../components/uniform-studio/useGarmentColors";
-import GarmentCapabilitySummary from "../components/uniform-studio/GarmentCapabilitySummary";
-import ArtworkToolNavigation from "../components/uniform-studio/ArtworkToolNavigation";
-import {
-  detectGarmentCapabilities,
-  firstSupportedTool,
-} from "../components/uniform-studio/garmentCapabilities";
+import { detectGarmentCapabilities } from "../components/uniform-studio/garmentCapabilities";
 import {
   STUDIO_MODES,
   canUseManualEditing,
@@ -68,7 +63,6 @@ import {
 } from "../components/uniform-studio/studioBackgrounds";
 import { skinDataUri } from "../data/skins";
 import Button from "../components/ui/Button";
-import Tooltip from "../components/ui/Tooltip";
 import SelectedItemPanel from "../components/uniform-studio/SelectedItemPanel";
 import {
   isRestrictedSoccerSockPlacement,
@@ -170,8 +164,8 @@ const studioWorkflow = [
     description: "Uniform, colors & artwork",
     icon: "ri-pencil-ruler-2-line",
     step: 1,
-    defaultTool: "design",
-    tools: ["design", "zones", "ai", "text", "logo", "remove-bg", "skins", "layers"],
+    defaultTool: "ai",
+    tools: ["ai"],
   },
   {
     key: "roster",
@@ -320,9 +314,6 @@ export default function UniformStudioPage() {
     sports.some((s) => s.slug === initialSport) ? initialSport : "soccer"
   );
   const [selectedTemplate, setSelectedTemplate] = useState(scratch ? "blank-canvas" : null);
-  // Kept only for backwards-compatible entry URLs. New sessions enter the AI
-  // workspace directly from a sport tile instead of choosing a stock cut.
-  const [selectedCategory, setSelectedCategory] = useState(null);
 
   // ---------- Design state ----------
   const [fitType, setFitType] = useState("");
@@ -337,7 +328,7 @@ export default function UniformStudioPage() {
   const [selectedTool, setActiveTool] = useState(
     tools.some((tool) => tool.key === initialWorkflowStep)
       ? initialWorkflowStep
-      : studioWorkflow.find((step) => step.key === initialWorkflowStep)?.defaultTool || "design"
+      : studioWorkflow.find((step) => step.key === initialWorkflowStep)?.defaultTool || "ai"
   );
   const [zoom, setZoom] = useState(1);
   const [productionPanMode, setProductionPanMode] = useState(false);
@@ -554,23 +545,21 @@ export default function UniformStudioPage() {
   const selectedWorkflowStep = studioWorkflow.find((step) => step.tools.includes(selectedTool));
   const gatedTool = strictAIPreview
     ? "ai"
-    : !hasSelectedFit && selectedWorkflowStep?.step > 1 ? "design" : selectedTool;
+    : !hasSelectedFit && selectedWorkflowStep?.step > 1 ? "ai" : selectedTool;
   const requestedWorkflowIndex = Math.max(
     0,
     studioWorkflow.findIndex((step) => step.tools.includes(gatedTool))
   );
   const requestedCapabilityWorkflow = studioWorkflow[requestedWorkflowIndex];
-  const activeTool = garmentCapabilities.canUse(gatedTool)
+  const activeTool = requestedCapabilityWorkflow.tools.includes(gatedTool)
     ? gatedTool
-    : firstSupportedTool(requestedCapabilityWorkflow.tools, garmentCapabilities) || "design";
+    : requestedCapabilityWorkflow.defaultTool;
   const workflowIndex = Math.max(
     0,
     studioWorkflow.findIndex((step) => step.tools.includes(activeTool))
   );
   const workflowStep = studioWorkflow[workflowIndex];
-  const visibleTools = strictAIPreview
-    ? tools.filter((tool) => tool.key === "ai")
-    : tools.filter((tool) => workflowStep.tools.includes(tool.key) && garmentCapabilities.canUse(tool.key));
+  const visibleTools = tools.filter((tool) => workflowStep.tools.includes(tool.key));
   const activeToolConfig = tools.find((tool) => tool.key === activeTool) || visibleTools[0];
 
   useEffect(() => {
@@ -589,7 +578,7 @@ export default function UniformStudioPage() {
         { id, type: "logo", view: "front", x: 50, y: 42, size: 28, rotation: 0, src: transfer.src, name: transfer.name || "AI artwork" },
       ]);
       setSelectedLayerId(id);
-      setActiveTool("logo");
+      setActiveTool("ai");
       window.sessionStorage.removeItem(AI_TRANSFER_KEY);
       setSearchParams((previous) => {
         const next = new URLSearchParams(previous);
@@ -1725,9 +1714,10 @@ export default function UniformStudioPage() {
   // Other route makes this entry useful for non-sport garments without
   // forcing customers through a stock-template catalogue.
   if (!selectedTemplate) {
-    const categorySport = selectedCategory
-      ? sports.find((sport) => sport.slug === selectedCategory)
-      : null;
+    // Always show the single category entrance. Category selection now opens
+    // the same AI-only studio directly; there is no intermediate template
+    // catalogue or category-specific editor.
+    const categorySport = null;
     const categoryTemplate = categorySport
       ? templates.find(
           (candidate) => candidate.sportSlug === categorySport.slug && candidate.slug !== "blank-canvas"
@@ -1800,22 +1790,9 @@ export default function UniformStudioPage() {
                   {categorySport ? categorySport.label : "Sports, teamwear and custom clothing"}
                 </h2>
               </div>
-              {categorySport ? (
-                <button
-                  type="button"
-                  onClick={() => setSelectedCategory(null)}
-                  className="group inline-flex min-h-12 items-center gap-3 self-start rounded-full border border-primary-700 bg-primary-600 px-5 py-3 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(0,116,73,0.22)] transition duration-200 hover:-translate-y-0.5 hover:bg-primary-700 hover:shadow-[0_14px_30px_rgba(0,116,73,0.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 sm:self-auto cursor-pointer"
-                >
-                  <span className="grid size-7 place-items-center rounded-full bg-white/15 transition group-hover:bg-white/20">
-                    <i className="ri-arrow-left-line text-base" aria-hidden="true" />
-                  </span>
-                  <span>All Sports</span>
-                </button>
-              ) : (
-                <p className="max-w-lg text-sm leading-relaxed text-foreground-500">
-                  Every category opens a clean AI workspace. No stock template selection is required.
-                </p>
-              )}
+              <p className="max-w-lg text-sm leading-relaxed text-foreground-500">
+                Every category opens the same clean AI workspace. No stock template selection is required.
+              </p>
             </div>
 
             {categorySport && categoryTemplate && categoryBlankTemplate ? (
@@ -1936,7 +1913,7 @@ export default function UniformStudioPage() {
 
   const uniformSetupPanel = <UniformSetupPanel
     designProps={{ sport: activeSport, collar, setCollar, sleeve, setSleeve, colors: stageColors, setColors: updateGarmentColors, onHoverZone: setHoverZone, twoTone, setTwoTone }}
-    optionsProps={{ sport: activeSport, fitType, setFitType: (value) => { setFitType(value); if (!hasSelectedFit) setActiveTool("design"); }, kitType, setKitType, extraTeamShirts, setExtraTeamShirts, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment, showFitAlert: false }}
+    optionsProps={{ sport: activeSport, fitType, setFitType, kitType, setKitType, extraTeamShirts, setExtraTeamShirts, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment, showFitAlert: true }}
   />;
 
   const headerTileClass = "inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition";
@@ -2225,34 +2202,6 @@ export default function UniformStudioPage() {
       )}
 
       <div className="flex min-h-0 flex-1 bg-[radial-gradient(circle_at_48%_42%,rgba(36,45,36,0.32),transparent_38%),linear-gradient(135deg,#10110f_0%,#151610_52%,#10110f_100%)]">
-                  {/* Icon rail — desktop only; mobile gets the pill row below the canvas */}
-                  {!strictAIPreview && <div className="hidden w-[76px] flex-shrink-0 flex-col items-center gap-2 overflow-y-auto border-r border-white/[0.055] bg-black/10 px-2 py-4 lg:flex">
-                    {visibleTools.map((t) => (
-                      <Tooltip key={t.key} label={t.label} description={t.hint} placement="right">
-                        <button
-                          type="button"
-                          aria-label={t.label}
-                          onClick={() => setActiveTool(t.key)}
-                          className={`flex w-14 flex-shrink-0 cursor-pointer flex-col items-center gap-1 rounded-xl border py-2.5 transition-all ${
-                            activeTool === t.key
-                              ? "border-accent-400/50 bg-accent-500 text-background-50 shadow-[0_8px_22px_rgba(239,84,53,0.2)]"
-                              : "border-transparent text-background-50/40 hover:border-white/[0.06] hover:bg-white/[0.045] hover:text-background-50/85"
-                          }`}
-                        >
-                          {t.key === "ai"
-                            ? <span className="relative block h-7 w-7" aria-hidden="true">
-                                <img src={`${import.meta.env.BASE_URL}connect767-ai-logo-transparent.png?v=20261117`} alt="" className="h-full w-full object-contain brightness-0 invert" />
-                                <i className="ri-sparkling-2-fill absolute -right-1 -top-1 text-[10px] leading-none text-white" />
-                              </span>
-                            : <i className={`${t.icon} text-lg`} />}
-                          <span className="text-[9px] font-semibold uppercase tracking-wide leading-none">
-                            {t.label}
-                          </span>
-                        </button>
-                      </Tooltip>
-                    ))}
-                  </div>}
-
                   {/* Canvas */}
                   <div className={`flex min-w-0 flex-1 flex-col items-center overflow-hidden ${activeTool === "ai" ? "gap-2 px-2 py-2 md:px-3 xl:px-4" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
                     {strictAIPreview && (
@@ -2507,35 +2456,11 @@ export default function UniformStudioPage() {
                       </div>
                     )}
 
-                    {/* Mobile tool tabs — the icon rail is hidden below lg */}
-                    {!strictAIPreview && <div className="lg:hidden w-full flex items-center gap-2 overflow-x-auto pb-1">
-                      {visibleTools.map((t) => (
-                        <button
-                          key={t.key}
-                          type="button"
-                          onClick={() => setActiveTool(t.key)}
-                          className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold cursor-pointer whitespace-nowrap transition-colors flex-shrink-0 border ${
-                            activeTool === t.key
-                              ? "bg-accent-500 text-background-50 border-accent-500"
-                              : "bg-white/5 text-background-50/70 border-white/10 hover:bg-white/10 hover:text-background-50"
-                          }`}
-                        >
-                          <i className={t.icon} />
-                          {t.label}
-                        </button>
-                      ))}
-                    </div>}
                   </div>
 
               {/* Docked fields panel */}
               <aside className={`hidden w-full flex-shrink-0 flex-col overflow-hidden border-l border-black/10 bg-[#f7f5ef] md:flex ${activeTool === "ai" ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px]" : "max-w-[420px]"}`}>
-                {workflowStep.key === "design" && !strictAIPreview ? (
-                  <ArtworkToolNavigation
-                    tools={visibleTools}
-                    activeTool={activeTool}
-                    onSelect={setActiveTool}
-                  />
-                ) : activeTool !== "ai" && <div className={`flex-shrink-0 border-b border-black/[0.07] bg-[#f7f5ef]/95 backdrop-blur-xl ${activeTool === "design" ? "px-4 py-3" : "px-5 py-4"}`}>
+                {activeTool !== "ai" && <div className={`flex-shrink-0 border-b border-black/[0.07] bg-[#f7f5ef]/95 backdrop-blur-xl ${activeTool === "design" ? "px-4 py-3" : "px-5 py-4"}`}>
                   <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary-700">Step {workflowStep.step} · {workflowStep.label}</p>
                   <div className="mt-1 flex items-center justify-between gap-3">
                     <h2 className="font-heading text-lg font-medium text-foreground-950">{activeToolConfig?.label || workflowStep.label}</h2>
@@ -2543,15 +2468,6 @@ export default function UniformStudioPage() {
                   <p className="mt-1 text-xs text-foreground-500">{activeToolConfig?.hint || workflowStep.description}</p>
                 </div>}
                 <div className={`min-h-0 flex-1 ${activeTool === "ai" ? "flex flex-col overflow-hidden" : "overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"} ${activeTool === "ai" ? "" : activeTool === "design" ? "p-3 pb-20" : "p-5 pb-24"}`}>
-                {workflowStep.key === "design" && activeTool !== "ai" && (
-                  <div className="mb-4">
-                    <GarmentCapabilitySummary
-                      capabilities={garmentCapabilities}
-                      compact
-                      fitNotice={activeTool === "design" && !hasSelectedFit ? "Select a fit to continue to Team roster." : ""}
-                    />
-                  </div>
-                )}
                 {manualEditingAllowed && selectedLayer && <SelectedItemPanel
                   layer={selectedLayer}
                   placement={stageMode === "3d" && selectedLayerId ? placements3d[selectedLayerId] : null}
@@ -2614,6 +2530,7 @@ export default function UniformStudioPage() {
                     comparisonActive={Boolean(aiComparisonPlan)}
                     onSavePreview={saveProgress}
                     toolbarTarget={aiBannerActionsTarget}
+                    setupPanel={uniformSetupPanel}
                     hasExistingArtwork={layers.some(
                       (layer) => ["text", "logo", "clipart"].includes(layer.type) && !layer.source?.startsWith("ai-uniform"),
                     )}
@@ -2695,15 +2612,6 @@ export default function UniformStudioPage() {
 
       {/* Mobile: the fields panel docks to the bottom instead of the side */}
       <div className={`md:hidden flex-shrink-0 overflow-y-auto overscroll-contain border-t border-background-200/60 bg-background-50 ${activeTool === "ai" ? "max-h-[72dvh] p-0" : "max-h-[42dvh] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"}`}>
-        {workflowStep.key === "design" && activeTool !== "ai" && (
-          <div className="mb-4">
-            <GarmentCapabilitySummary
-              capabilities={garmentCapabilities}
-              compact
-              fitNotice={activeTool === "design" && !hasSelectedFit ? "Select a fit to continue to Team roster." : ""}
-            />
-          </div>
-        )}
         {manualEditingAllowed && <SelectedItemPanel
           layer={selectedLayer}
           placement={stageMode === "3d" && selectedLayerId ? placements3d[selectedLayerId] : null}
@@ -2765,6 +2673,7 @@ export default function UniformStudioPage() {
             onCompareVersions={setAiComparisonPlan}
             comparisonActive={Boolean(aiComparisonPlan)}
             onSavePreview={saveProgress}
+            setupPanel={uniformSetupPanel}
             hasExistingArtwork={layers.some(
               (layer) => ["text", "logo", "clipart"].includes(layer.type) && !layer.source?.startsWith("ai-uniform"),
             )}

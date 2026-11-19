@@ -60,6 +60,7 @@ export default function AIUniformComposer({
   onPlaceArtwork,
   onClearArtwork,
   preservationControls,
+  setupPanel,
   canUndo,
   onUndo,
   onNewChat,
@@ -343,6 +344,21 @@ export default function AIUniformComposer({
       )}
 
       <div ref={conversationRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4" aria-live="polite">
+        {setupPanel && (
+          <details className="group mx-auto mb-4 max-w-xl overflow-hidden rounded-2xl border border-primary-200 bg-primary-50/65" open={!hasConversation}>
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+              <span className="flex min-w-0 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-700 text-white"><i className="ri-shirt-line" /></span>
+                <span className="min-w-0">
+                  <strong className="block text-xs text-foreground-900">Uniform &amp; order setup</strong>
+                  <span className="block text-[9px] text-foreground-500">Fit, kit, collar, sleeves, colours and production extras</span>
+                </span>
+              </span>
+              <i className="ri-arrow-down-s-line text-lg text-primary-700 transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="border-t border-primary-200 bg-[#f8f7f2] p-3">{setupPanel}</div>
+          </details>
+        )}
         {!hasConversation ? <EmptyConversation dark={dark} /> : (
           <div className="mx-auto max-w-xl space-y-4">
             {!toolbarTarget && mode === "uniform" && uniformPlan && (
