@@ -19,7 +19,7 @@ const APPROVED_ASSETS = {
 
 const KIT_REGIONS = {
   soccer: {
-    shirtTop: 20, shirtBodyCleanupStart: 510, shirtEndStart: 534, bottomStart: 580,
+    shirtTop: 20, shirtBodyCleanupStart: 510, shirtEndStart: 550, bottomStart: 580,
     socksStart: 865, kitBottom: 1358,
     shortsEndPaths: [
       "M155,822 C200,842 255,845 306,820 L306,840 C258,860 205,858 155,840 Z",
@@ -588,10 +588,12 @@ export default function ApprovedUniformGraphic({
           {(fill) => <rect
             data-shirt-edge="complete"
             data-edge-color={shirtEnd}
+            data-shirt-edge-width="30"
             x={offset}
             y={region.shirtEndStart ?? region.bottomStart - 18}
             width={halfWidth}
             height={region.bottomStart - (region.shirtEndStart ?? region.bottomStart - 18)}
+            rx="4"
             fill={fill}
           />}
         </TintLayer>

@@ -165,14 +165,19 @@ describe("ApprovedUniformGraphic trim isolation", () => {
   it("matches the soccer shirt-end thickness across front, side and back views", () => {
     const { container, rerender } = render(<ApprovedUniformGraphic sport="soccer" view="front" />);
     const front = container.querySelector('[data-shirt-edge="complete"]');
+    expect(front.getAttribute("data-shirt-edge-width")).toBe("30");
+    expect(front.getAttribute("rx")).toBe("4");
     const frontRatio = Number(front.getAttribute("height")) / 1358;
 
     rerender(<ApprovedUniformGraphic sport="soccer" view="side" />);
     const side = container.querySelector('[data-garment-zone="shirtStrip"]');
+    expect(side.getAttribute("data-shirt-edge-width")).toBe("30");
+    expect(Number(side.getAttribute("rx"))).toBeGreaterThan(0);
     const sideRatio = Number(side.getAttribute("height")) / SIDE_REGIONS.soccer.height;
 
     rerender(<ApprovedUniformGraphic sport="soccer" view="back" />);
     const back = container.querySelector('[data-shirt-edge="complete"]');
+    expect(back.getAttribute("data-shirt-edge-width")).toBe("30");
     const backRatio = Number(back.getAttribute("height")) / 1358;
 
     expect(Math.abs(frontRatio - sideRatio)).toBeLessThan(0.001);
@@ -397,12 +402,12 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     expect(shirtHem.parentElement.getAttribute("mask")).toContain("approved-jersey-");
     expect(shirtHem.parentElement.style.mixBlendMode).toBe("normal");
     expect(shirtHem.getAttribute("x")).toBe("0");
-    expect(shirtHem.getAttribute("y")).toBe("534");
+    expect(shirtHem.getAttribute("y")).toBe("550");
     expect(shirtHem.getAttribute("width")).toBe("579.5");
-    expect(shirtHem.getAttribute("height")).toBe("46");
+    expect(shirtHem.getAttribute("height")).toBe("30");
     expect(shirtBodyCleanup.getAttribute("x")).toBe("0");
     expect(shirtBodyCleanup.getAttribute("y")).toBe("510");
-    expect(shirtBodyCleanup.getAttribute("height")).toBe("24");
+    expect(shirtBodyCleanup.getAttribute("height")).toBe("40");
     expect(shirtBodyCleanup.getAttribute("fill")).toBe("#eeeeee");
     expect(shirtBodyCleanup.parentElement.style.mixBlendMode).toBe("normal");
     expect(editableShirtHem.getAttribute("fill-opacity")).toBe("0");

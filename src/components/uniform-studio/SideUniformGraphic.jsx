@@ -106,10 +106,10 @@ export default function SideUniformGraphic({
   );
   const sleeveCropHeight = Math.min(height, Math.max(region.bottomStart + 90, height * 0.44));
   const showLongSleeve = sleeveStyle === "Long" && region.nativeSleeve !== "long" && region.longSleeve;
-  // Soccer front/back use a 46px edge on a 1358px source. Preserve that
+  // Soccer front/back use a 30px edge on a 1358px source. Preserve that
   // finished-band proportion on the taller side photograph.
   const shirtEdgeDepth = sport === "soccer"
-    ? Math.round(height * (46 / 1358))
+    ? Math.round(height * (30 / 1358))
     : Math.max(18, region.bottomStart - region.shirtHem);
   const shirtHem = region.bottomStart - shirtEdgeDepth;
   // Keep trims visually identical after each native source is fitted into the
@@ -161,7 +161,7 @@ export default function SideUniformGraphic({
         <rect data-garment-zone="body" x="0" y="0" width={width} height={region.bottomStart} fill={body} opacity={opacityFor("body")} />
         <rect data-garment-zone="shorts" x="0" y={region.bottomStart} width={width} height={socksStart - region.bottomStart} fill={bottom} opacity={opacityFor("shorts")} />
         {socksStart < height && <rect data-garment-zone="socks" x="0" y={socksStart} width={width} height={height - socksStart} fill={socks} opacity={opacityFor("socks")} />}
-        <rect data-garment-zone="shirtStrip" data-edge-color={shirtEnd} data-edge-depth={shirtEdgeDepth} x="0" y={shirtHem} width={width} height={shirtEdgeDepth} fill={`url(#${shirtEdgeId})`} opacity={opacityFor("shirtStrip")} />
+        <rect data-garment-zone="shirtStrip" data-edge-color={shirtEnd} data-shirt-edge-width="30" data-edge-depth={shirtEdgeDepth} x="0" y={shirtHem} width={width} height={shirtEdgeDepth} rx={Math.max(3, Math.round(shirtEdgeDepth * 0.13))} fill={`url(#${shirtEdgeId})`} opacity={opacityFor("shirtStrip")} />
         <rect data-garment-zone="shortsStrip" data-edge-color={shortsEnd} data-shorts-edge-width="18" data-edge-depth={shortsEdgeDepth} x="0" y={region.bottomHem} width={width} height={shortsEdgeDepth} rx={Math.max(2, Math.round(shortsEdgeDepth * 0.16))} fill={`url(#${shortsEdgeId})`} opacity={opacityFor("shortsStrip")} />
         {region.sleeve && <path data-garment-zone="sleeve" d={region.sleeve} fill={sleeve} stroke={sleeve} strokeWidth="6" strokeLinejoin="round" opacity={opacityFor("sleeve")} />}
         {region.sleeveEnd && !showLongSleeve && <path data-garment-zone="sleeveStrip" data-edge-color={sleeveEnd} data-sleeve-edge-width="20" data-edge-depth={sleeveEdgeDepth} d={region.sleeveEnd} fill={`url(#${sleeveEdgeId})`} stroke={sleeveEnd} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" paintOrder="stroke fill" opacity={opacityFor("sleeveStrip")} />}
