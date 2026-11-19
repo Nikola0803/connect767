@@ -70,6 +70,10 @@ import { skinDataUri } from "../data/skins";
 import Button from "../components/ui/Button";
 import Tooltip from "../components/ui/Tooltip";
 import SelectedItemPanel from "../components/uniform-studio/SelectedItemPanel";
+import {
+  isRestrictedSoccerSockPlacement,
+  removeRestrictedSoccerSockLayers,
+} from "../components/uniform-studio/sockRestrictions";
 import { Input, Select, Textarea } from "../components/ui/FormField";
 import DemoModeNotice from "../components/DemoModeNotice";
 import PaypalButton from "../components/PaypalButton";
@@ -283,6 +287,28 @@ const patternViewsFromPlan = (patternView) => {
 };
 const AI_TRANSFER_KEY = "connect767-ai-design-transfer";
 
+const categoryDetails = {
+  soccer: { title: "Soccer", description: "Complete match kits with shirts, shorts and solid-colour socks." },
+  basketball: { title: "Basketball", description: "Modern jerseys and shorts for teams, clubs and leagues." },
+  netball: { title: "Netball", description: "Court-ready dresses and coordinated team uniforms." },
+  cricket: { title: "Cricket", description: "Match shirts, trousers and complete cricket teamwear." },
+  goalkeeper: { title: "Goal Keeper", description: "Dedicated keeper kits with long- and short-sleeve options." },
+  other: { title: "Clothing & Other", description: "Polos, training wear, club clothing and any custom garment idea." },
+};
+
+const downloadDataUrl = (dataUrl, filename) => {
+  const link = document.createElement("a");
+  link.download = filename;
+  link.href = dataUrl;
+  link.click();
+};
+
+const safeExportName = (value = "uniform") => String(value)
+  .trim()
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, "-")
+  .replace(/^-|-$/g, "") || "uniform";
+
 export default function UniformStudioPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSport = searchParams.get("sport") || "soccer";
@@ -465,6 +491,7 @@ export default function UniformStudioPage() {
   const [quoteError, setQuoteError] = useState(null);
   const [previewImg, setPreviewImg] = useState(null);
   const [exporting, setExporting] = useState(false);
+  const [placementError, setPlacementError] = useState("");
   const [manualSaveStatus, setManualSaveStatus] = useState("idle");
   const manualSaveResetRef = useRef(null);
 
@@ -758,13 +785,14 @@ export default function UniformStudioPage() {
 
   useEffect(() => () => window.clearTimeout(manualSaveResetRef.current), []);
 
-  const restoreSaved = (key) => {
+  const restoreSaved = (key, savedSport = activeSport) => {
     try {
       const raw = window.localStorage.getItem(key);
       if (!raw) return false;
       const saved = JSON.parse(raw);
       if (!saved?.layers?.length && !Object.keys(saved?.placements3d || {}).length && !saved?.zoneModel) return false;
-      setLayers((saved.layers || []).map((layer) => normalizeStoredProductionLayer(layer, activeSport)));
+      const normalizedLayers = (saved.layers || []).map((layer) => normalizeStoredProductionLayer(layer, savedSport));
+      setLayers(removeRestrictedSoccerSockLayers(normalizedLayers, savedSport));
       setPlacements3d(saved.placements3d || {});
       if (saved.colors) setColors(normalizeZoneColors(saved.colors));
       if (saved.studioBackground) setStudioBackground(normalizeStudioBackground(saved.studioBackground));
@@ -941,7 +969,7 @@ export default function UniformStudioPage() {
     setAiDesignerMode("uniform");
     setAiCanvasMode("concept");
     // Pick up where they left off on this exact kit, if they were here before.
-    restoreSaved(`c767:studio:${sportSlug}:${t.slug}`);
+    restoreSaved(`c767:studio:${sportSlug}:${t.slug}`, sportSlug);
   };
 
   const TOOL_FOR_LAYER = { text: "text", skin: "skins", logo: "logo", clipart: "logo" };
@@ -1014,6 +1042,11 @@ export default function UniformStudioPage() {
    */
   const commitPendingLayer = (placement) => {
     if (!manualEditingAllowed || !pendingLayer) return;
+    if (isRestrictedSoccerSockPlacement({ sport: activeSport, ...placement })) {
+      setPlacementError("Soccer socks support solid colour only. Logos, text and patterns cannot be placed on socks.");
+      return;
+    }
+    setPlacementError("");
     const id = nextLayerId();
 
     const is2d = placement && placement.x !== undefined;
@@ -1022,6 +1055,7 @@ export default function UniformStudioPage() {
       view: placement?.view || view,
       x: is2d ? placement.x : 50,
       y: is2d ? placement.y : 45,
+      zone: placement?.zone,
       rotation: 0,
     };
     const layer =
@@ -1362,7 +1396,14 @@ export default function UniformStudioPage() {
 
   const updateLayer = (id, patch) => {
     if (!manualEditingAllowed) return;
-    setLayers((ls) => ls.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+    const currentLayer = layers.find((layer) => layer.id === id);
+    const updated = currentLayer ? { ...currentLayer, ...patch } : null;
+    if (updated && isRestrictedSoccerSockPlacement({ sport: activeSport, ...updated })) {
+      setPlacementError("Soccer socks support solid colour only. Artwork remains on its last valid garment position.");
+      return;
+    }
+    setPlacementError("");
+    setLayers((current) => current.map((layer) => (layer.id === id ? { ...layer, ...patch } : layer)));
   };
 
   const updateTextLayout = (id, textLayout) => {
@@ -1509,20 +1550,32 @@ export default function UniformStudioPage() {
 
   const handleDownload = async () => {
     if (showingAIConcept && aiWorkspaceConcept?.src) {
-      const link = document.createElement("a");
-      link.download = `${aiUniformPlan?.name || "ai-uniform-concept"}.png`;
-      link.href = aiWorkspaceConcept.src;
-      link.click();
+      const baseName = safeExportName(aiUniformPlan?.name || "ai-uniform-concept");
+      const conceptViews = aiUniformPlan?.conceptViews;
+      const separateConceptViews = ["front", "side", "back"]
+        .map((viewName) => ({ viewName, src: conceptViews?.[viewName]?.src || conceptViews?.[viewName] }))
+        .filter((item) => item.src);
+      if (separateConceptViews.length) {
+        separateConceptViews.forEach(({ viewName, src }) => downloadDataUrl(src, `${baseName}-${viewName}.png`));
+      } else {
+        downloadDataUrl(aiWorkspaceConcept.src, `${baseName}-ai-concept.png`);
+      }
       return;
     }
     if (!stageRef.current) return;
     setExporting(true);
     try {
-      const dataUrl = await toPng(stageRef.current, { pixelRatio: 2, skipFonts: true });
-      const link = document.createElement("a");
-      link.download = `${template?.name || "jersey"}-front-side-back.png`;
-      link.href = dataUrl;
-      link.click();
+      const baseName = safeExportName(template?.name || `${activeSport}-uniform`);
+      const surfaces = [...stageRef.current.querySelectorAll("[data-uniform-export-view]")];
+      if (!surfaces.length) {
+        const dataUrl = await toPng(stageRef.current, { pixelRatio: 2, skipFonts: true });
+        downloadDataUrl(dataUrl, `${baseName}-front-side-back.png`);
+      } else {
+        for (const surface of surfaces) {
+          const dataUrl = await toPng(surface, { pixelRatio: 3, skipFonts: true });
+          downloadDataUrl(dataUrl, `${baseName}-${surface.dataset.uniformExportView}.png`);
+        }
+      }
     } catch {
       /* export best-effort — canvas export can fail on some browsers with
          cross-origin images; the design itself is unaffected either way */
@@ -1667,11 +1720,10 @@ export default function UniformStudioPage() {
     );
   }
 
-  // ---------- Entry screen: pick a sport, then a template ----------
-  // Deliberately the only thing between landing and designing. The marketing
-  // hero, pricing table, FAQ and closing CTA that used to wrap the studio
-  // were removed — /uniforms is a tool, and everything that isn't the tool
-  // was competing with it for the screen.
+  // ---------- AI Design Studio entry: choose a garment category ----------
+  // Categories open a clean AI workspace directly. The broad Clothing &
+  // Other route makes this entry useful for non-sport garments without
+  // forcing customers through a stock-template catalogue.
   if (!selectedTemplate) {
     const categorySport = selectedCategory
       ? sports.find((sport) => sport.slug === selectedCategory)
@@ -1698,9 +1750,9 @@ export default function UniformStudioPage() {
             </Button>
             <div className="text-center">
               <p className="font-label text-[10px] font-bold uppercase tracking-[0.22em] text-primary-700">
-                Custom uniforms
+                Connect767 AI Design Studio
               </p>
-              <span className="font-heading text-lg font-semibold">Uniform Studio</span>
+              <span className="font-heading text-lg font-semibold">Custom Uniforms & Clothing</span>
             </div>
             <span className="hidden items-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-800 sm:inline-flex">
               <i className="ri-save-3-line" /> Designs save automatically
@@ -1712,15 +1764,15 @@ export default function UniformStudioPage() {
           <section className="mb-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <div className="max-w-3xl">
               <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-100/70 px-3 py-1.5 font-label text-[11px] font-bold uppercase tracking-[0.16em] text-primary-800">
-                <i className="ri-magic-line" /> Build a complete team kit
+                <i className="ri-magic-line" /> One AI studio for every garment
               </span>
               <h1 className="font-heading text-4xl font-medium leading-[1.04] tracking-[-0.035em] sm:text-5xl lg:text-6xl">
-                Design your uniform.
-                <span className="block italic text-primary-700">Outfit the whole roster.</span>
+                What would you like to design?
+                <span className="block italic text-primary-700">Start with any category.</span>
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-relaxed text-foreground-600 md:text-lg">
-                Choose a sport, describe the uniform you want, and let AI create the complete
-                Front / Side / Back concept before you add the roster and review your quote.
+                Choose a sport or clothing category, then describe what you want. The AI studio
+                creates a complete Front / Side / Back concept while the existing order steps stay intact.
               </p>
             </div>
             <ol className="grid grid-cols-3 overflow-hidden rounded-2xl border border-background-300 bg-background-50 shadow-sm">
@@ -1742,10 +1794,10 @@ export default function UniformStudioPage() {
             <div className="flex flex-col gap-3 border-b border-background-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">
-                  Choose sport
+                  Choose category
                 </p>
                 <h2 className="mt-1 font-heading text-3xl font-semibold sm:text-4xl">
-                  {categorySport ? categorySport.label : "Choose your sport"}
+                  {categorySport ? categorySport.label : "Sports, teamwear and custom clothing"}
                 </h2>
               </div>
               {categorySport ? (
@@ -1761,7 +1813,7 @@ export default function UniformStudioPage() {
                 </button>
               ) : (
                 <p className="max-w-lg text-sm leading-relaxed text-foreground-500">
-                  Select a category to open its AI uniform workspace. No stock template selection is required.
+                  Every category opens a clean AI workspace. No stock template selection is required.
                 </p>
               )}
             </div>
@@ -1827,6 +1879,10 @@ export default function UniformStudioPage() {
                     (candidate) => candidate.sportSlug === sport.slug && candidate.slug !== "blank-canvas"
                   );
                   if (!uniformTemplate) return null;
+                  const details = categoryDetails[sport.slug] || {
+                    title: sport.label,
+                    description: "Create a unique uniform or garment from a brief or reference image.",
+                  };
 
                   return (
                     <button
@@ -1852,16 +1908,16 @@ export default function UniformStudioPage() {
                       </div>
                       <div className="flex min-h-40 flex-col p-5">
                         <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-primary-700">
-                          Sport category
+                          Design category
                         </p>
                         <div className="mt-1 flex items-start justify-between gap-4">
-                          <h3 className="font-heading text-2xl font-semibold">{sport.label}</h3>
+                          <h3 className="font-heading text-2xl font-semibold">{details.title}</h3>
                           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-800 transition group-hover:bg-primary-600 group-hover:text-white">
-                            <i className="ri-arrow-right-line" />
+                            <i className="ri-sparkling-2-line" />
                           </span>
                         </div>
                         <p className="mt-2 text-sm leading-relaxed text-foreground-500">
-                          Generate a unique full uniform from a brief or reference image, then refine it for production.
+                          {details.description}
                         </p>
                         <span className="mt-auto pt-4 text-xs font-bold uppercase tracking-[0.14em] text-primary-800">
                           Open AI studio
@@ -2400,6 +2456,11 @@ export default function UniformStudioPage() {
                             : productionPanMode ? "Drag anywhere to pan · scroll to zoom · use Fit to reset"
                               : "Drag empty space or Alt-drag to pan · scroll to zoom · drag artwork to edit"}
                         </p>
+                        {placementError && (
+                          <p role="alert" className="flex-shrink-0 rounded-lg border border-amber-300/25 bg-amber-950/35 px-3 py-1.5 text-center text-[10px] font-semibold text-amber-100">
+                            {placementError}
+                          </p>
+                        )}
                       </div>
                     ) : (
                       <div className="flex-1 min-h-0 w-full flex flex-col">

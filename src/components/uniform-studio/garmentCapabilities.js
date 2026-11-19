@@ -16,7 +16,7 @@ const profiles = {
       zone("collar", "Collar", ["front", "side", "back"], ["design"]),
       zone("sleeves", "Sleeves", ["front", "side", "back"]),
       zone("shorts", "Shorts", ["front", "side", "back"]),
-      zone("socks", "Socks", ["front", "side", "back"], ["design", "logo", "skins"]),
+      zone("socks", "Socks · solid colour only", ["front", "side", "back"], ["design"]),
       zone("trim", "Garment trim", ["front", "side", "back"], ["design", "skins"]),
     ],
   },
