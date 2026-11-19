@@ -172,7 +172,15 @@ describe("AIUniformComposer", () => {
     expect(within(toolsMenu).getByRole("menuitem", { name: "Reference" })).toBeInTheDocument();
     expect(within(toolsMenu).getByRole("menuitem", { name: "Artwork" })).toBeInTheDocument();
     expect(within(toolsMenu).getByRole("menuitem", { name: "Previous version" })).toBeInTheDocument();
-    fireEvent.click(within(toolsMenu).getByRole("menuitem", { name: "Refine with AI" }));
+
+    fireEvent.click(toolbar.getByLabelText("Open design reset options"));
+    expect(screen.getByRole("menu", { name: "Design reset options" })).toBeInTheDocument();
+    expect(screen.queryByRole("menu", { name: "AI prompt tools menu" })).not.toBeInTheDocument();
+
+    fireEvent.click(toolbar.getByRole("button", { name: "AI tools" }));
+    expect(screen.getByRole("menu", { name: "AI prompt tools menu" })).toBeInTheDocument();
+    expect(screen.queryByRole("menu", { name: "Design reset options" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Refine with AI" }));
     expect(screen.getByRole("textbox", { name: "Message Connect767 AI" })).toHaveFocus();
 
     fireEvent.click(toolbar.getByLabelText("Open design reset options"));
