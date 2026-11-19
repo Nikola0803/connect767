@@ -16,6 +16,8 @@ import {
   shortSizeOptions,
   kitUnitPrice,
   mixedSleeveSurcharge,
+  kitAddOnBreakdown,
+  BASE_KIT_PRICE,
   ADD_ON_PRICES,
   SHIRT_ONLY_PRICE,
   minimumFullKitsFor,
@@ -3294,7 +3296,17 @@ function ReviewOrderTool({
   const sleeveSurcharge = mixedSleeveSurcharge(sleeve, roster);
   const minimumKits = minimumFullKitsFor(activeSport);
   const minimumKitsMet = unitCount >= minimumKits;
-  const kitsTotal = unitPrice * unitCount + sleeveSurcharge;
+  const kitAddOns = kitAddOnBreakdown({
+    sleeve,
+    collar,
+    insideCollarMessage: orderPayload.insideCollarMessage,
+    logoApplication,
+    unitCount,
+    roster,
+  });
+  const kitAddOnsTotal = kitAddOns.reduce((total, item) => total + item.total, 0);
+  const baseKitsTotal = BASE_KIT_PRICE * unitCount;
+  const kitsTotal = baseKitsTotal + kitAddOnsTotal;
   const supporterCount = fanJerseyAdded ? supporterJerseyCount(supporterJerseys) : 0;
   const supporterTotal = supporterCount * SHIRT_ONLY_PRICE;
   const extraShirtCount = extraTeamShirtCount(orderPayload.extraTeamShirts || []);
@@ -3442,7 +3454,7 @@ function ReviewOrderTool({
           icon="ri-settings-4-line"
           title="Fit & production"
           value={`Full Kit${extraShirtCount ? ` + ${extraShirtCount} extra shirt${extraShirtCount === 1 ? "" : "s"}` : ""} · ${logoApplication}`}
-          meta={`Estimated unit price $${unitPrice.toFixed(2)}`}
+          meta={`Base kit $${BASE_KIT_PRICE.toFixed(2)}${kitAddOns.length ? " · Add-ons itemized below" : ""}`}
           onEdit={() => onEditStep("design")}
         />
         <ReviewRow
@@ -3469,8 +3481,13 @@ function ReviewOrderTool({
           </span>
         </div>
         <div className="mt-3 space-y-1 border-t border-white/15 pt-3 text-xs text-background-50/70">
-          <div className="flex justify-between"><span>{unitCount} kits × ${unitPrice.toFixed(2)}</span><span>${(unitPrice * unitCount).toFixed(2)}</span></div>
-          {sleeveSurcharge > 0 && <div className="flex justify-between"><span>Long sleeves · $2.00/kit</span><span>${sleeveSurcharge.toFixed(2)}</span></div>}
+          <div className="flex justify-between"><span>{unitCount} full kits × ${BASE_KIT_PRICE.toFixed(2)}</span><span>${baseKitsTotal.toFixed(2)}</span></div>
+          {kitAddOns.map((item) => (
+            <div key={item.key} className="flex justify-between gap-3">
+              <span>{item.label} · {item.count} × ${item.unitPrice.toFixed(2)}</span>
+              <span>${item.total.toFixed(2)}</span>
+            </div>
+          ))}
           {extraShirtCount > 0 && <div className="flex justify-between"><span>{extraShirtCount} extra shirt{extraShirtCount === 1 ? "" : "s"} × ${SHIRT_ONLY_PRICE.toFixed(2)}</span><span>${extraShirtTotal.toFixed(2)}</span></div>}
           {fanJerseyAdded && <div className="flex justify-between"><span>{supporterCount} supporter jersey{supporterCount === 1 ? "" : "s"} × ${SHIRT_ONLY_PRICE.toFixed(2)}</span><span>${supporterTotal.toFixed(2)}</span></div>}
           <div className="flex justify-between"><span>Subtotal</span><span>${(totals?.subtotal ?? grandTotal).toFixed(2)}</span></div>

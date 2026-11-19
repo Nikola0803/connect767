@@ -233,6 +233,33 @@ export function mixedSleeveSurcharge(sleeve, roster = []) {
     ? Math.max(1, Math.min(99, parseInt(entry.quantity, 10) || 1)) * ADD_ON_PRICES.sleeveLong : 0), 0);
 }
 
+export function kitAddOnBreakdown({
+  sleeve,
+  collar,
+  insideCollarMessage,
+  logoApplication,
+  unitCount = 0,
+  roster = [],
+}) {
+  const kits = Math.max(0, Number.parseInt(unitCount, 10) || 0);
+  const items = [];
+  const add = (key, label, count, unitPrice) => {
+    if (count > 0) items.push({ key, label, count, unitPrice, total: count * unitPrice });
+  };
+
+  if (sleeve === "Long") add("long-sleeves", "Long sleeves", kits, ADD_ON_PRICES.sleeveLong);
+  if (sleeve === "Mixed") {
+    const longSleeveKits = roster.reduce((total, entry) => total + (entry?.sleevePreference === "Long"
+      ? Math.max(1, Math.min(99, Number.parseInt(entry.quantity, 10) || 1)) : 0), 0);
+    add("mixed-long-sleeves", "Long-sleeve upgrades", longSleeveKits, ADD_ON_PRICES.sleeveLong);
+  }
+  if (collar === "Polo") add("polo-collars", "Polo-style collars", kits, ADD_ON_PRICES.collarPolo);
+  if (insideCollarMessage) add("inside-collar", "Inside-collar logo/message", kits, ADD_ON_PRICES.insideCollarMessage);
+  if (logoApplication === "Embroidery") add("embroidery", "Embroidered team logo", kits, ADD_ON_PRICES.logoEmbroidery);
+
+  return items;
+}
+
 export const colorways = [
   { name: "Emerald", hex: "#0c8a57" },
   { name: "Terracotta", hex: "#e4583a" },

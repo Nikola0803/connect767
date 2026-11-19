@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 class C767_Uniform_Checkout
 {
     const NAMESPACE_ = 'connect767/v1';
-    const BASE_KIT_PRICE = 30.00;
+    const BASE_KIT_PRICE = 35.00;
     const EXTRA_TEAM_SHIRT_PRICE = 12.00;
 
     public static function init()
@@ -330,9 +330,22 @@ class C767_Uniform_Checkout
         $kit_item = $order->get_item($kit_item_id);
         if ($kit_item) {
             $kit_item->set_name($template . ' team kit');
-            $kit_item->add_meta_data('Unit price', wc_price($unit_price), true);
+            $kit_item->add_meta_data('Base kit price', wc_price(self::BASE_KIT_PRICE), true);
+            $kit_item->add_meta_data('Final unit price', wc_price($unit_price), true);
+            if (($payload['sleeve'] ?? '') === 'Long') {
+                $kit_item->add_meta_data('Long sleeves', $unit_count . ' × ' . wc_price(2.00), true);
+            }
             if ($long_sleeve_count > 0) {
                 $kit_item->add_meta_data('Long sleeve upgrades', $long_sleeve_count . ' × ' . wc_price(2.00), true);
+            }
+            if (($payload['collar'] ?? '') === 'Polo') {
+                $kit_item->add_meta_data('Polo-style collars', $unit_count . ' × ' . wc_price(2.00), true);
+            }
+            if (rest_sanitize_boolean($payload['insideCollarMessage'] ?? false)) {
+                $kit_item->add_meta_data('Inside-collar logo/message', $unit_count . ' × ' . wc_price(1.00), true);
+            }
+            if (($payload['logoApplication'] ?? '') === 'Embroidery') {
+                $kit_item->add_meta_data('Embroidered team logo', $unit_count . ' × ' . wc_price(1.50), true);
             }
             $kit_item->save();
         }
