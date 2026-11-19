@@ -194,6 +194,7 @@ export default function AIUniformComposer({
           type="button"
           onClick={() => {
             setResetMenuOpen((value) => !value);
+            setToolbarMenuOpen(false);
             setHistoryOpen(false);
             setToolsOpen(false);
             setSettingsOpen(false);
@@ -293,6 +294,7 @@ export default function AIUniformComposer({
               type="button"
               onClick={() => {
                 setResetMenuOpen((value) => !value);
+                setToolbarMenuOpen(false);
                 setHistoryOpen(false);
                 setToolsOpen(false);
                 setSettingsOpen(false);
