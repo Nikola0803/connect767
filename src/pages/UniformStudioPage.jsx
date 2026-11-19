@@ -3778,7 +3778,7 @@ function ReviewOrderTool({
             onChange={(event) => setUseDifferentOrderContact(event.target.checked)}
             className="h-4 w-4 rounded border-background-300 text-primary-600 focus:ring-primary-500"
           />
-          If different from shipping address
+          Order Contact if different from above
         </label>
         {showOrderContact && (
           <div className="mt-3 rounded-2xl border border-background-200 bg-background-50 p-3.5">

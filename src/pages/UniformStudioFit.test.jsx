@@ -280,7 +280,7 @@ describe("required uniform fit selection", () => {
     expect(screen.getAllByRole("textbox", { name: "Shipping phone number" }).length).toBeGreaterThan(0);
     expect(screen.queryByRole("heading", { name: "Order contact" })).not.toBeInTheDocument();
 
-    const differentContact = screen.getAllByRole("checkbox", { name: "If different from shipping address" })[0];
+    const differentContact = screen.getAllByRole("checkbox", { name: "Order Contact if different from above" })[0];
     fireEvent.click(differentContact);
     expect(screen.getAllByRole("heading", { name: "Order contact" }).length).toBeGreaterThan(0);
     fireEvent.click(differentContact);
