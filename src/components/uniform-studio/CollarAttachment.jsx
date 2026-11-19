@@ -34,12 +34,12 @@ export default function CollarAttachment({ attachment, onChange }) {
     };
     reader.readAsDataURL(file);
   };
-  return <div className="mt-1.5 space-y-1">
-    <label className="block text-[11px] font-semibold text-foreground-800">
+  return <div className="mt-2 space-y-1.5">
+    <label className="block text-xs font-semibold text-foreground-800">
       Attach collar logo or artwork
-      <input type="file" accept="image/png,image/jpeg,image/webp,application/pdf" onChange={chooseFile} className="mt-1 block w-full min-w-0 text-[10px] text-foreground-700 file:mr-2 file:cursor-pointer file:rounded-md file:border file:border-background-300 file:bg-background-50 file:px-2 file:py-1 file:text-foreground-800" />
+      <input type="file" accept="image/png,image/jpeg,image/webp,application/pdf" onChange={chooseFile} className="mt-1.5 block w-full min-w-0 text-[11px] text-foreground-700 file:mr-2 file:cursor-pointer file:rounded-md file:border file:border-background-300 file:bg-background-50 file:px-2.5 file:py-1.5 file:text-foreground-800" />
     </label>
-    <p className="text-[9px] leading-tight text-foreground-500">PNG, JPG, WebP or PDF · up to 2 MB.</p>
+    <p className="text-[10px] leading-tight text-foreground-500">PNG, JPG, WebP or PDF · up to 2 MB.</p>
     {reading && <p role="status" className="text-xs text-foreground-600">Attaching file…</p>}
     {error && <p role="alert" className="text-xs text-red-700">{error}</p>}
     {attachment && <div className="flex min-w-0 items-center gap-2 rounded-lg border border-background-300 p-2">

@@ -2299,7 +2299,7 @@ export default function UniformStudioPage() {
                           onClick={continueWorkflow}
                           disabled={!hasSelectedFit}
                           title={!hasSelectedFit ? "Select Men, Women or Youth before continuing" : undefined}
-                          className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary-700 px-3 py-2 text-xs font-bold text-white shadow-[0_8px_18px_rgba(0,116,73,.2)] transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-background-300 disabled:text-foreground-500 disabled:shadow-none"
+                          className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,116,73,.22)] transition hover:bg-primary-500 disabled:cursor-not-allowed disabled:bg-background-300 disabled:text-foreground-500 disabled:shadow-none"
                         >
                           Continue to Team roster <i className="ri-arrow-right-line text-base" aria-hidden="true" />
                         </button>
@@ -2310,12 +2310,12 @@ export default function UniformStudioPage() {
                   <div className={`flex min-w-0 flex-1 flex-col items-center overflow-hidden ${activeTool === "ai" ? "gap-2 px-2 py-2 md:px-3 xl:px-4" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
                     {strictAIPreview && (
                       <section
-                        className="relative z-20 w-full max-w-[1536px] flex-shrink-0 self-center rounded-xl border border-amber-300/25 bg-[linear-gradient(120deg,rgba(82,57,5,.38),rgba(18,24,18,.92))] px-3 py-2 shadow-[0_10px_26px_rgba(0,0,0,.18)]"
+                        className="relative z-20 w-full max-w-[1536px] flex-shrink-0 self-center rounded-xl border border-amber-300/25 bg-[linear-gradient(120deg,rgba(82,57,5,.38),rgba(18,24,18,.92))] px-3 py-1 shadow-[0_8px_20px_rgba(0,0,0,.16)]"
                         style={aiConceptViewportWidth ? { width: `${aiConceptViewportWidth}px`, maxWidth: "100%" } : undefined}
                         aria-labelledby="ai-preview-title"
                       >
-                        <div className="flex flex-col items-center gap-1.5">
-                          <h2 id="ai-preview-title" className="text-center text-[10px] font-black uppercase tracking-[0.16em] text-amber-100">Preview Only Editable via AI Prompts</h2>
+                        <div className="flex items-center justify-center">
+                          <h2 id="ai-preview-title" className="text-center text-xs font-black uppercase leading-5 tracking-[0.13em] text-amber-100">Preview Only Editable via AI Prompts</h2>
 
                         </div>
                         {conversionError && <p role="alert" className="mt-1.5 rounded-lg border border-red-300/25 bg-red-950/30 px-3 py-1.5 text-[8px] leading-relaxed text-red-100">{conversionError}</p>}
