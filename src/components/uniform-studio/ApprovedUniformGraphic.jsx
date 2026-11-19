@@ -22,8 +22,8 @@ const KIT_REGIONS = {
     shirtTop: 20, shirtBodyCleanupStart: 510, shirtEndStart: 550, bottomStart: 580,
     socksStart: 865, kitBottom: 1358,
     shortsEndPaths: [
-      "M155,822 C200,842 255,845 306,820 L306,840 C258,860 205,858 155,840 Z",
-      "M357,820 C408,845 463,842 505,822 L505,840 C458,858 405,860 357,840 Z",
+      "M155,792 C200,812 255,815 306,790 L306,850 C258,870 205,868 155,850 Z",
+      "M357,790 C408,815 463,812 505,792 L505,850 C458,868 405,870 357,850 Z",
     ],
     sleeveBottom: 300, shortSleeveBottom: 300, bodyLeft: 190, bodyRight: 390, collarY: 66,
     nativeSleeve: "short",
@@ -607,10 +607,10 @@ export default function ApprovedUniformGraphic({
               {region.sleeveEndPolygons ? (
                 <>
                   {(!hasLeftLongSleeve || nativeLongSleeve) && (
-                    <path data-garment-zone="sleeveStrip" data-edge-color={sleeveEnd} data-sleeve-edge-width="20" d={region.sleeveEndPaths?.left || polygonPath(region.sleeveEndPolygons.left)} fill={fill} strokeLinecap="round" strokeLinejoin="round" />
+                    <path data-garment-zone="sleeveStrip" data-edge-color={sleeveEnd} data-sleeve-edge-width="20" d={region.sleeveEndPaths?.left || polygonPath(region.sleeveEndPolygons.left)} transform={region.sleeveEndPaths && offset ? `translate(${offset} 0)` : undefined} fill={fill} strokeLinecap="round" strokeLinejoin="round" />
                   )}
                   {(!hasRightLongSleeve || nativeLongSleeve) && (
-                    <path data-garment-zone="sleeveStrip" data-edge-color={sleeveEnd} data-sleeve-edge-width="20" d={region.sleeveEndPaths?.right || polygonPath(region.sleeveEndPolygons.right)} fill={fill} strokeLinecap="round" strokeLinejoin="round" />
+                    <path data-garment-zone="sleeveStrip" data-edge-color={sleeveEnd} data-sleeve-edge-width="20" d={region.sleeveEndPaths?.right || polygonPath(region.sleeveEndPolygons.right)} transform={region.sleeveEndPaths && offset ? `translate(${offset} 0)` : undefined} fill={fill} strokeLinecap="round" strokeLinejoin="round" />
                   )}
                 </>
               ) : (
@@ -663,8 +663,8 @@ export default function ApprovedUniformGraphic({
         <g mask={`url(#${jerseyMaskId})`} pointerEvents="none" data-edge-detail="shirt-and-sleeves">
           <line x1={offset} x2={offset + halfWidth} y1={region.shirtEndStart ?? region.bottomStart - 18} y2={region.shirtEndStart ?? region.bottomStart - 18} stroke="#ffffff" strokeOpacity="0.24" strokeWidth="1.5" />
           <line x1={offset} x2={offset + halfWidth} y1={region.bottomStart - 2} y2={region.bottomStart - 2} stroke="#171512" strokeOpacity="0.24" strokeWidth="1.5" />
-          {region.sleeveEndPolygons && !hasLeftLongSleeve && <path d={region.sleeveEndPaths?.left || polygonPath(region.sleeveEndPolygons.left)} fill="none" stroke="#ffffff" strokeOpacity="0.2" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />}
-          {region.sleeveEndPolygons && !hasRightLongSleeve && <path d={region.sleeveEndPaths?.right || polygonPath(region.sleeveEndPolygons.right)} fill="none" stroke="#ffffff" strokeOpacity="0.2" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />}
+          {region.sleeveEndPolygons && !hasLeftLongSleeve && <path d={region.sleeveEndPaths?.left || polygonPath(region.sleeveEndPolygons.left)} transform={region.sleeveEndPaths && offset ? `translate(${offset} 0)` : undefined} fill="none" stroke="#ffffff" strokeOpacity="0.2" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />}
+          {region.sleeveEndPolygons && !hasRightLongSleeve && <path d={region.sleeveEndPaths?.right || polygonPath(region.sleeveEndPolygons.right)} transform={region.sleeveEndPaths && offset ? `translate(${offset} 0)` : undefined} fill="none" stroke="#ffffff" strokeOpacity="0.2" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />}
         </g>
         <g mask={`url(#${shortsMaskId})`} pointerEvents="none" data-edge-detail="shorts">
           {region.shortsEndPaths
@@ -750,15 +750,15 @@ export default function ApprovedUniformGraphic({
           {collar === "Polo" && (
             view === "front" ? (
               <>
-                <path data-collar-part="polo-left-wing" d={`M${collarCenterX - 61},${region.collarY - 18} C${collarCenterX - 48},${region.collarY - 8} ${collarCenterX - 29},${region.collarY + 9} ${collarCenterX - 15},${region.collarY + 20} Q${collarCenterX - 8},${region.collarY + 25} ${collarCenterX - 15},${region.collarY + 30} C${collarCenterX - 24},${region.collarY + 35} ${collarCenterX - 33},${region.collarY + 40} ${collarCenterX - 43},${region.collarY + 43} C${collarCenterX - 47},${region.collarY + 19} ${collarCenterX - 54},${region.collarY} ${collarCenterX - 61},${region.collarY - 18} Z`} fill={`url(#${collarFabricId})`} stroke={collarColor} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" paintOrder="stroke fill" />
-                <path data-collar-part="polo-right-wing" d={`M${collarCenterX + 61},${region.collarY - 18} C${collarCenterX + 48},${region.collarY - 8} ${collarCenterX + 29},${region.collarY + 9} ${collarCenterX + 15},${region.collarY + 20} Q${collarCenterX + 8},${region.collarY + 25} ${collarCenterX + 15},${region.collarY + 30} C${collarCenterX + 24},${region.collarY + 35} ${collarCenterX + 33},${region.collarY + 40} ${collarCenterX + 43},${region.collarY + 43} C${collarCenterX + 47},${region.collarY + 19} ${collarCenterX + 54},${region.collarY} ${collarCenterX + 61},${region.collarY - 18} Z`} fill={`url(#${collarFabricId})`} stroke={collarColor} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" paintOrder="stroke fill" />
-                <rect data-collar-part="polo-placket" x={collarCenterX - 8} y={region.collarY + 17} width="16" height="61" rx="5" fill={`url(#${collarFabricId})`} stroke={collarColor} strokeWidth="1.5" />
+                <path data-collar-part="polo-left-wing" d={`M${collarCenterX - 61},${region.collarY - 18} C${collarCenterX - 48},${region.collarY - 8} ${collarCenterX - 29},${region.collarY + 9} ${collarCenterX - 15},${region.collarY + 20} Q${collarCenterX - 8},${region.collarY + 25} ${collarCenterX - 15},${region.collarY + 30} C${collarCenterX - 24},${region.collarY + 35} ${collarCenterX - 33},${region.collarY + 40} ${collarCenterX - 43},${region.collarY + 43} C${collarCenterX - 47},${region.collarY + 19} ${collarCenterX - 54},${region.collarY} ${collarCenterX - 61},${region.collarY - 18} Z`} fill={collarColor} stroke={collarColor} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" paintOrder="stroke fill" />
+                <path data-collar-part="polo-right-wing" d={`M${collarCenterX + 61},${region.collarY - 18} C${collarCenterX + 48},${region.collarY - 8} ${collarCenterX + 29},${region.collarY + 9} ${collarCenterX + 15},${region.collarY + 20} Q${collarCenterX + 8},${region.collarY + 25} ${collarCenterX + 15},${region.collarY + 30} C${collarCenterX + 24},${region.collarY + 35} ${collarCenterX + 33},${region.collarY + 40} ${collarCenterX + 43},${region.collarY + 43} C${collarCenterX + 47},${region.collarY + 19} ${collarCenterX + 54},${region.collarY} ${collarCenterX + 61},${region.collarY - 18} Z`} fill={collarColor} stroke={collarColor} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" paintOrder="stroke fill" />
+                <rect data-collar-part="polo-placket" x={collarCenterX - 8} y={region.collarY + 17} width="16" height="61" rx="5" fill={collarColor} stroke={collarColor} strokeWidth="1.5" />
               </>
             ) : (
               <path
                 data-collar-part="polo-back-band"
                 d={`M${collarCenterX - 56},${region.collarY - 10} Q${collarCenterX},${region.collarY - 34} ${collarCenterX + 56},${region.collarY - 10} L${collarCenterX + 43},${region.collarY + 12} Q${collarCenterX},${region.collarY - 8} ${collarCenterX - 43},${region.collarY + 12} Z`}
-                fill={`url(#${collarFabricId})`}
+                fill={collarColor}
                 stroke={collarColor}
                 strokeWidth="3"
                 strokeLinecap="round"

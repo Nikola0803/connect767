@@ -169,10 +169,9 @@ export default function SideUniformGraphic({
 
       {region.collar && <g data-collar-shape={collarStyle} opacity={opacityFor("collar")}>
         {collarStyle === "Polo" && <path d={region.collar} transform="translate(0 9)" fill="#171512" fillOpacity="0.24" />}
-        <path data-garment-zone="collar" data-collar-part="side-band" d={region.collar} fill={`url(#${collarFabricId})`} stroke={collarColor} strokeWidth="2" strokeLinejoin="round" opacity={opacityFor("collar")} />
+        <path data-garment-zone="collar" data-collar-part="side-band" d={region.collar} fill={collarStyle === "Polo" ? collarColor : `url(#${collarFabricId})`} stroke={collarColor} strokeWidth="2" strokeLinejoin="round" opacity={opacityFor("collar")} />
         {collarStyle === "V-Neck" && <path d={region.collar} fill="none" stroke="#171512" strokeOpacity="0.4" strokeWidth="4" strokeLinecap="round" />}
-        {collarStyle === "Polo" && <path d={region.collar} transform="translate(0 7)" fill={`url(#${collarFabricId})`} stroke={collarColor} strokeWidth="1.5" strokeLinejoin="round" />}
-        <path d={region.collar} fill="none" stroke="#ffffff" strokeOpacity="0.24" strokeWidth="1.5" strokeLinecap="round" />
+        <path d={region.collar} fill="none" stroke="#ffffff" strokeOpacity={collarStyle === "Polo" ? "0.12" : "0.24"} strokeWidth="1.5" strokeLinecap="round" />
       </g>}
 
       <g mask={`url(#${maskId})`} pointerEvents="none" data-edge-detail="side-view">
