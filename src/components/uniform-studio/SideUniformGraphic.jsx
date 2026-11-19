@@ -112,6 +112,11 @@ export default function SideUniformGraphic({
     ? Math.round(height * (46 / 1358))
     : Math.max(18, region.bottomStart - region.shirtHem);
   const shirtHem = region.bottomStart - shirtEdgeDepth;
+  // Keep trims visually identical after each native source is fitted into the
+  // same workspace card. Front/back use 18px shorts and 20px sleeve bands on
+  // a 1358px source; scale those canonical measurements for this photograph.
+  const shortsEdgeDepth = Math.round(height * (18 / 1358));
+  const sleeveEdgeDepth = Math.round(height * (20 / 1358));
 
   return (
     <svg
@@ -157,9 +162,9 @@ export default function SideUniformGraphic({
         <rect data-garment-zone="shorts" x="0" y={region.bottomStart} width={width} height={socksStart - region.bottomStart} fill={bottom} opacity={opacityFor("shorts")} />
         {socksStart < height && <rect data-garment-zone="socks" x="0" y={socksStart} width={width} height={height - socksStart} fill={socks} opacity={opacityFor("socks")} />}
         <rect data-garment-zone="shirtStrip" data-edge-color={shirtEnd} data-edge-depth={shirtEdgeDepth} x="0" y={shirtHem} width={width} height={shirtEdgeDepth} fill={`url(#${shirtEdgeId})`} opacity={opacityFor("shirtStrip")} />
-        <rect data-garment-zone="shortsStrip" data-edge-color={shortsEnd} x="0" y={region.bottomHem} width={width} height="24" fill={`url(#${shortsEdgeId})`} opacity={opacityFor("shortsStrip")} />
+        <rect data-garment-zone="shortsStrip" data-edge-color={shortsEnd} data-shorts-edge-width="18" data-edge-depth={shortsEdgeDepth} x="0" y={region.bottomHem} width={width} height={shortsEdgeDepth} rx={Math.max(2, Math.round(shortsEdgeDepth * 0.16))} fill={`url(#${shortsEdgeId})`} opacity={opacityFor("shortsStrip")} />
         {region.sleeve && <path data-garment-zone="sleeve" d={region.sleeve} fill={sleeve} stroke={sleeve} strokeWidth="6" strokeLinejoin="round" opacity={opacityFor("sleeve")} />}
-        {region.sleeveEnd && !showLongSleeve && <path data-garment-zone="sleeveStrip" data-edge-color={sleeveEnd} d={region.sleeveEnd} fill={`url(#${sleeveEdgeId})`} stroke={sleeveEnd} strokeWidth="2" strokeLinejoin="round" opacity={opacityFor("sleeveStrip")} />}
+        {region.sleeveEnd && !showLongSleeve && <path data-garment-zone="sleeveStrip" data-edge-color={sleeveEnd} data-sleeve-edge-width="20" data-edge-depth={sleeveEdgeDepth} d={region.sleeveEnd} fill={`url(#${sleeveEdgeId})`} stroke={sleeveEnd} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" paintOrder="stroke fill" opacity={opacityFor("sleeveStrip")} />}
       </Tint>
 
       {region.collar && <g data-collar-shape={collarStyle} opacity={opacityFor("collar")}>
