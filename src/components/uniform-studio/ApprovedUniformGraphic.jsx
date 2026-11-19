@@ -22,8 +22,8 @@ const KIT_REGIONS = {
     shirtTop: 20, shirtBodyCleanupStart: 510, shirtEndStart: 534, bottomStart: 580,
     socksStart: 865, kitBottom: 1358,
     shortsEndPaths: [
-      "M155,792 C200,812 255,815 306,790 L306,850 C258,870 205,868 155,850 Z",
-      "M357,790 C408,815 463,812 505,792 L505,850 C458,868 405,870 357,850 Z",
+      "M155,822 C200,842 255,845 306,820 L306,840 C258,860 205,858 155,840 Z",
+      "M357,820 C408,845 463,842 505,822 L505,840 C458,858 405,860 357,840 Z",
     ],
     sleeveBottom: 300, shortSleeveBottom: 300, bodyLeft: 190, bodyRight: 390, collarY: 66,
     nativeSleeve: "short",
@@ -43,6 +43,10 @@ const KIT_REGIONS = {
           left: [[107, 240], [198, 250], [195, 274], [105, 260]],
           right: [[469, 250], [558, 240], [560, 260], [472, 274]],
         },
+        sleeveEndPaths: {
+          left: "M107,240 Q152,245 198,250 L195,274 Q150,267 105,260 Z",
+          right: "M469,250 Q514,245 558,240 L560,260 Q516,267 472,274 Z",
+        },
         shortsPolygon: [[176, 555], [485, 555], [500, 840], [163, 840]],
         shortsEndPolygon: [[163, 810], [500, 810], [500, 840], [163, 840]],
       },
@@ -60,6 +64,10 @@ const KIT_REGIONS = {
         sleeveEndPolygons: {
           left: [[32, 240], [122, 250], [119, 274], [30, 260]],
           right: [[391, 250], [481, 240], [483, 260], [394, 274]],
+        },
+        sleeveEndPaths: {
+          left: "M32,240 Q77,245 122,250 L119,274 Q74,267 30,260 Z",
+          right: "M391,250 Q436,245 481,240 L483,260 Q439,267 394,274 Z",
         },
         shortsPolygon: [[105, 555], [408, 555], [424, 840], [92, 840]],
         shortsEndPolygon: [[92, 810], [424, 810], [424, 840], [92, 840]],
@@ -597,10 +605,10 @@ export default function ApprovedUniformGraphic({
               {region.sleeveEndPolygons ? (
                 <>
                   {(!hasLeftLongSleeve || nativeLongSleeve) && (
-                    <path data-garment-zone="sleeveStrip" data-edge-color={sleeveEnd} d={polygonPath(region.sleeveEndPolygons.left)} fill={fill} />
+                    <path data-garment-zone="sleeveStrip" data-edge-color={sleeveEnd} data-sleeve-edge-width="20" d={region.sleeveEndPaths?.left || polygonPath(region.sleeveEndPolygons.left)} fill={fill} strokeLinecap="round" strokeLinejoin="round" />
                   )}
                   {(!hasRightLongSleeve || nativeLongSleeve) && (
-                    <path data-garment-zone="sleeveStrip" data-edge-color={sleeveEnd} d={polygonPath(region.sleeveEndPolygons.right)} fill={fill} />
+                    <path data-garment-zone="sleeveStrip" data-edge-color={sleeveEnd} data-sleeve-edge-width="20" d={region.sleeveEndPaths?.right || polygonPath(region.sleeveEndPolygons.right)} fill={fill} strokeLinecap="round" strokeLinejoin="round" />
                   )}
                 </>
               ) : (
@@ -653,8 +661,8 @@ export default function ApprovedUniformGraphic({
         <g mask={`url(#${jerseyMaskId})`} pointerEvents="none" data-edge-detail="shirt-and-sleeves">
           <line x1={offset} x2={offset + halfWidth} y1={region.shirtEndStart ?? region.bottomStart - 18} y2={region.shirtEndStart ?? region.bottomStart - 18} stroke="#ffffff" strokeOpacity="0.24" strokeWidth="1.5" />
           <line x1={offset} x2={offset + halfWidth} y1={region.bottomStart - 2} y2={region.bottomStart - 2} stroke="#171512" strokeOpacity="0.24" strokeWidth="1.5" />
-          {region.sleeveEndPolygons && !hasLeftLongSleeve && <path d={polygonPath(region.sleeveEndPolygons.left)} fill="none" stroke="#ffffff" strokeOpacity="0.2" strokeWidth="1.25" />}
-          {region.sleeveEndPolygons && !hasRightLongSleeve && <path d={polygonPath(region.sleeveEndPolygons.right)} fill="none" stroke="#ffffff" strokeOpacity="0.2" strokeWidth="1.25" />}
+          {region.sleeveEndPolygons && !hasLeftLongSleeve && <path d={region.sleeveEndPaths?.left || polygonPath(region.sleeveEndPolygons.left)} fill="none" stroke="#ffffff" strokeOpacity="0.2" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />}
+          {region.sleeveEndPolygons && !hasRightLongSleeve && <path d={region.sleeveEndPaths?.right || polygonPath(region.sleeveEndPolygons.right)} fill="none" stroke="#ffffff" strokeOpacity="0.2" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />}
         </g>
         <g mask={`url(#${shortsMaskId})`} pointerEvents="none" data-edge-detail="shorts">
           {region.shortsEndPaths

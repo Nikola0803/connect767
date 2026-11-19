@@ -179,6 +179,37 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     expect(backRatio).toBe(frontRatio);
   });
 
+  it("keeps shorts and sleeve-end trims smooth and proportionally equal in every soccer view", () => {
+    const { container, rerender } = render(<ApprovedUniformGraphic sport="soccer" view="front" />);
+    const frontShorts = container.querySelector('[data-shorts-edge="complete"]');
+    const frontSleeves = container.querySelectorAll('[data-garment-zone="sleeveStrip"]');
+    expect(frontShorts.getAttribute("data-shorts-edge-width")).toBe("18");
+    expect(frontSleeves).toHaveLength(2);
+    for (const sleeve of frontSleeves) {
+      expect(sleeve.getAttribute("data-sleeve-edge-width")).toBe("20");
+      expect(sleeve.getAttribute("d")).toContain(" Q");
+      expect(sleeve.getAttribute("stroke-linejoin")).toBe("round");
+    }
+
+    rerender(<ApprovedUniformGraphic sport="soccer" view="side" />);
+    const sideShorts = container.querySelector('[data-garment-zone="shortsStrip"]');
+    const sideSleeve = container.querySelector('[data-garment-zone="sleeveStrip"]');
+    expect(sideShorts.getAttribute("data-shorts-edge-width")).toBe("18");
+    expect(Number(sideShorts.getAttribute("data-edge-depth")) / SIDE_REGIONS.soccer.height)
+      .toBeCloseTo(18 / 1358, 3);
+    expect(sideSleeve.getAttribute("data-sleeve-edge-width")).toBe("20");
+    expect(Number(sideSleeve.getAttribute("data-edge-depth")) / SIDE_REGIONS.soccer.height)
+      .toBeCloseTo(20 / 1358, 3);
+    expect(sideSleeve.getAttribute("stroke-linejoin")).toBe("round");
+
+    rerender(<ApprovedUniformGraphic sport="soccer" view="back" />);
+    expect(container.querySelector('[data-shorts-edge="complete"]').getAttribute("data-shorts-edge-width")).toBe("18");
+    for (const sleeve of container.querySelectorAll('[data-garment-zone="sleeveStrip"]')) {
+      expect(sleeve.getAttribute("data-sleeve-edge-width")).toBe("20");
+      expect(sleeve.getAttribute("d")).toContain(" Q");
+    }
+  });
+
   it("composites side colors once so the sleeve never multiplies into the body color", () => {
     const colors = { body: "#17384e", sleeve: "#ed430d", shorts: "#22cc88", collar: "#ffcc00", sleeveStrip: "#112233" };
     const { container, rerender } = render(<ApprovedUniformGraphic sport="soccer" view="side" colors={colors} />);
@@ -432,7 +463,7 @@ describe("ApprovedUniformGraphic trim isolation", () => {
     expect(shortsEdge.getAttribute("data-shorts-edge-width")).toBe("18");
     expect(shortsEdge.getAttribute("transform")).toBe("translate(0 0)");
     expect(shortsEdge.querySelectorAll("path")).toHaveLength(2);
-    expect(shortsEdge.querySelector("path").getAttribute("d")).toContain("M155,792 C200,812");
+    expect(shortsEdge.querySelector("path").getAttribute("d")).toContain("M155,822 C200,842");
     expect(shortsEdge.querySelector("path").getAttribute("fill")).toMatch(/^url\(#approved-shorts-edge-/);
     expect(shortsEdge.getAttribute("data-edge-color")).toBe("#1B1A16");
     expect(shortsEdge.parentElement.style.mixBlendMode).toBe("normal");
