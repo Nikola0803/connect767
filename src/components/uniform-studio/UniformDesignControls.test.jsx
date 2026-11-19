@@ -157,7 +157,7 @@ describe("uniform design controls", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "Mixed Sleeve Team Order" }));
     expect(setSleeve).toHaveBeenCalledWith("Mixed");
     rerender(<DesignPanel {...props} sleeve="Mixed" />);
-    expect(screen.getByText(/Choose each player’s sleeve length in Team roster/i)).toBeInTheDocument();
+    expect(screen.getByText(/Choose sleeve length per player in Team roster/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("checkbox", { name: "Mixed Sleeve Team Order" }));
     expect(setSleeve).toHaveBeenLastCalledWith("Short");
   });

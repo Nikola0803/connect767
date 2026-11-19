@@ -34,16 +34,16 @@ export default function CollarAttachment({ attachment, onChange }) {
     };
     reader.readAsDataURL(file);
   };
-  return <div className="mt-3 space-y-2">
-    <label className="block text-xs font-semibold text-foreground-800">
+  return <div className="mt-1.5 space-y-1">
+    <label className="block text-[11px] font-semibold text-foreground-800">
       Attach collar logo or artwork
-      <input type="file" accept="image/png,image/jpeg,image/webp,application/pdf" onChange={chooseFile} className="mt-2 block w-full min-w-0 text-xs text-foreground-700 file:mr-2 file:cursor-pointer file:rounded-lg file:border file:border-background-300 file:bg-background-50 file:px-3 file:py-2 file:text-foreground-800" />
+      <input type="file" accept="image/png,image/jpeg,image/webp,application/pdf" onChange={chooseFile} className="mt-1 block w-full min-w-0 text-[10px] text-foreground-700 file:mr-2 file:cursor-pointer file:rounded-md file:border file:border-background-300 file:bg-background-50 file:px-2 file:py-1 file:text-foreground-800" />
     </label>
-    <p className="text-[11px] text-foreground-500">PNG, JPG, WebP or PDF · up to 2 MB. Saved with your collar message.</p>
+    <p className="text-[9px] leading-tight text-foreground-500">PNG, JPG, WebP or PDF · up to 2 MB.</p>
     {reading && <p role="status" className="text-xs text-foreground-600">Attaching file…</p>}
     {error && <p role="alert" className="text-xs text-red-700">{error}</p>}
-    {attachment && <div className="flex min-w-0 items-center gap-3 rounded-lg border border-background-300 p-3">
-      {attachment.type.startsWith("image/") ? <img src={attachment.src} alt="Attached collar artwork" className="h-14 w-14 shrink-0 rounded bg-white object-contain" /> : <i className="ri-file-pdf-2-line text-2xl" aria-hidden="true" />}
+    {attachment && <div className="flex min-w-0 items-center gap-2 rounded-lg border border-background-300 p-2">
+      {attachment.type.startsWith("image/") ? <img src={attachment.src} alt="Attached collar artwork" className="h-10 w-10 shrink-0 rounded bg-white object-contain" /> : <i className="ri-file-pdf-2-line text-xl" aria-hidden="true" />}
       <span className="min-w-0 flex-1 break-all text-xs text-foreground-800">{attachment.name}</span>
       <button type="button" onClick={() => onChange(null)} className="cursor-pointer text-xs font-semibold text-red-700" aria-label="Remove collar attachment">Remove</button>
     </div>}
