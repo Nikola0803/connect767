@@ -998,8 +998,32 @@ function prepareAIReferenceImage(file) {
   });
 }
 
+const templateReferenceCache = new Map();
+
+async function loadTemplateReference(src) {
+  if (!src) return "";
+  if (templateReferenceCache.has(src)) return templateReferenceCache.get(src);
+  const pending = fetch(src)
+    .then((response) => {
+      if (!response.ok) throw new Error("Template image unavailable");
+      return response.blob();
+    })
+    .then((blob) => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+      reader.onerror = () => reject(reader.error || new Error("Template image unavailable"));
+      reader.readAsDataURL(blob);
+    }))
+    .catch(() => "");
+  templateReferenceCache.set(src, pending);
+  return pending;
+}
+
 export function AIArtworkPanel({
   sport,
+  templateName = "",
+  templateDescription = "",
+  templateImage = "",
   colors,
   collar,
   sleeve,
@@ -1181,6 +1205,13 @@ export function AIArtworkPanel({
     generationControllerRef.current = new AbortController();
     setApplied(false);
     try {
+      const templateReference = !existingConcept && !reference?.src
+        ? await loadTemplateReference(templateImage)
+        : "";
+      const designReference = existingConcept || reference?.src || templateReference;
+      const templateDirection = templateName
+        ? `Use the ${templateName} ${sport} template as the garment-cut foundation${templateDescription ? `: ${templateDescription}` : "."}`
+        : "";
       const response = await fetch("/api/generate-uniform-design", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1191,7 +1222,7 @@ export function AIArtworkPanel({
           brandName: effectiveBrandName,
           brief: refinement
             ? `Revision request: ${refinement}\nPreserve every part of the current concept that is not explicitly changed. Original direction: ${effectiveBrief}`
-            : effectiveBrief,
+            : [templateDirection, effectiveBrief].filter(Boolean).join(" "),
           collarOptions,
           sleeveOptions: sleeveOptions?.length ? sleeveOptions : ["Sleeveless"],
           current: {
@@ -1201,7 +1232,7 @@ export function AIArtworkPanel({
             patternKey: currentDesign.pattern?.key || currentPatternKey,
           },
           locks,
-          referenceImage: existingConcept || reference?.src || "",
+          referenceImage: designReference,
         }),
       });
       const data = await response.json();
@@ -1227,6 +1258,7 @@ export function AIArtworkPanel({
           renderTier: requestedTier,
           sport,
           notes: [
+            templateDirection,
             refinement ? `Revise the supplied existing uniform image: ${refinement}` : brief.trim(),
             `Design plan: ${plan.summary}`,
             `Collar: ${plan.collar}. Sleeves: ${plan.sleeve}.`,
@@ -1236,7 +1268,7 @@ export function AIArtworkPanel({
               : "Pattern: clean solid-color design with no decorative pattern.",
             `Editable Front / Side / Back placement map: ${productionPlacementSummary}`,
           ].join(" "),
-          referenceImage: existingConcept,
+          referenceImage: designReference,
         }),
       });
       const artworkRequest = artworkElement
