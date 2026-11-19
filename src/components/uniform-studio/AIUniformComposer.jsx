@@ -60,7 +60,6 @@ export default function AIUniformComposer({
   onPlaceArtwork,
   onClearArtwork,
   preservationControls,
-  setupPanel,
   canUndo,
   onUndo,
   onNewChat,
@@ -70,7 +69,6 @@ export default function AIUniformComposer({
   onCompareVersions,
   comparisonActive = false,
   onGenerateVariation,
-  onSavePreview,
   toolbarTarget,
 }) {
   const [toolsOpen, setToolsOpen] = useState(false);
@@ -344,40 +342,8 @@ export default function AIUniformComposer({
       )}
 
       <div ref={conversationRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4" aria-live="polite">
-        {setupPanel && (
-          <details className="group mx-auto mb-4 max-w-xl overflow-hidden rounded-2xl border border-primary-200 bg-primary-50/65" open={!hasConversation}>
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
-              <span className="flex min-w-0 items-center gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-700 text-white"><i className="ri-shirt-line" /></span>
-                <span className="min-w-0">
-                  <strong className="block text-xs text-foreground-900">Uniform &amp; order setup</strong>
-                  <span className="block text-[9px] text-foreground-500">Fit, kit, collar, sleeves, colours and production extras</span>
-                </span>
-              </span>
-              <i className="ri-arrow-down-s-line text-lg text-primary-700 transition-transform group-open:rotate-180" />
-            </summary>
-            <div className="border-t border-primary-200 bg-[#f8f7f2] p-3">{setupPanel}</div>
-          </details>
-        )}
         {!hasConversation ? <EmptyConversation dark={dark} /> : (
           <div className="mx-auto max-w-xl space-y-4">
-            {!toolbarTarget && mode === "uniform" && uniformPlan && (
-              <section className="rounded-2xl border border-amber-200 bg-amber-50/75 p-3.5" aria-label="AI preview controls">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[8px] font-bold uppercase tracking-wide text-amber-900"><i className="ri-eye-line" /> Preview Only</span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-1 text-[8px] font-bold uppercase tracking-wide text-primary-900"><i className="ri-sparkling-2-fill" /> AI Editing Available</span>
-                </div>
-                <h3 className="mt-3 font-heading text-lg font-semibold text-foreground-950">Refine with AI</h3>
-                <p className="mt-1 text-[10px] leading-relaxed text-foreground-600">Manual garment tools stay locked. Describe changes below or generate another variation; every successful result is preserved as a separate version.</p>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <button type="button" onClick={() => previousVersion && onRestoreVersion?.(previousVersion)} disabled={!previousVersion || generating} className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-background-300 bg-white px-2.5 py-2 text-[9px] font-bold text-foreground-700 hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40"><i className="ri-arrow-left-line" /> Previous version</button>
-                  <button type="button" onClick={() => onCompareVersions?.(comparisonActive ? null : previousVersion)} disabled={!previousVersion || generating} className={`inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-2.5 py-2 text-[9px] font-bold disabled:cursor-not-allowed disabled:opacity-40 ${comparisonActive ? "border-primary-600 bg-primary-700 text-white" : "border-background-300 bg-white text-foreground-700 hover:bg-background-100"}`}><i className="ri-split-cells-horizontal" /> {comparisonActive ? "Close comparison" : "Compare versions"}</button>
-                  <button type="button" onClick={() => originalVersion && onRestoreVersion?.(originalVersion)} disabled={!originalVersion || versions.length < 2 || generating} className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-background-300 bg-white px-2.5 py-2 text-[9px] font-bold text-foreground-700 hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40"><i className="ri-restart-line" /> Restore original</button>
-                  <button type="button" onClick={onGenerateVariation} disabled={generating || connection !== "connected"} className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-primary-700 px-2.5 py-2 text-[9px] font-bold text-white hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-45"><i className="ri-refresh-line" /> New variation</button>
-                </div>
-                <button type="button" onClick={onSavePreview} aria-label="Save image to project" className="mt-3 inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2.5 text-[9px] font-bold text-primary-900 hover:bg-primary-100"><i className="ri-check-line" /> Accept &amp; save to project</button>
-              </section>
-            )}
             {[...promptHistory].reverse().map((entry) => (
               <div key={entry.id} className="space-y-2">
                 <div className="ml-auto max-w-[88%] rounded-2xl rounded-br-md bg-primary-700 px-3.5 py-2.5 text-[11px] leading-relaxed text-white shadow-sm">

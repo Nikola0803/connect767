@@ -65,6 +65,8 @@ describe("AI design generation endpoint", () => {
     expect(prompt).toContain("complete front view, strict 90-degree side view, and complete back view");
     expect(prompt).toContain("shorts or trousers");
     expect(prompt).toContain("socks");
+    expect(prompt).toContain("one perfectly uniform flat solid warm-white background (#F5F0E7)");
+    expect(prompt).toContain("Do not add white side gutters");
   });
 
   it("reports connection health without exposing the key", async () => {
@@ -155,6 +157,7 @@ describe("AI design generation endpoint", () => {
     expect(options.body.get("model")).toBe("gpt-image-2.6-flare");
     expect(options.body.get("prompt")).toContain("Edit the provided complete Soccer uniform concept");
     expect(options.body.get("prompt")).toContain("make the shorts black");
+    expect(options.body.get("prompt")).toContain("Replace the existing background with the required single flat background");
     expect(options.body.get("image")).toBeInstanceOf(Blob);
     expect(options.headers["Content-Type"]).toBeUndefined();
   });

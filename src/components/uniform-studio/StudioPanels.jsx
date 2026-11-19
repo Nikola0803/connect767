@@ -1023,9 +1023,7 @@ export function AIArtworkPanel({
   onRestoreAIVersion,
   onCompareVersions,
   comparisonActive = false,
-  onSavePreview,
   toolbarTarget,
-  setupPanel,
 }) {
   const [mode, setMode] = useState("uniform");
   const [brandName, setBrandName] = useState("");
@@ -1478,7 +1476,6 @@ export function AIArtworkPanel({
         onPlaceArtwork={onPlace}
         onClearArtwork={() => setPreview(null)}
         preservationControls={preservationControls}
-        setupPanel={setupPanel}
         canUndo={canUndoUniform}
         onUndo={onUndoUniform}
         onNewChat={startNewChat}
@@ -1488,7 +1485,6 @@ export function AIArtworkPanel({
         onCompareVersions={onCompareVersions}
         comparisonActive={comparisonActive}
         onGenerateVariation={() => generateUniform("", renderTier)}
-        onSavePreview={onSavePreview}
         toolbarTarget={toolbarTarget}
       />
     );

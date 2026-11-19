@@ -42,7 +42,6 @@ function renderComposer(overrides = {}) {
     onRestoreVersion: vi.fn(),
     onCompareVersions: vi.fn(),
     onGenerateVariation: vi.fn(),
-    onSavePreview: vi.fn(),
     ...overrides,
   };
   if (!("historyEntries" in overrides)) props.historyEntries = props.promptHistory;
@@ -142,12 +141,11 @@ describe("AIUniformComposer", () => {
     expect(screen.queryByAltText(/AI uniform concept/i)).not.toBeInTheDocument();
 
     expect(screen.queryByRole("button", { name: /apply design/i })).not.toBeInTheDocument();
-    expect(screen.getByText("Preview Only")).toBeInTheDocument();
-    expect(screen.getByText("AI Editing Available")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Refine with AI" })).toBeInTheDocument();
+    expect(screen.queryByText("Preview Only")).not.toBeInTheDocument();
+    expect(screen.queryByText("AI Editing Available")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Refine with AI" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Convert to Editable Design" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Save image to project" }));
-    expect(props.onSavePreview).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("button", { name: "Save image to project" })).not.toBeInTheDocument();
   });
 
   it("relocates AI commands and version actions into the studio banner", () => {
@@ -180,10 +178,14 @@ describe("AIUniformComposer", () => {
   });
 
   it("preserves AI versions for comparison, rejection and restoration", () => {
+    const toolbarTarget = document.createElement("div");
+    document.body.appendChild(toolbarTarget);
     const original = { name: "Original", conceptImage: { src: "data:image/png;base64,one" } };
     const current = { name: "Current", conceptImage: { src: "data:image/png;base64,two" } };
-    const props = renderComposer({ uniformPlan: current, versions: [original, current] });
+    const props = renderComposer({ toolbarTarget, uniformPlan: current, versions: [original, current] });
+    const toolbar = within(toolbarTarget);
 
+    fireEvent.click(toolbar.getByRole("button", { name: "Versions" }));
     fireEvent.click(screen.getByRole("button", { name: "Compare versions" }));
     expect(props.onCompareVersions).toHaveBeenCalledWith(original);
     fireEvent.click(screen.getByRole("button", { name: "Previous version" }));
@@ -192,6 +194,7 @@ describe("AIUniformComposer", () => {
     expect(props.onRestoreVersion).toHaveBeenLastCalledWith(original);
     fireEvent.click(screen.getByRole("button", { name: "New variation" }));
     expect(props.onGenerateVariation).toHaveBeenCalledTimes(1);
+    toolbarTarget.remove();
   });
 
   it("provides explicit controls for starting over and clearing saved AI state", () => {
