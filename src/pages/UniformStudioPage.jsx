@@ -481,11 +481,20 @@ export default function UniformStudioPage() {
 
   // ---------- Priced options (spec §4.4/§4.5) ----------
   const [kitType, setKitType] = useState(kitTypeOptions[0]);
-  const [extraTeamShirts, setExtraTeamShirts] = useState([{ size: "M", quantity: 1 }]);
+  const [extraTeamShirts, setExtraTeamShirts] = useState([]);
   const [logoApplication, setLogoApplication] = useState("Sublimated");
   const [insideCollarMessage, setInsideCollarMessage] = useState(false);
   const [insideCollarText, setInsideCollarText] = useState("");
   const [insideCollarAttachment, setInsideCollarAttachment] = useState(null);
+  const insideCollarRequirementMet = !insideCollarMessage || Boolean(
+    insideCollarText.trim() || insideCollarAttachment?.src,
+  );
+  const canContinueDesign = hasSelectedFit && insideCollarRequirementMet;
+  const designContinueTitle = !hasSelectedFit
+    ? "Select Men, Women or Youth in Design before continuing"
+    : !insideCollarRequirementMet
+      ? "Enter an inside-collar message or attach a logo/artwork file before continuing"
+      : undefined;
   const [fanJerseyAdded, setFanJerseyAdded] = useState(false);
   const [supporterJerseys, setSupporterJerseys] = useState([newSupporterJersey()]);
 
@@ -552,8 +561,12 @@ export default function UniformStudioPage() {
   const selectedLayer = layers.find((l) => l.id === selectedLayerId) || null;
   const sportConfig = sportConfigFor(activeSport);
   const minimumKits = minimumFullKitsFor(activeSport);
-  const minimumKitsMet = rosterUnitCount(roster) >= minimumKits;
-  const socksQuantity = sockQuantityOverride ?? rosterUnitCount(roster);
+  const fullKitUnitCount = rosterUnitCount(roster);
+  const minimumKitsMet = fullKitUnitCount >= minimumKits;
+  const requiredSocksQuantity = sportConfig.hasSocks ? Math.max(minimumKits, fullKitUnitCount) : 0;
+  const socksQuantity = sockQuantityOverride ?? requiredSocksQuantity;
+  const socksQuantityValid = !sportConfig.hasSocks || socksQuantity === requiredSocksQuantity;
+  const rosterReadyForReview = minimumKitsMet && socksQuantityValid;
   const manualEditingAllowed = canUseManualEditing(studioMode);
   const strictAIPreview = isAIPreviewMode(studioMode);
   // Tool availability now follows the actual garment surface instead of a
@@ -571,7 +584,7 @@ export default function UniformStudioPage() {
   const selectedWorkflowStep = studioWorkflow.find((step) => step.tools.includes(selectedTool));
   const gatedTool = strictAIPreview && selectedWorkflowStep?.key === "design"
     ? "ai"
-    : !hasSelectedFit && selectedWorkflowStep?.step > 1 ? "ai" : selectedTool;
+    : !canContinueDesign && selectedWorkflowStep?.step > 1 ? "ai" : selectedTool;
   const requestedWorkflowIndex = Math.max(
     0,
     studioWorkflow.findIndex((step) => step.tools.includes(gatedTool))
@@ -618,8 +631,8 @@ export default function UniformStudioPage() {
 
   const openWorkflowStep = (index) => {
     const nextStep = studioWorkflow[Math.max(0, Math.min(studioWorkflow.length - 1, index))];
-    if (nextStep.step > 1 && !hasSelectedFit) return;
-    if (nextStep.key === "review" && !minimumKitsMet) return;
+    if (nextStep.step > 1 && !canContinueDesign) return;
+    if (nextStep.key === "review" && !rosterReadyForReview) return;
     setPendingLayer(null);
     setSelectedLayerId(null);
     setActiveTool(nextStep.defaultTool);
@@ -817,11 +830,10 @@ export default function UniformStudioPage() {
       if (saved.zoneStyles) setZoneStyles(saved.zoneStyles);
       if (saved.twoTone) setTwoTone(saved.twoTone);
       setFitType(saved.fitTypeConfirmed === true && fitTypeOptions.includes(saved.fitType) ? saved.fitType : "");
-      if (saved.kitType) setKitType(saved.kitType === "Shirt" && normalizeExtraTeamShirts(saved.extraTeamShirts).length ? "Shirt" : "Full");
-      if (Array.isArray(saved.extraTeamShirts)) {
-        const restoredShirts = normalizeExtraTeamShirts(saved.extraTeamShirts);
-        if (restoredShirts.length) setExtraTeamShirts(restoredShirts);
-      }
+      // Extra shirts are ordered explicitly in Team roster. Discard the former
+      // hidden Step 1 quantity so legacy projects cannot add an invisible charge.
+      setKitType("Full");
+      setExtraTeamShirts([]);
       if (saved.logoApplication) setLogoApplication(saved.logoApplication);
       if (typeof saved.insideCollarMessage === "boolean") setInsideCollarMessage(saved.insideCollarMessage);
       if (typeof saved.insideCollarText === "string") setInsideCollarText(saved.insideCollarText);
@@ -1665,7 +1677,7 @@ export default function UniformStudioPage() {
       colors,
       fitType,
       kitType: "Full",
-      extraTeamShirts: kitType === "Shirt" ? normalizeExtraTeamShirts(extraTeamShirts) : [],
+      extraTeamShirts: [],
       logoApplication,
       insideCollarMessage,
       insideCollarText,
@@ -1673,7 +1685,7 @@ export default function UniformStudioPage() {
       fanJerseyAdded,
       supporterJerseys: fanJerseyAdded ? supporterJerseys : [],
       unitPrice,
-      grandTotal: unitPrice * unitCount + mixedSleeveSurcharge(sleeve, roster) + supporterCount * SHIRT_ONLY_PRICE + (kitType === "Shirt" ? extraTeamShirtCount(extraTeamShirts) * SHIRT_ONLY_PRICE : 0),
+      grandTotal: unitPrice * unitCount + mixedSleeveSurcharge(sleeve, roster) + supporterCount * SHIRT_ONLY_PRICE,
       layers,
       placements3d,
       designMode: stageMode === "3d" ? "3d" : "flat",
@@ -1693,6 +1705,10 @@ export default function UniformStudioPage() {
     }
     if (!minimumKitsMet) {
       setQuoteError(`Minimum order: ${minimumKits} full kits. Extra shirts do not count toward this minimum.`);
+      return;
+    }
+    if (!socksQuantityValid) {
+      setQuoteError(`Socks quantity must be ${requiredSocksQuantity} to match the full-kit order.`);
       return;
     }
     if (!contactValid) {
@@ -2137,7 +2153,7 @@ export default function UniformStudioPage() {
           {studioWorkflow.map((step, index) => {
             const active = index === workflowIndex;
             const complete = index < workflowIndex;
-            const locked = (step.step > 1 && !hasSelectedFit) || (step.key === "review" && !minimumKitsMet);
+            const locked = (step.step > 1 && !canContinueDesign) || (step.key === "review" && !rosterReadyForReview);
             return (
               <div key={step.key} className="flex min-w-0 flex-1 items-center gap-1.5">
                 <button
@@ -2297,8 +2313,8 @@ export default function UniformStudioPage() {
                         <button
                           type="button"
                           onClick={continueWorkflow}
-                          disabled={!hasSelectedFit}
-                          title={!hasSelectedFit ? "Select Men, Women or Youth before continuing" : undefined}
+                          disabled={!canContinueDesign}
+                          title={designContinueTitle}
                           className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,116,73,.22)] transition hover:bg-primary-500 disabled:cursor-not-allowed disabled:bg-background-300 disabled:text-foreground-500 disabled:shadow-none"
                         >
                           Continue to Team roster <i className="ri-arrow-right-line text-base" aria-hidden="true" />
@@ -2653,6 +2669,8 @@ export default function UniformStudioPage() {
                     removeFromRoster={removeFromRoster}
                     socksQuantity={socksQuantity}
                     setSocksQuantity={setSockQuantityOverride}
+                    requiredSocksQuantity={requiredSocksQuantity}
+                    socksQuantityValid={socksQuantityValid}
                     fanJerseyAdded={fanJerseyAdded}
                     setFanJerseyAdded={setFanJerseyAdded}
                     supporterJerseys={supporterJerseys}
@@ -2793,6 +2811,8 @@ export default function UniformStudioPage() {
             removeFromRoster={removeFromRoster}
             socksQuantity={socksQuantity}
             setSocksQuantity={setSockQuantityOverride}
+            requiredSocksQuantity={requiredSocksQuantity}
+            socksQuantityValid={socksQuantityValid}
             fanJerseyAdded={fanJerseyAdded}
             setFanJerseyAdded={setFanJerseyAdded}
             supporterJerseys={supporterJerseys}
@@ -2846,8 +2866,8 @@ export default function UniformStudioPage() {
           <button
             type="button"
             onClick={continueWorkflow}
-            disabled={(studioWorkflow[workflowIndex + 1].step > 1 && !hasSelectedFit) || (workflowStep.key === "roster" && !minimumKitsMet)}
-            title={studioWorkflow[workflowIndex + 1].step > 1 && !hasSelectedFit ? "Select Men, Women or Youth in Design before continuing" : undefined}
+            disabled={(studioWorkflow[workflowIndex + 1].step > 1 && !canContinueDesign) || (workflowStep.key === "roster" && !rosterReadyForReview)}
+            title={studioWorkflow[workflowIndex + 1].step > 1 ? designContinueTitle : undefined}
             className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,116,73,0.22)] transition hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer"
           >
             Continue to {studioWorkflow[workflowIndex + 1].label}
@@ -2976,6 +2996,8 @@ function RosterTool({
   removeFromRoster,
   socksQuantity = 0,
   setSocksQuantity,
+  requiredSocksQuantity = 0,
+  socksQuantityValid = true,
   fanJerseyAdded,
   setFanJerseyAdded,
   supporterJerseys,
@@ -3287,20 +3309,33 @@ function RosterTool({
       )}
 
       {hasSocks && (
-        <div className="mb-4 flex items-center justify-between gap-4 rounded-xl border border-background-200/70 bg-background-100/50 px-4 py-3">
-          <span className="text-sm font-semibold text-foreground-900">Socks</span>
-          <label className="flex items-center gap-2 text-xs font-label text-foreground-500">
-            Qnty
-            <Input
-              type="number"
-              min="0"
-              max="999"
-              aria-label="Socks quantity"
-              value={socksQuantity}
-              onChange={(event) => setSocksQuantity?.(Math.max(0, Number.parseInt(event.target.value, 10) || 0))}
-              className="w-24"
-            />
-          </label>
+        <div className={`mb-4 rounded-xl border px-4 py-3 ${socksQuantityValid ? "border-background-200/70 bg-background-100/50" : "border-accent-300 bg-accent-50"}`}>
+          <div className="flex items-center justify-between gap-4">
+            <span>
+              <span className="block text-sm font-semibold text-foreground-900">Socks</span>
+              <span className="block text-[10px] font-label text-foreground-500">One per full kit · required quantity {requiredSocksQuantity}</span>
+            </span>
+            <label className="flex items-center gap-2 text-xs font-label text-foreground-500">
+              Qnty
+              <Input
+                type="number"
+                min={requiredSocksQuantity}
+                max={requiredSocksQuantity}
+                required
+                aria-label="Socks quantity"
+                aria-invalid={!socksQuantityValid}
+                aria-describedby={!socksQuantityValid ? "socks-quantity-warning" : undefined}
+                value={socksQuantity}
+                onChange={(event) => setSocksQuantity?.(Math.max(0, Number.parseInt(event.target.value, 10) || 0))}
+                className="w-24"
+              />
+            </label>
+          </div>
+          {!socksQuantityValid && (
+            <p id="socks-quantity-warning" role="alert" className="mt-2 text-[11px] font-semibold text-accent-800">
+              Socks quantity must be {requiredSocksQuantity} to match the full-kit order.
+            </p>
+          )}
         </div>
       )}
 
