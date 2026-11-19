@@ -48,12 +48,12 @@ export async function embossConnect767ConceptBackground(dataUrl) {
     maskCanvas.width = canvas.width; maskCanvas.height = canvas.height;
     const maskContext = maskCanvas.getContext("2d", { willReadFrequently: true });
     if (!maskContext) return dataUrl;
-    const maxWidth = canvas.width * 0.9;
-    const maxHeight = canvas.height * 0.94;
-    const scale = Math.min(maxWidth / logo.width, maxHeight / logo.height);
-    const logoWidth = logo.width * scale;
-    const logoHeight = logo.height * scale;
-    maskContext.drawImage(logo, (canvas.width - logoWidth) / 2, (canvas.height - logoHeight) / 2, logoWidth, logoHeight);
+    // Fill the full concept backdrop so the embossed mark remains prominent
+    // behind wide and tall garments alike. Independent dimensions preserve the
+    // complete mark instead of cropping it to the concept image's aspect ratio.
+    const insetX = canvas.width * 0.01;
+    const insetY = canvas.height * 0.01;
+    maskContext.drawImage(logo, insetX, insetY, canvas.width - (insetX * 2), canvas.height - (insetY * 2));
     const mask = maskContext.getImageData(0, 0, canvas.width, canvas.height).data;
     const pixels = original.data;
     const offset = Math.max(2, Math.round(Math.min(canvas.width, canvas.height) / 420));
