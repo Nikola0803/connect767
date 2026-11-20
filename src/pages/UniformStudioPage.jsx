@@ -2571,18 +2571,10 @@ export default function UniformStudioPage() {
                   )}
                   {/* Canvas */}
                   <div className={`flex min-w-0 flex-1 flex-col items-center overflow-hidden ${(activeTool === "ai" || workflowStep.key === "category") ? "gap-0 px-0 py-0" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
-                    {strictAIPreview && (
-                      <section
-                        className="relative z-20 w-full max-w-[1536px] flex-shrink-0 self-center rounded-xl border border-amber-300/25 bg-[linear-gradient(120deg,rgba(82,57,5,.38),rgba(18,24,18,.92))] px-3 py-1 shadow-[0_8px_20px_rgba(0,0,0,.16)]"
-                        style={aiConceptViewportWidth ? { width: `${aiConceptViewportWidth}px`, maxWidth: "100%" } : undefined}
-                        aria-labelledby="ai-preview-title"
-                      >
-                        <div className="flex items-center justify-center">
-                          <h2 id="ai-preview-title" className="text-center text-xs font-black uppercase leading-5 tracking-[0.13em] text-amber-100">Preview Only Editable via AI Prompts</h2>
-
-                        </div>
-                        {conversionError && <p role="alert" className="mt-1.5 rounded-lg border border-red-300/25 bg-red-950/30 px-3 py-1.5 text-[8px] leading-relaxed text-red-100">{conversionError}</p>}
-                      </section>
+                    {strictAIPreview && conversionError && (
+                      <p role="alert" className="relative z-20 w-full max-w-[1536px] flex-shrink-0 self-center rounded-lg border border-red-300/25 bg-red-950/30 px-3 py-1.5 text-[8px] leading-relaxed text-red-100">
+                        {conversionError}
+                      </p>
                     )}
                     {/* Floating contextual toolbar */}
                     {manualEditingAllowed && stageMode === "edit" && selectedLayer && (
@@ -2859,13 +2851,16 @@ export default function UniformStudioPage() {
                     onRestoreAIVersion={restoreAIVersion}
                     onCompareVersions={setAiComparisonPlan}
                     comparisonActive={Boolean(aiComparisonPlan)}
+                    onSaveDesign={saveProgress}
+                    onDownloadDesign={handleDownload}
+                    onOpenBackgroundRemoval={() => setActiveTool("remove-bg")}
                     hasExistingArtwork={layers.some(
                       (layer) => ["text", "logo", "clipart"].includes(layer.type) && !layer.source?.startsWith("ai-uniform"),
                     )}
                   />
                 )}
                 {activeTool === "logo" && <LogoPanel onUpload={armLogoPlacement} armed={pendingLayer?.type === "logo"} />}
-                {activeTool === "remove-bg" && <BackgroundRemovalPanel onPlace={armBackgroundRemovedArtwork} />}
+                {activeTool === "remove-bg" && <BackgroundRemovalPanel onPlace={manualEditingAllowed ? armBackgroundRemovedArtwork : undefined} />}
                 {activeTool === "skins" && (
                   <SkinsPanel
                     colorA={colors.body}
@@ -3006,13 +3001,16 @@ export default function UniformStudioPage() {
             onRestoreAIVersion={restoreAIVersion}
             onCompareVersions={setAiComparisonPlan}
             comparisonActive={Boolean(aiComparisonPlan)}
+            onSaveDesign={saveProgress}
+            onDownloadDesign={handleDownload}
+            onOpenBackgroundRemoval={() => setActiveTool("remove-bg")}
             hasExistingArtwork={layers.some(
               (layer) => ["text", "logo", "clipart"].includes(layer.type) && !layer.source?.startsWith("ai-uniform"),
             )}
           />
         )}
         {activeTool === "logo" && <LogoPanel onUpload={armLogoPlacement} armed={pendingLayer?.type === "logo"} />}
-        {activeTool === "remove-bg" && <BackgroundRemovalPanel onPlace={armBackgroundRemovedArtwork} />}
+        {activeTool === "remove-bg" && <BackgroundRemovalPanel onPlace={manualEditingAllowed ? armBackgroundRemovedArtwork : undefined} />}
         {activeTool === "skins" && (
           <SkinsPanel
             colorA={colors.body}
@@ -3102,7 +3100,7 @@ export default function UniformStudioPage() {
           </p>
           <p className="text-xs font-semibold text-background-50/65">{workflowStep.label}</p>
         </div>
-        {workflowIndex < studioWorkflow.length - 1 ? (
+        {workflowStep.key === "design" ? null : workflowIndex < studioWorkflow.length - 1 ? (
           <button
             type="button"
             onClick={continueWorkflow}

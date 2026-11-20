@@ -868,6 +868,16 @@ export function BackgroundRemovalPanel({ onPlace, processor = removeImageBackgro
     }
   };
 
+  const downloadTransparentFile = () => {
+    if (!resultFile) return;
+    const url = URL.createObjectURL(resultFile);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = resultFile.name || "transparent-artwork.png";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div>
       <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400">
@@ -928,14 +938,23 @@ export function BackgroundRemovalPanel({ onPlace, processor = removeImageBackgro
         {resultFile && (
           <button
             type="button"
-            onClick={() => onPlace(resultFile)}
+            onClick={downloadTransparentFile}
             className="flex-1 cursor-pointer rounded-lg bg-primary-600 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-primary-700"
+          >
+            <i className="ri-download-2-line mr-1.5" aria-hidden="true" /> Download PNG
+          </button>
+        )}
+        {resultFile && onPlace && (
+          <button
+            type="button"
+            onClick={() => onPlace(resultFile)}
+            className="flex-1 cursor-pointer rounded-lg bg-primary-700 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-primary-800"
           >
             <i className="ri-cursor-line mr-1.5" aria-hidden="true" /> Place on uniform
           </button>
         )}
       </div>
-      {resultFile && <p className="mt-3 text-[10px] leading-relaxed text-foreground-500">Click <strong>Place on uniform</strong>, then click the garment or either sleeve window.</p>}
+      {resultFile && <p className="mt-3 text-[10px] leading-relaxed text-foreground-500">Download the transparent PNG{onPlace ? " or place it on an editable garment surface" : " for use in your AI design prompt"}.</p>}
     </div>
   );
 }
@@ -1049,6 +1068,9 @@ export function AIArtworkPanel({
   onRestoreAIVersion,
   onCompareVersions,
   comparisonActive = false,
+  onSaveDesign,
+  onDownloadDesign,
+  onOpenBackgroundRemoval,
 }) {
   const [mode, setMode] = useState("uniform");
   const [brandName, setBrandName] = useState("");
@@ -1086,7 +1108,7 @@ export function AIArtworkPanel({
 
   useEffect(() => {
     try {
-      const saved = JSON.parse(window.sessionStorage.getItem(promptHistoryKey) || "[]");
+      const saved = JSON.parse(window.localStorage.getItem(promptHistoryKey) || "[]");
       setPromptHistory(Array.isArray(saved) ? saved.slice(0, 30) : []);
     } catch {
       setPromptHistory([]);
@@ -1115,7 +1137,7 @@ export function AIArtworkPanel({
     };
     setPromptHistory((current) => {
       const next = [entry, ...current].slice(0, 30);
-      try { window.sessionStorage.setItem(promptHistoryKey, JSON.stringify(next)); } catch { /* storage unavailable */ }
+      try { window.localStorage.setItem(promptHistoryKey, JSON.stringify(next)); } catch { /* storage unavailable */ }
       return next;
     });
     setHistoryOpen(true);
@@ -1124,7 +1146,7 @@ export function AIArtworkPanel({
   const clearPromptHistory = () => {
     setPromptHistory([]);
     setArchivedPrompts([]);
-    try { window.sessionStorage.removeItem(promptHistoryKey); } catch { /* storage unavailable */ }
+    try { window.localStorage.removeItem(promptHistoryKey); } catch { /* storage unavailable */ }
     try { window.localStorage.removeItem(promptArchiveKey); } catch { /* storage unavailable */ }
   };
 
@@ -1394,7 +1416,7 @@ export function AIArtworkPanel({
         return next;
       });
       setPromptHistory([]);
-      try { window.sessionStorage.removeItem(promptHistoryKey); } catch { /* storage unavailable */ }
+      try { window.localStorage.removeItem(promptHistoryKey); } catch { /* storage unavailable */ }
     }
     setBrandName("");
     setBrief("");
@@ -1414,6 +1436,36 @@ export function AIArtworkPanel({
     setApplied(false);
     setError("");
     onUniformPlanChange?.(null);
+  };
+
+  const downloadPromptHistory = () => {
+    const entries = [...promptHistory, ...archivedPrompts]
+      .sort((left, right) => new Date(left.createdAt) - new Date(right.createdAt));
+    if (!entries.length) return;
+    const transcript = entries.map((entry, index) => {
+      const response = typeof entry.response === "string"
+        ? entry.response
+        : JSON.stringify(entry.response || "", null, 2);
+      return [
+        `Prompt ${index + 1} · ${entry.kind || "AI design"}`,
+        `Date: ${entry.createdAt || "Unknown"}`,
+        `Mode: ${entry.mode || "uniform"}`,
+        `Style: ${entry.style || "Not specified"}`,
+        "",
+        "User prompt:",
+        entry.prompt || "",
+        "",
+        "AI response:",
+        response,
+      ].join("\n");
+    }).join("\n\n---\n\n");
+    const blob = new Blob([`Connect767 AI prompt history · ${sport || "Uniform"}\n\n${transcript}\n`], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `connect767-${String(sport || "uniform").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-ai-prompts.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   const preservationControls = mode === "uniform" ? (
@@ -1526,6 +1578,10 @@ export function AIArtworkPanel({
         onCompareVersions={onCompareVersions}
         comparisonActive={comparisonActive}
         onGenerateVariation={() => generateUniform("", renderTier)}
+        onSaveDesign={onSaveDesign}
+        onDownloadDesign={onDownloadDesign}
+        onDownloadPrompts={downloadPromptHistory}
+        onOpenBackgroundRemoval={onOpenBackgroundRemoval}
         toolbarTarget={promptToolbarTarget}
         />
       </div>

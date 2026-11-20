@@ -42,6 +42,10 @@ function renderComposer(overrides = {}) {
     onRestoreVersion: vi.fn(),
     onCompareVersions: vi.fn(),
     onGenerateVariation: vi.fn(),
+    onSaveDesign: vi.fn(),
+    onDownloadDesign: vi.fn(),
+    onDownloadPrompts: vi.fn(),
+    onOpenBackgroundRemoval: vi.fn(),
     ...overrides,
   };
   if (!("historyEntries" in overrides)) props.historyEntries = props.promptHistory;
@@ -105,7 +109,7 @@ describe("AIUniformComposer", () => {
     fireEvent.click(screen.getByLabelText("Stop generating"));
     expect(props.onStop).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByText("Controls"));
+    fireEvent.click(screen.getByText("Settings"));
     expect(screen.getByText("Design controls")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("e.g. Riverside FC")).toBeInTheDocument();
   });
@@ -154,7 +158,7 @@ describe("AIUniformComposer", () => {
     document.body.appendChild(toolbarTarget);
     const original = { name: "Original", conceptImage: { src: "data:image/png;base64,one" } };
     const current = { name: "Current", conceptImage: { src: "data:image/png;base64,two" } };
-    renderComposer({ toolbarTarget, uniformPlan: current, versions: [original, current] });
+    const props = renderComposer({ toolbarTarget, uniformPlan: current, versions: [original, current] });
     const toolbar = within(toolbarTarget);
 
     expect(toolbar.getByRole("button", { name: "New design" })).toBeInTheDocument();
@@ -171,7 +175,18 @@ describe("AIUniformComposer", () => {
     expect(within(toolsMenu).getByRole("menuitem", { name: "History" })).toBeInTheDocument();
     expect(within(toolsMenu).getByRole("menuitem", { name: "Reference" })).toBeInTheDocument();
     expect(within(toolsMenu).getByRole("menuitem", { name: "Artwork" })).toBeInTheDocument();
+    expect(within(toolsMenu).getByRole("menuitem", { name: "Remove background / Make transparent" })).toBeInTheDocument();
+    expect(within(toolsMenu).getByRole("menuitem", { name: "Save design" })).toBeInTheDocument();
+    expect(within(toolsMenu).getByRole("menuitem", { name: "Download design" })).toBeInTheDocument();
+    expect(within(toolsMenu).getByRole("menuitem", { name: "Download prompts" })).toBeDisabled();
+    expect(within(toolsMenu).getByRole("menuitem", { name: "Settings" })).toBeInTheDocument();
     expect(within(toolsMenu).getByRole("menuitem", { name: "Previous version" })).toBeInTheDocument();
+
+    fireEvent.click(within(toolsMenu).getByRole("menuitem", { name: "Save design" }));
+    expect(props.onSaveDesign).toHaveBeenCalledTimes(1);
+    fireEvent.click(toolbar.getByRole("button", { name: "AI tools" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Remove background / Make transparent" }));
+    expect(props.onOpenBackgroundRemoval).toHaveBeenCalledTimes(1);
 
     fireEvent.click(toolbar.getByLabelText("Open design reset options"));
     expect(screen.getByRole("menu", { name: "Design reset options" })).toBeInTheDocument();
@@ -273,7 +288,7 @@ describe("AIUniformComposer", () => {
     fireEvent.pointerDown(message);
     expect(screen.queryByRole("menu", { name: "AI composer tools" })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByText("Controls"));
+    fireEvent.click(screen.getByText("Settings"));
     expect(screen.getByText("Design controls")).toBeInTheDocument();
     fireEvent.pointerDown(message);
     expect(screen.queryByText("Design controls")).not.toBeInTheDocument();

@@ -64,9 +64,9 @@ describe("uniform design controls", () => {
   });
   it.each([
     ["soccer", 22, "$35.00", "Includes shirt, shorts and socks"],
-    ["basketball", 10, "$30.00", "Includes shirt and pants"],
+    ["basketball", 10, "$30.00", "Includes shirt and shorts"],
     ["cricket", 20, "$40.00", "Includes shirt and pants"],
-    ["netball", 10, "$30.00", "Includes shirt and skirt or pants"],
+    ["netball", 10, "$30.00", "Includes shirt and skirt or shorts"],
   ])("shows the %s minimum and category price beside Full Kit pricing", (sport, minimum, price, includes) => {
     render(<OptionsPanel sport={sport} section="fit" fitType="Men" kitType="Full" />);
     expect(screen.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent(`Team order · Min Qnty ${minimum}`);
