@@ -83,3 +83,11 @@ as normal under WooCommerce → Settings → Payments.
 This plugin does not delete any content on deactivation or uninstall.
 Listings, uniform templates, and quote requests remain in the database as
 regular posts.
+
+== Changelog ==
+
+= 2.0.15 =
+
+* Added category-specific uniform prices, minimum quantities, and product descriptions.
+* Updated Caribbean uniform-studio shipping bands while retaining North America rules.
+* Kept server-side quote and checkout validation aligned with the design studio.
