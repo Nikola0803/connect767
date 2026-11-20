@@ -25,11 +25,18 @@ function sportsFromButtons(panel) {
 describe("required uniform fit selection", () => {
   beforeEach(() => window.localStorage.clear());
 
-  it("opens directly on Step 1 with the AI prompt chat", () => {
-    render(<MemoryRouter initialEntries={["/uniforms"]}><UniformStudioPage /></MemoryRouter>);
+  it("opens directly on the combined required Design step with the AI prompt chat", async () => {
+    render(<MemoryRouter initialEntries={["/uniforms?mode=scratch"]}><UniformStudioPage /></MemoryRouter>);
     const progress = within(screen.getByRole("navigation", { name: "Uniform order progress" }));
-    expect(progress.getByRole("button", { name: /Category/ })).toHaveAttribute("aria-current", "step");
-    expect(screen.getByRole("complementary", { name: "Sport category selection" })).toBeVisible();
+    expect(progress.getByRole("button", { name: /Design/ })).toHaveAttribute("aria-current", "step");
+    expect(progress.getAllByRole("button")).toHaveLength(3);
+    const setup = openUniformSetup();
+    const category = within(setup.getByRole("group", { name: "Uniform category (required)" }));
+    expect(setup.getByText("Select a category to continue to Team roster.")).toBeVisible();
+    expect(progress.getByRole("button", { name: /Team roster/ })).toBeDisabled();
+    fireEvent.click(category.getByRole("button", { name: "Soccer category" }));
+    expect(category.getByRole("button", { name: "Soccer category" })).toHaveAttribute("aria-pressed", "true");
+    expect(setup.getByRole("group", { name: "Fit type (required)" })).toBeVisible();
     expect(screen.getAllByRole("complementary", { name: "AI prompt chat" })[0]).toBeVisible();
     expect(screen.getAllByRole("textbox", { name: "Message Connect767 AI" })[0]).toBeVisible();
   });
@@ -44,12 +51,13 @@ describe("required uniform fit selection", () => {
     expect(watermark).toHaveClass("h-full", "w-full", "object-cover");
   });
 
-  it("uses a coordinated category sidebar and loads every category template", () => {
-    const progress = openStudio("category");
-    const categoryPanel = within(screen.getByRole("complementary", { name: "Sport category selection" }));
-    expect(progress.getByRole("button", { name: /Category/ })).toHaveAttribute("aria-current", "step");
-    expect(screen.queryByRole("complementary", { name: "Uniform & order setup" })).not.toBeInTheDocument();
-    expect(sportsFromButtons(categoryPanel)).toEqual([
+  it("places every category tile above the required fit selection", () => {
+    const progress = openStudio("design");
+    const setup = openUniformSetup();
+    const categoryPanel = within(setup.getByRole("group", { name: "Uniform category (required)" }));
+    expect(progress.getByRole("button", { name: /Design/ })).toHaveAttribute("aria-current", "step");
+    expect(progress.getAllByRole("button")).toHaveLength(3);
+    expect(categoryPanel.getAllByRole("button").map((button) => button.getAttribute("aria-label").replace(/ category$/, ""))).toEqual([
       "Soccer",
       "Basketball",
       "Netball",
@@ -71,10 +79,9 @@ describe("required uniform fit selection", () => {
       fireEvent.click(categoryPanel.getByRole("button", { name: `${label} category` }));
       expect(screen.getAllByText(templateName).length).toBeGreaterThan(0);
     }
-
-    fireEvent.click(categoryPanel.getByRole("button", { name: /Continue to AI Design/ }));
-    expect(progress.getByRole("button", { name: /Design/ })).toHaveAttribute("aria-current", "step");
-    expect(screen.getByRole("complementary", { name: "Uniform & order setup" })).toBeVisible();
+    const categoryElement = setup.getByRole("group", { name: "Uniform category (required)" });
+    const fitElement = setup.getByRole("group", { name: "Fit type (required)" });
+    expect(categoryElement.compareDocumentPosition(fitElement) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("starts in the combined Design step and requires fit before Team roster", () => {
@@ -98,10 +105,16 @@ describe("required uniform fit selection", () => {
     expect(screen.queryByRole("button", { name: "Uniform setup" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Text" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Logo" })).not.toBeInTheDocument();
-    expect(screen.getByRole("complementary", { name: "Uniform & order setup" })).toBeVisible();
+    const setup = within(screen.getByRole("complementary", { name: "Uniform & order setup" }));
+    expect(setup.getByRole("heading", { name: "Uniform & order setup" })).toBeVisible();
     const productionExtras = screen.getByRole("region", { name: "Production extras" });
+    expect(setup.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent("$35.00");
+    expect(setup.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("$12.00");
+    expect(setup.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("supporter jerseys use this price");
     expect(within(productionExtras).getByRole("group", { name: "Collar options" })).toBeVisible();
     expect(within(productionExtras).getByRole("group", { name: "Sleeve options" })).toBeVisible();
+    expect(within(productionExtras).getByRole("checkbox", { name: /Embroidered team logo/ })).toBeVisible();
+    expect(within(productionExtras).getByText(/Inside-collar logo or message/)).toBeVisible();
     expect(screen.queryByRole("group", { name: "Garment part colors" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Open Production Mode" })).not.toBeInTheDocument();
     expect(header.queryByRole("button", { name: "Save progress" })).not.toBeInTheDocument();

@@ -187,20 +187,11 @@ const tools = [
 
 const studioWorkflow = [
   {
-    key: "category",
-    label: "Category",
-    description: "Choose sport or clothing",
-    icon: "ri-apps-2-line",
-    step: 1,
-    defaultTool: "category",
-    tools: ["category"],
-  },
-  {
     key: "design",
     label: "Design",
-    description: "Create and refine with AI",
+    description: "Category, fit and AI design",
     icon: "ri-pencil-ruler-2-line",
-    step: 2,
+    step: 1,
     defaultTool: "ai",
     tools: ["ai"],
   },
@@ -209,7 +200,7 @@ const studioWorkflow = [
     label: "Team roster",
     description: "Names, numbers & sizes",
     icon: "ri-team-line",
-    step: 3,
+    step: 2,
     defaultTool: "roster",
     tools: ["roster"],
   },
@@ -218,7 +209,7 @@ const studioWorkflow = [
     label: "Review & quote",
     description: "Confirm and submit",
     icon: "ri-shopping-bag-3-line",
-    step: 4,
+    step: 3,
     defaultTool: "review",
     tools: ["review"],
   },
@@ -348,8 +339,8 @@ export default function UniformStudioPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSport = searchParams.get("sport") || "soccer";
   const scratch = searchParams.get("mode") === "scratch";
-  const requestedWorkflowStep = searchParams.get("step") || "category";
-  const initialWorkflowStep = requestedWorkflowStep === "options" ? "design" : requestedWorkflowStep;
+  const requestedWorkflowStep = searchParams.get("step") || "design";
+  const initialWorkflowStep = ["options", "category", "ai"].includes(requestedWorkflowStep) ? "design" : requestedWorkflowStep;
 
   const [activeSport, setActiveSport] = useState(
     sports.some((s) => s.slug === initialSport) ? initialSport : "soccer"
@@ -359,6 +350,7 @@ export default function UniformStudioPage() {
   // ---------- Design state ----------
   const [fitType, setFitType] = useState("");
   const hasSelectedFit = fitTypeOptions.includes(fitType);
+  const [categoryConfirmed, setCategoryConfirmed] = useState(() => searchParams.has("sport"));
   const [collar, setCollar] = useState("Crew");
   const [sleeve, setSleeve] = useState("Short");
   const [colors, setColors] = useState(defaultZoneColors);
@@ -548,8 +540,10 @@ export default function UniformStudioPage() {
   const insideCollarRequirementMet = !insideCollarMessage || Boolean(
     insideCollarText.trim() || insideCollarAttachment?.src,
   );
-  const canContinueDesign = hasSelectedFit && insideCollarRequirementMet;
-  const designContinueTitle = !hasSelectedFit
+  const canContinueDesign = categoryConfirmed && hasSelectedFit && insideCollarRequirementMet;
+  const designContinueTitle = !categoryConfirmed
+    ? "Select a uniform category before continuing"
+    : !hasSelectedFit
     ? "Select Men, Women or Youth in Design before continuing"
     : !insideCollarRequirementMet
       ? "Enter an inside-collar message or attach a logo/artwork file before continuing"
@@ -690,7 +684,7 @@ export default function UniformStudioPage() {
 
   const openWorkflowStep = (index) => {
     const nextStep = studioWorkflow[Math.max(0, Math.min(studioWorkflow.length - 1, index))];
-    if (!["category", "design"].includes(nextStep.key) && !canContinueDesign) return;
+    if (nextStep.key !== "design" && !canContinueDesign) return;
     if (nextStep.key === "review" && !rosterReadyForReview) return;
     setPendingLayer(null);
     setSelectedLayerId(null);
@@ -708,7 +702,13 @@ export default function UniformStudioPage() {
     if (workflowIndex === studioWorkflow.length - 1) return;
     if (workflowStep.key === "design" && !canContinueDesign) {
       setDesignValidationAttempted(true);
-      const target = document.getElementById(hasSelectedFit ? "inside-collar-content-warning" : "fit-selection-required");
+      const target = document.getElementById(
+        !categoryConfirmed
+          ? "category-selection-required"
+          : hasSelectedFit
+            ? "inside-collar-content-warning"
+            : "fit-selection-required",
+      );
       target?.scrollIntoView?.({ behavior: "smooth", block: "center" });
       target?.querySelector?.("button, input, select")?.focus();
       return;
@@ -815,6 +815,7 @@ export default function UniformStudioPage() {
           twoTone,
           fitType,
           fitTypeConfirmed: hasSelectedFit,
+          categoryConfirmed,
           kitType,
           extraTeamShirts,
           logoApplication,
@@ -838,7 +839,7 @@ export default function UniformStudioPage() {
          no worse than before this existed */
     }
   }, [storageKey, layers, placements3d, colors, studioBackground, collar, sleeve, zoneModel, zoneStyles, twoTone,
-    fitType, hasSelectedFit, kitType, extraTeamShirts, logoApplication, insideCollarMessage, insideCollarText, insideCollarAttachment, fanJerseyAdded, supporterJerseys, roster, socksQuantity, contact, shipping,
+    fitType, hasSelectedFit, categoryConfirmed, kitType, extraTeamShirts, logoApplication, insideCollarMessage, insideCollarText, insideCollarAttachment, fanJerseyAdded, supporterJerseys, roster, socksQuantity, contact, shipping,
     aiUniformPlan, aiWorkspaceConcept, aiDesignApplied]);
 
   const saveProgress = () => {
@@ -858,6 +859,7 @@ export default function UniformStudioPage() {
           twoTone,
           fitType,
           fitTypeConfirmed: hasSelectedFit,
+          categoryConfirmed,
           kitType,
           extraTeamShirts,
           logoApplication,
@@ -903,6 +905,9 @@ export default function UniformStudioPage() {
       if (saved.zoneStyles) setZoneStyles(saved.zoneStyles);
       if (saved.twoTone) setTwoTone(saved.twoTone);
       setFitType(saved.fitTypeConfirmed === true && fitTypeOptions.includes(saved.fitType) ? saved.fitType : "");
+      // Projects saved before category confirmation was introduced already
+      // belong to a category-specific template, so preserve that selection.
+      setCategoryConfirmed(saved.categoryConfirmed !== false);
       // Extra shirts are ordered explicitly in Team roster. Discard the former
       // hidden Step 2 quantity so legacy projects cannot add an invisible charge.
       setKitType("Full");
@@ -1063,6 +1068,7 @@ export default function UniformStudioPage() {
     });
     setSelectedTemplate(t.slug);
     setFitType("");
+    setCategoryConfirmed(false);
     setCollar(t.defaultCollar || nextSportConfig.collarOptions[0]);
     setSleeve(t.defaultSleeve || nextSportConfig.sleeveOptions?.[0] || "Sleeveless");
     // A stock image demonstrates the cut only. New designs always enter on
@@ -1102,15 +1108,19 @@ export default function UniformStudioPage() {
   useEffect(() => {
     if (selectedTemplate) return;
     const initialTemplate = primaryTemplateForSport(activeSport);
-    if (initialTemplate) selectTemplate(initialTemplate, activeSport, "category");
+    if (initialTemplate) selectTemplate(initialTemplate, activeSport, "ai");
   }, []); // The studio opens once on Step 1; later exits still return to the category entrance.
 
   const changeDesignCategory = (sportSlug) => {
-    if (sportSlug === activeSport) return;
+    if (sportSlug === activeSport) {
+      setCategoryConfirmed(true);
+      return;
+    }
     const nextTemplate = primaryTemplateForSport(sportSlug);
     if (!nextTemplate) return;
     if (hasWork && !window.confirm("Changing category loads its matching template. Your current category design is saved and can be restored when you return. Continue?")) return;
-    selectTemplate(nextTemplate, sportSlug, "category");
+    selectTemplate(nextTemplate, sportSlug, "ai");
+    setCategoryConfirmed(true);
   };
 
   const TOOL_FOR_LAYER = { text: "text", skin: "skins", logo: "logo", clipart: "logo" };
@@ -2079,6 +2089,47 @@ export default function UniformStudioPage() {
     optionsProps={{ sport: activeSport, fitType, setFitType, kitType, setKitType, extraTeamShirts, setExtraTeamShirts, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment, showFitAlert: true, highlightMissing: designValidationAttempted }}
   />;
 
+  const categoryRequiredPanel = (
+    <section
+      id="category-selection-required"
+      aria-labelledby="required-category-title"
+      className={`rounded-xl border-2 bg-white p-2.5 shadow-sm ${!categoryConfirmed && designValidationAttempted ? "border-accent-400 ring-2 ring-accent-300" : "border-primary-500"}`}
+    >
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div>
+          <h3 id="required-category-title" className="text-xs font-bold text-foreground-900">Uniform category</h3>
+          <p className="mt-0.5 text-[9px] text-foreground-500">Choose the garment foundation before selecting a fit.</p>
+        </div>
+        <span className="rounded-full bg-accent-50 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-accent-700">Required</span>
+      </div>
+      {!categoryConfirmed && <div role="alert" className="mb-2 flex items-center gap-2 rounded-lg border border-accent-300 bg-accent-50 px-2.5 py-1.5 text-accent-950">
+        <i className="ri-error-warning-fill text-sm text-accent-600" aria-hidden="true" />
+        <p className="text-[10px] font-semibold">Select a category to continue to Team roster.</p>
+      </div>}
+      <div className="grid grid-cols-2 gap-1.5" role="group" aria-label="Uniform category (required)">
+        {sports.map((sport) => {
+          const selected = categoryConfirmed && sport.slug === activeSport;
+          const categoryTemplate = primaryTemplateForSport(sport.slug);
+          const details = categoryDetails[sport.slug] || { title: sport.label };
+          return (
+            <button
+              key={sport.slug}
+              type="button"
+              aria-pressed={selected}
+              aria-label={`${details.title} category`}
+              onClick={() => changeDesignCategory(sport.slug)}
+              className={`relative flex min-h-[68px] cursor-pointer items-start gap-2 rounded-xl border p-2 text-left transition ${selected ? "border-primary-700 bg-primary-700 text-white shadow-sm" : "border-background-300 bg-background-50 text-foreground-900 hover:border-primary-400 hover:bg-primary-50"}`}
+            >
+              <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-sm ${selected ? "bg-white/15" : "bg-primary-50 text-primary-700"}`}><i className={sport.icon || "ri-shirt-line"} /></span>
+              <span className="min-w-0 pt-0.5"><strong className="block truncate text-[10px] leading-tight">{details.title}</strong><span className={`mt-1 block truncate text-[8px] ${selected ? "text-white/65" : "text-foreground-500"}`}>{categoryTemplate?.name || "AI foundation"}</span></span>
+              {selected && <i className="ri-check-line absolute right-2 top-2 text-sm" aria-hidden="true" />}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+
   const categorySelectionPanel = (
     <aside
       aria-label="Sport category selection"
@@ -2327,9 +2378,9 @@ export default function UniformStudioPage() {
           {studioWorkflow.map((step, index) => {
             const active = index === workflowIndex;
             const complete = index < workflowIndex;
-            const locked = (!["category", "design"].includes(step.key) && !canContinueDesign) || (step.key === "review" && !rosterReadyForReview);
-            const stepDescription = step.key === "category"
-              ? categoryDetails[activeSport]?.title || step.description
+            const locked = (step.key !== "design" && !canContinueDesign) || (step.key === "review" && !rosterReadyForReview);
+            const stepDescription = step.key === "design" && categoryConfirmed
+              ? `${categoryDetails[activeSport]?.title || "Category"} · ${hasSelectedFit ? fitType : "Fit required"}`
               : step.description;
             return (
               <div key={step.key} className="flex min-w-0 flex-1 items-center gap-1.5">
@@ -2479,14 +2530,13 @@ export default function UniformStudioPage() {
       )}
 
       <div className="flex min-h-0 flex-1 flex-col bg-[radial-gradient(circle_at_48%_42%,rgba(36,45,36,0.32),transparent_38%),linear-gradient(135deg,#10110f_0%,#151610_52%,#10110f_100%)] md:flex-row">
-                  {workflowStep.key === "category" && categorySelectionPanel}
                   {workflowStep.key === "design" && (
                     <aside aria-labelledby="uniform-order-setup-title" className="flex max-h-[45dvh] min-h-0 w-full min-w-0 max-w-none flex-shrink-0 flex-col border-b border-background-300 bg-[#f8f7f2] text-foreground-950 shadow-[0_18px_44px_rgba(0,0,0,.2)] md:max-h-none md:w-[360px] md:min-w-[340px] md:max-w-[380px] md:border-b-0 md:border-r md:shadow-[18px_0_44px_rgba(0,0,0,.2)] xl:w-[380px]">
                       <header className="flex flex-shrink-0 items-center gap-2.5 border-b border-background-200 bg-white px-3 py-2">
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-700 text-sm text-white"><i className="ri-shirt-line" /></span>
-                        <span className="min-w-0"><h2 id="uniform-order-setup-title" className="font-heading text-[15px] font-semibold leading-tight">Uniform &amp; order setup</h2><p className="truncate text-[8px] text-foreground-500">Fit, kit, collar, sleeves, colours and production extras</p></span>
+                        <span className="min-w-0"><h2 id="uniform-order-setup-title" className="font-heading text-[15px] font-semibold leading-tight">Uniform &amp; order setup</h2><p className="truncate text-[8px] text-foreground-500">Required category and fit, followed by production options</p></span>
                       </header>
-                      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">{uniformSetupPanel}</div>
+                      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain p-2">{categoryRequiredPanel}{uniformSetupPanel}</div>
                       <footer className="flex-shrink-0 border-t border-background-200 bg-white p-2 shadow-[0_-10px_28px_rgba(31,43,35,.08)]">
                         <button
                           type="button"
@@ -2742,7 +2792,7 @@ export default function UniformStudioPage() {
                   </div>
 
               {/* Docked fields panel */}
-              <aside className={`hidden w-full flex-shrink-0 flex-col overflow-hidden border-l border-black/10 bg-[#f7f5ef] md:flex ${(activeTool === "ai" || workflowStep.key === "category") ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px]" : "max-w-[420px]"}`} aria-label={workflowStep.key === "category" ? "AI prompt chat" : undefined}>
+              <aside className={`hidden w-full flex-shrink-0 flex-col overflow-hidden border-l border-black/10 bg-[#f7f5ef] md:flex ${(activeTool === "ai" || workflowStep.key === "category") ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px]" : "max-w-[420px]"}`} aria-label={(activeTool === "ai" || workflowStep.key === "category") ? "AI prompt chat" : undefined}>
                 {activeTool !== "ai" && workflowStep.key !== "category" && <div className={`flex-shrink-0 border-b border-black/[0.07] bg-[#f7f5ef]/95 backdrop-blur-xl ${activeTool === "design" ? "px-4 py-3" : "px-5 py-4"}`}>
                   <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary-700">Step {workflowStep.step} · {workflowStep.label}</p>
                   <div className="mt-1 flex items-center justify-between gap-3">
@@ -2896,7 +2946,7 @@ export default function UniformStudioPage() {
       </div>
 
       {/* Mobile: the fields panel docks to the bottom instead of the side */}
-      <div className={`md:hidden flex-shrink-0 overflow-y-auto overscroll-contain border-t border-background-200/60 bg-background-50 ${(activeTool === "ai" || workflowStep.key === "category") ? "max-h-[72dvh] p-0" : "max-h-[42dvh] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"}`} aria-label={workflowStep.key === "category" ? "AI prompt chat" : undefined}>
+      <div className={`md:hidden flex-shrink-0 overflow-y-auto overscroll-contain border-t border-background-200/60 bg-background-50 ${(activeTool === "ai" || workflowStep.key === "category") ? "max-h-[72dvh] p-0" : "max-h-[42dvh] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"}`} aria-label={(activeTool === "ai" || workflowStep.key === "category") ? "AI prompt chat" : undefined}>
         {manualEditingAllowed && <SelectedItemPanel
           layer={selectedLayer}
           placement={stageMode === "3d" && selectedLayerId ? placements3d[selectedLayerId] : null}
