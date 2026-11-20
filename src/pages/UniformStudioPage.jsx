@@ -46,6 +46,7 @@ import {
 } from "../components/uniform-studio/productionPlacement";
 import FloatingToolbar from "../components/uniform-studio/FloatingToolbar";
 import {
+  OptionsPanel,
   UniformSetupPanel,
   ZoneEditorPanel,
   TextPanel,
@@ -105,7 +106,7 @@ function EmbossedAIWorkspaceBackdrop() {
         data-testid="ai-workspace-watermark"
         loading="lazy"
         decoding="async"
-        className="h-full w-full select-none object-cover opacity-[0.28] mix-blend-overlay grayscale contrast-150 [filter:grayscale(1)_drop-shadow(-3px_-3px_2px_rgba(255,255,255,.42))_drop-shadow(4px_4px_3px_rgba(0,0,0,.48))]"
+        className="h-full w-full select-none object-contain opacity-[0.28] mix-blend-overlay grayscale contrast-150 [filter:grayscale(1)_drop-shadow(-3px_-3px_2px_rgba(255,255,255,.42))_drop-shadow(4px_4px_3px_rgba(0,0,0,.48))]"
       />
     </div>
   );
@@ -2093,12 +2094,12 @@ export default function UniformStudioPage() {
     <section
       id="category-selection-required"
       aria-labelledby="required-category-title"
-      className={`rounded-xl border-2 bg-white p-2.5 shadow-sm ${!categoryConfirmed && designValidationAttempted ? "border-accent-400 ring-2 ring-accent-300" : "border-primary-500"}`}
+      className={`rounded-xl border-2 bg-white p-2 shadow-sm ${!categoryConfirmed && designValidationAttempted ? "border-accent-400 ring-2 ring-accent-300" : "border-primary-500"}`}
     >
-      <div className="mb-2 flex items-center justify-between gap-2">
+      <div className="mb-1.5 flex items-center justify-between gap-2">
         <div>
           <h3 id="required-category-title" className="text-xs font-bold text-foreground-900">Uniform category</h3>
-          <p className="mt-0.5 text-[9px] text-foreground-500">Choose the garment foundation before selecting a fit.</p>
+          <p className="text-[8px] text-foreground-500">Choose a category, then its required fit.</p>
         </div>
         <span className="rounded-full bg-accent-50 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-accent-700">Required</span>
       </div>
@@ -2106,7 +2107,7 @@ export default function UniformStudioPage() {
         <i className="ri-error-warning-fill text-sm text-accent-600" aria-hidden="true" />
         <p className="text-[10px] font-semibold">Select a category to continue to Team roster.</p>
       </div>}
-      <div className="grid grid-cols-2 gap-1.5" role="group" aria-label="Uniform category (required)">
+      <div className="grid grid-cols-2 gap-1" role="group" aria-label="Uniform category (required)">
         {sports.map((sport) => {
           const selected = categoryConfirmed && sport.slug === activeSport;
           const categoryTemplate = primaryTemplateForSport(sport.slug);
@@ -2118,14 +2119,34 @@ export default function UniformStudioPage() {
               aria-pressed={selected}
               aria-label={`${details.title} category`}
               onClick={() => changeDesignCategory(sport.slug)}
-              className={`relative flex min-h-[68px] cursor-pointer items-start gap-2 rounded-xl border p-2 text-left transition ${selected ? "border-primary-700 bg-primary-700 text-white shadow-sm" : "border-background-300 bg-background-50 text-foreground-900 hover:border-primary-400 hover:bg-primary-50"}`}
+              className={`relative flex min-h-[52px] cursor-pointer items-center gap-1.5 rounded-lg border px-1.5 py-1 text-left transition ${selected ? "border-primary-700 bg-primary-700 text-white shadow-sm" : "border-background-300 bg-background-50 text-foreground-900 hover:border-primary-400 hover:bg-primary-50"}`}
             >
-              <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-sm ${selected ? "bg-white/15" : "bg-primary-50 text-primary-700"}`}><i className={sport.icon || "ri-shirt-line"} /></span>
-              <span className="min-w-0 pt-0.5"><strong className="block truncate text-[10px] leading-tight">{details.title}</strong><span className={`mt-1 block truncate text-[8px] ${selected ? "text-white/65" : "text-foreground-500"}`}>{categoryTemplate?.name || "AI foundation"}</span></span>
-              {selected && <i className="ri-check-line absolute right-2 top-2 text-sm" aria-hidden="true" />}
+              <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-md text-xs ${selected ? "bg-white/15" : "bg-primary-50 text-primary-700"}`}><i className={sport.icon || "ri-shirt-line"} /></span>
+              <span className="min-w-0"><strong className="block truncate text-[9px] leading-tight">{details.title}</strong><span className={`mt-0.5 block truncate text-[7px] ${selected ? "text-white/65" : "text-foreground-500"}`}>{categoryTemplate?.name || "AI foundation"}</span></span>
+              {selected && <i className="ri-check-line absolute right-1.5 top-1.5 text-xs" aria-hidden="true" />}
             </button>
           );
         })}
+      </div>
+      <div className="mt-2 border-t border-background-200 pt-2">
+        <OptionsPanel
+          sport={activeSport}
+          fitType={fitType}
+          setFitType={setFitType}
+          kitType={kitType}
+          setKitType={setKitType}
+          logoApplication={logoApplication}
+          setLogoApplication={setLogoApplication}
+          insideCollarMessage={insideCollarMessage}
+          setInsideCollarMessage={setInsideCollarMessage}
+          insideCollarText={insideCollarText}
+          setInsideCollarText={setInsideCollarText}
+          insideCollarAttachment={insideCollarAttachment}
+          setInsideCollarAttachment={setInsideCollarAttachment}
+          section="fitOnly"
+          showFitAlert
+          highlightMissing={designValidationAttempted}
+        />
       </div>
     </section>
   );
