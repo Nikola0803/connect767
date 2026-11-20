@@ -65,6 +65,9 @@ describe("AI design generation endpoint", () => {
     expect(prompt).toContain("complete front view, strict 90-degree side view, and complete back view");
     expect(prompt).toContain("shorts or trousers");
     expect(prompt).toContain("socks");
+    expect(prompt).toContain("exactly three separate horizontal stripes only at the top near the knee");
+    expect(prompt).toContain("All three stripes must use the same single solid stripe colour");
+    expect(prompt).toContain("Do not create a contrasting solid-colour cuff");
     expect(prompt).toContain("one perfectly uniform flat solid warm-white background (#F5F0E7)");
     expect(prompt).toContain("Connect767 C-and-AI emblem");
     expect(prompt).toContain("behind and partially obscured by the uniforms");
