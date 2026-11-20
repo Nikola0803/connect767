@@ -5,6 +5,13 @@ import seoPages from "../data/seo-pages.json";
 const SITE_URL = "https://connect767.com";
 const SOCIAL_IMAGE = `${SITE_URL}/connect767-favicon.png`;
 const DEFAULT_META = seoPages["/"];
+const PRIMARY_NAVIGATION = [
+  ["Directory", "/listings"],
+  ["Shop", "/shop"],
+  ["Community Feed", "/community"],
+  ["Custom Uniforms", "/uniforms"],
+  ["Blog", "/blog"],
+];
 const NOINDEX_PREFIXES = [
   "/auth/",
   "/checkout",
@@ -121,6 +128,11 @@ function setStructuredData(pathname, meta, canonical) {
       email: "info@connect767.com",
       telephone: "+1-862-253-2076",
     });
+    graph.push(...PRIMARY_NAVIGATION.map(([name, path]) => ({
+      "@type": "SiteNavigationElement",
+      name,
+      url: `${SITE_URL}${path}`,
+    })));
   } else {
     graph.push({
       "@type": "WebPage",

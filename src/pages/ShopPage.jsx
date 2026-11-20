@@ -182,7 +182,7 @@ export default function ShopPage() {
                 Curated for you
               </div>
               <h2 className="font-heading text-2xl md:text-4xl font-light text-foreground-950">
-                Shop the <span className="text-accent-500 italic">collection</span>
+                Featured <span className="text-accent-500 italic">products</span>
               </h2>
               <p className="mt-1 text-xs text-foreground-500">
                 {loading ? "Finding products…" : `${visibleProducts.length} product${visibleProducts.length === 1 ? "" : "s"} found`}
