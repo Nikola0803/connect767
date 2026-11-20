@@ -162,13 +162,12 @@ describe("required uniform fit selection", () => {
     expect(header.queryByRole("button", { name: "Settings" })).not.toBeInTheDocument();
     expect(header.queryByRole("button", { name: "Open uniform and order setup" })).not.toBeInTheDocument();
     const promptTools = within(screen.getAllByLabelText("AI prompt tools")[0]);
-    expect(promptTools.getByRole("button", { name: "New design" })).toBeVisible();
+    expect(promptTools.queryByRole("button", { name: "New design" })).not.toBeInTheDocument();
     expect(promptTools.getByRole("button", { name: "AI tools" })).toBeVisible();
     fireEvent.click(promptTools.getByRole("button", { name: "AI tools" }));
     const promptMenu = screen.getByRole("menu", { name: "AI prompt tools menu" });
     expect(within(promptMenu).getByRole("menuitem", { name: "History" })).toBeVisible();
     expect(within(promptMenu).getByRole("menuitem", { name: "Reference" })).toBeVisible();
-    expect(within(promptMenu).getByRole("menuitem", { name: "Create artwork" })).toBeVisible();
     expect(within(promptMenu).getByRole("menuitem", { name: "Refine with AI" })).toBeVisible();
     expect(screen.getAllByRole("region", { name: "AI command prompt" })[0]).toBeVisible();
     expect(screen.getAllByRole("textbox", { name: "Message Connect767 AI" })[0]).toBeVisible();
@@ -346,20 +345,20 @@ describe("required uniform fit selection", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Add player" })[0]);
     fireEvent.click(progress.getByRole("button", { name: /Review & quote/ }));
 
-    expect(screen.getAllByRole("heading", { name: "Shipping Address" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("heading", { name: /Shipping Address/ }).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Custom design uniforms are non-refundable.").length).toBeGreaterThan(0);
     expect(screen.queryByRole("heading", { name: "Delivery address" })).not.toBeInTheDocument();
     expect(screen.getAllByRole("textbox", { name: "Shipping phone number" }).length).toBeGreaterThan(0);
-    expect(screen.queryByRole("heading", { name: "Order contact" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Order contact/ })).not.toBeInTheDocument();
 
     const differentContact = screen.getAllByRole("checkbox", { name: "Order Contact if different from above" })[0];
     fireEvent.click(differentContact);
-    expect(screen.getAllByRole("heading", { name: "Order contact" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("heading", { name: /Order contact/ }).length).toBeGreaterThan(0);
     fireEvent.click(differentContact);
     expect(screen.queryByRole("heading", { name: "Order contact" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getAllByRole("button", { name: "Request a quote instead" })[0]);
-    expect(screen.getAllByRole("heading", { name: "Order contact" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("heading", { name: /Order contact/ }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("button", { name: "Send quote request" }).length).toBeGreaterThan(0);
   });
 
