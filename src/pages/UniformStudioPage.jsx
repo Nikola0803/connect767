@@ -1896,60 +1896,58 @@ export default function UniformStudioPage() {
 
     return (
       <div className="min-h-[100dvh] bg-[linear-gradient(145deg,#f8f3e9_0%,#fffdf8_48%,#eef8f1_100%)] text-foreground-950">
-        <header className="border-b border-background-200/70 bg-background-50/85 backdrop-blur-sm">
-          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 md:px-8">
+        <header className="border-b border-background-200/60 bg-background-50/80 backdrop-blur-md">
+          <div className="mx-auto grid max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-3 md:px-8">
             <Button to="/" variant="ghost" size="sm" icon="ri-arrow-left-line" iconPosition="left">
               Back to site
             </Button>
             <div className="text-center">
-              <p className="font-label text-[10px] font-bold uppercase tracking-[0.22em] text-primary-700">
+              <p className="font-label text-[9px] font-bold uppercase tracking-[0.2em] text-primary-700">
                 Connect767 AI Design Studio
               </p>
-              <span className="font-heading text-lg font-semibold">Custom Uniforms & Clothing</span>
+              <span className="font-heading text-base font-semibold">Custom Uniforms &amp; Clothing</span>
             </div>
-            <span className="hidden items-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-800 sm:inline-flex">
-              <i className="ri-save-3-line" /> Designs save automatically
-            </span>
+            <span aria-hidden="true" />
           </div>
         </header>
 
-        <main className="mx-auto max-w-7xl px-5 py-8 md:px-8 md:py-12">
-          <section className="mb-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-            <div className="max-w-3xl">
-              <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-100/70 px-3 py-1.5 font-label text-[11px] font-bold uppercase tracking-[0.16em] text-primary-800">
+        <main className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
+          <section className="mb-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-end">
+            <div className="max-w-2xl">
+              <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary-200/80 bg-primary-50/80 px-3 py-1.5 font-label text-[9px] font-bold uppercase tracking-[0.15em] text-primary-800">
                 <i className="ri-magic-line" /> One AI studio for every garment
               </span>
-              <h1 className="font-heading text-4xl font-medium leading-[1.04] tracking-[-0.035em] sm:text-5xl lg:text-6xl">
+              <h1 className="font-heading text-3xl font-medium leading-[1.06] tracking-[-0.025em] sm:text-4xl lg:text-5xl">
                 What would you like to design?
-                <span className="block italic text-primary-700">Start with any category.</span>
+                <span className="mt-1 block italic text-primary-700">Start with any category.</span>
               </h1>
-              <p className="mt-4 max-w-2xl text-base leading-relaxed text-foreground-600 md:text-lg">
+              <p className="mt-3 max-w-xl text-sm leading-6 text-foreground-600 md:text-base">
                 Choose a sport or clothing category, then describe what you want. The AI studio
                 creates a complete Front / Side / Back concept while the existing order steps stay intact.
               </p>
             </div>
-            <ol className="grid grid-cols-3 overflow-hidden rounded-2xl border border-background-300 bg-background-50 shadow-sm">
+            <ol className="grid grid-cols-3 overflow-hidden rounded-xl border border-background-300/80 bg-background-50/80 shadow-[0_8px_24px_rgba(69,48,30,.05)] backdrop-blur-sm">
               {["Design", "Team roster", "Review & quote"].map((label, index) => (
                 <li
                   key={label}
-                  className="flex min-w-0 flex-col gap-1 border-l border-background-200 px-3 py-3 first:border-l-0"
+                  className="flex min-w-0 flex-col gap-0.5 border-l border-background-200/80 px-3 py-2.5 first:border-l-0"
                 >
-                  <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-foreground-400">
+                  <span className="text-[8px] font-bold uppercase tracking-[0.14em] text-foreground-400">
                     Step {index + 1}
                   </span>
-                  <span className="text-sm font-semibold text-foreground-700">{label}</span>
+                  <span className="text-xs font-semibold text-foreground-700">{label}</span>
                 </li>
               ))}
             </ol>
           </section>
 
-          <section className="rounded-[30px] border border-background-300/80 bg-background-50/95 p-5 shadow-[0_22px_60px_rgba(69,48,30,0.08)] sm:p-7 lg:p-9">
-            <div className="flex flex-col gap-3 border-b border-background-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <section className="rounded-[24px] border border-background-300/70 bg-background-50/90 p-4 shadow-[0_18px_48px_rgba(69,48,30,0.06)] backdrop-blur-sm sm:p-6 lg:p-7">
+            <div className="flex flex-col gap-2 border-b border-background-200/80 pb-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">One design studio</p>
-                <h2 className="mt-1 font-heading text-3xl font-semibold sm:text-4xl">Every category. One workspace.</h2>
+                <p className="font-label text-[9px] font-bold uppercase tracking-[0.18em] text-primary-700">One design studio</p>
+                <h2 className="mt-1 font-heading text-2xl font-semibold sm:text-3xl">Every category. One workspace.</h2>
               </div>
-              <p className="max-w-lg text-sm leading-relaxed text-foreground-500">
+              <p className="max-w-md text-xs leading-5 text-foreground-500 sm:text-sm">
                 Enter once, then choose the required category and fit inside the studio.
               </p>
             </div>
@@ -1958,28 +1956,41 @@ export default function UniformStudioPage() {
               type="button"
               aria-label="Enter Design Studio"
               onClick={() => selectTemplate(studioEntryTemplate, "soccer", "ai")}
-              className="group relative mt-7 block w-full overflow-hidden rounded-[26px] border border-primary-300 bg-[#102018] text-left shadow-[0_24px_60px_rgba(0,74,45,.18)] transition duration-300 hover:-translate-y-1 hover:border-primary-400 hover:shadow-[0_30px_70px_rgba(0,74,45,.24)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 cursor-pointer"
+              className="group relative mt-5 block w-full overflow-hidden rounded-[20px] border border-primary-300/80 bg-[#123126] text-left shadow-[0_18px_44px_rgba(0,74,45,.14)] transition duration-300 hover:-translate-y-0.5 hover:border-primary-400 hover:shadow-[0_24px_54px_rgba(0,74,45,.2)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 cursor-pointer"
             >
-              <span className="grid h-[430px] grid-cols-3 grid-rows-2" aria-hidden="true">
-                {studioCoverTemplates.map(({ sport, template }) => (
-                  <span key={sport.slug} className="relative flex items-center justify-center overflow-hidden border border-white/[0.05] bg-[radial-gradient(circle_at_center,rgba(255,255,255,.09),transparent_70%)] p-5">
+              <span className="grid h-[320px] grid-cols-3 grid-rows-2 sm:h-[350px]" aria-hidden="true">
+                {studioCoverTemplates.map(({ sport, template }, index) => (
+                  <span key={sport.slug} className="relative flex items-center justify-center overflow-hidden border border-white/[0.04] bg-[radial-gradient(circle_at_center,rgba(255,255,255,.08),transparent_70%)] p-4">
                     <img
                       data-testid="studio-cover-category"
                       src={template.image}
                       alt=""
                       loading="lazy"
                       decoding="async"
-                      className="h-full w-full select-none object-contain opacity-55 grayscale contrast-125 mix-blend-luminosity drop-shadow-[-2px_-2px_2px_rgba(255,255,255,.18)] drop-shadow-[4px_5px_5px_rgba(0,0,0,.5)] transition duration-300 group-hover:opacity-70 group-hover:scale-[1.025]"
+                      className="h-full w-full select-none object-contain opacity-45 grayscale contrast-125 mix-blend-luminosity drop-shadow-[-2px_-2px_2px_rgba(255,255,255,.15)] drop-shadow-[4px_5px_5px_rgba(0,0,0,.46)] transition duration-300 group-hover:opacity-60 group-hover:scale-[1.02]"
                     />
+                    <span
+                      data-testid="studio-cover-category-label"
+                      className={`absolute left-3 rounded-full border border-white/10 bg-black/20 px-2 py-1 font-label text-[8px] font-bold uppercase tracking-[0.14em] text-white/65 backdrop-blur-sm sm:left-4 sm:text-[9px] ${index < 3 ? "top-2.5 sm:top-3" : "bottom-2.5 sm:bottom-3"}`}
+                    >
+                      {categoryDetails[sport.slug]?.title || sport.label}
+                    </span>
                   </span>
                 ))}
               </span>
-              <span className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,18,11,.18),rgba(4,18,11,.74))]" aria-hidden="true" />
+              <span className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,18,11,.12),rgba(4,18,11,.68))]" aria-hidden="true" />
+              <img
+                data-testid="studio-entry-ai-watermark"
+                src="/connect767-ai-logo-transparent.png"
+                alt=""
+                aria-hidden="true"
+                className="pointer-events-none absolute right-4 top-4 z-10 h-14 w-14 select-none object-contain opacity-30 grayscale contrast-125 mix-blend-soft-light [filter:grayscale(1)_brightness(1.45)_drop-shadow(-1px_-1px_1px_rgba(255,255,255,.28))_drop-shadow(2px_2px_2px_rgba(0,0,0,.48))] sm:right-5 sm:top-5 sm:h-16 sm:w-16"
+              />
               <span className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white">
-                <span className="font-label text-[10px] font-bold uppercase tracking-[0.22em] text-primary-200">Connect767 AI</span>
-                <strong className="mt-2 font-heading text-4xl font-semibold sm:text-5xl">Enter Design Studio</strong>
-                <span className="mt-3 text-sm text-white/75">Choose your category and fit inside.</span>
-                <span className="mt-6 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary-500 text-xl shadow-[0_14px_30px_rgba(0,0,0,.3)] transition group-hover:translate-x-1 group-hover:bg-primary-400"><i className="ri-arrow-right-line" /></span>
+                <span className="font-label text-[9px] font-bold uppercase tracking-[0.2em] text-primary-200">Connect767 AI</span>
+                <strong className="mt-2 font-heading text-3xl font-semibold sm:text-4xl">Enter Design Studio</strong>
+                <span className="mt-2 text-xs text-white/70 sm:text-sm">Choose your category and fit inside.</span>
+                <span className="mt-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-500 text-lg shadow-[0_10px_24px_rgba(0,0,0,.25)] transition group-hover:translate-x-1 group-hover:bg-primary-400"><i className="ri-arrow-right-line" /></span>
               </span>
             </button>
           </section>
