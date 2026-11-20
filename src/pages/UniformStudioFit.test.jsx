@@ -85,16 +85,29 @@ describe("required uniform fit selection", () => {
     openStudio("ai");
     const watermark = screen.getByTestId("ai-workspace-watermark");
     expect(watermark).toHaveAttribute(
-      "src",
-      "https://admin.connect767.com/wp-content/uploads/2026/11/Glossy-Neon-C-AI-Logo.png",
+      "data-logo-src",
+      "/connect767-ai-logo-transparent.png?v=20261117",
     );
-    expect(watermark).toHaveClass("h-full", "w-full", "object-contain");
-    expect(watermark).not.toHaveClass("object-fill");
-    expect(watermark).toHaveClass("mix-blend-soft-light", "grayscale");
+    expect(watermark.style.maskImage).toContain("connect767-ai-logo-transparent.png");
+    expect(watermark.style.maskSize).toBe("contain");
+    expect(watermark.style.backgroundColor).toBe("rgb(245, 240, 231)");
+    expect(watermark.style.filter).toContain("drop-shadow");
     expect(screen.getByRole("heading", { name: "Your design will appear here" })).toBeVisible();
     expect(screen.queryByText("Use the AI panel to begin.")).not.toBeInTheDocument();
     expect(screen.queryByText("Your generated uniform will appear here")).not.toBeInTheDocument();
     expect(screen.queryByText("Reference", { selector: "strong" })).not.toBeInTheDocument();
+  });
+
+  it("keeps the background-matched embossed logo across every uniform category", () => {
+    openStudio("ai");
+    const setup = openUniformSetup();
+    const categoryPanel = within(setup.getByRole("group", { name: "Uniform category (required)" }));
+    for (const category of ["Soccer", "Basketball", "Netball", "Cricket", "Goal Keeper", "Clothing & Other"]) {
+      fireEvent.click(categoryPanel.getByRole("button", { name: `${category} category` }));
+      const watermark = screen.getByTestId("ai-workspace-watermark");
+      expect(watermark.style.backgroundColor).toBe("rgb(245, 240, 231)");
+      expect(watermark.style.maskImage).toContain("connect767-ai-logo-transparent.png");
+    }
   });
 
   it("places every category tile above the required fit selection", () => {

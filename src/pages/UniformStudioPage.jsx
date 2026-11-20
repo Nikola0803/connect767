@@ -59,6 +59,7 @@ import {
 import { cloneZoneModel, SOCCER_ZONE_MODEL } from "../components/uniform-studio/uniformZoneModel";
 import {
   DEFAULT_STUDIO_BACKGROUND,
+  isDarkStudioBackground,
   normalizeStudioBackground,
 } from "../components/uniform-studio/studioBackgrounds";
 import {
@@ -94,18 +95,32 @@ const emptyUniformShipping = {
   firstName: "", lastName: "", company: "", address1: "", address2: "",
   city: "", state: "", postcode: "", country: "DM", email: "", phone: "",
 };
-const CONNECT767_AI_TEMPLATE_LOGO = "https://admin.connect767.com/wp-content/uploads/2026/11/Glossy-Neon-C-AI-Logo.png";
+const CONNECT767_AI_TEMPLATE_LOGO = "/connect767-ai-logo-transparent.png?v=20261117";
 
-function EmbossedAIWorkspaceBackdrop() {
+function EmbossedAIWorkspaceBackdrop({ studioBackground = DEFAULT_STUDIO_BACKGROUND }) {
+  const backgroundColor = normalizeStudioBackground(studioBackground);
+  const darkBackground = isDarkStudioBackground(backgroundColor);
+  const logoMask = `url("${CONNECT767_AI_TEMPLATE_LOGO}")`;
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-hidden">
-      <img
-        src={CONNECT767_AI_TEMPLATE_LOGO}
-        alt=""
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden" style={{ backgroundColor }}>
+      <div
         data-testid="ai-workspace-watermark"
-        loading="lazy"
-        decoding="async"
-        className="h-full w-full select-none object-contain opacity-[0.34] mix-blend-soft-light grayscale contrast-150 [filter:grayscale(1)_brightness(.72)_drop-shadow(-2px_-2px_2px_rgba(255,255,255,.18))_drop-shadow(3px_3px_3px_rgba(0,0,0,.52))]"
+        data-logo-src={CONNECT767_AI_TEMPLATE_LOGO}
+        className="absolute inset-[1%] select-none opacity-90"
+        style={{
+          backgroundColor,
+          WebkitMaskImage: logoMask,
+          maskImage: logoMask,
+          WebkitMaskPosition: "center",
+          maskPosition: "center",
+          WebkitMaskRepeat: "no-repeat",
+          maskRepeat: "no-repeat",
+          WebkitMaskSize: "contain",
+          maskSize: "contain",
+          filter: darkBackground
+            ? "drop-shadow(-3px -3px 3px rgba(255,255,255,.16)) drop-shadow(4px 4px 5px rgba(0,0,0,.58))"
+            : "drop-shadow(-3px -3px 3px rgba(255,255,255,.72)) drop-shadow(4px 4px 5px rgba(56,48,38,.30))",
+        }}
       />
     </div>
   );
@@ -1933,7 +1948,7 @@ export default function UniformStudioPage() {
               />
               <div className="text-center">
                 <p className="font-label text-[9px] font-bold uppercase tracking-[0.2em] text-primary-700">
-                  Connect767 AI Design Studio
+                  Connect767 Design Studio
                 </p>
                 <span className="font-heading text-base font-semibold">Custom Uniforms &amp; Clothing</span>
               </div>
@@ -2570,8 +2585,8 @@ export default function UniformStudioPage() {
                     ) : stageMode === "edit" && !aiWorkspaceConcept?.src ? (
                       <div className="flex min-h-0 w-full flex-1 items-stretch justify-center">
                         <div className="relative flex h-full w-full max-w-none flex-col items-center justify-center overflow-hidden bg-[#11140f] px-6 py-6 text-center sm:px-10 lg:px-14">
-                          <EmbossedAIWorkspaceBackdrop />
-                          <h2 className="relative z-10 font-heading text-xl font-medium text-white/90 sm:text-2xl">Your design will appear here</h2>
+                          <EmbossedAIWorkspaceBackdrop studioBackground={studioBackground} />
+                          <h2 className={`relative z-10 font-heading text-xl font-medium sm:text-2xl ${isDarkStudioBackground(studioBackground) ? "text-white/90" : "text-foreground-900/85"}`}>Your design will appear here</h2>
                         </div>
                       </div>
                     ) : stageMode === "edit" ? (
