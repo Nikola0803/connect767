@@ -144,6 +144,7 @@ describe("CommunityPage composer menus", () => {
     const brandLink = await screen.findByRole("link", { name: "Connect767 Community Feed" });
     expect(brandLink).toHaveAttribute("href", "/community");
     expect(brandLink).toHaveClass("focus-visible:ring-2");
+    expect(brandLink).toHaveTextContent(".com");
     const favicon = brandLink.querySelector("img");
     expect(favicon).toHaveAttribute("src", "/connect767-favicon.png");
     expect(favicon).toHaveClass("h-5", "w-5", "sm:h-6", "sm:w-6");

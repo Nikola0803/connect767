@@ -391,7 +391,7 @@ function CommunityBrandLink() {
       to="/community"
       aria-label="Connect767 Community Feed"
       title="Connect767 Community Feed"
-      className="grid h-10 w-8 shrink-0 place-items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 sm:h-11 sm:w-9"
+      className="inline-flex h-10 shrink-0 items-center rounded-lg px-1 text-foreground-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 sm:h-11"
     >
       <img
         src="/connect767-favicon.png"
@@ -399,6 +399,7 @@ function CommunityBrandLink() {
         aria-hidden="true"
         className="h-5 w-5 object-contain sm:h-6 sm:w-6"
       />
+      <span className="inline-flex h-5 items-center text-[10px] font-bold leading-none tracking-[-0.02em] sm:h-6 sm:text-xs">.com</span>
     </Link>
   );
 }
