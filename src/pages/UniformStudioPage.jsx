@@ -1901,31 +1901,27 @@ export default function UniformStudioPage() {
             <Button to="/" variant="ghost" size="sm" icon="ri-arrow-left-line" iconPosition="left">
               Back to site
             </Button>
-            <div className="text-center">
-              <p className="font-label text-[9px] font-bold uppercase tracking-[0.2em] text-primary-700">
-                Connect767 AI Design Studio
-              </p>
-              <span className="font-heading text-base font-semibold">Custom Uniforms &amp; Clothing</span>
+            <div data-testid="studio-entry-brand" className="flex items-center gap-3">
+              <div className="text-center">
+                <p className="font-label text-[9px] font-bold uppercase tracking-[0.2em] text-primary-700">
+                  Connect767 AI Design Studio
+                </p>
+                <span className="font-heading text-base font-semibold">Custom Uniforms &amp; Clothing</span>
+              </div>
+              <img
+                data-testid="studio-entry-ai-watermark"
+                src="/connect767-ai-logo-transparent.png"
+                alt=""
+                aria-hidden="true"
+                className="pointer-events-none h-9 w-9 shrink-0 select-none object-contain opacity-30 grayscale contrast-125 mix-blend-multiply [filter:grayscale(1)_brightness(1.25)_drop-shadow(-1px_-1px_1px_rgba(255,255,255,.65))_drop-shadow(2px_2px_2px_rgba(38,52,43,.28))] sm:h-10 sm:w-10"
+              />
             </div>
             <span aria-hidden="true" />
           </div>
         </header>
 
         <main className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
-          <section className="mb-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-end">
-            <div className="max-w-2xl">
-              <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary-200/80 bg-primary-50/80 px-3 py-1.5 font-label text-[9px] font-bold uppercase tracking-[0.15em] text-primary-800">
-                <i className="ri-magic-line" /> One AI studio for every garment
-              </span>
-              <h1 className="font-heading text-3xl font-medium leading-[1.06] tracking-[-0.025em] sm:text-4xl lg:text-5xl">
-                What would you like to design?
-                <span className="mt-1 block italic text-primary-700">Start with any category.</span>
-              </h1>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-foreground-600 md:text-base">
-                Choose a sport or clothing category, then describe what you want. The AI studio
-                creates a complete Front / Side / Back concept while the existing order steps stay intact.
-              </p>
-            </div>
+          <section className="mb-4 flex justify-end">
             <ol className="grid grid-cols-3 overflow-hidden rounded-xl border border-background-300/80 bg-background-50/80 shadow-[0_8px_24px_rgba(69,48,30,.05)] backdrop-blur-sm">
               {["Design", "Team roster", "Review & quote"].map((label, index) => (
                 <li
@@ -1941,22 +1937,12 @@ export default function UniformStudioPage() {
             </ol>
           </section>
 
-          <section className="rounded-[24px] border border-background-300/70 bg-background-50/90 p-4 shadow-[0_18px_48px_rgba(69,48,30,0.06)] backdrop-blur-sm sm:p-6 lg:p-7">
-            <div className="flex flex-col gap-2 border-b border-background-200/80 pb-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="font-label text-[9px] font-bold uppercase tracking-[0.18em] text-primary-700">One design studio</p>
-                <h2 className="mt-1 font-heading text-2xl font-semibold sm:text-3xl">Every category. One workspace.</h2>
-              </div>
-              <p className="max-w-md text-xs leading-5 text-foreground-500 sm:text-sm">
-                Enter once, then choose the required category and fit inside the studio.
-              </p>
-            </div>
-
+          <section className="rounded-[24px] border border-background-300/70 bg-background-50/90 p-3 shadow-[0_18px_48px_rgba(69,48,30,0.06)] backdrop-blur-sm sm:p-4">
             <button
               type="button"
               aria-label="Enter Design Studio"
               onClick={() => selectTemplate(studioEntryTemplate, "soccer", "ai")}
-              className="group relative mt-5 block w-full overflow-hidden rounded-[20px] border border-primary-300/80 bg-[#123126] text-left shadow-[0_18px_44px_rgba(0,74,45,.14)] transition duration-300 hover:-translate-y-0.5 hover:border-primary-400 hover:shadow-[0_24px_54px_rgba(0,74,45,.2)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 cursor-pointer"
+              className="group relative block w-full overflow-hidden rounded-[20px] border border-primary-300/80 bg-[#123126] text-left shadow-[0_18px_44px_rgba(0,74,45,.14)] transition duration-300 hover:-translate-y-0.5 hover:border-primary-400 hover:shadow-[0_24px_54px_rgba(0,74,45,.2)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 cursor-pointer"
             >
               <span className="grid h-[320px] grid-cols-3 grid-rows-2 sm:h-[350px]" aria-hidden="true">
                 {studioCoverTemplates.map(({ sport, template }, index) => (
@@ -1979,13 +1965,6 @@ export default function UniformStudioPage() {
                 ))}
               </span>
               <span className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,18,11,.12),rgba(4,18,11,.68))]" aria-hidden="true" />
-              <img
-                data-testid="studio-entry-ai-watermark"
-                src="/connect767-ai-logo-transparent.png"
-                alt=""
-                aria-hidden="true"
-                className="pointer-events-none absolute right-4 top-4 z-10 h-14 w-14 select-none object-contain opacity-30 grayscale contrast-125 mix-blend-soft-light [filter:grayscale(1)_brightness(1.45)_drop-shadow(-1px_-1px_1px_rgba(255,255,255,.28))_drop-shadow(2px_2px_2px_rgba(0,0,0,.48))] sm:right-5 sm:top-5 sm:h-16 sm:w-16"
-              />
               <span className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white">
                 <span className="font-label text-[9px] font-bold uppercase tracking-[0.2em] text-primary-200">Connect767 AI</span>
                 <strong className="mt-2 font-heading text-3xl font-semibold sm:text-4xl">Enter Design Studio</strong>
