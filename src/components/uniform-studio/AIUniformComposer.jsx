@@ -370,10 +370,6 @@ export default function AIUniformComposer({
         >
           {dragging && <div className="absolute inset-1 z-10 flex items-center justify-center rounded-[18px] border-2 border-dashed border-primary-400 bg-primary-50/95 text-xs font-bold text-primary-800"><i className="ri-upload-cloud-2-line mr-2" /> Drop an image to use as reference</div>}
           {reference && <div className="flex items-center gap-2 border-b border-background-200 px-3 py-2"><img src={reference.src} alt="Attached uniform reference" className="h-9 w-9 rounded-lg border border-background-200 object-cover" /><div className="min-w-0 flex-1"><strong className="block truncate text-[9px] text-foreground-700">{reference.name}</strong><span className="block text-[8px] text-foreground-400">Reference image</span></div><button type="button" onClick={onRemoveReference} className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-foreground-400 hover:bg-red-50 hover:text-red-600" aria-label="Remove reference image"><i className="ri-close-line" /></button></div>}
-          <div className={`flex items-center gap-1.5 px-4 pt-2.5 text-[8px] font-bold uppercase tracking-[0.13em] ${mode === "artwork" ? "text-accent-600" : "text-primary-700"}`} aria-live="polite">
-            <i className={MODE_COPY[mode].icon} aria-hidden="true" />
-            {isRefinement ? "Refine current uniform" : MODE_COPY[mode].label}
-          </div>
           <textarea
             ref={textareaRef}
             value={prompt}

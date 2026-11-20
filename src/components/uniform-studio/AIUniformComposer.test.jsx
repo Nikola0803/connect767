@@ -87,6 +87,8 @@ describe("AIUniformComposer", () => {
 
   it("uses Enter as the only generation action", () => {
     renderComposer();
+    const promptRegion = screen.getByRole("region", { name: "AI command prompt" });
+    expect(within(promptRegion).queryByText("Full uniform")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Render high-quality proof" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Generate preview" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Generate Changes" })).not.toBeInTheDocument();
@@ -121,7 +123,8 @@ describe("AIUniformComposer", () => {
   it("labels the transparent artwork workspace clearly", () => {
     renderComposer({ mode: "artwork" });
     expect(screen.getByRole("heading", { name: "Create transparent artwork" })).toBeInTheDocument();
-    expect(screen.getByText("Transparent artwork")).toBeInTheDocument();
+    expect(screen.getByText(/Uniform design assistant · Transparent artwork/)).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "AI command prompt" })).queryByText("Transparent artwork")).not.toBeInTheDocument();
     expect(screen.getByPlaceholderText("Describe the crest, graphic or pattern you want…")).toBeInTheDocument();
   });
 
