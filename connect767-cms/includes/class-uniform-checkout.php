@@ -16,7 +16,7 @@ class C767_Uniform_Checkout
 {
     const NAMESPACE_ = 'connect767/v1';
     const BASE_KIT_PRICE = 35.00;
-    const EXTRA_TEAM_SHIRT_PRICE = 12.00;
+    const EXTRA_TEAM_SHIRT_PRICE = 15.00;
     const AI_DESIGNER_FEE = 50.00;
     const AI_DESIGNER_FEE_THRESHOLD = 1500.00;
     const AI_DESIGNER_FEE_LABEL = 'Connect767 Design Fee';
@@ -350,7 +350,7 @@ class C767_Uniform_Checkout
         $kit_item = $order->get_item($kit_item_id);
         if ($kit_item) {
             $kit_item->set_name($template . ' team kit');
-            $kit_item->add_meta_data('Base kit price', wc_price(self::BASE_KIT_PRICE), true);
+            $kit_item->add_meta_data('Base kit price', wc_price(self::category_base_price($payload['sport'] ?? 'soccer')), true);
             $kit_item->add_meta_data('Final unit price', wc_price($unit_price), true);
             if (($payload['sleeve'] ?? '') === 'Long') {
                 $kit_item->add_meta_data('Long sleeves', $unit_count . ' × ' . wc_price(2.00), true);
@@ -488,7 +488,7 @@ class C767_Uniform_Checkout
 
     private static function authoritative_unit_price(array $payload)
     {
-        $price = self::BASE_KIT_PRICE;
+        $price = self::category_base_price($payload['sport'] ?? 'soccer');
         $sleeve = sanitize_text_field((string) ($payload['sleeve'] ?? ''));
         $collar = sanitize_text_field((string) ($payload['collar'] ?? ''));
         if ($sleeve === 'Long') {
@@ -506,6 +506,20 @@ class C767_Uniform_Checkout
         return round($price, 2);
     }
 
+    private static function category_base_price($sport)
+    {
+        $prices = [
+            'soccer' => 35.00,
+            'basketball' => 30.00,
+            'netball' => 30.00,
+            'cricket' => 40.00,
+            'goalkeeper' => 45.00,
+            'other' => 30.00,
+        ];
+        $sport = sanitize_key((string) $sport);
+        return $prices[$sport] ?? self::BASE_KIT_PRICE;
+    }
+
     private static function uniform_shipping_rate($country, $unit_count)
     {
         $country = strtoupper(sanitize_text_field((string) $country));
@@ -521,11 +535,13 @@ class C767_Uniform_Checkout
             ];
         }
         if (in_array($country, self::CARIBBEAN_COUNTRIES, true)) {
+            $amount = $unit_count > 50 ? 800.00 : ($unit_count >= 22 ? 600.00 : 450.00);
+            $range = $unit_count > 50 ? 'more than 50 units' : ($unit_count >= 22 ? '22–50 units' : '10–21 units');
             return [
                 'zone' => 'caribbean',
                 'zoneLabel' => 'Caribbean',
-                'amount' => $high_volume ? 800.00 : 600.00,
-                'label' => 'Caribbean uniform shipping · ' . ($high_volume ? '50+' : 'under 50') . ' units',
+                'amount' => $amount,
+                'label' => 'Caribbean uniform shipping · ' . $range,
             ];
         }
 

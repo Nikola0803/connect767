@@ -17,7 +17,7 @@ class C767_REST_Uniform_Quotes
 
     public static function minimum_full_kits($sport)
     {
-        $minimums = ['soccer' => 22, 'basketball' => 10, 'cricket' => 15, 'netball' => 10];
+        $minimums = ['soccer' => 22, 'basketball' => 10, 'cricket' => 20, 'netball' => 10, 'goalkeeper' => 1, 'other' => 10];
         return $minimums[sanitize_key((string) $sport)] ?? 1;
     }
 

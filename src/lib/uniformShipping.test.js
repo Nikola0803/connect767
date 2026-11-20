@@ -8,8 +8,11 @@ describe("Custom Uniform Studio shipping zones", () => {
   });
 
   it.each(["DM", "JM", "TT", "PR", "VG"])("charges Caribbean rates for %s", (country) => {
-    expect(uniformShippingRate(country, 49)).toMatchObject({ zone: "caribbean", amount: 600 });
-    expect(uniformShippingRate(country, 50)).toMatchObject({ zone: "caribbean", amount: 800 });
+    expect(uniformShippingRate(country, 10)).toMatchObject({ zone: "caribbean", amount: 450 });
+    expect(uniformShippingRate(country, 21)).toMatchObject({ zone: "caribbean", amount: 450 });
+    expect(uniformShippingRate(country, 22)).toMatchObject({ zone: "caribbean", amount: 600 });
+    expect(uniformShippingRate(country, 50)).toMatchObject({ zone: "caribbean", amount: 600 });
+    expect(uniformShippingRate(country, 51)).toMatchObject({ zone: "caribbean", amount: 800 });
   });
 
   it("does not quote unsupported destinations", () => {

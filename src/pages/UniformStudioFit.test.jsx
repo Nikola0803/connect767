@@ -121,7 +121,7 @@ describe("required uniform fit selection", () => {
     expect(productionExtras).toHaveClass("flex-none");
     expect(productionExtras).not.toHaveClass("flex-1");
     expect(setup.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent("$35.00");
-    expect(setup.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("$12.00");
+    expect(setup.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("$15.00");
     expect(setup.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("supporter jerseys use this price");
     expect(within(productionExtras).getByRole("group", { name: "Collar options" })).toBeVisible();
     expect(within(productionExtras).getByRole("group", { name: "Sleeve options" })).toBeVisible();
@@ -269,7 +269,7 @@ describe("required uniform fit selection", () => {
     const progress = openStudio("design");
     const setup = openUniformSetup();
     const shirtOnlyButton = setup.getByRole("button", { name: /^Shirt Only/ });
-    expect(shirtOnlyButton).toHaveTextContent("$12.00");
+    expect(shirtOnlyButton).toHaveTextContent("$15.00");
     expect(shirtOnlyButton).toHaveTextContent("supporter jerseys use this price");
     expect(setup.queryByText("Add extra shirts to your full-kit team order.")).not.toBeInTheDocument();
     expect(setup.queryByLabelText("Extra shirt quantity 1")).not.toBeInTheDocument();
@@ -282,7 +282,7 @@ describe("required uniform fit selection", () => {
     const socksHeading = screen.getAllByText("Socks")[0];
     const supporterHeading = screen.getAllByText("Add Fan/Supporter Jerseys")[0];
     expect(socksHeading.compareDocumentPosition(supporterHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getAllByText("Shirt Only · $12.00 each").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Shirt Only · $15.00 each").length).toBeGreaterThan(0);
     fireEvent.click(screen.getAllByRole("checkbox", { name: /Add Fan\/Supporter Jerseys/ })[0]);
     expect(screen.getAllByRole("combobox", { name: "Supporter jersey size 1" }).length).toBeGreaterThan(0);
 
@@ -291,7 +291,7 @@ describe("required uniform fit selection", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Add player" })[0]);
     fireEvent.click(progress.getByRole("button", { name: /Review & quote/ }));
     expect(screen.queryByText("Add Fan/Supporter Jerseys")).not.toBeInTheDocument();
-    expect(screen.getAllByText(/1 supporter jersey × \$12\.00/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/1 supporter jersey × \$15\.00/).length).toBeGreaterThan(0);
   });
 
   it("does not add a hidden extra-shirt charge when Shirt Only pricing is viewed", () => {

@@ -62,11 +62,18 @@ describe("uniform design controls", () => {
     unmount();
     expect(onHoverZone).toHaveBeenLastCalledWith(null);
   });
-  it.each([["soccer", 22], ["basketball", 10], ["cricket", 15], ["netball", 10]])("shows the %s minimum beside Full Kit pricing", (sport, minimum) => {
+  it.each([
+    ["soccer", 22, "$35.00", "Includes shirt, shorts and socks"],
+    ["basketball", 10, "$30.00", "Includes shirt and pants"],
+    ["cricket", 20, "$40.00", "Includes shirt and pants"],
+    ["netball", 10, "$30.00", "Includes shirt and skirt or pants"],
+  ])("shows the %s minimum and category price beside Full Kit pricing", (sport, minimum, price, includes) => {
     render(<OptionsPanel sport={sport} section="fit" fitType="Men" kitType="Full" />);
     expect(screen.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent(`Team order · Min Qnty ${minimum}`);
-    expect(screen.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent("Includes shirt, shorts and socks");
+    expect(screen.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent(price);
+    expect(screen.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent(includes);
     expect(screen.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("Extra team and supporter jerseys use this price");
+    expect(screen.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("$15.00");
   });
   it("keeps extra-shirt quantities out of Step 2", () => {
     const setKitType = vi.fn();
@@ -291,7 +298,7 @@ describe("uniform design controls", () => {
     expect(screen.queryByText("Studio background")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Both" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent("$35.00");
-    expect(screen.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("$12.00");
+    expect(screen.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("$15.00");
     fireEvent.click(screen.getByRole("button", { name: /^Shirt Only/ }));
     expect(setKitType).toHaveBeenCalledWith("Shirt");
   });
