@@ -184,10 +184,74 @@ export const playerRoleOptions = ["Player", "Goalkeeper", "Coach / Staff"];
  * component) so the numbers are a one-place edit once the client confirms
  * pricing for the other sports.
  */
-export const BASE_KIT_PRICE = 35;
-export const SHIRT_ONLY_PRICE = 12;
+export const UNIFORM_CATEGORY_PRICING = {
+  soccer: {
+    fullPrice: 35,
+    shirtPrice: 15,
+    fullLabel: "Full Kit",
+    shirtLabel: "Shirt Only",
+    includes: "Includes shirt, shorts and socks",
+    minimum: 22,
+    checkoutLabel: "full kits (Shirt, Shorts & Socks)",
+  },
+  basketball: {
+    fullPrice: 30,
+    shirtPrice: 15,
+    fullLabel: "Full Kit",
+    shirtLabel: "Shirt Only",
+    includes: "Includes shirt and pants",
+    minimum: 10,
+    checkoutLabel: "full kits (Shirt & Pants)",
+  },
+  netball: {
+    fullPrice: 30,
+    shirtPrice: 15,
+    fullLabel: "Full Kit",
+    shirtLabel: "Shirt Only",
+    includes: "Includes shirt and skirt or pants",
+    minimum: 10,
+    checkoutLabel: "full kits (Shirt & Skirt/Pants)",
+  },
+  cricket: {
+    fullPrice: 40,
+    shirtPrice: 15,
+    fullLabel: "Full Kit",
+    shirtLabel: "Shirt Only",
+    includes: "Includes shirt and pants",
+    minimum: 20,
+    checkoutLabel: "full kits (Shirt & Pants)",
+  },
+  goalkeeper: {
+    fullPrice: 45,
+    shirtPrice: 15,
+    fullLabel: "Full Kit",
+    shirtLabel: "Shirt Only",
+    includes: "Padded or non-padded sleeves",
+    minimum: 1,
+    minimumNote: "Include with a soccer order",
+    checkoutLabel: "goalkeeper kits",
+  },
+  other: {
+    fullPrice: 30,
+    shirtPrice: 15,
+    fullLabel: "Top & Pants",
+    shirtLabel: "Top Only",
+    includes: "Includes top and long or short pants",
+    minimum: 10,
+    minimumNote: "If not included with an existing order",
+    checkoutLabel: "top & pants sets",
+  },
+};
+
+export function uniformPricingFor(sport) {
+  return UNIFORM_CATEGORY_PRICING[sport] || UNIFORM_CATEGORY_PRICING.soccer;
+}
+
+/** Legacy defaults retained for integrations that have not yet supplied a category. */
+export const BASE_KIT_PRICE = UNIFORM_CATEGORY_PRICING.soccer.fullPrice;
+export const SHIRT_ONLY_PRICE = UNIFORM_CATEGORY_PRICING.soccer.shirtPrice;
 export function minimumFullKitsFor(sport) {
-  return { soccer: 22, basketball: 10, cricket: 15, netball: 10 }[sport] || 1;
+  return uniformPricingFor(sport).minimum;
 }
 
 export const fullKitCount = (roster = []) => roster.reduce((total, entry) =>
@@ -218,8 +282,8 @@ export const ADD_ON_PRICES = {
 /** Kept for integrations that still read the legacy name; supporter jerseys use the Step 2 Shirt Only price. */
 export const FAN_JERSEY_PRICE = SHIRT_ONLY_PRICE;
 
-export function kitUnitPrice({ sleeve, collar, insideCollarMessage, logoApplication }) {
-  let price = BASE_KIT_PRICE;
+export function kitUnitPrice({ sport = "soccer", sleeve, collar, insideCollarMessage, logoApplication }) {
+  let price = uniformPricingFor(sport).fullPrice;
   if (sleeve === "Long") price += ADD_ON_PRICES.sleeveLong;
   if (collar === "Polo") price += ADD_ON_PRICES.collarPolo;
   if (insideCollarMessage) price += ADD_ON_PRICES.insideCollarMessage;

@@ -5,9 +5,8 @@ import {
   fitTypeOptions,
   kitTypeOptions,
   ADD_ON_PRICES,
-  BASE_KIT_PRICE,
-  SHIRT_ONLY_PRICE,
   minimumFullKitsFor,
+  uniformPricingFor,
   shirtSizeOptions,
   sportConfigFor,
 } from "../../data/uniforms";
@@ -553,6 +552,7 @@ export function OptionsPanel({
   const showFit = section === "all" || section === "fit" || section === "fitOnly";
   const showPricing = section === "all" || section === "fit" || section === "pricing";
   const showProduction = section === "all" || section === "production";
+  const categoryPricing = uniformPricingFor(sport);
   const insideCollarContentMissing = Boolean(
     insideCollarMessage
     && !insideCollarText?.trim()
@@ -602,15 +602,15 @@ export function OptionsPanel({
                   : "bg-background-50 text-foreground-700 border-background-300 hover:bg-background-100"
               }`}
             >
-              <span className="flex items-center justify-between gap-1 font-semibold">{k === "Full" ? "Full Kit" : "Shirt Only"}{(k === "Full" || kitType === "Shirt") && <i className="ri-check-line" aria-hidden="true" />}</span>
-              <span className="mt-0.5 block"><strong className="text-[15px] font-semibold">${(k === "Full" ? BASE_KIT_PRICE : SHIRT_ONLY_PRICE).toFixed(2)}</strong><span className="ml-1 text-[9px] font-normal opacity-80">{k === "Full" ? "per kit" : "per shirt"}</span></span>
+              <span className="flex items-center justify-between gap-1 font-semibold">{k === "Full" ? categoryPricing.fullLabel : categoryPricing.shirtLabel}{(k === "Full" || kitType === "Shirt") && <i className="ri-check-line" aria-hidden="true" />}</span>
+              <span className="mt-0.5 block"><strong className="text-[15px] font-semibold">${(k === "Full" ? categoryPricing.fullPrice : categoryPricing.shirtPrice).toFixed(2)}</strong><span className="ml-1 text-[9px] font-normal opacity-80">{k === "Full" ? "per kit" : sport === "other" ? "per top" : "per shirt"}</span></span>
               {k === "Full" ? (
                 <span className="mt-0.5 block text-[9px] font-normal leading-tight opacity-80">
-                  <span className="block">Includes shirt, shorts and socks</span>
-                  <span className="block">Team order · Min Qnty {minimumFullKitsFor(sport)}</span>
+                  <span className="block">{categoryPricing.includes}</span>
+                  <span className="block">{categoryPricing.minimumNote || "Team order"} · Min Qnty {minimumFullKitsFor(sport)}</span>
                 </span>
               ) : (
-                <span className="mt-0.5 block text-[9px] font-normal leading-tight opacity-80">Extra team and supporter jerseys use this price</span>
+                <span className="mt-0.5 block text-[9px] font-normal leading-tight opacity-80">Extra team and supporter {sport === "other" ? "tops" : "jerseys"} use this price</span>
               )}
             </button>
           ))}

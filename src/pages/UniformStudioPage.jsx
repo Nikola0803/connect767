@@ -17,10 +17,9 @@ import {
   kitUnitPrice,
   mixedSleeveSurcharge,
   kitAddOnBreakdown,
-  BASE_KIT_PRICE,
   ADD_ON_PRICES,
-  SHIRT_ONLY_PRICE,
   minimumFullKitsFor,
+  uniformPricingFor,
   fullKitCount as rosterUnitCount,
   normalizeExtraTeamShirts,
   extraTeamShirtCount,
@@ -553,8 +552,8 @@ export default function UniformStudioPage() {
   const [supporterJerseys, setSupporterJerseys] = useState([newSupporterJersey()]);
 
   const unitPrice = useMemo(
-    () => kitUnitPrice({ sleeve, collar, insideCollarMessage, logoApplication }),
-    [sleeve, collar, insideCollarMessage, logoApplication]
+    () => kitUnitPrice({ sport: activeSport, sleeve, collar, insideCollarMessage, logoApplication }),
+    [activeSport, sleeve, collar, insideCollarMessage, logoApplication]
   );
 
   // ---------- Roster state ----------
@@ -1794,6 +1793,7 @@ export default function UniformStudioPage() {
   const buildUniformPayload = (previewImage = null) => {
     const unitCount = rosterUnitCount(roster);
     const supporterCount = fanJerseyAdded ? supporterJerseyCount(supporterJerseys) : 0;
+    const categoryPricing = uniformPricingFor(activeSport);
     return {
       template: template?.name || "Blank Canvas",
       sport: activeSport,
@@ -1810,7 +1810,7 @@ export default function UniformStudioPage() {
       fanJerseyAdded,
       supporterJerseys: fanJerseyAdded ? supporterJerseys : [],
       unitPrice,
-      grandTotal: unitPrice * unitCount + mixedSleeveSurcharge(sleeve, roster) + supporterCount * SHIRT_ONLY_PRICE,
+      grandTotal: unitPrice * unitCount + mixedSleeveSurcharge(sleeve, roster) + supporterCount * categoryPricing.shirtPrice,
       layers,
       placements3d,
       designMode: stageMode === "3d" ? "3d" : "flat",
@@ -2887,6 +2887,7 @@ export default function UniformStudioPage() {
                 )}
                 {activeTool === "roster" && (
                   <RosterTool
+                    activeSport={activeSport}
                     minimumKits={minimumKits}
                     fitType={fitType}
                     mixedSleeves={sleeve === "Mixed"}
@@ -3033,6 +3034,7 @@ export default function UniformStudioPage() {
         )}
         {activeTool === "roster" && (
           <RosterTool
+            activeSport={activeSport}
             minimumKits={minimumKits}
             fitType={fitType}
             mixedSleeves={sleeve === "Mixed"}
@@ -3121,13 +3123,15 @@ export default function UniformStudioPage() {
 }
 
 function SupporterJerseySelector({
+  activeSport,
   fanJerseyAdded,
   setFanJerseyAdded,
   supporterJerseys,
   setSupporterJerseys,
 }) {
+  const categoryPricing = uniformPricingFor(activeSport);
   const supporterCount = fanJerseyAdded ? supporterJerseyCount(supporterJerseys) : 0;
-  const supporterTotal = supporterCount * SHIRT_ONLY_PRICE;
+  const supporterTotal = supporterCount * categoryPricing.shirtPrice;
 
   return (
     <section className="mb-4 rounded-xl border border-background-300 bg-background-100/55 p-3.5" aria-labelledby="supporter-jerseys-heading">
@@ -3142,7 +3146,7 @@ function SupporterJerseySelector({
           <span className="flex flex-wrap items-center justify-between gap-2">
             <span id="supporter-jerseys-heading" className="text-sm font-semibold text-foreground-900">Add Fan/Supporter Jerseys</span>
             <span className="rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-bold text-primary-800">
-              Shirt Only · ${SHIRT_ONLY_PRICE.toFixed(2)} each
+              {categoryPricing.shirtLabel} · ${categoryPricing.shirtPrice.toFixed(2)} each
             </span>
           </span>
           <span className="mt-0.5 block text-[11px] font-label text-foreground-500">
@@ -3218,6 +3222,7 @@ function SupporterJerseySelector({
 }
 
 function RosterTool({
+  activeSport = "soccer",
   minimumKits = 1,
   fitType = "",
   mixedSleeves = false,
@@ -3586,6 +3591,7 @@ function RosterTool({
       )}
 
       <SupporterJerseySelector
+        activeSport={activeSport}
         fanJerseyAdded={fanJerseyAdded}
         setFanJerseyAdded={setFanJerseyAdded}
         supporterJerseys={supporterJerseys}
@@ -3620,6 +3626,7 @@ function ReviewOrderTool({
   onEditStep,
   onView3d,
 }) {
+  const categoryPricing = uniformPricingFor(activeSport);
   const unitCount = rosterUnitCount(roster);
   const sleeveSurcharge = mixedSleeveSurcharge(sleeve, roster);
   const minimumKits = minimumFullKitsFor(activeSport);
@@ -3633,12 +3640,12 @@ function ReviewOrderTool({
     roster,
   });
   const kitAddOnsTotal = kitAddOns.reduce((total, item) => total + item.total, 0);
-  const baseKitsTotal = BASE_KIT_PRICE * unitCount;
+  const baseKitsTotal = categoryPricing.fullPrice * unitCount;
   const kitsTotal = baseKitsTotal + kitAddOnsTotal;
   const supporterCount = fanJerseyAdded ? supporterJerseyCount(supporterJerseys) : 0;
-  const supporterTotal = supporterCount * SHIRT_ONLY_PRICE;
+  const supporterTotal = supporterCount * categoryPricing.shirtPrice;
   const extraShirtCount = extraTeamShirtCount(orderPayload.extraTeamShirts || []);
-  const extraShirtTotal = extraShirtCount * SHIRT_ONLY_PRICE;
+  const extraShirtTotal = extraShirtCount * categoryPricing.shirtPrice;
   const extraShirtsKey = JSON.stringify(orderPayload.extraTeamShirts || []);
   const grandTotal = kitsTotal + supporterTotal + extraShirtTotal;
   const shippingUnitCount = unitCount + extraShirtCount + supporterCount;
@@ -3808,8 +3815,8 @@ function ReviewOrderTool({
         <ReviewRow
           icon="ri-settings-4-line"
           title="Fit & production"
-          value={`Full Kit${extraShirtCount ? ` + ${extraShirtCount} extra shirt${extraShirtCount === 1 ? "" : "s"}` : ""} · ${logoApplication}`}
-          meta={`Base kit $${BASE_KIT_PRICE.toFixed(2)}${kitAddOns.length ? " · Add-ons itemized below" : ""}`}
+          value={`${categoryPricing.fullLabel}${extraShirtCount ? ` + ${extraShirtCount} extra top${extraShirtCount === 1 ? "" : "s"}` : ""} · ${logoApplication}`}
+          meta={`Base price $${categoryPricing.fullPrice.toFixed(2)}${kitAddOns.length ? " · Add-ons itemized below" : ""}`}
           onEdit={() => onEditStep("design")}
         />
         <ReviewRow
@@ -3836,15 +3843,15 @@ function ReviewOrderTool({
           </span>
         </div>
         <div className="mt-3 space-y-1 border-t border-white/15 pt-3 text-xs text-background-50/70">
-          <div className="flex justify-between"><span>{unitCount} full kits (Shirts, Shorts, &amp; Pants) × ${BASE_KIT_PRICE.toFixed(2)}</span><span>${baseKitsTotal.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span>{unitCount} {categoryPricing.checkoutLabel} × ${categoryPricing.fullPrice.toFixed(2)}</span><span>${baseKitsTotal.toFixed(2)}</span></div>
           {kitAddOns.map((item) => (
             <div key={item.key} className="flex justify-between gap-3">
               <span>{item.label} · {item.count} × ${item.unitPrice.toFixed(2)}</span>
               <span>${item.total.toFixed(2)}</span>
             </div>
           ))}
-          {extraShirtCount > 0 && <div className="flex justify-between"><span>{extraShirtCount} extra shirt{extraShirtCount === 1 ? "" : "s"} × ${SHIRT_ONLY_PRICE.toFixed(2)}</span><span>${extraShirtTotal.toFixed(2)}</span></div>}
-          {fanJerseyAdded && <div className="flex justify-between"><span>{supporterCount} supporter jersey{supporterCount === 1 ? "" : "s"} × ${SHIRT_ONLY_PRICE.toFixed(2)}</span><span>${supporterTotal.toFixed(2)}</span></div>}
+          {extraShirtCount > 0 && <div className="flex justify-between"><span>{extraShirtCount} extra top{extraShirtCount === 1 ? "" : "s"} × ${categoryPricing.shirtPrice.toFixed(2)}</span><span>${extraShirtTotal.toFixed(2)}</span></div>}
+          {fanJerseyAdded && <div className="flex justify-between"><span>{supporterCount} supporter jersey{supporterCount === 1 ? "" : "s"} × ${categoryPricing.shirtPrice.toFixed(2)}</span><span>${supporterTotal.toFixed(2)}</span></div>}
           <div className="flex justify-between"><span>Subtotal</span><span>${(totals?.subtotal ?? grandTotal).toFixed(2)}</span></div>
           <div className="flex justify-between"><span>Tax</span><span>{totals ? `$${totals.tax.toFixed(2)}` : "—"}</span></div>
           <div className="flex justify-between"><span>{totals?.shippingLabel || "Shipping"}</span><span>{totals ? `$${totals.shipping.toFixed(2)}` : "—"}</span></div>
@@ -3959,7 +3966,7 @@ function ReviewOrderTool({
         {selectedShippingRate && (
           <div role="note" className="mt-3 rounded-xl border border-primary-200 bg-primary-50 px-3 py-2.5 text-[11px] leading-relaxed text-primary-900">
             <span className="font-semibold">{selectedShippingRate.zoneLabel} zone:</span>{" "}
-            ${selectedShippingRate.amount.toFixed(2)} shipping for {shippingUnitCount < 50 ? "orders under 50 units" : "orders of 50 units or more"}.
+            ${selectedShippingRate.amount.toFixed(2)} shipping for {selectedShippingRate.rangeLabel || (shippingUnitCount < 50 ? "orders under 50 units" : "orders of 50 units or more")}.
           </div>
         )}
         <Button type="button" variant="secondary" className="mt-3 w-full" onClick={calculateTotal} disabled={!canCalculate || calculating} icon="ri-calculator-line">

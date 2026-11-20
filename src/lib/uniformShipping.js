@@ -48,11 +48,17 @@ export function uniformShippingRate(country, unitCount) {
     };
   }
   if (CARIBBEAN.has(code)) {
+    const tier = units > 50
+      ? { amount: 800, range: "more than 50 units" }
+      : units >= 22
+        ? { amount: 600, range: "22–50 units" }
+        : { amount: 450, range: "10–21 units" };
     return {
       zone: "caribbean",
       zoneLabel: "Caribbean",
-      amount: highVolume ? 800 : 600,
-      label: `Caribbean uniform shipping · ${highVolume ? "50+" : "under 50"} units`,
+      amount: tier.amount,
+      rangeLabel: tier.range,
+      label: `Caribbean uniform shipping · ${tier.range}`,
     };
   }
   return null;
