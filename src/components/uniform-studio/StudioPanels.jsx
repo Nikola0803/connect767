@@ -550,6 +550,9 @@ export function OptionsPanel({
   extraTeamShirts = [{ size: "M", quantity: 1 }], setExtraTeamShirts,
   section = "all", showFitAlert = true, highlightMissing = false,
 }) {
+  const showFit = section === "all" || section === "fit" || section === "fitOnly";
+  const showPricing = section === "all" || section === "fit" || section === "pricing";
+  const showProduction = section === "all" || section === "production";
   const insideCollarContentMissing = Boolean(
     insideCollarMessage
     && !insideCollarText?.trim()
@@ -558,7 +561,7 @@ export function OptionsPanel({
 
   return (
     <div>
-      {section !== "production" && <>
+      {showFit && <>
       {showFitAlert && !fitTypeOptions.includes(fitType) && <div id="fit-selection-required" role="alert" className={`mb-2 flex items-center gap-2 rounded-lg border border-accent-400 bg-accent-50 px-2.5 py-1.5 text-accent-950 ${highlightMissing ? "ring-2 ring-accent-300" : ""}`}>
         <i className="ri-error-warning-fill shrink-0 text-sm text-accent-600" aria-hidden="true" />
         <p className="text-xs font-semibold leading-tight">Select a fit to continue to Team roster.</p>
@@ -583,6 +586,8 @@ export function OptionsPanel({
           ))}
         </div>
       </div>
+      </>}
+      {showPricing && <>
       <div>
         <div className="grid grid-cols-2 gap-1.5">
           {kitTypeOptions.map((k) => (
@@ -611,9 +616,8 @@ export function OptionsPanel({
           ))}
         </div>
       </div>
-
       </>}
-      {section !== "fit" && <>
+      {showProduction && <>
       {section === "all" && <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400 mb-3 pt-2 border-t border-background-200/70">Production extras</h3>}
       <div className="mb-2.5">
         <p className="mb-2 text-[11px] leading-snug text-foreground-600">
@@ -679,7 +683,7 @@ export function OptionsPanel({
 
 export function UniformSetupPanel({ designProps, optionsProps, aiOnly = false }) {
   return <div className="flex min-h-full flex-col gap-1.5">
-    <div className="shrink-0"><OptionsPanel {...optionsProps} section="fit" /></div>
+    <div className="shrink-0 rounded-xl border border-background-300 bg-background-50 p-2 shadow-sm"><OptionsPanel {...optionsProps} section="pricing" /></div>
     <section aria-labelledby="production-extras-title" className="flex flex-1 flex-col overflow-hidden rounded-xl border-2 border-primary-500 bg-background-50 shadow-[0_10px_24px_rgba(0,116,73,.12)]">
       <header className="flex items-center justify-between gap-2.5 bg-primary-700 px-3 py-2.5 text-white">
         <span className="flex min-w-0 items-center gap-2">

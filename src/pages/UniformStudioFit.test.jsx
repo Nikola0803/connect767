@@ -48,7 +48,8 @@ describe("required uniform fit selection", () => {
       "src",
       "https://admin.connect767.com/wp-content/uploads/2026/11/Glossy-Neon-C-AI-Logo.png",
     );
-    expect(watermark).toHaveClass("h-full", "w-full", "object-cover");
+    expect(watermark).toHaveClass("h-full", "w-full", "object-contain");
+    expect(watermark).not.toHaveClass("object-fill");
   });
 
   it("places every category tile above the required fit selection", () => {
@@ -81,6 +82,7 @@ describe("required uniform fit selection", () => {
     }
     const categoryElement = setup.getByRole("group", { name: "Uniform category (required)" });
     const fitElement = setup.getByRole("group", { name: "Fit type (required)" });
+    expect(categoryElement.closest("section")).toBe(fitElement.closest("section"));
     expect(categoryElement.compareDocumentPosition(fitElement) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
