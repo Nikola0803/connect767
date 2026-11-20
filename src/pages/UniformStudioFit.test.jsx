@@ -56,9 +56,18 @@ describe("required uniform fit selection", () => {
       "Goal Keeper",
       "Clothing & Other",
     ]);
-    expect(screen.getByTestId("studio-entry-ai-watermark")).toHaveAttribute("src", "/connect767-ai-logo-transparent.png");
-    expect(screen.getByText("Every category. One workspace.")).toBeVisible();
+    const watermark = screen.getByTestId("studio-entry-ai-watermark");
+    expect(watermark).toHaveAttribute("src", "/connect767-ai-logo-transparent.png");
+    expect(screen.getByTestId("studio-entry-brand")).toContainElement(watermark);
+    expect(entry).not.toContainElement(watermark);
+    expect(screen.queryByText("One design studio")).not.toBeInTheDocument();
+    expect(screen.queryByText("Every category. One workspace.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Enter once, then choose the required category and fit inside the studio.")).not.toBeInTheDocument();
     expect(screen.queryByText("Designs save automatically")).not.toBeInTheDocument();
+    expect(screen.queryByText("One AI studio for every garment")).not.toBeInTheDocument();
+    expect(screen.queryByText("What would you like to design?")).not.toBeInTheDocument();
+    expect(screen.queryByText("Start with any category.")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Choose a sport or clothing category/)).not.toBeInTheDocument();
     expect(screen.getByText("Design", { selector: "span" })).toBeVisible();
     expect(screen.getByText("Team roster", { selector: "span" })).toBeVisible();
     expect(screen.getByText("Review & quote", { selector: "span" })).toBeVisible();
