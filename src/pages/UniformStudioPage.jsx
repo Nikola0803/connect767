@@ -1121,10 +1121,10 @@ export default function UniformStudioPage() {
   };
 
   useEffect(() => {
-    if (selectedTemplate) return;
+    if (selectedTemplate || !searchParams.has("sport")) return;
     const initialTemplate = primaryTemplateForSport(activeSport);
     if (initialTemplate) selectTemplate(initialTemplate, activeSport, "ai");
-  }, []); // The studio opens once on Step 1; later exits still return to the category entrance.
+  }, []); // Explicit sport links enter the studio; the bare /uniforms route stays on the landing page.
 
   const changeDesignCategory = (sportSlug) => {
     if (sportSlug === activeSport) {

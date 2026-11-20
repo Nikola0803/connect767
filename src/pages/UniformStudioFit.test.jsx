@@ -42,8 +42,7 @@ describe("required uniform fit selection", () => {
   });
 
   it("uses one category-spanning entry tile before the three-step studio", () => {
-    openStudio("design");
-    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    render(<MemoryRouter initialEntries={["/uniforms"]}><UniformStudioPage /></MemoryRouter>);
 
     const entry = screen.getByRole("button", { name: "Enter Design Studio" });
     expect(entry).toBeVisible();
@@ -413,7 +412,7 @@ describe("required uniform fit selection", () => {
 
   it.each([false, true])("restores only a previously confirmed fit (confirmed: %s)", async (confirmed) => {
     window.localStorage.setItem("c767:studio:soccer:classic-crew", JSON.stringify({ fitType: "Men", fitTypeConfirmed: confirmed, zoneModel: { front: [], back: [] } }));
-    render(<MemoryRouter initialEntries={["/uniforms"]}><UniformStudioPage /></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/uniforms?sport=soccer"]}><UniformStudioPage /></MemoryRouter>);
     const progress = within(await screen.findByRole("navigation", { name: "Uniform order progress" }));
     if (confirmed) {
       expect(progress.getByRole("button", { name: /Team roster/ })).toBeEnabled();
