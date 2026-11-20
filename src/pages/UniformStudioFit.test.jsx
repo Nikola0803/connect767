@@ -168,7 +168,13 @@ describe("required uniform fit selection", () => {
     expect(header.queryByRole("button", { name: "Save progress" })).not.toBeInTheDocument();
     expect(header.queryByRole("button", { name: "SVG" })).not.toBeInTheDocument();
     expect(header.queryByRole("button", { name: "Download" })).not.toBeInTheDocument();
-    expect(header.queryByRole("button", { name: "Settings" })).not.toBeInTheDocument();
+    const studioSettings = header.getByRole("button", { name: "Studio settings" });
+    expect(studioSettings).toBeVisible();
+    fireEvent.click(studioSettings);
+    expect(screen.getByRole("dialog", { name: "AI Studio settings" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Studio background" })).toBeVisible();
+    expect(screen.getByLabelText("Custom studio background color")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Close studio settings" }));
     expect(header.queryByRole("button", { name: "Open uniform and order setup" })).not.toBeInTheDocument();
     const promptTools = within(screen.getAllByLabelText("AI prompt tools")[0]);
     expect(promptTools.queryByRole("button", { name: "New design" })).not.toBeInTheDocument();

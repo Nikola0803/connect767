@@ -1407,7 +1407,7 @@ export default function UniformStudioPage() {
     saveProgress: workflowStep.key !== "design" && detectedHeaderCapabilities.saveProgress,
     openEditableStudio: false,
     svgExport: false,
-    settings: false,
+    settings: workflowStep.key === "design",
     download: false,
   };
   useEffect(() => {
@@ -2274,12 +2274,12 @@ export default function UniformStudioPage() {
             type="button"
             onClick={() => setStudioSettingsOpen(true)}
             aria-label="Studio settings"
+            title="AI Studio settings"
             aria-haspopup="dialog"
             aria-expanded={studioSettingsOpen}
-            className={`${headerTileClass} cursor-pointer border-white/10 bg-white/5 text-background-50/75 hover:bg-white/10`}
+            className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-background-50/75 transition hover:border-primary-500/45 hover:bg-primary-950/45 hover:text-primary-100"
           >
-              <i className="ri-settings-3-line" aria-hidden="true" />
-              <span className="hidden sm:inline">Settings</span>
+              <i className="ri-settings-3-line text-base" aria-hidden="true" />
           </button>}
         </div>
       </header>
@@ -2367,7 +2367,7 @@ export default function UniformStudioPage() {
             <header className="flex items-center justify-between gap-4 border-b border-background-200 bg-white px-5 py-4">
               <span className="flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-700 text-white"><i className="ri-settings-3-line" /></span>
-                <span><h2 id="studio-settings-title" className="font-heading text-lg font-semibold">Studio settings</h2><p className="text-[10px] text-foreground-500">Workspace mode and canvas appearance</p></span>
+                <span><h2 id="studio-settings-title" className="font-heading text-lg font-semibold">AI Studio settings</h2><p className="text-[10px] text-foreground-500">AI workspace and canvas appearance</p></span>
               </span>
               <button type="button" onClick={() => setStudioSettingsOpen(false)} aria-label="Close studio settings" className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-background-300 bg-background-50 text-foreground-600 hover:bg-background-100"><i className="ri-close-line text-lg" /></button>
             </header>
