@@ -93,6 +93,35 @@ describe("AIUniformComposer", () => {
     expect(screen.getByText(/Enter to generate/i)).toBeVisible();
   });
 
+  it("routes background-removal prompts to the transparent-file utility without redesigning", () => {
+    const props = renderComposer({ prompt: "remove background make transparent" });
+    fireEvent.keyDown(screen.getByLabelText("Message Connect767 AI"), { key: "Enter" });
+
+    expect(props.onOpenBackgroundRemoval).toHaveBeenCalledTimes(1);
+    expect(props.onSend).not.toHaveBeenCalled();
+    expect(props.onPromptChange).toHaveBeenCalledWith("");
+  });
+
+  it("makes transparent artwork mode visibly distinct and focuses its prompt", () => {
+    const toolbarTarget = document.createElement("div");
+    document.body.appendChild(toolbarTarget);
+    const props = renderComposer({ toolbarTarget });
+
+    fireEvent.click(within(toolbarTarget).getByRole("button", { name: "AI tools" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Create artwork" }));
+    expect(props.onModeChange).toHaveBeenCalledWith("artwork");
+    expect(props.onNewChat).toHaveBeenCalledTimes(1);
+
+    toolbarTarget.remove();
+  });
+
+  it("labels the transparent artwork workspace clearly", () => {
+    renderComposer({ mode: "artwork" });
+    expect(screen.getByRole("heading", { name: "Create transparent artwork" })).toBeInTheDocument();
+    expect(screen.getByText("Transparent artwork")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Describe the crest, graphic or pattern you want…")).toBeInTheDocument();
+  });
+
   it("shows only tools supported by the uniform AI backend", () => {
     renderComposer();
     fireEvent.click(screen.getByLabelText("Add attachment or AI tool"));
@@ -174,7 +203,7 @@ describe("AIUniformComposer", () => {
     const toolsMenu = screen.getByRole("menu", { name: "AI prompt tools menu" });
     expect(within(toolsMenu).getByRole("menuitem", { name: "History" })).toBeInTheDocument();
     expect(within(toolsMenu).getByRole("menuitem", { name: "Reference" })).toBeInTheDocument();
-    expect(within(toolsMenu).getByRole("menuitem", { name: "Artwork" })).toBeInTheDocument();
+    expect(within(toolsMenu).getByRole("menuitem", { name: "Create artwork" })).toBeInTheDocument();
     expect(within(toolsMenu).getByRole("menuitem", { name: "Remove background / Make transparent" })).toBeInTheDocument();
     expect(within(toolsMenu).getByRole("menuitem", { name: "Save design" })).toBeInTheDocument();
     expect(within(toolsMenu).getByRole("menuitem", { name: "Download design" })).toBeInTheDocument();
