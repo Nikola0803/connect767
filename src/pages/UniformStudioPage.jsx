@@ -106,7 +106,7 @@ function EmbossedAIWorkspaceBackdrop() {
         data-testid="ai-workspace-watermark"
         loading="lazy"
         decoding="async"
-        className="h-full w-full select-none object-contain opacity-[0.28] mix-blend-overlay grayscale contrast-150 [filter:grayscale(1)_drop-shadow(-3px_-3px_2px_rgba(255,255,255,.42))_drop-shadow(4px_4px_3px_rgba(0,0,0,.48))]"
+        className="h-full w-full select-none object-contain opacity-[0.34] mix-blend-soft-light grayscale contrast-150 [filter:grayscale(1)_brightness(.72)_drop-shadow(-2px_-2px_2px_rgba(255,255,255,.18))_drop-shadow(3px_3px_3px_rgba(0,0,0,.52))]"
       />
     </div>
   );
@@ -2110,7 +2110,6 @@ export default function UniformStudioPage() {
       <div className="grid grid-cols-2 gap-1" role="group" aria-label="Uniform category (required)">
         {sports.map((sport) => {
           const selected = categoryConfirmed && sport.slug === activeSport;
-          const categoryTemplate = primaryTemplateForSport(sport.slug);
           const details = categoryDetails[sport.slug] || { title: sport.label };
           return (
             <button
@@ -2119,10 +2118,10 @@ export default function UniformStudioPage() {
               aria-pressed={selected}
               aria-label={`${details.title} category`}
               onClick={() => changeDesignCategory(sport.slug)}
-              className={`relative flex min-h-[52px] cursor-pointer items-center gap-1.5 rounded-lg border px-1.5 py-1 text-left transition ${selected ? "border-primary-700 bg-primary-700 text-white shadow-sm" : "border-background-300 bg-background-50 text-foreground-900 hover:border-primary-400 hover:bg-primary-50"}`}
+              className={`relative flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-lg border px-1.5 py-1 text-left transition ${selected ? "border-primary-700 bg-primary-700 text-white shadow-sm" : "border-background-300 bg-background-50 text-foreground-900 hover:border-primary-400 hover:bg-primary-50"}`}
             >
               <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-md text-xs ${selected ? "bg-white/15" : "bg-primary-50 text-primary-700"}`}><i className={sport.icon || "ri-shirt-line"} /></span>
-              <span className="min-w-0"><strong className="block truncate text-[9px] leading-tight">{details.title}</strong><span className={`mt-0.5 block truncate text-[7px] ${selected ? "text-white/65" : "text-foreground-500"}`}>{categoryTemplate?.name || "AI foundation"}</span></span>
+              <strong className="min-w-0 truncate text-[10px] leading-tight">{details.title}</strong>
               {selected && <i className="ri-check-line absolute right-1.5 top-1.5 text-xs" aria-hidden="true" />}
             </button>
           );
@@ -2684,33 +2683,9 @@ export default function UniformStudioPage() {
                       </div>
                     ) : stageMode === "edit" && !aiWorkspaceConcept?.src ? (
                       <div className="flex min-h-0 w-full flex-1 items-stretch justify-center">
-                        <div className="relative flex h-full w-full max-w-none flex-col justify-center overflow-hidden border border-dashed border-primary-400/35 bg-[#11140f] px-6 py-6 text-center shadow-[0_24px_70px_rgba(0,0,0,.2)] sm:px-10 lg:px-14">
+                        <div className="relative flex h-full w-full max-w-none flex-col items-center justify-center overflow-hidden bg-[#11140f] px-6 py-6 text-center sm:px-10 lg:px-14">
                           <EmbossedAIWorkspaceBackdrop />
-                          <span className="relative z-10 mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-500 text-3xl text-white shadow-[0_16px_34px_rgba(239,84,53,.24)]">
-                            <i className="ri-sparkling-2-fill" />
-                          </span>
-                          <p className="relative z-10 mt-6 text-[10px] font-bold uppercase tracking-[0.2em] text-white/80">{workflowStep.key === "category" ? "Step 1 · Design foundation" : "AI-first uniform studio"}</p>
-                          <h2 className="relative z-10 mx-auto mt-2 max-w-3xl font-heading text-3xl font-semibold leading-tight text-white sm:text-4xl xl:text-5xl">{workflowStep.key === "category" ? `Start with ${categoryDetails[activeSport]?.title || "your category"}` : "Your generated uniform will appear here"}</h2>
-                          <p className="relative z-10 mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-white/70">{workflowStep.key === "category" ? "Choose a sport or clothing category in the left panel. Its matching template becomes the foundation for the AI Designer." : "Add a team name and design brief in the AI Designer panel. You can also upload a reference image, lock any details you want to keep, and generate a complete Front / Side / Back concept."}</p>
-                          <div className="relative z-10 mx-auto mt-7 grid w-full max-w-3xl gap-3 text-left sm:grid-cols-3">
-                            {[
-                              ...(workflowStep.key === "category" ? [
-                                ["ri-apps-2-line", "Choose", "Select the garment category"],
-                                ["ri-shirt-line", "Foundation", "Load its matching template"],
-                                ["ri-arrow-right-line", "Continue", "Move into AI Design"],
-                              ] : [
-                                ["ri-image-add-line", "Reference", "Optional inspiration image"],
-                                ["ri-quill-pen-line", "Describe", "Colors, style and identity"],
-                                ["ri-magic-line", "Generate", "Complete Front / Side / Back kit"],
-                              ]),
-                            ].map(([icon, title, copy]) => (
-                              <div key={title} className="rounded-2xl border border-white/[0.07] bg-black/15 p-4">
-                                <i className={`${icon} text-lg text-primary-300`} />
-                                <strong className="mt-2 block text-xs text-white">{title}</strong>
-                                <span className="mt-1 block text-[10px] leading-relaxed text-white/40">{copy}</span>
-                              </div>
-                            ))}
-                          </div>
+                          <h2 className="relative z-10 font-heading text-xl font-medium text-white/90 sm:text-2xl">Your design will appear here</h2>
                         </div>
                       </div>
                     ) : stageMode === "edit" ? (

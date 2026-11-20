@@ -50,6 +50,11 @@ describe("required uniform fit selection", () => {
     );
     expect(watermark).toHaveClass("h-full", "w-full", "object-contain");
     expect(watermark).not.toHaveClass("object-fill");
+    expect(watermark).toHaveClass("mix-blend-soft-light", "grayscale");
+    expect(screen.getByRole("heading", { name: "Your design will appear here" })).toBeVisible();
+    expect(screen.queryByText("Use the AI panel to begin.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Your generated uniform will appear here")).not.toBeInTheDocument();
+    expect(screen.queryByText("Reference", { selector: "strong" })).not.toBeInTheDocument();
   });
 
   it("places every category tile above the required fit selection", () => {
@@ -82,6 +87,9 @@ describe("required uniform fit selection", () => {
     }
     const categoryElement = setup.getByRole("group", { name: "Uniform category (required)" });
     const fitElement = setup.getByRole("group", { name: "Fit type (required)" });
+    for (const subtitle of ["Classic Crew", "Shooter Tank", "Court Dress", "Matchday Long Sleeve", "Guardian Pro", "Performance Polo"]) {
+      expect(within(categoryElement).queryByText(subtitle)).not.toBeInTheDocument();
+    }
     expect(categoryElement.closest("section")).toBe(fitElement.closest("section"));
     expect(categoryElement.compareDocumentPosition(fitElement) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
@@ -110,6 +118,8 @@ describe("required uniform fit selection", () => {
     const setup = within(screen.getByRole("complementary", { name: "Uniform & order setup" }));
     expect(setup.getByRole("heading", { name: "Uniform & order setup" })).toBeVisible();
     const productionExtras = screen.getByRole("region", { name: "Production extras" });
+    expect(productionExtras).toHaveClass("flex-none");
+    expect(productionExtras).not.toHaveClass("flex-1");
     expect(setup.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent("$35.00");
     expect(setup.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("$12.00");
     expect(setup.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("supporter jerseys use this price");
