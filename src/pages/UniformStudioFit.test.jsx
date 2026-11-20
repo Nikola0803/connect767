@@ -56,10 +56,14 @@ describe("required uniform fit selection", () => {
       "Goal Keeper",
       "Clothing & Other",
     ]);
-    const watermark = screen.getByTestId("studio-entry-ai-watermark");
-    expect(watermark).toHaveAttribute("src", "/connect767-ai-logo-transparent.png");
-    expect(screen.getByTestId("studio-entry-brand")).toContainElement(watermark);
-    expect(entry).not.toContainElement(watermark);
+    const logo = screen.getByTestId("studio-entry-ai-logo");
+    const brandTitle = screen.getByText("Custom Uniforms & Clothing");
+    expect(logo).toHaveAttribute("src", "/connect767-ai-logo-transparent.png");
+    expect(logo).toHaveAccessibleName("Connect767 AI");
+    expect(logo).not.toHaveClass("grayscale", "opacity-30", "mix-blend-multiply");
+    expect(logo.compareDocumentPosition(brandTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByTestId("studio-entry-brand")).toContainElement(logo);
+    expect(entry).not.toContainElement(logo);
     expect(screen.queryByText("One design studio")).not.toBeInTheDocument();
     expect(screen.queryByText("Every category. One workspace.")).not.toBeInTheDocument();
     expect(screen.queryByText("Enter once, then choose the required category and fit inside the studio.")).not.toBeInTheDocument();
