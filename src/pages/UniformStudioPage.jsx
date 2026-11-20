@@ -105,7 +105,7 @@ function EmbossedAIWorkspaceBackdrop() {
         data-testid="ai-workspace-watermark"
         loading="lazy"
         decoding="async"
-        className="w-[58%] max-w-[760px] select-none opacity-[0.22] mix-blend-overlay grayscale contrast-150 [filter:grayscale(1)_drop-shadow(-3px_-3px_2px_rgba(255,255,255,.42))_drop-shadow(4px_4px_3px_rgba(0,0,0,.48))]"
+        className="h-full w-full select-none object-cover opacity-[0.28] mix-blend-overlay grayscale contrast-150 [filter:grayscale(1)_drop-shadow(-3px_-3px_2px_rgba(255,255,255,.42))_drop-shadow(4px_4px_3px_rgba(0,0,0,.48))]"
       />
     </div>
   );
@@ -348,7 +348,7 @@ export default function UniformStudioPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSport = searchParams.get("sport") || "soccer";
   const scratch = searchParams.get("mode") === "scratch";
-  const requestedWorkflowStep = searchParams.get("step") || "ai";
+  const requestedWorkflowStep = searchParams.get("step") || "category";
   const initialWorkflowStep = requestedWorkflowStep === "options" ? "design" : requestedWorkflowStep;
 
   const [activeSport, setActiveSport] = useState(
@@ -1098,6 +1098,12 @@ export default function UniformStudioPage() {
     // Pick up where they left off on this exact kit, if they were here before.
     restoreSaved(`c767:studio:${sportSlug}:${t.slug}`, sportSlug);
   };
+
+  useEffect(() => {
+    if (selectedTemplate) return;
+    const initialTemplate = primaryTemplateForSport(activeSport);
+    if (initialTemplate) selectTemplate(initialTemplate, activeSport, "category");
+  }, []); // The studio opens once on Step 1; later exits still return to the category entrance.
 
   const changeDesignCategory = (sportSlug) => {
     if (sportSlug === activeSport) return;
@@ -2494,7 +2500,7 @@ export default function UniformStudioPage() {
                     </aside>
                   )}
                   {/* Canvas */}
-                  <div className={`flex min-w-0 flex-1 flex-col items-center overflow-hidden ${activeTool === "ai" ? "gap-2 px-2 py-2 md:px-3 xl:px-4" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
+                  <div className={`flex min-w-0 flex-1 flex-col items-center overflow-hidden ${(activeTool === "ai" || workflowStep.key === "category") ? "gap-0 px-0 py-0" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
                     {strictAIPreview && (
                       <section
                         className="relative z-20 w-full max-w-[1536px] flex-shrink-0 self-center rounded-xl border border-amber-300/25 bg-[linear-gradient(120deg,rgba(82,57,5,.38),rgba(18,24,18,.92))] px-3 py-1 shadow-[0_8px_20px_rgba(0,0,0,.16)]"
@@ -2606,8 +2612,8 @@ export default function UniformStudioPage() {
                         </div>
                       </div>
                     ) : stageMode === "edit" && !aiWorkspaceConcept?.src ? (
-                      <div className="flex min-h-0 w-full flex-1 items-stretch justify-center p-1">
-                        <div className="relative flex h-full w-full max-w-none flex-col justify-center overflow-hidden rounded-[28px] border border-dashed border-primary-400/35 bg-[radial-gradient(circle_at_50%_0%,rgba(0,116,73,.2),transparent_56%),rgba(255,255,255,.025)] px-6 py-8 text-center shadow-[0_24px_70px_rgba(0,0,0,.2)] sm:px-10 lg:px-14">
+                      <div className="flex min-h-0 w-full flex-1 items-stretch justify-center">
+                        <div className="relative flex h-full w-full max-w-none flex-col justify-center overflow-hidden border border-dashed border-primary-400/35 bg-[#11140f] px-6 py-6 text-center shadow-[0_24px_70px_rgba(0,0,0,.2)] sm:px-10 lg:px-14">
                           <EmbossedAIWorkspaceBackdrop />
                           <span className="relative z-10 mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-500 text-3xl text-white shadow-[0_16px_34px_rgba(239,84,53,.24)]">
                             <i className="ri-sparkling-2-fill" />
@@ -2736,15 +2742,15 @@ export default function UniformStudioPage() {
                   </div>
 
               {/* Docked fields panel */}
-              {workflowStep.key !== "category" && <aside className={`hidden w-full flex-shrink-0 flex-col overflow-hidden border-l border-black/10 bg-[#f7f5ef] md:flex ${activeTool === "ai" ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px]" : "max-w-[420px]"}`}>
-                {activeTool !== "ai" && <div className={`flex-shrink-0 border-b border-black/[0.07] bg-[#f7f5ef]/95 backdrop-blur-xl ${activeTool === "design" ? "px-4 py-3" : "px-5 py-4"}`}>
+              <aside className={`hidden w-full flex-shrink-0 flex-col overflow-hidden border-l border-black/10 bg-[#f7f5ef] md:flex ${(activeTool === "ai" || workflowStep.key === "category") ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px]" : "max-w-[420px]"}`} aria-label={workflowStep.key === "category" ? "AI prompt chat" : undefined}>
+                {activeTool !== "ai" && workflowStep.key !== "category" && <div className={`flex-shrink-0 border-b border-black/[0.07] bg-[#f7f5ef]/95 backdrop-blur-xl ${activeTool === "design" ? "px-4 py-3" : "px-5 py-4"}`}>
                   <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary-700">Step {workflowStep.step} · {workflowStep.label}</p>
                   <div className="mt-1 flex items-center justify-between gap-3">
                     <h2 className="font-heading text-lg font-medium text-foreground-950">{activeToolConfig?.label || workflowStep.label}</h2>
                   </div>
                   <p className="mt-1 text-xs text-foreground-500">{activeToolConfig?.hint || workflowStep.description}</p>
                 </div>}
-                <div className={`min-h-0 flex-1 ${activeTool === "ai" ? "flex flex-col overflow-hidden" : "overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"} ${activeTool === "ai" ? "" : activeTool === "design" ? "p-3 pb-20" : "p-5 pb-24"}`}>
+                <div className={`min-h-0 flex-1 ${(activeTool === "ai" || workflowStep.key === "category") ? "flex flex-col overflow-hidden" : "overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"} ${(activeTool === "ai" || workflowStep.key === "category") ? "" : activeTool === "design" ? "p-3 pb-20" : "p-5 pb-24"}`}>
                 {manualEditingAllowed && selectedLayer && <SelectedItemPanel
                   layer={selectedLayer}
                   placement={stageMode === "3d" && selectedLayerId ? placements3d[selectedLayerId] : null}
@@ -2782,7 +2788,7 @@ export default function UniformStudioPage() {
                   />
                 )}
                 {activeTool === "text" && <TextPanel onAdd={armTextPlacement} armed={pendingLayer?.type === "text"} />}
-                {activeTool === "ai" && (
+                {(activeTool === "ai" || workflowStep.key === "category") && (
                   <AIArtworkPanel
                     sport={sports.find((item) => item.slug === activeSport)?.label || "Team sport"}
                     templateName={template?.name}
@@ -2886,11 +2892,11 @@ export default function UniformStudioPage() {
                   />
                 )}
                 </div>
-              </aside>}
+              </aside>
       </div>
 
       {/* Mobile: the fields panel docks to the bottom instead of the side */}
-      {workflowStep.key !== "category" && <div className={`md:hidden flex-shrink-0 overflow-y-auto overscroll-contain border-t border-background-200/60 bg-background-50 ${activeTool === "ai" ? "max-h-[72dvh] p-0" : "max-h-[42dvh] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"}`}>
+      <div className={`md:hidden flex-shrink-0 overflow-y-auto overscroll-contain border-t border-background-200/60 bg-background-50 ${(activeTool === "ai" || workflowStep.key === "category") ? "max-h-[72dvh] p-0" : "max-h-[42dvh] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"}`} aria-label={workflowStep.key === "category" ? "AI prompt chat" : undefined}>
         {manualEditingAllowed && <SelectedItemPanel
           layer={selectedLayer}
           placement={stageMode === "3d" && selectedLayerId ? placements3d[selectedLayerId] : null}
@@ -2928,7 +2934,7 @@ export default function UniformStudioPage() {
           />
         )}
         {activeTool === "text" && <TextPanel onAdd={armTextPlacement} armed={pendingLayer?.type === "text"} />}
-        {activeTool === "ai" && (
+        {(activeTool === "ai" || workflowStep.key === "category") && (
           <AIArtworkPanel
             sport={sports.find((item) => item.slug === activeSport)?.label || "Team sport"}
             templateName={template?.name}
@@ -3031,7 +3037,7 @@ export default function UniformStudioPage() {
             onView3d={ENABLE_3D ? () => setStageMode("3d") : undefined}
           />
         )}
-      </div>}
+      </div>
 
       <div className="flex flex-shrink-0 items-center justify-between gap-3 border-t border-white/[0.07] bg-[#0c0d0b]/95 px-4 py-2.5 pb-[max(.625rem,env(safe-area-inset-bottom))] sm:px-6">
         <button
