@@ -1901,21 +1901,7 @@ export default function UniformStudioPage() {
             <Button to="/" variant="ghost" size="sm" icon="ri-arrow-left-line" iconPosition="left">
               Back to site
             </Button>
-            <div data-testid="studio-entry-brand" className="flex items-center gap-3">
-              <div className="text-center">
-                <p className="font-label text-[9px] font-bold uppercase tracking-[0.2em] text-primary-700">
-                  Connect767 AI Design Studio
-                </p>
-                <span className="font-heading text-base font-semibold">Custom Uniforms &amp; Clothing</span>
-              </div>
-              <img
-                data-testid="studio-entry-ai-watermark"
-                src="/connect767-ai-logo-transparent.png"
-                alt=""
-                aria-hidden="true"
-                className="pointer-events-none h-9 w-9 shrink-0 select-none object-contain opacity-30 grayscale contrast-125 mix-blend-multiply [filter:grayscale(1)_brightness(1.25)_drop-shadow(-1px_-1px_1px_rgba(255,255,255,.65))_drop-shadow(2px_2px_2px_rgba(38,52,43,.28))] sm:h-10 sm:w-10"
-              />
-            </div>
+            <span aria-hidden="true" />
             <span aria-hidden="true" />
           </div>
         </header>
@@ -1938,6 +1924,20 @@ export default function UniformStudioPage() {
           </section>
 
           <section className="rounded-[24px] border border-background-300/70 bg-background-50/90 p-3 shadow-[0_18px_48px_rgba(69,48,30,0.06)] backdrop-blur-sm sm:p-4">
+            <div data-testid="studio-entry-brand" className="flex items-center justify-center gap-3 pb-3 sm:pb-4">
+              <img
+                data-testid="studio-entry-ai-logo"
+                src="/connect767-ai-logo-transparent.png"
+                alt="Connect767 AI"
+                className="h-10 w-10 shrink-0 object-contain sm:h-11 sm:w-11"
+              />
+              <div className="text-center">
+                <p className="font-label text-[9px] font-bold uppercase tracking-[0.2em] text-primary-700">
+                  Connect767 AI Design Studio
+                </p>
+                <span className="font-heading text-base font-semibold">Custom Uniforms &amp; Clothing</span>
+              </div>
+            </div>
             <button
               type="button"
               aria-label="Enter Design Studio"
