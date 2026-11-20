@@ -137,13 +137,18 @@ describe("AIUniformComposer", () => {
   });
 
   it("keeps stop generation and mobile design controls accessible", () => {
-    const props = renderComposer({ generating: true });
+    const toolbarTarget = document.createElement("div");
+    document.body.appendChild(toolbarTarget);
+    const props = renderComposer({ generating: true, toolbarTarget });
     fireEvent.click(screen.getByLabelText("Stop generating"));
     expect(props.onStop).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByText("Settings"));
+    expect(screen.queryByRole("button", { name: "AI design settings" })).not.toBeInTheDocument();
+    fireEvent.click(within(toolbarTarget).getByRole("button", { name: "AI tools" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Settings" }));
     expect(screen.getByText("Design controls")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("e.g. Riverside FC")).toBeInTheDocument();
+    toolbarTarget.remove();
   });
 
   it("reuses a saved conversation from the history drawer", () => {
@@ -302,7 +307,8 @@ describe("AIUniformComposer", () => {
     fireEvent.pointerDown(message);
     expect(screen.queryByRole("menu", { name: "AI composer tools" })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByText("Settings"));
+    fireEvent.click(within(toolbarTarget).getByRole("button", { name: "AI tools" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Settings" }));
     expect(screen.getByText("Design controls")).toBeInTheDocument();
     fireEvent.pointerDown(message);
     expect(screen.queryByText("Design controls")).not.toBeInTheDocument();
