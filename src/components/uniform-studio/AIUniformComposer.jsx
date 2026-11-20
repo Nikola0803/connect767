@@ -8,22 +8,33 @@ const MODE_COPY = {
   uniform: {
     label: "Full uniform",
     icon: "ri-shirt-line",
+    title: "Design your uniform",
+    description: "Describe a complete kit, then refine the generated result with AI instructions.",
     placeholder: "Describe the uniform you want to design…",
   },
   artwork: {
     label: "Transparent artwork",
     icon: "ri-image-edit-line",
+    title: "Create transparent artwork",
+    description: "Describe a crest, sponsor mark, graphic or pattern. The AI will generate an isolated transparent asset.",
     placeholder: "Describe the crest, graphic or pattern you want…",
   },
 };
 
-function EmptyConversation({ dark }) {
+const isBackgroundRemovalIntent = (value = "") => {
+  const normalized = String(value).trim().toLowerCase();
+  return /\b(remove|erase|delete)\s+(the\s+)?background\b/.test(normalized)
+    || /\b(make|turn)\s+(this\s+|the\s+|my\s+)?(file|image|artwork|logo|photo)?\s*(background\s+)?transparent\b/.test(normalized);
+};
+
+function EmptyConversation({ dark, mode }) {
+  const modeCopy = MODE_COPY[mode] || MODE_COPY.uniform;
   return (
     <div className="mx-auto flex h-full max-w-sm flex-col items-center justify-center px-5 py-8 text-center">
       <img src={AI_COMMAND_LOGO_SRC} alt="Connect767 AI" className="h-28 w-44 object-contain drop-shadow-[0_12px_24px_rgba(0,116,73,.18)]" />
-      <h3 className={`mt-4 font-heading text-xl font-semibold ${dark ? "text-white" : "text-foreground-950"}`}>Design your uniform</h3>
+      <h3 className={`mt-4 font-heading text-xl font-semibold ${dark ? "text-white" : "text-foreground-950"}`}>{modeCopy.title}</h3>
       <p className={`mt-2 text-[11px] leading-relaxed ${dark ? "text-white/55" : "text-foreground-500"}`}>
-        Describe a complete kit or create transparent artwork. Full-uniform results open as AI-only previews and can be changed with AI instructions.
+        {modeCopy.description}
       </p>
     </div>
   );
@@ -106,6 +117,12 @@ export default function AIUniformComposer({
 
   const submit = (requestedTier = "proof") => {
     if (!canSend || generating) return;
+    if (isBackgroundRemovalIntent(prompt) && onOpenBackgroundRemoval) {
+      closePopovers();
+      onPromptChange("");
+      onOpenBackgroundRemoval();
+      return;
+    }
     onSend(requestedTier);
     onPromptChange("");
   };
@@ -166,6 +183,7 @@ export default function AIUniformComposer({
     closePopovers();
     onModeChange(nextMode);
     onNewChat();
+    window.requestAnimationFrame?.(() => focusCommandPrompt());
   };
 
   const copyText = async (text) => {
@@ -242,7 +260,7 @@ export default function AIUniformComposer({
           <div className="absolute right-0 top-[calc(100%+.4rem)] z-50 grid w-56 gap-1 rounded-xl border border-background-200 bg-white p-2 text-foreground-950 shadow-2xl" data-ai-popover role="menu" aria-label="AI prompt tools menu">
             <button type="button" onClick={() => { setToolbarMenuOpen(false); setHistoryOpen(true); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className="ri-history-line text-sm" /> History</button>
             <button type="button" onClick={() => { setToolbarMenuOpen(false); fileInputRef.current?.click(); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className="ri-image-add-line text-sm" /> Reference</button>
-            <button type="button" onClick={() => startDesign(mode === "uniform" ? "artwork" : "uniform")} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className={`${mode === "uniform" ? "ri-image-edit-line" : "ri-shirt-line"} text-sm`} /> {mode === "uniform" ? "Artwork" : "Full uniform"}</button>
+            <button type="button" onClick={() => startDesign(mode === "uniform" ? "artwork" : "uniform")} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className={`${mode === "uniform" ? "ri-image-edit-line" : "ri-shirt-line"} text-sm`} /> {mode === "uniform" ? "Create artwork" : "Full uniform"}</button>
             <button type="button" onClick={() => { setToolbarMenuOpen(false); focusCommandPrompt(); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold text-primary-800 hover:bg-primary-50" role="menuitem"><i className="ri-magic-line text-sm" /> Refine with AI</button>
             <button type="button" onClick={() => { setToolbarMenuOpen(false); onOpenBackgroundRemoval?.(); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className="ri-eraser-line text-sm" /> Remove background / Make transparent</button>
             <div className="my-1 border-t border-background-200" />
@@ -384,7 +402,7 @@ export default function AIUniformComposer({
       )}
 
       <div ref={conversationRef} className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4" aria-live="polite">
-        {!hasConversation ? <EmptyConversation dark={dark} /> : (
+        {!hasConversation ? <EmptyConversation dark={dark} mode={mode} /> : (
           <div className="mx-auto max-w-xl space-y-4">
             {[...promptHistory].reverse().map((entry) => (
               <div key={entry.id} className="space-y-2">
@@ -455,6 +473,10 @@ export default function AIUniformComposer({
         >
           {dragging && <div className="absolute inset-1 z-10 flex items-center justify-center rounded-[18px] border-2 border-dashed border-primary-400 bg-primary-50/95 text-xs font-bold text-primary-800"><i className="ri-upload-cloud-2-line mr-2" /> Drop an image to use as reference</div>}
           {reference && <div className="flex items-center gap-2 border-b border-background-200 px-3 py-2"><img src={reference.src} alt="Attached uniform reference" className="h-9 w-9 rounded-lg border border-background-200 object-cover" /><div className="min-w-0 flex-1"><strong className="block truncate text-[9px] text-foreground-700">{reference.name}</strong><span className="block text-[8px] text-foreground-400">Reference image</span></div><button type="button" onClick={onRemoveReference} className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-foreground-400 hover:bg-red-50 hover:text-red-600" aria-label="Remove reference image"><i className="ri-close-line" /></button></div>}
+          <div className={`flex items-center gap-1.5 px-4 pt-2.5 text-[8px] font-bold uppercase tracking-[0.13em] ${mode === "artwork" ? "text-accent-600" : "text-primary-700"}`} aria-live="polite">
+            <i className={MODE_COPY[mode].icon} aria-hidden="true" />
+            {isRefinement ? "Refine current uniform" : MODE_COPY[mode].label}
+          </div>
           <textarea
             ref={textareaRef}
             value={prompt}
