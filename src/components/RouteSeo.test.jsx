@@ -23,11 +23,26 @@ function robots() {
   return document.head.querySelector('meta[name="robots"]')?.getAttribute("content");
 }
 
+function schemaGraph() {
+  return JSON.parse(document.head.querySelector("#connect767-route-schema")?.textContent || "{}")?.["@graph"] || [];
+}
+
 afterEach(() => {
   document.head.innerHTML = "";
 });
 
 describe("RouteSeo", () => {
+  it("publishes one consistently named shop destination in primary navigation metadata", async () => {
+    renderRoute("/");
+    await waitFor(() => expect(document.title).toBe("Connect767 | Dominica’s Online Directory"));
+
+    const shopItems = schemaGraph().filter(
+      (item) => item?.["@type"] === "SiteNavigationElement" && item.url === "https://connect767.com/shop",
+    );
+    expect(shopItems).toHaveLength(1);
+    expect(shopItems[0].name).toBe("Shop");
+  });
+
   it("uses distinct metadata for public site sections", async () => {
     const shop = renderRoute("/shop");
     await waitFor(() => expect(document.title).toBe("Shop Dominican Products & Apparel | Connect767"));

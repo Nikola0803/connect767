@@ -13,6 +13,13 @@ const privateRoutes = [
   "/checkout", "/checkout/thank-you", "/dashboard", "/messages", "/saved",
   "/shop/customize", "/design-studio",
 ];
+const primaryNavigation = [
+  ["Directory", "/listings"],
+  ["Shop", "/shop"],
+  ["Community Feed", "/community"],
+  ["Custom Uniforms", "/uniforms"],
+  ["Blog", "/blog"],
+];
 
 function escapeHtml(value = "") {
   return String(value).replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
@@ -89,6 +96,9 @@ function structuredData(route, meta, canonical) {
       url: `${siteUrl}/`, logo: `${siteUrl}/connect767-favicon.png`,
       description: pages["/"].description, email: "info@connect767.com", telephone: "+1-862-253-2076",
     });
+    graph.push(...primaryNavigation.map(([name, path]) => ({
+      "@type": "SiteNavigationElement", name, url: `${siteUrl}${path}`,
+    })));
   } else {
     graph.push({
       "@type": meta.schemaType || "WebPage", "@id": `${canonical}#webpage`, url: canonical,
