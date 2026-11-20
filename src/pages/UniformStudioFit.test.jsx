@@ -25,17 +25,23 @@ function sportsFromButtons(panel) {
 describe("required uniform fit selection", () => {
   beforeEach(() => window.localStorage.clear());
 
-  it("keeps the category entrance clean without workspace branding", () => {
+  it("opens directly on Step 1 with the AI prompt chat", () => {
     render(<MemoryRouter initialEntries={["/uniforms"]}><UniformStudioPage /></MemoryRouter>);
-    expect(screen.queryByTestId("ai-workspace-watermark")).not.toBeInTheDocument();
+    const progress = within(screen.getByRole("navigation", { name: "Uniform order progress" }));
+    expect(progress.getByRole("button", { name: /Category/ })).toHaveAttribute("aria-current", "step");
+    expect(screen.getByRole("complementary", { name: "Sport category selection" })).toBeVisible();
+    expect(screen.getAllByRole("complementary", { name: "AI prompt chat" })[0]).toBeVisible();
+    expect(screen.getAllByRole("textbox", { name: "Message Connect767 AI" })[0]).toBeVisible();
   });
 
   it("places the embossed Connect767 AI logo inside the design workspace", () => {
     openStudio("ai");
-    expect(screen.getByTestId("ai-workspace-watermark")).toHaveAttribute(
+    const watermark = screen.getByTestId("ai-workspace-watermark");
+    expect(watermark).toHaveAttribute(
       "src",
       "https://admin.connect767.com/wp-content/uploads/2026/11/Glossy-Neon-C-AI-Logo.png",
     );
+    expect(watermark).toHaveClass("h-full", "w-full", "object-cover");
   });
 
   it("uses a coordinated category sidebar and loads every category template", () => {
@@ -324,8 +330,7 @@ describe("required uniform fit selection", () => {
   it.each([false, true])("restores only a previously confirmed fit (confirmed: %s)", async (confirmed) => {
     window.localStorage.setItem("c767:studio:soccer:classic-crew", JSON.stringify({ fitType: "Men", fitTypeConfirmed: confirmed, zoneModel: { front: [], back: [] } }));
     render(<MemoryRouter initialEntries={["/uniforms"]}><UniformStudioPage /></MemoryRouter>);
-    await act(async () => { fireEvent.click(screen.getByRole("heading", { name: "Soccer", exact: true }).closest("button")); });
-    const progress = within(screen.getByRole("navigation", { name: "Uniform order progress" }));
+    const progress = within(await screen.findByRole("navigation", { name: "Uniform order progress" }));
     if (confirmed) {
       expect(progress.getByRole("button", { name: /Team roster/ })).toBeEnabled();
       expect(screen.queryByText("Select a fit to continue to Team roster.")).not.toBeInTheDocument();
