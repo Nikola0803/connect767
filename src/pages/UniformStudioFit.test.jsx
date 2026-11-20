@@ -85,7 +85,7 @@ describe("required uniform fit selection", () => {
     const watermark = screen.getByTestId("ai-workspace-watermark");
     expect(watermark).toHaveAttribute(
       "data-logo-src",
-      "/connect767-ai-logo-transparent.png?v=20261117",
+      "/connect767-ai-logo-transparent.png",
     );
     expect(watermark.style.maskImage).toContain("connect767-ai-logo-transparent.png");
     expect(watermark.style.maskSize).toBe("contain");

@@ -95,31 +95,52 @@ const emptyUniformShipping = {
   firstName: "", lastName: "", company: "", address1: "", address2: "",
   city: "", state: "", postcode: "", country: "DM", email: "", phone: "",
 };
-const CONNECT767_AI_TEMPLATE_LOGO = "/connect767-ai-logo-transparent.png?v=20261117";
+const CONNECT767_AI_TEMPLATE_LOGO = "/connect767-ai-logo-transparent.png";
 
 function EmbossedAIWorkspaceBackdrop({ studioBackground = DEFAULT_STUDIO_BACKGROUND }) {
   const backgroundColor = normalizeStudioBackground(studioBackground);
   const darkBackground = isDarkStudioBackground(backgroundColor);
   const logoMask = `url("${CONNECT767_AI_TEMPLATE_LOGO}")`;
+  const maskStyle = {
+    WebkitMaskImage: logoMask,
+    maskImage: logoMask,
+    WebkitMaskPosition: "center",
+    maskPosition: "center",
+    WebkitMaskRepeat: "no-repeat",
+    maskRepeat: "no-repeat",
+    WebkitMaskSize: "contain",
+    maskSize: "contain",
+  };
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden" style={{ backgroundColor }}>
       <div
+        className="absolute inset-[1%] select-none"
+        style={{
+          ...maskStyle,
+          backgroundColor: darkBackground ? "rgba(255,255,255,.22)" : "rgba(255,255,255,.92)",
+          opacity: darkBackground ? 0.72 : 0.88,
+          transform: "translate(-4px, -4px)",
+        }}
+      />
+      <div
+        className="absolute inset-[1%] select-none"
+        style={{
+          ...maskStyle,
+          backgroundColor: darkBackground ? "rgba(0,0,0,.78)" : "rgba(56,48,38,.38)",
+          opacity: darkBackground ? 0.86 : 0.76,
+          transform: "translate(5px, 5px)",
+        }}
+      />
+      <div
         data-testid="ai-workspace-watermark"
         data-logo-src={CONNECT767_AI_TEMPLATE_LOGO}
-        className="absolute inset-[1%] select-none opacity-90"
+        className="absolute inset-[1%] select-none"
         style={{
+          ...maskStyle,
           backgroundColor,
-          WebkitMaskImage: logoMask,
-          maskImage: logoMask,
-          WebkitMaskPosition: "center",
-          maskPosition: "center",
-          WebkitMaskRepeat: "no-repeat",
-          maskRepeat: "no-repeat",
-          WebkitMaskSize: "contain",
-          maskSize: "contain",
           filter: darkBackground
-            ? "drop-shadow(-3px -3px 3px rgba(255,255,255,.16)) drop-shadow(4px 4px 5px rgba(0,0,0,.58))"
-            : "drop-shadow(-3px -3px 3px rgba(255,255,255,.72)) drop-shadow(4px 4px 5px rgba(56,48,38,.30))",
+            ? "brightness(.94) drop-shadow(2px 2px 2px rgba(0,0,0,.48))"
+            : "brightness(.985) drop-shadow(2px 2px 2px rgba(56,48,38,.22))",
         }}
       />
     </div>
