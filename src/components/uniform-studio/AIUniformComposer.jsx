@@ -27,6 +27,18 @@ const isBackgroundRemovalIntent = (value = "") => {
     || /\b(make|turn)\s+(this\s+|the\s+|my\s+)?(file|image|artwork|logo|photo)?\s*(background\s+)?transparent\b/.test(normalized);
 };
 
+const inferPromptMode = (value = "", currentMode = "uniform") => {
+  const normalized = String(value).trim().toLowerCase();
+  const explicitArtwork = /\b(transparent|standalone|isolated)\s+(artwork|graphic|logo|crest|badge|emblem|pattern|png)\b/.test(normalized)
+    || /\b(create|design|generate|make)\s+(a\s+|an\s+)?(transparent\s+|standalone\s+|isolated\s+)?(team\s+|club\s+|sponsor\s+)?(logo|crest|badge|emblem|artwork|graphic)\b/.test(normalized)
+    || /\b(logo|crest|badge|emblem)\s+(only|by itself|with a transparent background)\b/.test(normalized);
+  const explicitUniform = /\b(full\s+)?(uniform|kit|jersey|shirt|shorts|pants|trousers|skirt|dress|tracksuit|teamwear|socks)\b/.test(normalized)
+    || /\b(front|side|back)\s+views?\b/.test(normalized);
+  if (explicitArtwork && !explicitUniform) return "artwork";
+  if (explicitUniform) return "uniform";
+  return currentMode;
+};
+
 function EmptyConversation({ dark, mode }) {
   const modeCopy = MODE_COPY[mode] || MODE_COPY.uniform;
   return (
@@ -88,7 +100,6 @@ export default function AIUniformComposer({
 }) {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [resetMenuOpen, setResetMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [toolbarMenuOpen, setToolbarMenuOpen] = useState(false);
   const dark = false;
@@ -123,14 +134,15 @@ export default function AIUniformComposer({
       onOpenBackgroundRemoval();
       return;
     }
-    onSend(requestedTier);
+    const inferredMode = inferPromptMode(prompt, mode);
+    if (inferredMode !== mode) onModeChange(inferredMode);
+    onSend(requestedTier, inferredMode, prompt.trim());
     onPromptChange("");
   };
 
   const closePopovers = () => {
     setToolsOpen(false);
     setHistoryOpen(false);
-    setResetMenuOpen(false);
     setSettingsOpen(false);
     setToolbarMenuOpen(false);
   };
@@ -179,13 +191,6 @@ export default function AIUniformComposer({
     textareaRef.current?.focus();
   };
 
-  const startDesign = (nextMode) => {
-    closePopovers();
-    onModeChange(nextMode);
-    onNewChat();
-    window.requestAnimationFrame?.(() => focusCommandPrompt());
-  };
-
   const copyText = async (text) => {
     try { await navigator.clipboard.writeText(text); } catch { /* Clipboard access can be blocked by the browser. */ }
   };
@@ -204,46 +209,11 @@ export default function AIUniformComposer({
 
   const bannerCommands = toolbarTarget ? createPortal(
     <div className="relative flex shrink-0 flex-nowrap items-center justify-start gap-1.5" data-ai-popover>
-      <div className="relative flex h-7 overflow-visible rounded-md border border-primary-300/25 bg-primary-500/10 text-primary-100">
-        <button
-          type="button"
-          onClick={() => { closePopovers(); onNewChat(); }}
-          className="inline-flex cursor-pointer items-center gap-1.5 px-2.5 text-[8px] font-bold transition hover:bg-primary-500/20 hover:text-white"
-        >
-          <i className="ri-chat-new-line text-[10px]" /> New design
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setResetMenuOpen((value) => !value);
-            setToolbarMenuOpen(false);
-            setHistoryOpen(false);
-            setToolsOpen(false);
-            setSettingsOpen(false);
-          }}
-          className="flex w-7 cursor-pointer items-center justify-center border-l border-primary-300/20 transition hover:bg-primary-500/20 hover:text-white"
-          aria-label="Open design reset options"
-          aria-expanded={resetMenuOpen}
-          aria-haspopup="menu"
-          data-ai-popover-trigger
-        >
-          <i className="ri-arrow-down-s-line" />
-        </button>
-        {resetMenuOpen && (
-          <div className="absolute left-0 top-[calc(100%+.4rem)] z-50 w-52 overflow-hidden rounded-xl border border-background-200 bg-white p-1.5 text-foreground-950 shadow-2xl" role="menu" aria-label="Design reset options" data-ai-popover>
-            <p className="px-3 pb-1 pt-1.5 text-[8px] font-bold uppercase tracking-[0.14em] text-foreground-500">Create new</p>
-            <button type="button" onClick={() => startDesign("uniform")} className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-primary-50 hover:text-primary-800" role="menuitem"><i className="ri-shirt-line text-sm" /><span className="flex min-w-0 flex-1 items-center justify-between gap-2"><span>Full uniform</span>{mode === "uniform" && <i className="ri-check-line text-primary-700" />}</span></button>
-            <button type="button" onClick={() => startDesign("artwork")} className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-primary-50 hover:text-primary-800" role="menuitem"><i className="ri-image-edit-line text-sm" /><span className="flex min-w-0 flex-1 items-center justify-between gap-2"><span>Transparent artwork</span>{mode === "artwork" && <i className="ri-check-line text-primary-700" />}</span></button>
-            {(uniformPlan || artworkPreview) && <><div className="my-1 border-t border-background-200" /><button type="button" onClick={() => { setResetMenuOpen(false); onClearCurrentDesign(); }} className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-red-50 hover:text-red-700" role="menuitem"><i className="ri-delete-bin-6-line text-sm" /> Clear current design</button></>}
-          </div>
-        )}
-      </div>
       <div className="relative" data-ai-popover>
         <button
           type="button"
           onClick={() => {
             setToolbarMenuOpen((value) => !value);
-            setResetMenuOpen(false);
             setHistoryOpen(false);
             setToolsOpen(false);
             setSettingsOpen(false);
@@ -257,10 +227,9 @@ export default function AIUniformComposer({
           <i className="ri-tools-line text-[10px]" /> AI tools <i className="ri-arrow-down-s-line" />
         </button>
         {toolbarMenuOpen && (
-          <div className="absolute right-0 top-[calc(100%+.4rem)] z-50 grid w-56 gap-1 rounded-xl border border-background-200 bg-white p-2 text-foreground-950 shadow-2xl" data-ai-popover role="menu" aria-label="AI prompt tools menu">
+          <div className="absolute left-0 top-[calc(100%+.4rem)] z-50 grid w-56 gap-1 rounded-xl border border-background-200 bg-white p-2 text-foreground-950 shadow-2xl" data-ai-popover role="menu" aria-label="AI prompt tools menu">
             <button type="button" onClick={() => { setToolbarMenuOpen(false); setHistoryOpen(true); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className="ri-history-line text-sm" /> History</button>
             <button type="button" onClick={() => { setToolbarMenuOpen(false); fileInputRef.current?.click(); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className="ri-image-add-line text-sm" /> Reference</button>
-            <button type="button" onClick={() => startDesign(mode === "uniform" ? "artwork" : "uniform")} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className={`${mode === "uniform" ? "ri-image-edit-line" : "ri-shirt-line"} text-sm`} /> {mode === "uniform" ? "Create artwork" : "Full uniform"}</button>
             <button type="button" onClick={() => { setToolbarMenuOpen(false); focusCommandPrompt(); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold text-primary-800 hover:bg-primary-50" role="menuitem"><i className="ri-magic-line text-sm" /> Refine with AI</button>
             <button type="button" onClick={() => { setToolbarMenuOpen(false); onOpenBackgroundRemoval?.(); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className="ri-eraser-line text-sm" /> Remove background / Make transparent</button>
             <div className="my-1 border-t border-background-200" />
@@ -268,6 +237,7 @@ export default function AIUniformComposer({
             <button type="button" onClick={() => { setToolbarMenuOpen(false); onDownloadDesign?.(); }} disabled={!uniformPlan && !artworkPreview} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className="ri-download-2-line text-sm" /> Download design</button>
             <button type="button" onClick={() => { setToolbarMenuOpen(false); onDownloadPrompts?.(); }} disabled={!historyEntries.length} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className="ri-file-download-line text-sm" /> Download prompts</button>
             <button type="button" onClick={() => { setToolbarMenuOpen(false); setSettingsOpen(true); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className="ri-settings-3-line text-sm" /> Settings</button>
+            {(uniformPlan || artworkPreview) && <button type="button" onClick={() => { setToolbarMenuOpen(false); onClearCurrentDesign?.(); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-red-50 hover:text-red-700" role="menuitem"><i className="ri-delete-bin-6-line text-sm" /> Clear current design</button>}
             {mode === "uniform" && uniformPlan && <>
               <div className="my-1 border-t border-background-200" />
               <p className="px-3 pb-1 pt-1 text-[8px] font-bold uppercase tracking-[0.14em] text-foreground-500">Versions</p>
@@ -308,79 +278,6 @@ export default function AIUniformComposer({
             </div>
             <p className={`truncate text-[9px] ${muted}`}>Uniform design assistant · {MODE_COPY[mode].label}</p>
           </div>
-        </div>
-        <div className="relative flex items-center">
-          <div className="flex h-9 overflow-hidden rounded-xl bg-primary-700 text-white shadow-sm">
-            <button
-              type="button"
-              onClick={() => { closePopovers(); onNewChat(); }}
-              className="inline-flex cursor-pointer items-center gap-1.5 px-3 text-[10px] font-bold transition hover:bg-primary-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/70"
-            >
-              <i className="ri-chat-new-line" /> New design
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setResetMenuOpen((value) => !value);
-                setToolbarMenuOpen(false);
-                setHistoryOpen(false);
-                setToolsOpen(false);
-                setSettingsOpen(false);
-              }}
-              className="flex w-8 cursor-pointer items-center justify-center border-l border-white/20 transition hover:bg-primary-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/70"
-              aria-label="Open design reset options"
-              aria-expanded={resetMenuOpen}
-              aria-haspopup="menu"
-              data-ai-popover-trigger
-            >
-              <i className="ri-arrow-down-s-line" />
-            </button>
-          </div>
-
-          {resetMenuOpen && (
-            <div data-ai-popover className={`absolute right-0 top-11 z-40 w-52 overflow-hidden rounded-xl border p-1.5 shadow-2xl ${card}`} role="menu" aria-label="Design reset options">
-              <p className={`px-3 pb-1 pt-1.5 text-[8px] font-bold uppercase tracking-[0.14em] ${muted}`}>Create new</p>
-              <button
-                type="button"
-                onClick={() => startDesign("uniform")}
-                className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold transition hover:bg-primary-50 hover:text-primary-800"
-                role="menuitem"
-              >
-                <i className="ri-shirt-line text-sm" />
-                <span className="flex min-w-0 flex-1 items-center justify-between gap-2"><span>Full uniform</span>{mode === "uniform" && <i className="ri-check-line text-primary-700" />}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => startDesign("artwork")}
-                className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold transition hover:bg-primary-50 hover:text-primary-800"
-                role="menuitem"
-              >
-                <i className="ri-image-edit-line text-sm" />
-                <span className="flex min-w-0 flex-1 items-center justify-between gap-2"><span>Transparent artwork</span>{mode === "artwork" && <i className="ri-check-line text-primary-700" />}</span>
-              </button>
-              <div className="my-1 border-t border-current/10" />
-              <button
-                type="button"
-                onClick={() => { setResetMenuOpen(false); setHistoryOpen(true); }}
-                className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[10px] font-semibold transition hover:bg-primary-50 hover:text-primary-800"
-                role="menuitem"
-              >
-                <i className="ri-history-line text-sm" />
-                <span><strong className="block">Design history</strong><span className={`block text-[8px] font-normal ${muted}`}>Review and reuse saved prompts</span></span>
-              </button>
-              {(uniformPlan || artworkPreview) && (
-                <button
-                  type="button"
-                  onClick={() => { setResetMenuOpen(false); onClearCurrentDesign(); }}
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[10px] font-semibold transition hover:bg-red-50 hover:text-red-700"
-                  role="menuitem"
-                >
-                  <i className="ri-delete-bin-6-line text-sm" />
-                  <span><strong className="block">Clear current design</strong><span className={`block text-[8px] font-normal ${muted}`}>Remove the concept from the canvas</span></span>
-                </button>
-              )}
-            </div>
-          )}
         </div>
       </header>}
 
@@ -490,8 +387,8 @@ export default function AIUniformComposer({
           />
           <div className="flex min-w-0 flex-wrap items-center justify-start gap-2 px-2 pb-2">
             <div className="flex min-w-0 items-center gap-1.5">
-              <button type="button" onClick={() => { setToolsOpen((value) => !value); setHistoryOpen(false); setResetMenuOpen(false); setSettingsOpen(false); }} className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-background-200 bg-background-50 text-sm text-foreground-700 transition hover:bg-background-100" aria-label="Add attachment or AI tool" aria-expanded={toolsOpen} data-ai-popover-trigger><i className={toolsOpen ? "ri-close-line" : "ri-add-line"} /></button>
-              <button type="button" onClick={() => { setSettingsOpen((value) => !value); setHistoryOpen(false); setResetMenuOpen(false); setToolsOpen(false); }} className="inline-flex h-8 w-8 cursor-pointer items-center justify-center gap-1 rounded-full border border-background-200 bg-background-50 text-[9px] font-bold text-foreground-600 hover:bg-background-100 sm:w-auto sm:px-2.5" aria-label="AI design settings" data-ai-popover-trigger><i className="ri-settings-3-line" /><span className="hidden sm:inline">Settings</span></button>
+              <button type="button" onClick={() => { setToolsOpen((value) => !value); setHistoryOpen(false); setSettingsOpen(false); }} className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-background-200 bg-background-50 text-sm text-foreground-700 transition hover:bg-background-100" aria-label="Add attachment or AI tool" aria-expanded={toolsOpen} data-ai-popover-trigger><i className={toolsOpen ? "ri-close-line" : "ri-add-line"} /></button>
+              <button type="button" onClick={() => { setSettingsOpen((value) => !value); setHistoryOpen(false); setToolsOpen(false); }} className="inline-flex h-8 w-8 cursor-pointer items-center justify-center gap-1 rounded-full border border-background-200 bg-background-50 text-[9px] font-bold text-foreground-600 hover:bg-background-100 sm:w-auto sm:px-2.5" aria-label="AI design settings" data-ai-popover-trigger><i className="ri-settings-3-line" /><span className="hidden sm:inline">Settings</span></button>
             </div>
             {generating && (
               <button type="button" onClick={onStop} className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-foreground-950 text-white transition hover:bg-red-600" aria-label="Stop generating"><i className="ri-stop-fill" /></button>

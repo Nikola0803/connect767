@@ -19,6 +19,7 @@ import {
 import AIUniformComposer from "./AIUniformComposer";
 import CollarAttachment from "./CollarAttachment";
 import { embossConnect767ConceptBackground } from "./aiConceptEmboss";
+import { RequiredIndicator } from "../ui/FormField";
 
 /** #rrggbb → {r,g,b}, tolerating a missing leading hash. */
 function hexToRgb(hex) {
@@ -567,7 +568,7 @@ export function OptionsPanel({
         <p className="text-xs font-semibold leading-tight">Select a fit to continue to Team roster.</p>
       </div>}
       <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold text-foreground-800">Fit type <span className="ml-1 text-[10px] font-normal text-accent-700">Required</span></span>
+        <span className="flex items-center gap-2 text-xs font-semibold text-foreground-800">Fit type <RequiredIndicator /></span>
         <div data-validation-highlight={highlightMissing && !fitTypeOptions.includes(fitType) ? "true" : undefined} className={`flex gap-2 flex-wrap rounded-lg ${highlightMissing && !fitTypeOptions.includes(fitType) ? "ring-2 ring-accent-300" : ""}`} role="group" aria-label="Fit type (required)">
           {fitTypeOptions.map((f) => (
             <button
@@ -1170,8 +1171,9 @@ export function AIArtworkPanel({
     return () => { active = false; };
   }, []);
 
-  const generateArtwork = async (requestedTier = renderTier) => {
-    if (!brief.trim()) return;
+  const generateArtwork = async (requestedTier = renderTier, promptOverride = "") => {
+    const artworkBrief = String(promptOverride || brief).trim();
+    if (!artworkBrief) return;
     const effectiveBrandName = brandName.trim() || "Team artwork";
     setGenerating(true);
     setError("");
@@ -1189,7 +1191,7 @@ export function AIArtworkPanel({
           brandName: effectiveBrandName,
           primaryColor: colors.body,
           secondaryColor: colors.shirtStrip,
-          notes: brief.trim(),
+          notes: artworkBrief,
           generationMode: "artwork",
           renderTier: requestedTier,
           sport,
@@ -1202,7 +1204,7 @@ export function AIArtworkPanel({
         name: `${effectiveBrandName} AI artwork`,
       });
       savePrompt({
-        prompt: brief.trim(),
+        prompt: artworkBrief,
         promptMode: "artwork",
         kind: "Artwork",
         name: effectiveBrandName,
@@ -1217,11 +1219,11 @@ export function AIArtworkPanel({
     }
   };
 
-  const generateUniform = async (revision = "", requestedTier = renderTier) => {
+  const generateUniform = async (revision = "", requestedTier = renderTier, promptOverride = "") => {
     const refinement = typeof revision === "string" ? revision.trim() : "";
     const promptKind = refinement ? "Refinement" : uniformPlan ? "Variation" : "Initial";
     const effectiveBrandName = brandName.trim() || uniformPlan?.name || "Team uniform";
-    const effectiveBrief = brief.trim() || uniformPlan?.summary || "Preserve the current uniform direction.";
+    const effectiveBrief = String(promptOverride || brief).trim() || uniformPlan?.summary || "Preserve the current uniform direction.";
     if (!effectiveBrandName || (!effectiveBrief && !refinement)) return;
     const existingConcept = refinement ? uniformPlan?.conceptImage?.src || "" : "";
     const currentDesign = uniformPlan || { collar, sleeve, colors, pattern: { key: currentPatternKey } };
@@ -1525,10 +1527,22 @@ export function AIArtworkPanel({
       onModeChange?.(nextMode);
       setError("");
     };
-    const sendPrompt = (requestedTier = "proof") => {
+    const sendPrompt = (requestedTier = "proof", requestedMode = mode, promptOverride = activePrompt) => {
       setRenderTier(requestedTier);
-      if (isRefinement) generateUniform(refinementBrief, requestedTier);
-      else generateDesign(requestedTier);
+      if (requestedMode === "artwork") {
+        if (mode !== "artwork") {
+          setMode("artwork");
+          onModeChange?.("artwork");
+        }
+        generateArtwork(requestedTier, promptOverride);
+        return;
+      }
+      if (mode !== "uniform") {
+        setMode("uniform");
+        onModeChange?.("uniform");
+      }
+      if (uniformPlan) generateUniform(promptOverride, requestedTier);
+      else generateUniform("", requestedTier, promptOverride);
     };
 
     return (

@@ -73,7 +73,7 @@ import {
   isRestrictedSoccerSockPlacement,
   removeRestrictedSoccerSockLayers,
 } from "../components/uniform-studio/sockRestrictions";
-import { Input, Select, Textarea } from "../components/ui/FormField";
+import { Input, RequiredIndicator, Select, Textarea } from "../components/ui/FormField";
 import DemoModeNotice from "../components/DemoModeNotice";
 import PaypalButton from "../components/PaypalButton";
 import { isLiveApi } from "../lib/config";
@@ -2016,7 +2016,7 @@ export default function UniformStudioPage() {
           <h3 id="required-category-title" className="text-xs font-bold text-foreground-900">Uniform category</h3>
           <p className="text-[8px] text-foreground-500">Choose a category, then its required fit.</p>
         </div>
-        <span className="rounded-full bg-accent-50 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-accent-700">Required</span>
+        <RequiredIndicator />
       </div>
       {!categoryConfirmed && <div role="alert" className="mb-2 flex items-center gap-2 rounded-lg border border-accent-300 bg-accent-50 px-2.5 py-1.5 text-accent-950">
         <i className="ri-error-warning-fill text-sm text-accent-600" aria-hidden="true" />
@@ -3000,15 +3000,15 @@ export default function UniformStudioPage() {
         )}
       </div>
 
-      <div className="flex flex-shrink-0 items-center justify-between gap-3 border-t border-white/[0.07] bg-[#0c0d0b]/95 px-4 py-2.5 pb-[max(.625rem,env(safe-area-inset-bottom))] sm:px-6">
-        <button
+      <div className={`flex flex-shrink-0 items-center gap-3 border-t border-white/[0.07] bg-[#0c0d0b]/95 px-4 py-2.5 pb-[max(.625rem,env(safe-area-inset-bottom))] sm:px-6 ${workflowStep.key === "design" ? "justify-center" : "justify-between"}`}>
+        {workflowStep.key !== "design" && <button
           type="button"
           onClick={backWorkflow}
           className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-background-50/65 transition hover:bg-white/[0.06] hover:text-background-50 cursor-pointer"
         >
           <i className="ri-arrow-left-line" />
-          {workflowIndex === 0 ? "Change sport or style" : studioWorkflow[workflowIndex - 1].label}
-        </button>
+          {studioWorkflow[workflowIndex - 1].label}
+        </button>}
         <div className="hidden text-center md:block">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-background-50/35">
             Step {workflowStep.step} of {studioWorkflow.length}
@@ -3232,8 +3232,8 @@ function RosterTool({
       </div>
 
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground-500">
-          Team roster
+        <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-foreground-500">
+          Team roster <RequiredIndicator />
         </h3>
         <button
           type="button"
@@ -3476,7 +3476,7 @@ function RosterTool({
         <div className={`mb-4 rounded-xl border px-4 py-3 ${socksQuantityValid ? "border-background-200/70 bg-background-100/50" : "border-accent-300 bg-accent-50"}`}>
           <div className="flex items-center justify-between gap-4">
             <span>
-              <span className="block text-sm font-semibold text-foreground-900">Socks</span>
+              <span className="flex items-center gap-2 text-sm font-semibold text-foreground-900">Socks <RequiredIndicator /></span>
               <span className="block text-[10px] font-label text-foreground-500">One per full kit · required quantity {requiredSocksQuantity}</span>
             </span>
             <label className="flex items-center gap-2 text-xs font-label text-foreground-500">
@@ -3786,7 +3786,7 @@ function ReviewOrderTool({
       </div>
 
       <div className="border-t border-background-200 pt-5">
-        <h3 className="text-sm font-semibold text-foreground-900">Shipping Address</h3>
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground-900">Shipping Address <RequiredIndicator /></h3>
         <p className="mb-3 mt-1 text-[11px] font-label text-foreground-500">Custom-uniform shipping is calculated from this address and {shippingUnitCount} total order unit{shippingUnitCount === 1 ? "" : "s"}.</p>
         <div className="grid grid-cols-2 gap-2">
           <Input error={addressValidationAttempted && addressValidation.errors.firstName} aria-invalid={addressValidationAttempted && Boolean(addressValidation.errors.firstName)} placeholder="First name *" aria-label="Shipping first name" autoComplete="given-name" value={shipping.firstName} onChange={updateShipping("firstName")} />
@@ -3830,7 +3830,7 @@ function ReviewOrderTool({
         </label>
         {showOrderContact && (
           <div className="mt-3 rounded-2xl border border-background-200 bg-background-50 p-3.5">
-            <h3 className="text-sm font-semibold text-foreground-900">Order contact</h3>
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground-900">Order contact <RequiredIndicator /></h3>
             <p className="mb-3 mt-1 text-[11px] font-label text-foreground-500">
               We send the receipt, production proof and order updates here.
             </p>

@@ -81,7 +81,7 @@ describe("AIUniformComposer", () => {
     expect(props.onSend).not.toHaveBeenCalled();
 
     fireEvent.keyDown(message, { key: "Enter" });
-    expect(props.onSend).toHaveBeenCalledWith("proof");
+    expect(props.onSend).toHaveBeenCalledWith("proof", "uniform", "Create a modern green kit");
     expect(props.onPromptChange).toHaveBeenCalledWith("");
   });
 
@@ -102,17 +102,20 @@ describe("AIUniformComposer", () => {
     expect(props.onPromptChange).toHaveBeenCalledWith("");
   });
 
-  it("makes transparent artwork mode visibly distinct and focuses its prompt", () => {
-    const toolbarTarget = document.createElement("div");
-    document.body.appendChild(toolbarTarget);
-    const props = renderComposer({ toolbarTarget });
+  it("automatically routes explicit transparent-artwork prompts without a mode selection", () => {
+    const props = renderComposer({ prompt: "Create a transparent team crest" });
+    fireEvent.keyDown(screen.getByLabelText("Message Connect767 AI"), { key: "Enter" });
 
-    fireEvent.click(within(toolbarTarget).getByRole("button", { name: "AI tools" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Create artwork" }));
     expect(props.onModeChange).toHaveBeenCalledWith("artwork");
-    expect(props.onNewChat).toHaveBeenCalledTimes(1);
+    expect(props.onSend).toHaveBeenCalledWith("proof", "artwork", "Create a transparent team crest");
+  });
 
-    toolbarTarget.remove();
+  it("automatically routes uniform prompts from artwork mode", () => {
+    const props = renderComposer({ mode: "artwork", prompt: "Design a basketball uniform with front side and back views" });
+    fireEvent.keyDown(screen.getByLabelText("Message Connect767 AI"), { key: "Enter" });
+
+    expect(props.onModeChange).toHaveBeenCalledWith("uniform");
+    expect(props.onSend).toHaveBeenCalledWith("proof", "uniform", "Design a basketball uniform with front side and back views");
   });
 
   it("labels the transparent artwork workspace clearly", () => {
@@ -150,11 +153,14 @@ describe("AIUniformComposer", () => {
       prompt: "Make the shorts black",
       createdAt: new Date("2026-11-16T12:00:00Z").toISOString(),
     };
-    const props = renderComposer({ promptHistory: [entry] });
-    fireEvent.click(screen.getByLabelText("Open design reset options"));
-    fireEvent.click(screen.getByRole("menuitem", { name: /design history/i }));
+    const toolbarTarget = document.createElement("div");
+    document.body.appendChild(toolbarTarget);
+    const props = renderComposer({ promptHistory: [entry], toolbarTarget });
+    fireEvent.click(within(toolbarTarget).getByRole("button", { name: "AI tools" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "History" }));
     fireEvent.click(within(screen.getByLabelText("AI design conversation history")).getByText("Make the shorts black"));
     expect(props.onReusePrompt).toHaveBeenCalledWith(entry);
+    toolbarTarget.remove();
   });
 
   it("keeps the 3D preview output AI-controlled instead of exposing manual apply", () => {
@@ -190,8 +196,8 @@ describe("AIUniformComposer", () => {
     const props = renderComposer({ toolbarTarget, uniformPlan: current, versions: [original, current] });
     const toolbar = within(toolbarTarget);
 
-    expect(toolbar.getByRole("button", { name: "New design" })).toBeInTheDocument();
     expect(toolbar.getByRole("button", { name: "AI tools" })).toBeInTheDocument();
+    expect(toolbar.queryByRole("button", { name: "New design" })).not.toBeInTheDocument();
     expect(toolbar.queryByRole("button", { name: "History" })).not.toBeInTheDocument();
     expect(toolbar.queryByRole("button", { name: "Reference" })).not.toBeInTheDocument();
     expect(toolbar.queryByRole("button", { name: "Refine with AI" })).not.toBeInTheDocument();
@@ -203,7 +209,7 @@ describe("AIUniformComposer", () => {
     const toolsMenu = screen.getByRole("menu", { name: "AI prompt tools menu" });
     expect(within(toolsMenu).getByRole("menuitem", { name: "History" })).toBeInTheDocument();
     expect(within(toolsMenu).getByRole("menuitem", { name: "Reference" })).toBeInTheDocument();
-    expect(within(toolsMenu).getByRole("menuitem", { name: "Create artwork" })).toBeInTheDocument();
+    expect(within(toolsMenu).queryByRole("menuitem", { name: "Create artwork" })).not.toBeInTheDocument();
     expect(within(toolsMenu).getByRole("menuitem", { name: "Remove background / Make transparent" })).toBeInTheDocument();
     expect(within(toolsMenu).getByRole("menuitem", { name: "Save design" })).toBeInTheDocument();
     expect(within(toolsMenu).getByRole("menuitem", { name: "Download design" })).toBeInTheDocument();
@@ -217,20 +223,10 @@ describe("AIUniformComposer", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: "Remove background / Make transparent" }));
     expect(props.onOpenBackgroundRemoval).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(toolbar.getByLabelText("Open design reset options"));
-    expect(screen.getByRole("menu", { name: "Design reset options" })).toBeInTheDocument();
-    expect(screen.queryByRole("menu", { name: "AI prompt tools menu" })).not.toBeInTheDocument();
-
     fireEvent.click(toolbar.getByRole("button", { name: "AI tools" }));
     expect(screen.getByRole("menu", { name: "AI prompt tools menu" })).toBeInTheDocument();
-    expect(screen.queryByRole("menu", { name: "Design reset options" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("menuitem", { name: "Refine with AI" }));
     expect(screen.getByRole("textbox", { name: "Message Connect767 AI" })).toHaveFocus();
-
-    fireEvent.click(toolbar.getByLabelText("Open design reset options"));
-    expect(screen.getByRole("menu", { name: "Design reset options" })).toBeInTheDocument();
-    fireEvent.pointerDown(document.body);
-    expect(screen.queryByRole("menu", { name: "Design reset options" })).not.toBeInTheDocument();
 
     fireEvent.click(toolbar.getByRole("button", { name: "AI tools" }));
     expect(screen.getByRole("menu", { name: "AI prompt tools menu" })).toBeInTheDocument();
@@ -263,54 +259,43 @@ describe("AIUniformComposer", () => {
     toolbarTarget.remove();
   });
 
-  it("provides explicit controls for starting over and clearing saved AI state", () => {
+  it("keeps history and clear-design controls in AI tools", () => {
     const entry = {
       id: "prompt-1",
       kind: "Full uniform",
       prompt: "Create a green kit",
       createdAt: new Date("2026-11-16T12:00:00Z").toISOString(),
     };
+    const toolbarTarget = document.createElement("div");
+    document.body.appendChild(toolbarTarget);
     const props = renderComposer({
       promptHistory: [entry],
       uniformPlan: { name: "Green kit", summary: "A green uniform concept." },
+      toolbarTarget,
     });
+    const toolbar = within(toolbarTarget);
 
-    fireEvent.click(screen.getByRole("button", { name: "New design" }));
-    expect(props.onNewChat).toHaveBeenCalledTimes(1);
-
-    fireEvent.click(screen.getByLabelText("Open design reset options"));
+    fireEvent.click(toolbar.getByRole("button", { name: "AI tools" }));
     fireEvent.click(screen.getByRole("menuitem", { name: /clear current design/i }));
     expect(props.onClearCurrentDesign).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByLabelText("Open design reset options"));
-    fireEvent.click(screen.getByRole("menuitem", { name: /design history/i }));
+    fireEvent.click(toolbar.getByRole("button", { name: "AI tools" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "History" }));
     fireEvent.click(within(screen.getByLabelText("AI design conversation history")).getByRole("button", { name: "Clear" }));
     expect(props.onClearHistory).toHaveBeenCalledTimes(1);
-  });
-
-  it("starts full-uniform and transparent-artwork designs from the New design menu", () => {
-    const props = renderComposer();
-
-    expect(screen.queryByRole("button", { name: "Full uniform" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByLabelText("Open design reset options"));
-    fireEvent.click(screen.getByRole("menuitem", { name: /transparent artwork/i }));
-    expect(props.onModeChange).toHaveBeenCalledWith("artwork");
-    expect(props.onNewChat).toHaveBeenCalledTimes(1);
-
-    fireEvent.click(screen.getByLabelText("Open design reset options"));
-    fireEvent.click(screen.getByRole("menuitem", { name: /full uniform/i }));
-    expect(props.onModeChange).toHaveBeenCalledWith("uniform");
-    expect(props.onNewChat).toHaveBeenCalledTimes(2);
+    toolbarTarget.remove();
   });
 
   it("dismisses open popovers when the user clicks the command area", () => {
-    renderComposer();
+    const toolbarTarget = document.createElement("div");
+    document.body.appendChild(toolbarTarget);
+    renderComposer({ toolbarTarget });
     const message = screen.getByLabelText("Message Connect767 AI");
 
-    fireEvent.click(screen.getByLabelText("Open design reset options"));
-    expect(screen.getByRole("menu", { name: "Design reset options" })).toBeInTheDocument();
+    fireEvent.click(within(toolbarTarget).getByRole("button", { name: "AI tools" }));
+    expect(screen.getByRole("menu", { name: "AI prompt tools menu" })).toBeInTheDocument();
     fireEvent.pointerDown(message);
-    expect(screen.queryByRole("menu", { name: "Design reset options" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menu", { name: "AI prompt tools menu" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText("Add attachment or AI tool"));
     expect(screen.getByRole("menu", { name: "AI composer tools" })).toBeInTheDocument();
@@ -321,5 +306,6 @@ describe("AIUniformComposer", () => {
     expect(screen.getByText("Design controls")).toBeInTheDocument();
     fireEvent.pointerDown(message);
     expect(screen.queryByText("Design controls")).not.toBeInTheDocument();
+    toolbarTarget.remove();
   });
 });

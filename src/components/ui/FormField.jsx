@@ -3,6 +3,14 @@ import { useState } from "react";
 const baseFieldClass =
   "w-full px-4 py-2.5 text-sm rounded-lg border border-background-300 bg-background-50 text-foreground-950 placeholder-foreground-400 focus:outline-none focus:border-primary-400 font-label transition-colors disabled:opacity-60 disabled:cursor-not-allowed";
 
+export function RequiredIndicator({ className = "" }) {
+  return (
+    <span className={`inline-flex shrink-0 items-center rounded-full bg-accent-50 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-accent-700 ${className}`}>
+      Required
+    </span>
+  );
+}
+
 export function FormField({ label, htmlFor, hint, error, required, children }) {
   return (
     <div>
