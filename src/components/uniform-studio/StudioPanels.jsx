@@ -682,9 +682,9 @@ export function OptionsPanel({
 }
 
 export function UniformSetupPanel({ designProps, optionsProps, aiOnly = false }) {
-  return <div className="flex min-h-full flex-col gap-1.5">
+  return <div className="flex flex-col gap-1.5">
     <div className="shrink-0 rounded-xl border border-background-300 bg-background-50 p-2 shadow-sm"><OptionsPanel {...optionsProps} section="pricing" /></div>
-    <section aria-labelledby="production-extras-title" className="flex flex-1 flex-col overflow-hidden rounded-xl border-2 border-primary-500 bg-background-50 shadow-[0_10px_24px_rgba(0,116,73,.12)]">
+    <section aria-labelledby="production-extras-title" className="flex flex-none flex-col overflow-hidden rounded-xl border-2 border-primary-500 bg-background-50 shadow-[0_10px_24px_rgba(0,116,73,.12)]">
       <header className="flex items-center justify-between gap-2 bg-primary-700 px-2.5 py-1.5 text-white">
         <span className="flex min-w-0 items-center gap-2">
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/15"><i className="ri-settings-4-line text-sm" aria-hidden="true" /></span>
@@ -697,7 +697,7 @@ export function UniformSetupPanel({ designProps, optionsProps, aiOnly = false })
           {optionsProps.logoApplication === "Embroidery" ? "Embroidery" : "Sublimation"}{optionsProps.insideCollarMessage ? " + collar" : ""}
         </span>
       </header>
-      <div className="flex-1 space-y-1.5 border-t border-primary-600/20 p-2">
+      <div className="space-y-1.5 border-t border-primary-600/20 p-2">
         <DesignPanel {...designProps} hideGarmentColors={aiOnly} />
         <OptionsPanel {...optionsProps} section="production" />
       </div>
