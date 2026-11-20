@@ -619,30 +619,30 @@ export function OptionsPanel({
       </>}
       {showProduction && <>
       {section === "all" && <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400 mb-3 pt-2 border-t border-background-200/70">Production extras</h3>}
-      <div className="mb-2.5">
-        <p className="mb-2 text-[11px] leading-snug text-foreground-600">
+      <div className="mb-1.5">
+        <p className="mb-1 text-[10px] leading-snug text-foreground-600">
           All prints and logos are sublimated and included.
         </p>
-        <label className="flex cursor-pointer items-start gap-1.5 text-xs font-semibold text-foreground-800">
+        <label className="flex cursor-pointer items-start gap-1.5 text-[11px] font-semibold text-foreground-800">
           <input type="checkbox" checked={logoApplication === "Embroidery"} onChange={(event) => setLogoApplication(event.target.checked ? "Embroidery" : "Sublimated")} className="mt-0.5 accent-primary-600" />
           <span>Embroidered team logo <span className="font-normal text-foreground-500">(+${ADD_ON_PRICES.logoEmbroidery.toFixed(2)}/kit)</span></span>
         </label>
       </div>
 
       <div className="mb-1.5">
-        <span className="mb-1.5 block text-xs font-semibold text-foreground-800">
+        <span className="mb-1 block text-[11px] font-semibold text-foreground-800">
           Inside-collar logo or message
           <span className="ml-1 font-normal text-foreground-500">
             (+${ADD_ON_PRICES.insideCollarMessage.toFixed(2)}/kit)
           </span>
         </span>
-        <div className="mb-2 flex flex-wrap gap-2">
+        <div className="mb-1 flex flex-wrap gap-1.5">
           {["No", "Yes"].map((opt) => (
             <button
               key={opt}
               type="button"
               onClick={() => setInsideCollarMessage(opt === "Yes")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border cursor-pointer transition-all ${
+              className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg border cursor-pointer transition-all ${
                 (opt === "Yes") === insideCollarMessage
                   ? "bg-primary-500 text-background-50 border-primary-500 shadow-sm shadow-primary-500/20"
                   : "bg-background-50 text-foreground-700 border-background-300 hover:bg-background-100"
@@ -685,19 +685,19 @@ export function UniformSetupPanel({ designProps, optionsProps, aiOnly = false })
   return <div className="flex min-h-full flex-col gap-1.5">
     <div className="shrink-0 rounded-xl border border-background-300 bg-background-50 p-2 shadow-sm"><OptionsPanel {...optionsProps} section="pricing" /></div>
     <section aria-labelledby="production-extras-title" className="flex flex-1 flex-col overflow-hidden rounded-xl border-2 border-primary-500 bg-background-50 shadow-[0_10px_24px_rgba(0,116,73,.12)]">
-      <header className="flex items-center justify-between gap-2.5 bg-primary-700 px-3 py-2.5 text-white">
+      <header className="flex items-center justify-between gap-2 bg-primary-700 px-2.5 py-1.5 text-white">
         <span className="flex min-w-0 items-center gap-2">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15"><i className="ri-settings-4-line text-lg" aria-hidden="true" /></span>
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/15"><i className="ri-settings-4-line text-sm" aria-hidden="true" /></span>
           <span>
-            <h3 id="production-extras-title" className="text-sm font-extrabold leading-tight">Production extras</h3>
-            <span className="block text-[9px] font-medium leading-tight text-white/75">Logo finish and inside-collar customization</span>
+            <h3 id="production-extras-title" className="text-xs font-extrabold leading-tight">Production extras</h3>
+            <span className="block text-[8px] font-medium leading-tight text-white/75">Logo finish and inside-collar customization</span>
           </span>
         </span>
-        <span className="shrink-0 rounded-full border border-white/20 bg-white/10 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.06em] text-white/90">
+        <span className="shrink-0 rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.06em] text-white/90">
           {optionsProps.logoApplication === "Embroidery" ? "Embroidery" : "Sublimation"}{optionsProps.insideCollarMessage ? " + collar" : ""}
         </span>
       </header>
-      <div className="flex-1 space-y-2.5 border-t border-primary-600/20 p-3">
+      <div className="flex-1 space-y-1.5 border-t border-primary-600/20 p-2">
         <DesignPanel {...designProps} hideGarmentColors={aiOnly} />
         <OptionsPanel {...optionsProps} section="production" />
       </div>
