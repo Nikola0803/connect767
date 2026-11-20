@@ -2144,7 +2144,7 @@ export default function UniformStudioPage() {
           insideCollarAttachment={insideCollarAttachment}
           setInsideCollarAttachment={setInsideCollarAttachment}
           section="fitOnly"
-          showFitAlert
+          showFitAlert={false}
           highlightMissing={designValidationAttempted}
         />
       </div>

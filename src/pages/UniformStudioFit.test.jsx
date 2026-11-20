@@ -142,7 +142,8 @@ describe("required uniform fit selection", () => {
     fireEvent.click(progress.getByRole("button", { name: /Design/ }));
     expect(progress.getByRole("button", { name: /Design/ })).toHaveAttribute("aria-current", "step");
     const setup = openUniformSetup();
-    expect(setup.getByRole("alert")).toHaveTextContent("Select a fit to continue to Team roster");
+    expect(setup.queryByText("Select a fit to continue to Team roster.")).not.toBeInTheDocument();
+    expect(setup.getByRole("group", { name: "Fit type (required)" })).toBeVisible();
     fireEvent.click(setup.getByRole("button", { name: fit, exact: true }));
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(progress.getByRole("button", { name: /Team roster/ })).toBeEnabled();
