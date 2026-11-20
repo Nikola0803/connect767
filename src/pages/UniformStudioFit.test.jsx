@@ -48,7 +48,17 @@ describe("required uniform fit selection", () => {
     const entry = screen.getByRole("button", { name: "Enter Design Studio" });
     expect(entry).toBeVisible();
     expect(screen.getAllByTestId("studio-cover-category")).toHaveLength(6);
+    expect(screen.getAllByTestId("studio-cover-category-label").map((label) => label.textContent.trim())).toEqual([
+      "Soccer",
+      "Basketball",
+      "Netball",
+      "Cricket",
+      "Goal Keeper",
+      "Clothing & Other",
+    ]);
+    expect(screen.getByTestId("studio-entry-ai-watermark")).toHaveAttribute("src", "/connect767-ai-logo-transparent.png");
     expect(screen.getByText("Every category. One workspace.")).toBeVisible();
+    expect(screen.queryByText("Designs save automatically")).not.toBeInTheDocument();
     expect(screen.getByText("Design", { selector: "span" })).toBeVisible();
     expect(screen.getByText("Team roster", { selector: "span" })).toBeVisible();
     expect(screen.getByText("Review & quote", { selector: "span" })).toBeVisible();
