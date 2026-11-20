@@ -9,7 +9,7 @@ const navItems = [
   { label: "Directory", href: "/listings" },
   { label: "Shop", href: "/shop" },
   { label: "Community Feed", href: "/community" },
-  { label: "Custom Uniforms", href: "/uniforms" },
+  { label: "Custom Uniforms", href: "/uniforms", opensNewWindow: true },
   { label: "Blog", href: "/blog" },
 ];
 
@@ -146,6 +146,8 @@ export default function Header() {
             <NavLink
               key={item.href}
               to={item.href}
+              target={item.opensNewWindow ? "_blank" : undefined}
+              rel={item.opensNewWindow ? "noopener noreferrer" : undefined}
               className={({ isActive }) =>
                 `px-4 py-2 text-sm font-medium rounded-md transition-colors cursor-pointer whitespace-nowrap ${
                   isActive ? navActive : navBase
@@ -286,6 +288,8 @@ export default function Header() {
               <NavLink
                 key={item.href}
                 to={item.href}
+                target={item.opensNewWindow ? "_blank" : undefined}
+                rel={item.opensNewWindow ? "noopener noreferrer" : undefined}
                 className={({ isActive }) =>
                   `px-4 py-3 text-sm font-medium rounded-md cursor-pointer whitespace-nowrap ${
                     isActive

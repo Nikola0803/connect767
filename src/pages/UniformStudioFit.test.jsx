@@ -41,6 +41,23 @@ describe("required uniform fit selection", () => {
     expect(screen.getAllByRole("textbox", { name: "Message Connect767 AI" })[0]).toBeVisible();
   });
 
+  it("uses one category-spanning entry tile before the three-step studio", () => {
+    openStudio("design");
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+
+    const entry = screen.getByRole("button", { name: "Enter Design Studio" });
+    expect(entry).toBeVisible();
+    expect(screen.getAllByTestId("studio-cover-category")).toHaveLength(6);
+    expect(screen.getByText("Every category. One workspace.")).toBeVisible();
+    expect(screen.getByText("Design", { selector: "span" })).toBeVisible();
+    expect(screen.getByText("Team roster", { selector: "span" })).toBeVisible();
+    expect(screen.getByText("Review & quote", { selector: "span" })).toBeVisible();
+
+    fireEvent.click(entry);
+    const setup = openUniformSetup();
+    expect(setup.getByRole("group", { name: "Uniform category (required)" })).toBeVisible();
+  });
+
   it("places the embossed Connect767 AI logo inside the design workspace", () => {
     openStudio("ai");
     const watermark = screen.getByTestId("ai-workspace-watermark");
@@ -141,7 +158,7 @@ describe("required uniform fit selection", () => {
     const promptMenu = screen.getByRole("menu", { name: "AI prompt tools menu" });
     expect(within(promptMenu).getByRole("menuitem", { name: "History" })).toBeVisible();
     expect(within(promptMenu).getByRole("menuitem", { name: "Reference" })).toBeVisible();
-    expect(within(promptMenu).getByRole("menuitem", { name: "Artwork" })).toBeVisible();
+    expect(within(promptMenu).getByRole("menuitem", { name: "Create artwork" })).toBeVisible();
     expect(within(promptMenu).getByRole("menuitem", { name: "Refine with AI" })).toBeVisible();
     expect(screen.getAllByRole("region", { name: "AI command prompt" })[0]).toBeVisible();
     expect(screen.getAllByRole("textbox", { name: "Message Connect767 AI" })[0]).toBeVisible();

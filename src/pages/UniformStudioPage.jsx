@@ -1886,27 +1886,13 @@ export default function UniformStudioPage() {
     );
   }
 
-  // ---------- AI Design Studio entry: choose a garment category ----------
-  // Categories open a clean AI workspace directly. The broad Clothing &
-  // Other route makes this entry useful for non-sport garments without
-  // forcing customers through a stock-template catalogue.
+  // ---------- AI Design Studio entry ----------
   if (!selectedTemplate) {
-    // Always show the single category entrance. Category selection now opens
-    // the same AI-only studio directly; there is no intermediate template
-    // catalogue or category-specific editor.
-    const categorySport = null;
-    const categoryTemplate = categorySport
-      ? templates.find(
-          (candidate) => candidate.sportSlug === categorySport.slug && candidate.slug !== "blank-canvas"
-        )
-      : null;
-    const categoryBlankTemplate = categoryTemplate
-      ? {
-          slug: "blank-canvas",
-          defaultCollar: categoryTemplate.defaultCollar,
-          defaultSleeve: categoryTemplate.defaultSleeve,
-        }
-      : null;
+    const studioEntryTemplate = { slug: "blank-canvas", defaultCollar: "Crew", defaultSleeve: "Short" };
+    const studioCoverTemplates = sports.map((sport) => ({
+      sport,
+      template: templates.find((candidate) => candidate.sportSlug === sport.slug && candidate.slug !== "blank-canvas"),
+    })).filter(({ template }) => Boolean(template));
 
     return (
       <div className="min-h-[100dvh] bg-[linear-gradient(145deg,#f8f3e9_0%,#fffdf8_48%,#eef8f1_100%)] text-foreground-950">
@@ -1942,8 +1928,8 @@ export default function UniformStudioPage() {
                 creates a complete Front / Side / Back concept while the existing order steps stay intact.
               </p>
             </div>
-            <ol className="grid grid-cols-4 overflow-hidden rounded-2xl border border-background-300 bg-background-50 shadow-sm">
-              {["Category", "Design", "Team roster", "Review & quote"].map((label, index) => (
+            <ol className="grid grid-cols-3 overflow-hidden rounded-2xl border border-background-300 bg-background-50 shadow-sm">
+              {["Design", "Team roster", "Review & quote"].map((label, index) => (
                 <li
                   key={label}
                   className="flex min-w-0 flex-col gap-1 border-l border-background-200 px-3 py-3 first:border-l-0"
@@ -1960,124 +1946,42 @@ export default function UniformStudioPage() {
           <section className="rounded-[30px] border border-background-300/80 bg-background-50/95 p-5 shadow-[0_22px_60px_rgba(69,48,30,0.08)] sm:p-7 lg:p-9">
             <div className="flex flex-col gap-3 border-b border-background-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">
-                  Choose category
-                </p>
-                <h2 className="mt-1 font-heading text-3xl font-semibold sm:text-4xl">
-                  {categorySport ? categorySport.label : "Sports, teamwear and custom clothing"}
-                </h2>
+                <p className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">One design studio</p>
+                <h2 className="mt-1 font-heading text-3xl font-semibold sm:text-4xl">Every category. One workspace.</h2>
               </div>
               <p className="max-w-lg text-sm leading-relaxed text-foreground-500">
-                Every category opens the same clean AI workspace. No stock template selection is required.
+                Enter once, then choose the required category and fit inside the studio.
               </p>
             </div>
 
-            {categorySport && categoryTemplate && categoryBlankTemplate ? (
-              <div className="mt-7 grid gap-5 lg:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => selectTemplate(categoryTemplate, categorySport.slug)}
-                  className="group overflow-hidden rounded-[24px] border border-background-300 bg-background-50 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:border-primary-400 hover:shadow-[0_20px_42px_rgba(0,116,73,0.11)] cursor-pointer"
-                >
-                  <div className="relative flex h-72 items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_28%,#ffffff_0%,#f4eee3_72%)] p-6">
-                    <span className="absolute left-5 top-5 rounded-full border border-primary-200 bg-background-50/95 px-3 py-1.5 text-xs font-bold text-primary-800 shadow-sm">
-                      Included template
-                    </span>
+            <button
+              type="button"
+              aria-label="Enter Design Studio"
+              onClick={() => selectTemplate(studioEntryTemplate, "soccer", "ai")}
+              className="group relative mt-7 block w-full overflow-hidden rounded-[26px] border border-primary-300 bg-[#102018] text-left shadow-[0_24px_60px_rgba(0,74,45,.18)] transition duration-300 hover:-translate-y-1 hover:border-primary-400 hover:shadow-[0_30px_70px_rgba(0,74,45,.24)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 cursor-pointer"
+            >
+              <span className="grid h-[430px] grid-cols-3 grid-rows-2" aria-hidden="true">
+                {studioCoverTemplates.map(({ sport, template }) => (
+                  <span key={sport.slug} className="relative flex items-center justify-center overflow-hidden border border-white/[0.05] bg-[radial-gradient(circle_at_center,rgba(255,255,255,.09),transparent_70%)] p-5">
                     <img
-                      src={categoryTemplate.image}
-                      alt={`${categoryTemplate.name} ${categorySport.label} uniform template`}
-                      className="relative z-10 h-full w-full object-contain drop-shadow-[0_18px_20px_rgba(25,40,32,0.16)] transition-transform duration-300 group-hover:scale-[1.035]"
+                      data-testid="studio-cover-category"
+                      src={template.image}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className="h-full w-full select-none object-contain opacity-55 grayscale contrast-125 mix-blend-luminosity drop-shadow-[-2px_-2px_2px_rgba(255,255,255,.18)] drop-shadow-[4px_5px_5px_rgba(0,0,0,.5)] transition duration-300 group-hover:opacity-70 group-hover:scale-[1.025]"
                     />
-                  </div>
-                  <div className="p-6">
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-primary-700">
-                          Shirt style
-                        </p>
-                        <h3 className="mt-1 font-heading text-3xl font-semibold">{categoryTemplate.name}</h3>
-                      </div>
-                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-600 text-white">
-                        <i className="ri-arrow-right-line text-lg" />
-                      </span>
-                    </div>
-                    <p className="mt-3 text-sm leading-relaxed text-foreground-500">{categoryTemplate.description}</p>
-                    <div className="mt-4 flex gap-2 text-xs font-semibold text-foreground-600">
-                      <span className="rounded-full bg-background-100 px-3 py-1.5">{categoryTemplate.defaultCollar} neck</span>
-                      <span className="rounded-full bg-background-100 px-3 py-1.5">{categoryTemplate.defaultSleeve} sleeve</span>
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => selectTemplate(categoryBlankTemplate, categorySport.slug)}
-                  className="group flex min-h-[470px] flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-primary-300 bg-primary-50/60 p-8 text-center transition duration-200 hover:-translate-y-1 hover:border-primary-500 hover:bg-primary-100/70 hover:shadow-[0_20px_42px_rgba(0,116,73,0.1)] cursor-pointer"
-                >
-                  <span className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary-600 text-4xl text-white shadow-[0_14px_30px_rgba(0,116,73,0.22)] transition-transform group-hover:rotate-3 group-hover:scale-105">
-                    <i className="ri-add-line" />
                   </span>
-                  <h3 className="mt-6 font-heading text-3xl font-semibold">Design from scratch</h3>
-                  <p className="mt-3 max-w-sm text-sm leading-relaxed text-foreground-500">
-                    Open a clean {categorySport.label.toLowerCase()} kit and choose its neck, sleeves, colors and artwork inside the studio.
-                  </p>
-                  <span className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-primary-800">
-                    Open blank canvas <i className="ri-arrow-right-line" />
-                  </span>
-                </button>
-              </div>
-            ) : (
-              <div className="mt-7 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                {sports.map((sport) => {
-                  const uniformTemplate = templates.find(
-                    (candidate) => candidate.sportSlug === sport.slug && candidate.slug !== "blank-canvas"
-                  );
-                  if (!uniformTemplate) return null;
-                  const details = categoryDetails[sport.slug] || {
-                    title: sport.label,
-                    description: "Create a unique uniform or garment from a brief or reference image.",
-                  };
-
-                  return (
-                    <button
-                      key={sport.slug}
-                      type="button"
-                      onClick={() => {
-                        selectTemplate(uniformTemplate, sport.slug);
-                      }}
-                      className="group overflow-hidden rounded-[24px] border border-background-300 bg-background-50 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:border-primary-400 hover:shadow-[0_20px_42px_rgba(0,116,73,0.11)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 cursor-pointer"
-                    >
-                      <div className="relative flex h-60 items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_28%,#ffffff_0%,#f4eee3_72%)] p-5">
-                        <img
-                          src={uniformTemplate.image}
-                          alt={`${uniformTemplate.name} ${sport.label} uniform template`}
-                          loading="lazy"
-                          decoding="async"
-                          className="relative z-10 h-full w-full object-contain drop-shadow-[0_18px_20px_rgba(25,40,32,0.16)] transition-transform duration-300 group-hover:scale-[1.045]"
-                        />
-                      </div>
-                      <div className="flex min-h-40 flex-col p-5">
-                        <p className="font-label text-[10px] font-bold uppercase tracking-[0.16em] text-primary-700">
-                          Design category
-                        </p>
-                        <div className="mt-1 flex items-start justify-between gap-4">
-                          <h3 className="font-heading text-2xl font-semibold">{details.title}</h3>
-                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-800 transition group-hover:bg-primary-600 group-hover:text-white">
-                            <i className="ri-sparkling-2-line" />
-                          </span>
-                        </div>
-                        <p className="mt-2 text-sm leading-relaxed text-foreground-500">
-                          {details.description}
-                        </p>
-                        <span className="mt-auto pt-4 text-xs font-bold uppercase tracking-[0.14em] text-primary-800">
-                          Open AI studio
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+                ))}
+              </span>
+              <span className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,18,11,.18),rgba(4,18,11,.74))]" aria-hidden="true" />
+              <span className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white">
+                <span className="font-label text-[10px] font-bold uppercase tracking-[0.22em] text-primary-200">Connect767 AI</span>
+                <strong className="mt-2 font-heading text-4xl font-semibold sm:text-5xl">Enter Design Studio</strong>
+                <span className="mt-3 text-sm text-white/75">Choose your category and fit inside.</span>
+                <span className="mt-6 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary-500 text-xl shadow-[0_14px_30px_rgba(0,0,0,.3)] transition group-hover:translate-x-1 group-hover:bg-primary-400"><i className="ri-arrow-right-line" /></span>
+              </span>
+            </button>
           </section>
         </main>
       </div>
