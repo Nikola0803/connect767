@@ -16,6 +16,12 @@ function openUniformSetup() {
 
 function closeUniformSetup() {}
 
+function sportsFromButtons(panel) {
+  return within(panel.getByRole("list", { name: "Available sport categories" }))
+    .getAllByRole("button")
+    .map((button) => button.getAttribute("aria-label").replace(/ category$/, ""));
+}
+
 describe("required uniform fit selection", () => {
   beforeEach(() => window.localStorage.clear());
 
@@ -32,10 +38,12 @@ describe("required uniform fit selection", () => {
     );
   });
 
-  it("uses one studio category selector and loads every category template", () => {
-    openStudio("ai");
-    const selector = screen.getByRole("combobox", { name: "Design category" });
-    expect(Array.from(selector.options).map((option) => option.textContent)).toEqual([
+  it("uses a coordinated category sidebar and loads every category template", () => {
+    const progress = openStudio("category");
+    const categoryPanel = within(screen.getByRole("complementary", { name: "Sport category selection" }));
+    expect(progress.getByRole("button", { name: /Category/ })).toHaveAttribute("aria-current", "step");
+    expect(screen.queryByRole("complementary", { name: "Uniform & order setup" })).not.toBeInTheDocument();
+    expect(sportsFromButtons(categoryPanel)).toEqual([
       "Soccer",
       "Basketball",
       "Netball",
@@ -53,9 +61,14 @@ describe("required uniform fit selection", () => {
       ["soccer", "Classic Crew"],
     ];
     for (const [sport, templateName] of categoryTemplates) {
-      fireEvent.change(selector, { target: { value: sport } });
+      const label = sport === "goalkeeper" ? "Goal Keeper" : sport === "other" ? "Clothing & Other" : `${sport[0].toUpperCase()}${sport.slice(1)}`;
+      fireEvent.click(categoryPanel.getByRole("button", { name: `${label} category` }));
       expect(screen.getAllByText(templateName).length).toBeGreaterThan(0);
     }
+
+    fireEvent.click(categoryPanel.getByRole("button", { name: /Continue to AI Design/ }));
+    expect(progress.getByRole("button", { name: /Design/ })).toHaveAttribute("aria-current", "step");
+    expect(screen.getByRole("complementary", { name: "Uniform & order setup" })).toBeVisible();
   });
 
   it("starts in the combined Design step and requires fit before Team roster", () => {

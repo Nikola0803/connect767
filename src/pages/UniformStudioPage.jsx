@@ -118,6 +118,12 @@ const getUniformStripe = (key) => {
 
 const tools = [
   {
+    key: "category",
+    label: "Category",
+    icon: "ri-apps-2-line",
+    hint: "Choose the sport or garment category for this design.",
+  },
+  {
     key: "design",
     label: "Uniform setup",
     icon: "ri-palette-line",
@@ -180,6 +186,15 @@ const tools = [
 ];
 
 const studioWorkflow = [
+  {
+    key: "category",
+    label: "Category",
+    description: "Choose sport or clothing",
+    icon: "ri-apps-2-line",
+    step: 1,
+    defaultTool: "category",
+    tools: ["category"],
+  },
   {
     key: "design",
     label: "Design",
@@ -352,9 +367,8 @@ export default function UniformStudioPage() {
   const [layers, setLayers] = useState([]);
   const [selectedLayerId, setSelectedLayerId] = useState(null);
   const [selectedTool, setActiveTool] = useState(
-    tools.some((tool) => tool.key === initialWorkflowStep)
-      ? initialWorkflowStep
-      : studioWorkflow.find((step) => step.key === initialWorkflowStep)?.defaultTool || "ai"
+    studioWorkflow.find((step) => step.key === initialWorkflowStep)?.defaultTool
+      || (tools.some((tool) => tool.key === initialWorkflowStep) ? initialWorkflowStep : "ai")
   );
   const [zoom, setZoom] = useState(1);
   const [productionPanMode, setProductionPanMode] = useState(false);
@@ -676,7 +690,7 @@ export default function UniformStudioPage() {
 
   const openWorkflowStep = (index) => {
     const nextStep = studioWorkflow[Math.max(0, Math.min(studioWorkflow.length - 1, index))];
-    if (nextStep.key !== "design" && !canContinueDesign) return;
+    if (!["category", "design"].includes(nextStep.key) && !canContinueDesign) return;
     if (nextStep.key === "review" && !rosterReadyForReview) return;
     setPendingLayer(null);
     setSelectedLayerId(null);
@@ -1039,7 +1053,7 @@ export default function UniformStudioPage() {
     else setSelectedTemplate(null);
   };
 
-  const selectTemplate = (t, sportSlug = activeSport) => {
+  const selectTemplate = (t, sportSlug = activeSport, nextTool = "ai") => {
     const nextSportConfig = sportConfigFor(sportSlug);
     setActiveSport(sportSlug);
     setSearchParams((prev) => {
@@ -1058,7 +1072,7 @@ export default function UniformStudioPage() {
     setPlacements3d({});
     setSelectedLayerId(null);
     setPendingLayer(null);
-    setActiveTool("ai");
+    setActiveTool(nextTool);
     setAiDesignerMode("uniform");
     setAiCanvasMode("concept");
     setAiUniformPlan(null);
@@ -1090,7 +1104,7 @@ export default function UniformStudioPage() {
     const nextTemplate = primaryTemplateForSport(sportSlug);
     if (!nextTemplate) return;
     if (hasWork && !window.confirm("Changing category loads its matching template. Your current category design is saved and can be restored when you return. Continue?")) return;
-    selectTemplate(nextTemplate, sportSlug);
+    selectTemplate(nextTemplate, sportSlug, "category");
   };
 
   const TOOL_FOR_LAYER = { text: "text", skin: "skins", logo: "logo", clipart: "logo" };
@@ -2059,6 +2073,74 @@ export default function UniformStudioPage() {
     optionsProps={{ sport: activeSport, fitType, setFitType, kitType, setKitType, extraTeamShirts, setExtraTeamShirts, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment, showFitAlert: true, highlightMissing: designValidationAttempted }}
   />;
 
+  const categorySelectionPanel = (
+    <aside
+      aria-label="Sport category selection"
+      className="flex max-h-[48dvh] min-h-0 w-full min-w-0 max-w-none flex-shrink-0 flex-col border-b border-background-300 bg-[#f8f7f2] text-foreground-950 shadow-[0_18px_44px_rgba(0,0,0,.2)] md:max-h-none md:w-[360px] md:min-w-[340px] md:max-w-[380px] md:border-b-0 md:border-r md:shadow-[18px_0_44px_rgba(0,0,0,.2)] xl:w-[380px]"
+    >
+      <header className="flex flex-shrink-0 items-center gap-3 border-b border-background-200 bg-white px-4 py-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-700 text-lg text-white"><i className="ri-apps-2-line" /></span>
+        <span className="min-w-0">
+          <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-primary-700">Step 1</span>
+          <h2 className="font-heading text-lg font-semibold leading-tight">Choose a category</h2>
+          <p className="text-[10px] text-foreground-500">Loads the correct AI uniform foundation</p>
+        </span>
+      </header>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
+        <div className="grid grid-cols-2 gap-2" role="list" aria-label="Available sport categories">
+          {sports.map((sport) => {
+            const selected = sport.slug === activeSport;
+            const categoryTemplate = primaryTemplateForSport(sport.slug);
+            const details = categoryDetails[sport.slug] || { title: sport.label, description: "Custom teamwear" };
+            return (
+              <button
+                key={sport.slug}
+                type="button"
+                aria-pressed={selected}
+                aria-label={`${details.title} category`}
+                onClick={() => changeDesignCategory(sport.slug)}
+                className={`group relative flex min-h-[112px] cursor-pointer flex-col items-start justify-between overflow-hidden rounded-2xl border p-3 text-left transition ${
+                  selected
+                    ? "border-primary-600 bg-primary-700 text-white shadow-[0_10px_24px_rgba(0,116,73,.2)]"
+                    : "border-background-300 bg-white text-foreground-900 hover:-translate-y-0.5 hover:border-primary-400 hover:shadow-md"
+                }`}
+              >
+                <span className={`flex h-9 w-9 items-center justify-center rounded-xl text-lg ${selected ? "bg-white/15" : "bg-primary-50 text-primary-700"}`}>
+                  <i className={sport.icon || "ri-shirt-line"} aria-hidden="true" />
+                </span>
+                <span className="mt-3 block min-w-0">
+                  <strong className="block text-xs leading-tight">{details.title}</strong>
+                  <span className={`mt-1 block truncate text-[9px] ${selected ? "text-white/65" : "text-foreground-500"}`}>{categoryTemplate?.name || "AI foundation"}</span>
+                </span>
+                {selected && <i className="ri-check-line absolute right-3 top-3 text-base" aria-hidden="true" />}
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-3 rounded-2xl border border-primary-200 bg-primary-50 p-3">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-lg text-primary-700 shadow-sm">
+              <i className={sports.find((sport) => sport.slug === activeSport)?.icon || "ri-shirt-line"} aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <strong className="block text-xs text-primary-950">{categoryDetails[activeSport]?.title}</strong>
+              <span className="mt-0.5 block text-[9px] leading-relaxed text-foreground-600">{categoryDetails[activeSport]?.description}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+      <footer className="flex-shrink-0 border-t border-background-200 bg-white p-3 shadow-[0_-10px_28px_rgba(31,43,35,.08)]">
+        <button
+          type="button"
+          onClick={continueWorkflow}
+          className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,116,73,.22)] transition hover:bg-primary-500"
+        >
+          Continue to AI Design <i className="ri-arrow-right-line text-base" aria-hidden="true" />
+        </button>
+      </footer>
+    </aside>
+  );
+
   const headerTileClass = "inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition";
   const headerIconTileClass = "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition";
   const renderCanvasControls = () => {
@@ -2236,37 +2318,13 @@ export default function UniformStudioPage() {
         className="relative z-30 flex-shrink-0 border-b border-white/[0.06] bg-[#12130f] px-3 py-2.5 sm:px-5"
       >
         <div className="mx-auto flex max-w-[1500px] items-center gap-1.5 overflow-x-auto py-0.5">
-          <div className="flex min-w-0 flex-1 items-center gap-1.5">
-            <label className="group flex min-w-[190px] flex-1 cursor-pointer items-center gap-2.5 rounded-xl border border-primary-400/45 bg-primary-700 px-3 py-2 text-left text-white shadow-[0_8px_22px_rgba(0,116,73,0.2)]">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/15 text-xs font-bold">1</span>
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-1.5 whitespace-nowrap text-[11px] font-bold">
-                  <i className={`${sports.find((item) => item.slug === activeSport)?.icon || "ri-shirt-line"} text-xs opacity-80`} aria-hidden="true" />
-                  Category
-                </span>
-                <span className="relative mt-0.5 block">
-                  <select
-                    aria-label="Design category"
-                    value={activeSport}
-                    onChange={(event) => changeDesignCategory(event.target.value)}
-                    className="w-full cursor-pointer appearance-none bg-transparent pr-5 text-[9px] font-semibold text-white/75 outline-none [color-scheme:dark]"
-                  >
-                    {sports.map((sport) => (
-                      <option key={sport.slug} value={sport.slug} className="bg-[#151610] text-white">{categoryDetails[sport.slug]?.title || sport.label}</option>
-                    ))}
-                  </select>
-                  <i className="ri-arrow-down-s-line pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-xs text-white/70" aria-hidden="true" />
-                </span>
-              </span>
-            </label>
-            <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-primary-500/35 bg-primary-950/50 text-sm text-primary-300">
-              <i className="ri-arrow-right-line" />
-            </span>
-          </div>
           {studioWorkflow.map((step, index) => {
             const active = index === workflowIndex;
             const complete = index < workflowIndex;
-            const locked = (step.key !== "design" && !canContinueDesign) || (step.key === "review" && !rosterReadyForReview);
+            const locked = (!["category", "design"].includes(step.key) && !canContinueDesign) || (step.key === "review" && !rosterReadyForReview);
+            const stepDescription = step.key === "category"
+              ? categoryDetails[activeSport]?.title || step.description
+              : step.description;
             return (
               <div key={step.key} className="flex min-w-0 flex-1 items-center gap-1.5">
                 <button
@@ -2299,7 +2357,7 @@ export default function UniformStudioPage() {
                       {step.label}
                     </span>
                     <span className={`mt-0.5 hidden whitespace-nowrap text-[9px] xl:block ${active ? "text-white/65" : "text-current opacity-55"}`}>
-                      {step.description}
+                      {stepDescription}
                     </span>
                   </span>
                 </button>
@@ -2415,6 +2473,7 @@ export default function UniformStudioPage() {
       )}
 
       <div className="flex min-h-0 flex-1 flex-col bg-[radial-gradient(circle_at_48%_42%,rgba(36,45,36,0.32),transparent_38%),linear-gradient(135deg,#10110f_0%,#151610_52%,#10110f_100%)] md:flex-row">
+                  {workflowStep.key === "category" && categorySelectionPanel}
                   {workflowStep.key === "design" && (
                     <aside aria-labelledby="uniform-order-setup-title" className="flex max-h-[45dvh] min-h-0 w-full min-w-0 max-w-none flex-shrink-0 flex-col border-b border-background-300 bg-[#f8f7f2] text-foreground-950 shadow-[0_18px_44px_rgba(0,0,0,.2)] md:max-h-none md:w-[360px] md:min-w-[340px] md:max-w-[380px] md:border-b-0 md:border-r md:shadow-[18px_0_44px_rgba(0,0,0,.2)] xl:w-[380px]">
                       <header className="flex flex-shrink-0 items-center gap-2.5 border-b border-background-200 bg-white px-3 py-2">
@@ -2553,14 +2612,20 @@ export default function UniformStudioPage() {
                           <span className="relative z-10 mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-500 text-3xl text-white shadow-[0_16px_34px_rgba(239,84,53,.24)]">
                             <i className="ri-sparkling-2-fill" />
                           </span>
-                          <p className="relative z-10 mt-6 text-[10px] font-bold uppercase tracking-[0.2em] text-white/80">AI-first uniform studio</p>
-                          <h2 className="relative z-10 mx-auto mt-2 max-w-3xl font-heading text-3xl font-semibold leading-tight text-white sm:text-4xl xl:text-5xl">Your generated uniform will appear here</h2>
-                          <p className="relative z-10 mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-white/70">Add a team name and design brief in the AI Designer panel. You can also upload a reference image, lock any details you want to keep, and generate a complete Front / Side / Back concept.</p>
+                          <p className="relative z-10 mt-6 text-[10px] font-bold uppercase tracking-[0.2em] text-white/80">{workflowStep.key === "category" ? "Step 1 · Design foundation" : "AI-first uniform studio"}</p>
+                          <h2 className="relative z-10 mx-auto mt-2 max-w-3xl font-heading text-3xl font-semibold leading-tight text-white sm:text-4xl xl:text-5xl">{workflowStep.key === "category" ? `Start with ${categoryDetails[activeSport]?.title || "your category"}` : "Your generated uniform will appear here"}</h2>
+                          <p className="relative z-10 mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-white/70">{workflowStep.key === "category" ? "Choose a sport or clothing category in the left panel. Its matching template becomes the foundation for the AI Designer." : "Add a team name and design brief in the AI Designer panel. You can also upload a reference image, lock any details you want to keep, and generate a complete Front / Side / Back concept."}</p>
                           <div className="relative z-10 mx-auto mt-7 grid w-full max-w-3xl gap-3 text-left sm:grid-cols-3">
                             {[
-                              ["ri-image-add-line", "Reference", "Optional inspiration image"],
-                              ["ri-quill-pen-line", "Describe", "Colors, style and identity"],
-                              ["ri-magic-line", "Generate", "Complete Front / Side / Back kit"],
+                              ...(workflowStep.key === "category" ? [
+                                ["ri-apps-2-line", "Choose", "Select the garment category"],
+                                ["ri-shirt-line", "Foundation", "Load its matching template"],
+                                ["ri-arrow-right-line", "Continue", "Move into AI Design"],
+                              ] : [
+                                ["ri-image-add-line", "Reference", "Optional inspiration image"],
+                                ["ri-quill-pen-line", "Describe", "Colors, style and identity"],
+                                ["ri-magic-line", "Generate", "Complete Front / Side / Back kit"],
+                              ]),
                             ].map(([icon, title, copy]) => (
                               <div key={title} className="rounded-2xl border border-white/[0.07] bg-black/15 p-4">
                                 <i className={`${icon} text-lg text-primary-300`} />
@@ -2671,7 +2736,7 @@ export default function UniformStudioPage() {
                   </div>
 
               {/* Docked fields panel */}
-              <aside className={`hidden w-full flex-shrink-0 flex-col overflow-hidden border-l border-black/10 bg-[#f7f5ef] md:flex ${activeTool === "ai" ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px]" : "max-w-[420px]"}`}>
+              {workflowStep.key !== "category" && <aside className={`hidden w-full flex-shrink-0 flex-col overflow-hidden border-l border-black/10 bg-[#f7f5ef] md:flex ${activeTool === "ai" ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px]" : "max-w-[420px]"}`}>
                 {activeTool !== "ai" && <div className={`flex-shrink-0 border-b border-black/[0.07] bg-[#f7f5ef]/95 backdrop-blur-xl ${activeTool === "design" ? "px-4 py-3" : "px-5 py-4"}`}>
                   <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary-700">Step {workflowStep.step} · {workflowStep.label}</p>
                   <div className="mt-1 flex items-center justify-between gap-3">
@@ -2821,11 +2886,11 @@ export default function UniformStudioPage() {
                   />
                 )}
                 </div>
-              </aside>
+              </aside>}
       </div>
 
       {/* Mobile: the fields panel docks to the bottom instead of the side */}
-      <div className={`md:hidden flex-shrink-0 overflow-y-auto overscroll-contain border-t border-background-200/60 bg-background-50 ${activeTool === "ai" ? "max-h-[72dvh] p-0" : "max-h-[42dvh] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"}`}>
+      {workflowStep.key !== "category" && <div className={`md:hidden flex-shrink-0 overflow-y-auto overscroll-contain border-t border-background-200/60 bg-background-50 ${activeTool === "ai" ? "max-h-[72dvh] p-0" : "max-h-[42dvh] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"}`}>
         {manualEditingAllowed && <SelectedItemPanel
           layer={selectedLayer}
           placement={stageMode === "3d" && selectedLayerId ? placements3d[selectedLayerId] : null}
@@ -2966,7 +3031,7 @@ export default function UniformStudioPage() {
             onView3d={ENABLE_3D ? () => setStageMode("3d") : undefined}
           />
         )}
-      </div>
+      </div>}
 
       <div className="flex flex-shrink-0 items-center justify-between gap-3 border-t border-white/[0.07] bg-[#0c0d0b]/95 px-4 py-2.5 pb-[max(.625rem,env(safe-area-inset-bottom))] sm:px-6">
         <button
