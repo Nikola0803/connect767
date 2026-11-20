@@ -2607,7 +2607,14 @@ export default function UniformStudioPage() {
                       <div className="flex min-h-0 w-full flex-1 items-stretch justify-center">
                         <div className="relative flex h-full w-full max-w-none flex-col items-center justify-center overflow-hidden bg-[#11140f] px-6 py-6 text-center sm:px-10 lg:px-14">
                           <EmbossedAIWorkspaceBackdrop studioBackground={studioBackground} />
-                          <h2 className={`relative z-10 font-heading text-xl font-medium sm:text-2xl ${isDarkStudioBackground(studioBackground) ? "text-white/90" : "text-foreground-900/85"}`}>Your design will appear here</h2>
+                          <div
+                            className={`relative z-10 flex max-w-[min(90%,34rem)] items-center gap-4 rounded-2xl border px-5 py-4 text-left shadow-[0_18px_55px_rgba(21,24,20,.14)] backdrop-blur-md sm:px-6 sm:py-5 ${isDarkStudioBackground(studioBackground) ? "border-white/15 bg-black/30" : "border-white/75 bg-white/58"}`}
+                          >
+                            <span className={`flex h-11 w-11 flex-none items-center justify-center rounded-xl border text-xl shadow-sm ${isDarkStudioBackground(studioBackground) ? "border-white/15 bg-white/10 text-white/90" : "border-primary-200/70 bg-primary-50/85 text-primary-800"}`} aria-hidden="true">
+                              <i className="ri-sparkling-2-line" />
+                            </span>
+                            <h2 className={`font-heading text-xl font-medium leading-tight sm:text-2xl ${isDarkStudioBackground(studioBackground) ? "text-white/95" : "text-foreground-950"}`}>Your design will appear here</h2>
+                          </div>
                         </div>
                       </div>
                     ) : stageMode === "edit" ? (

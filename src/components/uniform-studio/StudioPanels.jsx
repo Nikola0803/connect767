@@ -1291,6 +1291,9 @@ export function AIArtworkPanel({
             `Design plan: ${plan.summary}`,
             `Collar: ${plan.collar}. Sleeves: ${plan.sleeve}.`,
             `Exact zone colors: body ${plan.colors.body}, sleeves ${plan.colors.sleeve}, collar ${plan.colors.collar}, shorts ${plan.colors.shorts}, socks ${plan.colors.socks}, shirt trim ${plan.colors.shirtStrip}, sleeve trim ${plan.colors.sleeveStrip}, shorts trim ${plan.colors.shortsStrip}.`,
+            sport === "soccer"
+              ? "Soccer socks must remain one uninterrupted solid base colour from cuff to toe and must have exactly three separate horizontal stripes confined to the top near the knee, with visible base-colour gaps between stripes. All three stripes must use the same single solid stripe colour. Do not create a contrasting solid-colour cuff or place logos, text, numbers, patterns, gradients or other artwork on socks."
+              : "Keep any socks production-friendly and free of logos, text or other artwork.",
             plan.pattern?.enabled
               ? `Pattern: ${plan.pattern.key}, applied to ${plan.pattern.view}.`
               : "Pattern: clean solid-color design with no decorative pattern.",

@@ -87,10 +87,13 @@ describe("AI full-uniform design endpoint", () => {
     })).toThrow(/PNG, JPEG or WebP/i);
   });
 
-  it("instructs the model to use editable zones and solid socks", () => {
+  it("instructs the model to use editable zones and restricted socks", () => {
     const prompt = buildUniformPrompt(normalizeUniformRequest(validRequest));
-    expect(prompt).toContain("Socks must be one solid color");
-    expect(prompt).toContain("Never place logos, text, numbers, patterns");
+    expect(prompt).toContain("Socks must remain one uninterrupted solid base color from cuff to toe");
+    expect(prompt).toContain("exactly three separate horizontal stripes");
+    expect(prompt).toContain("All three stripes must use the same single solid stripe color");
+    expect(prompt).toContain("visible base-color gaps between stripes");
+    expect(prompt).toContain("Never create a contrasting solid-color cuff");
     expect(prompt).toContain("Do not invent side panels");
     expect(prompt).toContain("Allowed collars");
     expect(prompt).toContain("all three editable surfaces: front, side, and back");
