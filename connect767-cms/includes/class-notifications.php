@@ -19,6 +19,9 @@ if (!defined('ABSPATH')) {
 
 class C767_Notifications
 {
+    const PROFILE_REMINDER_HOOK = 'c767_profile_completion_reminder';
+    const PROFILE_REMINDER_SWEEP_HOOK = 'c767_profile_completion_reminder_sweep';
+
     /** Avoid duplicate approval emails when the review screen and the status transition fire together. */
     private static $approved_notifications_sent = [];
 
@@ -40,6 +43,9 @@ class C767_Notifications
         add_filter('wp_mail_from_name', [__CLASS__, 'mail_from_name'], PHP_INT_MAX);
 
         add_action('c767_user_registered', [__CLASS__, 'on_user_registered'], 10, 2);
+        add_action(self::PROFILE_REMINDER_HOOK, [__CLASS__, 'send_profile_completion_reminder'], 10, 2);
+        add_action(self::PROFILE_REMINDER_SWEEP_HOOK, [__CLASS__, 'send_existing_account_profile_reminders']);
+        add_action('init', [__CLASS__, 'maybe_schedule_profile_reminder_sweep']);
         add_action('c767_listing_submitted', [__CLASS__, 'on_listing_submitted'], 10, 3);
         add_action('c767_listing_approved', [__CLASS__, 'on_listing_approved']);
         add_action('transition_post_status', [__CLASS__, 'on_listing_status_changed'], 10, 3);
@@ -113,6 +119,7 @@ class C767_Notifications
     private static function send_directory_mail($to, $subject, $body, $headers = [])
     {
         self::$mail_from_override = self::directory_mail_from();
+        $headers = array_merge((array) $headers, ['BIMI-Selector: v=BIMI1; s=default;']);
         try {
             return wp_mail($to, $subject, $body, $headers);
         } finally {
@@ -177,6 +184,190 @@ class C767_Notifications
 
     // ---------- Registration ----------
 
+    /** Keep the exact registration reminders prompt while a twice-daily sweep catches older accounts and missed cron events. */
+    public static function maybe_schedule_profile_reminder_sweep()
+    {
+        if (!wp_next_scheduled(self::PROFILE_REMINDER_SWEEP_HOOK)) {
+            wp_schedule_event(time() + 5 * MINUTE_IN_SECONDS, 'twicedaily', self::PROFILE_REMINDER_SWEEP_HOOK);
+        }
+    }
+
+    public static function clear_profile_reminder_schedule()
+    {
+        wp_clear_scheduled_hook(self::PROFILE_REMINDER_SWEEP_HOOK);
+        $user_ids = get_users([
+            'fields' => 'ids',
+            'role__in' => ['subscriber'],
+        ]);
+        foreach ($user_ids as $user_id) {
+            self::clear_profile_completion_reminders($user_id);
+        }
+    }
+
+    private static function profile_reminder_meta_key($stage)
+    {
+        return 'c767_profile_reminder_' . (int) $stage . '_sent_at';
+    }
+
+    private static function user_has_listing($user_id)
+    {
+        $listing_ids = get_posts([
+            'author' => (int) $user_id,
+            'fields' => 'ids',
+            'numberposts' => 1,
+            'post_status' => 'any',
+            'post_type' => 'listing',
+            'suppress_filters' => true,
+        ]);
+
+        return !empty($listing_ids);
+    }
+
+    private static function schedule_profile_completion_reminders($user_id)
+    {
+        $user_id = (int) $user_id;
+        if (!$user_id || self::user_has_listing($user_id)) {
+            return;
+        }
+
+        $events = [
+            1 => time() + 4 * HOUR_IN_SECONDS,
+            2 => time() + 3 * DAY_IN_SECONDS,
+        ];
+
+        foreach ($events as $stage => $timestamp) {
+            $args = [$user_id, $stage];
+            if (!get_user_meta($user_id, self::profile_reminder_meta_key($stage), true)
+                && !wp_next_scheduled(self::PROFILE_REMINDER_HOOK, $args)) {
+                wp_schedule_single_event($timestamp, self::PROFILE_REMINDER_HOOK, $args);
+            }
+        }
+    }
+
+    private static function clear_profile_completion_reminders($user_id)
+    {
+        $user_id = (int) $user_id;
+        foreach ([1, 2] as $stage) {
+            wp_clear_scheduled_hook(self::PROFILE_REMINDER_HOOK, [$user_id, $stage]);
+        }
+    }
+
+    private static function profile_reminder_email($user, $stage, $listing_url)
+    {
+        $name = $user->display_name ?: $user->user_login;
+        $is_follow_up = (int) $stage === 2;
+        $favicon_url = self::frontend_url('/connect767-favicon.png');
+        $website_url = self::frontend_url('/');
+        $subject = $is_follow_up
+            ? 'Your Connect767 directory listing is waiting'
+            : 'Complete your Connect767 directory profile';
+        $intro = $is_follow_up
+            ? 'Your Connect767 account is active, but your directory profile is not complete. Complete your profile by creating a directory listing so local customers can discover you and your business, products, or services.'
+            : 'Your Connect767 account is ready. Complete your profile by creating a directory listing so local customers can discover you and your business, products, or services.';
+        $supporting_copy = $is_follow_up
+            ? 'Add your category, industry, experience, contact details, and photos. It only takes a few minutes, and you can begin with a free listing and update it whenever your business changes.'
+            : 'Add your category, industry, experience, contact details, and photos to create a professional profile that is ready to share.';
+
+        $html = sprintf(
+            '<div style="margin:0;padding:32px 16px;background:#f8f5ef;font-family:Arial,sans-serif;color:#172019;">'
+            . '<div style="max-width:620px;margin:0 auto;padding:36px;border:1px solid #e4ded2;border-radius:18px;background:#fffdf9;">'
+            . '<p style="margin:0 0 20px;color:#006a46;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;">Connect767 Directory</p>'
+            . '<h1 style="margin:0 0 18px;font-family:Georgia,serif;font-size:30px;line-height:1.2;color:#111a14;">%s</h1>'
+            . '<p style="margin:0 0 16px;font-size:16px;line-height:1.7;">%s</p>'
+            . '<p style="margin:0 0 26px;font-size:16px;line-height:1.7;">%s</p>'
+            . '<a href="%s" style="display:inline-block;padding:14px 22px;border-radius:999px;background:#006a46;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;">Create or update your listing &rarr;</a>'
+            . '<p style="margin:26px 0 0;font-size:13px;line-height:1.6;color:#5d675f;">If the button does not open, copy this link into your browser:<br><a href="%s" style="color:#006a46;word-break:break-all;">%s</a></p>'
+            . '<p style="margin:24px 0 0;padding-top:20px;border-top:1px solid #ece6dc;font-size:13px;line-height:1.6;color:#5d675f;">Already created your listing? No action is needed. Connect767 checks automatically and stops these reminders once a listing exists.</p>'
+            . '<p style="margin:24px 0 10px;"><img src="%s" alt="Connect767 C" width="38" height="38" style="display:block;width:38px;height:38px;border:0;object-fit:contain;" /></p>'
+            . '<p style="margin:0;font-size:15px;line-height:1.6;color:#172019;"><strong>The Connect767 Team</strong><br><a href="%s" style="color:#006a46;text-decoration:none;">connect767.com</a></p>'
+            . '</div></div>',
+            esc_html('Hi ' . $name . ','),
+            esc_html($intro),
+            esc_html($supporting_copy),
+            esc_url($listing_url),
+            esc_url($listing_url),
+            esc_html($listing_url),
+            esc_url($favicon_url),
+            esc_url($website_url)
+        );
+
+        return [$subject, $html];
+    }
+
+    public static function send_profile_completion_reminder($user_id, $stage = 1)
+    {
+        $user_id = (int) $user_id;
+        $stage = (int) $stage === 2 ? 2 : 1;
+        $meta_key = self::profile_reminder_meta_key($stage);
+        $user = get_userdata($user_id);
+
+        if (!$user || !is_email($user->user_email) || get_user_meta($user_id, $meta_key, true)) {
+            return;
+        }
+        if (self::user_has_listing($user_id)) {
+            self::clear_profile_completion_reminders($user_id);
+            return;
+        }
+        if ($stage === 2 && !get_user_meta($user_id, self::profile_reminder_meta_key(1), true)) {
+            self::send_profile_completion_reminder($user_id, 1);
+            return;
+        }
+
+        $listing_url = add_query_arg([
+            'onboarding' => 1,
+            'tier' => 'free',
+            'utm_source' => 'profile_reminder',
+            'utm_medium' => 'email',
+            'utm_campaign' => 'complete_listing',
+            'reminder' => $stage,
+        ], self::frontend_url('/listings/submit'));
+        [$subject, $html] = self::profile_reminder_email($user, $stage, $listing_url);
+
+        if (self::send_directory_mail(
+            $user->user_email,
+            $subject,
+            $html,
+            ['Content-Type: text/html; charset=UTF-8']
+        )) {
+            update_user_meta($user_id, $meta_key, time());
+            if ($stage === 1 && !wp_next_scheduled(self::PROFILE_REMINDER_HOOK, [$user_id, 2])) {
+                wp_schedule_single_event(time() + 3 * DAY_IN_SECONDS, self::PROFILE_REMINDER_HOOK, [$user_id, 2]);
+            }
+        } else {
+            error_log('Connect767 profile-completion reminder could not be sent for user ' . $user_id . '.');
+        }
+    }
+
+    /** Backfill reminders for existing subscriber accounts without directory listings. */
+    public static function send_existing_account_profile_reminders()
+    {
+        $user_ids = get_users([
+            'fields' => 'ids',
+            'role__in' => ['subscriber'],
+        ]);
+        $now = time();
+
+        foreach ($user_ids as $user_id) {
+            $user = get_userdata((int) $user_id);
+            if (!$user || self::user_has_listing($user_id)) {
+                self::clear_profile_completion_reminders($user_id);
+                continue;
+            }
+
+            $registered_at = strtotime($user->user_registered . ' UTC');
+            $first_sent_at = (int) get_user_meta($user_id, self::profile_reminder_meta_key(1), true);
+            $second_sent_at = (int) get_user_meta($user_id, self::profile_reminder_meta_key(2), true);
+
+            if (!$first_sent_at && (!$registered_at || $registered_at <= $now - 4 * HOUR_IN_SECONDS)) {
+                self::send_profile_completion_reminder($user_id, 1);
+                continue;
+            }
+            if ($first_sent_at && !$second_sent_at && $first_sent_at <= $now - 3 * DAY_IN_SECONDS) {
+                self::send_profile_completion_reminder($user_id, 2);
+            }
+        }
+    }
+
     public static function on_user_registered($user_id, $account_type)
     {
         $user = get_userdata($user_id);
@@ -218,6 +409,8 @@ class C767_Notifications
                 error_log('Connect767 new-account directory email could not be sent for user ' . $user_id . '.');
             }
         }
+
+        self::schedule_profile_completion_reminders($user_id);
     }
 
     /**
@@ -250,6 +443,7 @@ class C767_Notifications
 
     public static function on_listing_submitted($post_id, $user_id, $tier)
     {
+        self::clear_profile_completion_reminders($user_id);
         $post = get_post($post_id);
         $user = get_userdata($user_id);
         if (!$post) {
