@@ -42,27 +42,21 @@ const inferPromptMode = (value = "", currentMode = "uniform") => {
 function EmptyConversation({ dark, mode }) {
   const modeCopy = MODE_COPY[mode] || MODE_COPY.uniform;
   return (
-    <div className="mx-auto flex h-full w-full max-w-md items-center justify-center px-4 py-8">
-      <div className={`w-full rounded-[26px] border p-5 text-left shadow-[0_20px_60px_rgba(25,43,33,.08)] backdrop-blur-sm ${dark ? "border-white/10 bg-white/[.06]" : "border-background-200/90 bg-white/80"}`}>
-        <div className="flex items-center gap-3.5">
-          <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border ${dark ? "border-white/10 bg-white/[.06]" : "border-primary-100 bg-primary-50/70"}`}>
-            <img src={AI_COMMAND_LOGO_SRC} alt="Connect767 AI" className="h-10 w-12 object-contain opacity-75" />
-          </div>
-          <div className="min-w-0">
-            <span className={`text-[8px] font-bold uppercase tracking-[0.18em] ${dark ? "text-primary-200" : "text-primary-700"}`}>AI Design Studio</span>
-            <h3 className={`mt-1 font-heading text-lg font-semibold leading-tight ${dark ? "text-white" : "text-foreground-950"}`}>{modeCopy.title}</h3>
-          </div>
-        </div>
-        <p className={`mt-4 text-[10px] leading-relaxed ${dark ? "text-white/60" : "text-foreground-500"}`}>
+    <div className="mx-auto flex h-full w-full max-w-sm items-center justify-center px-6 py-10 text-center">
+      <div className="w-full">
+        <img src={AI_COMMAND_LOGO_SRC} alt="Connect767 AI" className="mx-auto h-10 w-14 object-contain opacity-60 grayscale-[20%]" />
+        <span className={`mt-4 block text-[8px] font-bold uppercase tracking-[0.22em] ${dark ? "text-primary-200/80" : "text-primary-700"}`}>AI Design Studio</span>
+        <h3 className={`mt-2 font-heading text-xl font-semibold leading-tight ${dark ? "text-white" : "text-foreground-950"}`}>{modeCopy.title}</h3>
+        <p className={`mx-auto mt-3 max-w-xs text-[10px] leading-relaxed ${dark ? "text-white/55" : "text-foreground-500"}`}>
           {modeCopy.description}
         </p>
-        <div className={`mt-4 grid grid-cols-3 gap-2 border-t pt-4 ${dark ? "border-white/10" : "border-background-200"}`} aria-label="AI design workflow">
+        <div className={`mx-auto mt-5 grid max-w-xs grid-cols-3 divide-x border-y py-2.5 ${dark ? "divide-white/10 border-white/10" : "divide-background-200 border-background-200"}`} aria-label="AI design workflow">
           {[
             ["ri-image-add-line", "Reference"],
             ["ri-quill-pen-line", "Describe"],
             ["ri-sparkling-2-line", "Refine"],
           ].map(([icon, label]) => (
-            <div key={label} className={`flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-[8px] font-semibold ${dark ? "bg-white/[.05] text-white/65" : "bg-background-50 text-foreground-600"}`}>
+            <div key={label} className={`flex min-w-0 items-center justify-center gap-1.5 px-2 text-[8px] font-semibold ${dark ? "text-white/55" : "text-foreground-500"}`}>
               <i className={`${icon} text-primary-600`} aria-hidden="true" />
               <span className="truncate">{label}</span>
             </div>
@@ -134,7 +128,7 @@ export default function AIUniformComposer({
     const textarea = textareaRef.current;
     if (!textarea) return;
     textarea.style.height = "0px";
-    textarea.style.height = `${Math.min(176, Math.max(48, textarea.scrollHeight))}px`;
+    textarea.style.height = `${Math.min(176, Math.max(42, textarea.scrollHeight))}px`;
   }, [prompt]);
 
   useEffect(() => {
@@ -387,7 +381,7 @@ export default function AIUniformComposer({
           onDragOver={(event) => event.preventDefault()}
           onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false); }}
           onDrop={acceptDroppedFile}
-          className={`relative mx-auto w-full min-w-0 max-w-xl rounded-[22px] border bg-white shadow-[0_10px_30px_rgba(31,43,35,.09)] transition ${dragging ? "border-primary-500 ring-4 ring-primary-100" : "border-background-300 focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-100"}`}
+          className={`relative mx-auto w-full min-w-0 max-w-xl rounded-2xl border bg-white shadow-[0_4px_18px_rgba(31,43,35,.06)] transition ${dragging ? "border-primary-500 ring-4 ring-primary-100" : "border-background-300 focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-100"}`}
         >
           {dragging && <div className="absolute inset-1 z-10 flex items-center justify-center rounded-[18px] border-2 border-dashed border-primary-400 bg-primary-50/95 text-xs font-bold text-primary-800"><i className="ri-upload-cloud-2-line mr-2" /> Drop an image to use as reference</div>}
           {reference && <div className="flex items-center gap-2 border-b border-background-200 px-3 py-2"><img src={reference.src} alt="Attached uniform reference" className="h-9 w-9 rounded-lg border border-background-200 object-cover" /><div className="min-w-0 flex-1"><strong className="block truncate text-[9px] text-foreground-700">{reference.name}</strong><span className="block text-[8px] text-foreground-400">Reference image</span></div><button type="button" onClick={onRemoveReference} className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-foreground-400 hover:bg-red-50 hover:text-red-600" aria-label="Remove reference image"><i className="ri-close-line" /></button></div>}
@@ -398,11 +392,11 @@ export default function AIUniformComposer({
             onKeyDown={handleKeyDown}
             placeholder={isRefinement ? "Describe only what should change…" : MODE_COPY[mode].placeholder}
             maxLength={mode === "uniform" ? 900 : 600}
-            rows={2}
-            className="block min-h-[48px] w-full min-w-0 resize-none overflow-y-auto rounded-t-[22px] bg-transparent px-4 pb-1.5 pt-3 text-xs leading-relaxed text-foreground-950 outline-none placeholder:text-foreground-400"
+            rows={1}
+            className="block min-h-[42px] w-full min-w-0 resize-none overflow-y-auto rounded-t-2xl bg-transparent px-4 pb-1 pt-3 text-xs leading-relaxed text-foreground-950 outline-none placeholder:text-foreground-400"
             aria-label="Message Connect767 AI"
           />
-          <div className="flex min-w-0 flex-wrap items-center justify-start gap-2 px-2 pb-2">
+          <div className="flex min-w-0 flex-wrap items-center justify-start gap-2 px-2 pb-1.5">
             <div className="flex min-w-0 items-center gap-1.5">
               <button type="button" onClick={() => { setToolsOpen((value) => !value); setHistoryOpen(false); setSettingsOpen(false); }} className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-background-200 bg-background-50 text-sm text-foreground-700 transition hover:bg-background-100" aria-label="Add attachment or AI tool" aria-expanded={toolsOpen} data-ai-popover-trigger><i className={toolsOpen ? "ri-close-line" : "ri-add-line"} /></button>
             </div>
