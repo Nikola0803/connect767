@@ -115,31 +115,39 @@ export default function PositionPicker({
 
   const chooseReposition = () => onFitChange("cover");
 
+  const changeZoom = (amount) => {
+    const nextZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z + amount));
+    onZoomChange(Number(nextZoom.toFixed(2)));
+  };
+
   const frameSize = isLogo
-    ? "w-24 h-24 rounded-full"
-    : "w-full max-w-[12rem] aspect-[16/9] rounded-xl";
+    ? "h-32 w-32 rounded-full"
+    : "w-full aspect-[16/9] rounded-2xl";
+
+  const zoomDisabled = !src || isContained;
 
   return (
-    <div className="mt-3 rounded-xl border border-background-200/80 bg-background-50/70 p-3 sm:p-4">
-      <div className="mb-3 flex items-center justify-between gap-3">
+    <div className="mt-3 rounded-2xl border border-background-200/80 bg-background-50/70 p-4 sm:p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
         {label && (
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-foreground-600">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground-600">
             {label}
           </p>
         )}
         {src && (
-          <span className="text-[10px] font-label text-foreground-400">
-            Drag the preview to adjust
+          <span className="inline-flex items-center gap-1.5 text-xs font-label text-foreground-400">
+            <i className="ri-drag-move-2-line" aria-hidden="true" />
+            Drag photo to reposition
           </span>
         )}
       </div>
 
-      <div className={`grid items-start gap-4 ${isLogo ? "grid-cols-[6rem_minmax(0,1fr)]" : "sm:grid-cols-[12rem_minmax(0,1fr)]"}`}>
+      <div className={`flex ${isLogo ? "justify-center" : "w-full"}`}>
         <div
           ref={frameRef}
           onMouseDown={isContained ? undefined : beginDrag}
           onTouchStart={isContained ? undefined : beginDrag}
-          className={`relative overflow-hidden bg-background-100 border-2 flex-shrink-0 select-none ${
+          className={`relative overflow-hidden bg-background-100 border-2 flex-shrink-0 select-none shadow-sm ${
             frameSize
           } ${
             src && !isContained
@@ -175,6 +183,47 @@ export default function PositionPicker({
                   <div className="absolute top-2/3 inset-x-0 h-px bg-background-50/50" />
                 </div>
               )}
+              <div
+                className="absolute bottom-2.5 right-2.5 flex items-center gap-1 rounded-xl border border-background-200 bg-background-50/95 p-1 shadow-md backdrop-blur-sm"
+                onMouseDown={(event) => event.stopPropagation()}
+                onTouchStart={(event) => event.stopPropagation()}
+              >
+                {canChooseFit && (
+                  <button
+                    type="button"
+                    aria-label="Reposition photo"
+                    title="Reposition photo"
+                    onClick={chooseReposition}
+                    className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
+                      fit === "cover"
+                        ? "bg-primary-600 text-background-50"
+                        : "text-foreground-600 hover:bg-primary-50 hover:text-primary-800"
+                    }`}
+                  >
+                    <i className="ri-drag-move-2-line text-base" aria-hidden="true" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  aria-label="Zoom out"
+                  title="Zoom out"
+                  disabled={zoomDisabled || z <= ZOOM_MIN}
+                  onClick={() => changeZoom(-0.1)}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-foreground-600 transition-colors hover:bg-primary-50 hover:text-primary-800 disabled:cursor-not-allowed disabled:opacity-35"
+                >
+                  <i className="ri-subtract-line text-base" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Zoom in"
+                  title="Zoom in"
+                  disabled={zoomDisabled || z >= ZOOM_MAX}
+                  onClick={() => changeZoom(0.1)}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-foreground-600 transition-colors hover:bg-primary-50 hover:text-primary-800 disabled:cursor-not-allowed disabled:opacity-35"
+                >
+                  <i className="ri-add-line text-base" aria-hidden="true" />
+                </button>
+              </div>
             </>
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -182,52 +231,56 @@ export default function PositionPicker({
             </div>
           )}
         </div>
+      </div>
 
-        <div className="min-w-0">
+      <div className="mt-4 min-w-0">
           {canChooseFit && (
-            <div className="mb-3">
-              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground-500">
+            <div className="mb-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-foreground-500">
                 Display
               </p>
-              <div className="grid grid-cols-3 rounded-lg border border-background-200 bg-background-100 p-1" aria-label="Cover photo display">
+              <div className="grid grid-cols-3 gap-2" aria-label="Cover photo display">
                 <button
                   type="button"
                   onClick={chooseSmart}
-                  className={`rounded-md px-2 py-1.5 text-[10px] font-semibold transition-colors cursor-pointer ${
+                  className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-2 py-2 text-xs font-semibold transition-colors cursor-pointer ${
                     isSmart
-                      ? "bg-background-50 text-primary-800 shadow-sm"
-                      : "text-foreground-500 hover:text-foreground-800"
+                      ? "border-primary-500 bg-primary-50 text-primary-800"
+                      : "border-background-200 bg-background-50 text-foreground-500 hover:border-primary-300 hover:text-foreground-800"
                   }`}
                 >
+                  <i className="ri-magic-line text-base" aria-hidden="true" />
                   Smart
                 </button>
                 <button
                   type="button"
                   aria-label="Fit full image"
                   onClick={chooseFit}
-                  className={`rounded-md px-2 py-1.5 text-[10px] font-semibold transition-colors cursor-pointer ${
+                  className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-2 py-2 text-xs font-semibold transition-colors cursor-pointer ${
                     fit === "contain"
-                      ? "bg-background-50 text-primary-800 shadow-sm"
-                      : "text-foreground-500 hover:text-foreground-800"
+                      ? "border-primary-500 bg-primary-50 text-primary-800"
+                      : "border-background-200 bg-background-50 text-foreground-500 hover:border-primary-300 hover:text-foreground-800"
                   }`}
                 >
+                  <i className="ri-aspect-ratio-line text-base" aria-hidden="true" />
                   Full image
                 </button>
                 <button
                   type="button"
                   onClick={chooseReposition}
-                  className={`rounded-md px-2 py-1.5 text-[10px] font-semibold transition-colors cursor-pointer ${
+                  className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-2 py-2 text-xs font-semibold transition-colors cursor-pointer ${
                     fit === "cover"
-                      ? "bg-background-50 text-primary-800 shadow-sm"
-                      : "text-foreground-500 hover:text-foreground-800"
+                      ? "border-primary-500 bg-primary-50 text-primary-800"
+                      : "border-background-200 bg-background-50 text-foreground-500 hover:border-primary-300 hover:text-foreground-800"
                   }`}
                 >
+                  <i className="ri-drag-move-2-line text-base" aria-hidden="true" />
                   Reposition
                 </button>
               </div>
             </div>
           )}
-          <p className="mb-3 text-[11px] leading-relaxed font-label text-foreground-500">
+          <p className="mb-4 text-sm leading-relaxed font-label text-foreground-500">
             {src
               ? isSmart
                 ? effectiveFit === "cover"
@@ -239,24 +292,49 @@ export default function PositionPicker({
               : "Upload an image to position it."}
           </p>
 
-          <div className={`mb-1.5 flex items-center justify-between ${isContained ? "opacity-45" : ""}`}>
-            <span className="text-[11px] font-semibold text-foreground-600">Zoom</span>
-            <span className="rounded-full bg-background-100 px-2 py-0.5 text-[10px] font-semibold text-foreground-500">
+          <div className={`mb-2 flex items-center justify-between ${isContained ? "opacity-45" : ""}`}>
+            <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground-600">
+              <i className="ri-zoom-in-line text-base" aria-hidden="true" />
+              Zoom
+            </span>
+            <span className="rounded-full bg-background-100 px-2.5 py-1 text-xs font-semibold text-foreground-500">
               {Math.round(z * 100)}%
             </span>
           </div>
-          <input
-            type="range"
-            min={ZOOM_MIN}
-            max={ZOOM_MAX}
-            step={0.05}
-            value={z}
-            disabled={!src || isContained}
-            onChange={(e) => onZoomChange(Number(e.target.value))}
-            className="w-full cursor-pointer accent-primary-500 disabled:opacity-40"
-          />
 
-          <div className="mt-2.5 flex justify-end">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              aria-label="Decrease zoom"
+              disabled={zoomDisabled || z <= ZOOM_MIN}
+              onClick={() => changeZoom(-0.1)}
+              className="flex h-9 w-9 flex-none items-center justify-center rounded-lg border border-background-200 bg-background-50 text-foreground-600 transition-colors hover:border-primary-300 hover:text-primary-800 disabled:cursor-not-allowed disabled:opacity-35"
+            >
+              <i className="ri-subtract-line" aria-hidden="true" />
+            </button>
+            <input
+              type="range"
+              aria-label="Photo zoom"
+              min={ZOOM_MIN}
+              max={ZOOM_MAX}
+              step={0.05}
+              value={z}
+              disabled={zoomDisabled}
+              onChange={(e) => onZoomChange(Number(e.target.value))}
+              className="min-w-0 flex-1 cursor-pointer accent-primary-500 disabled:opacity-40"
+            />
+            <button
+              type="button"
+              aria-label="Increase zoom"
+              disabled={zoomDisabled || z >= ZOOM_MAX}
+              onClick={() => changeZoom(0.1)}
+              className="flex h-9 w-9 flex-none items-center justify-center rounded-lg border border-background-200 bg-background-50 text-foreground-600 transition-colors hover:border-primary-300 hover:text-primary-800 disabled:cursor-not-allowed disabled:opacity-35"
+            >
+              <i className="ri-add-line" aria-hidden="true" />
+            </button>
+          </div>
+
+          <div className="mt-3 flex justify-end">
             <button
               type="button"
               disabled={!src}
@@ -264,12 +342,12 @@ export default function PositionPicker({
                 onPositionChange(formatPosition(50, 50));
                 onZoomChange(1);
               }}
-              className="rounded-md px-2 py-1 text-[11px] font-semibold text-primary-700 hover:bg-primary-50 hover:text-primary-800 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-primary-700 hover:bg-primary-50 hover:text-primary-800 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
+              <i className="ri-restart-line text-sm" aria-hidden="true" />
               Reset position
             </button>
           </div>
-        </div>
       </div>
     </div>
   );
