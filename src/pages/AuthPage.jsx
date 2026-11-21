@@ -25,27 +25,21 @@ export default function AuthPage() {
   return (
     <AuthLayout
       title={
-        tab === "login" ? (
-          "Welcome back"
-        ) : (
-          <span className="inline-flex items-center justify-center gap-2">
-            <i className="ri-user-add-line" /> Create Account
-          </span>
-        )
+        tab === "login" ? "Welcome back" : "Create account"
       }
       subtitle={
         tab === "login"
-          ? "Sign in to manage your listings, shop orders, and uniform designs."
-          : "Join Connect767 directory and reach locals"
+          ? "Manage your listings, orders, and uniform designs."
+          : "Join Connect767 and reach more customers."
       }
     >
-      <div className="inline-flex w-full items-center gap-1 p-1 mb-6 bg-background-100 rounded-lg border border-background-200/70">
+      <div className="mb-5 inline-flex w-full items-center gap-1 rounded-xl bg-background-100 p-1">
         <button
           type="button"
           onClick={() => switchTab("login")}
-          className={`flex-1 py-2 text-sm font-semibold rounded-md cursor-pointer transition-colors ${
+          className={`flex-1 cursor-pointer rounded-lg py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 ${
             tab === "login"
-              ? "bg-background-50 text-foreground-950 shadow-sm"
+              ? "bg-primary-600 text-white"
               : "text-foreground-500 hover:text-foreground-800"
           }`}
         >
@@ -54,9 +48,9 @@ export default function AuthPage() {
         <button
           type="button"
           onClick={() => switchTab("register")}
-          className={`flex-1 py-2 text-sm font-semibold rounded-md cursor-pointer transition-colors ${
+          className={`flex-1 cursor-pointer rounded-lg py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 ${
             tab === "register"
-              ? "bg-background-50 text-foreground-950 shadow-sm"
+              ? "bg-primary-600 text-white"
               : "text-foreground-500 hover:text-foreground-800"
           }`}
         >
@@ -110,7 +104,7 @@ function LoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="px-4 py-3 rounded-lg bg-accent-50 border border-accent-200 text-sm text-accent-700 flex items-start gap-2">
           <i className="ri-error-warning-line mt-0.5" />
@@ -128,6 +122,7 @@ function LoginForm() {
           onChange={update("email")}
           required
           autoComplete="email"
+          className="h-12 rounded-xl bg-white focus:ring-2 focus:ring-primary-100"
         />
       </FormField>
 
@@ -141,12 +136,13 @@ function LoginForm() {
           onChange={update("password")}
           required
           autoComplete="current-password"
+          className="h-12 rounded-xl bg-white focus:ring-2 focus:ring-primary-100"
         />
       </FormField>
 
-      <div className="flex items-center justify-between text-xs font-label">
+      <div className="flex items-center justify-between gap-4 font-label text-xs">
         <label className="flex items-center gap-2 text-foreground-600 cursor-pointer">
-          <input type="checkbox" className="rounded border-background-300" />
+          <input type="checkbox" className="h-4 w-4 rounded border-background-300 accent-primary-600" />
           Remember me
         </label>
         <Link to="/auth/forgot-password" className="text-primary-700 hover:text-primary-800 font-semibold">
@@ -154,10 +150,14 @@ function LoginForm() {
         </Link>
       </div>
 
-      <Button type="submit" variant="primary" className="w-full" disabled={submitting}>
+      <Button type="submit" variant="primary" className="h-12 w-full rounded-xl" disabled={submitting}>
         {submitting ? "Signing in…" : "Sign in"}
-        {!submitting && <i className="ri-arrow-right-line" />}
       </Button>
+
+      <p className="text-center font-label text-xs text-foreground-500">
+        New to Connect767?{" "}
+        <Link to="/auth/register" className="font-semibold text-primary-700 hover:text-primary-800">Create an account</Link>
+      </p>
     </form>
   );
 }
@@ -173,6 +173,7 @@ function RegisterForm() {
   });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
 
   const update = (field) => (e) =>
     setForm((f) => ({
@@ -206,7 +207,7 @@ function RegisterForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="px-4 py-3 rounded-lg bg-accent-50 border border-accent-200 text-sm text-accent-700 flex items-start gap-2">
           <i className="ri-error-warning-line mt-0.5" />
@@ -214,7 +215,7 @@ function RegisterForm() {
         </div>
       )}
 
-      <FormField label="Account Name" htmlFor="name" required>
+      <FormField label="Account Name" htmlFor="name">
         <Input
           id="name"
           icon="ri-user-line"
@@ -223,10 +224,11 @@ function RegisterForm() {
           onChange={update("name")}
           required
           autoComplete="name"
+          className="h-12 rounded-xl bg-white focus:ring-2 focus:ring-primary-100"
         />
       </FormField>
 
-      <FormField label="Email" htmlFor="reg-email" required>
+      <FormField label="Email" htmlFor="reg-email">
         <Input
           id="reg-email"
           type="email"
@@ -236,10 +238,11 @@ function RegisterForm() {
           onChange={update("email")}
           required
           autoComplete="email"
+          className="h-12 rounded-xl bg-white focus:ring-2 focus:ring-primary-100"
         />
       </FormField>
 
-      <FormField label="Password" htmlFor="reg-password" hint="At least 8 characters" required>
+      <FormField label="Password" htmlFor="reg-password" hint={passwordFocused || form.password ? "At least 8 characters" : ""}>
         <Input
           id="reg-password"
           type="password"
@@ -250,10 +253,13 @@ function RegisterForm() {
           onChange={update("password")}
           required
           autoComplete="new-password"
+          onFocus={() => setPasswordFocused(true)}
+          onBlur={() => setPasswordFocused(false)}
+          className="h-12 rounded-xl bg-white focus:ring-2 focus:ring-primary-100"
         />
       </FormField>
 
-      <FormField label="Verify password" htmlFor="reg-confirm-password" required>
+      <FormField label="Confirm password" htmlFor="reg-confirm-password">
         <Input
           id="reg-confirm-password"
           type="password"
@@ -264,13 +270,14 @@ function RegisterForm() {
           onChange={update("confirmPassword")}
           required
           autoComplete="new-password"
+          className="h-12 rounded-xl bg-white focus:ring-2 focus:ring-primary-100"
         />
       </FormField>
 
-      <label className="flex items-start gap-2.5 text-xs font-label text-foreground-600 cursor-pointer">
+      <label className="flex cursor-pointer items-start gap-2.5 font-label text-xs leading-relaxed text-foreground-600">
         <input
           type="checkbox"
-          className="mt-0.5 rounded border-background-300"
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-background-300 accent-primary-600"
           checked={form.agree}
           onChange={update("agree")}
         />
@@ -286,10 +293,14 @@ function RegisterForm() {
         </span>
       </label>
 
-      <Button type="submit" variant="primary" className="w-full" disabled={submitting}>
-        {submitting ? "Creating account…" : "Create account & continue"}
-        {!submitting && <i className="ri-arrow-right-line" />}
+      <Button type="submit" variant="primary" className="h-12 w-full rounded-xl" disabled={submitting}>
+        {submitting ? "Creating account…" : "Create account"}
       </Button>
+
+      <p className="text-center font-label text-xs text-foreground-500">
+        Already have an account?{" "}
+        <Link to="/auth/login" className="font-semibold text-primary-700 hover:text-primary-800">Sign in</Link>
+      </p>
     </form>
   );
 }
