@@ -70,7 +70,7 @@ describe("AIUniformComposer", () => {
     expect(logos.length).toBeGreaterThanOrEqual(2);
     expect(logos.some((logo) => logo.getAttribute("src")?.includes("connect767-ai-command-logo.png"))).toBe(true);
     expect(screen.queryByText("Connect767 AI")).not.toBeInTheDocument();
-    expect(screen.getByText("Design your uniform")).toBeInTheDocument();
+    expect(screen.getByText("Design Your Uniform")).toBeInTheDocument();
   });
 
   it("submits with Enter and preserves Shift + Enter for multiline prompts", () => {
@@ -122,8 +122,8 @@ describe("AIUniformComposer", () => {
 
   it("labels the transparent artwork workspace clearly", () => {
     renderComposer({ mode: "artwork" });
-    expect(screen.getByRole("heading", { name: "Create transparent artwork" })).toBeInTheDocument();
-    expect(screen.getByText(/Uniform design assistant · Transparent artwork/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Create Transparent Artwork" })).toBeInTheDocument();
+    expect(screen.getByText(/Uniform Design Assistant · Transparent artwork/)).toBeInTheDocument();
     expect(within(screen.getByRole("region", { name: "AI command prompt" })).queryByText("Transparent artwork")).not.toBeInTheDocument();
     expect(screen.getByPlaceholderText("Describe the crest, graphic or pattern you want…")).toBeInTheDocument();
   });
@@ -132,9 +132,9 @@ describe("AIUniformComposer", () => {
     renderComposer();
     fireEvent.click(screen.getByLabelText("Add attachment or AI tool"));
 
-    expect(screen.getByText("Upload inspiration image")).toBeInTheDocument();
-    expect(screen.queryByText("Design full uniform")).not.toBeInTheDocument();
-    expect(screen.getByText("Create transparent artwork")).toBeInTheDocument();
+    expect(screen.getByText("Upload Inspiration Image")).toBeInTheDocument();
+    expect(screen.queryByText("Design Full Uniform")).not.toBeInTheDocument();
+    expect(screen.getByText("Create Transparent Artwork")).toBeInTheDocument();
     expect(screen.queryByText("Search the Web")).not.toBeInTheDocument();
     expect(screen.queryByText("Analyze Document")).not.toBeInTheDocument();
   });
@@ -149,7 +149,7 @@ describe("AIUniformComposer", () => {
     expect(screen.queryByRole("button", { name: "AI design settings" })).not.toBeInTheDocument();
     fireEvent.click(within(toolbarTarget).getByRole("button", { name: "AI tools" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Settings" }));
-    expect(screen.getByText("Design controls")).toBeInTheDocument();
+    expect(screen.getByText("Design Controls")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("e.g. Riverside FC")).toBeInTheDocument();
     toolbarTarget.remove();
   });
@@ -312,9 +312,9 @@ describe("AIUniformComposer", () => {
 
     fireEvent.click(within(toolbarTarget).getByRole("button", { name: "AI tools" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Settings" }));
-    expect(screen.getByText("Design controls")).toBeInTheDocument();
+    expect(screen.getByText("Design Controls")).toBeInTheDocument();
     fireEvent.pointerDown(message);
-    expect(screen.queryByText("Design controls")).not.toBeInTheDocument();
+    expect(screen.queryByText("Design Controls")).not.toBeInTheDocument();
     toolbarTarget.remove();
   });
 });

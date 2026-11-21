@@ -1953,7 +1953,7 @@ export default function UniformStudioPage() {
                   <span className="text-[8px] font-bold uppercase tracking-[0.14em] text-foreground-400">
                     Step {index + 1}
                   </span>
-                  <span className="text-xs font-semibold text-foreground-700">{label}</span>
+                  <span className="text-xs font-semibold capitalize text-foreground-700">{label}</span>
                 </li>
               ))}
             </ol>
@@ -2024,11 +2024,11 @@ export default function UniformStudioPage() {
     <section
       id="category-selection-required"
       aria-labelledby="required-category-title"
-      className={`rounded-xl border-2 bg-white p-2 shadow-sm ${!categoryConfirmed && designValidationAttempted ? "border-accent-400 ring-2 ring-accent-300" : "border-primary-500"}`}
+      className={`shrink-0 rounded-xl border-2 bg-white p-2 shadow-sm ${!categoryConfirmed && designValidationAttempted ? "border-accent-400 ring-2 ring-accent-300" : "border-primary-500"}`}
     >
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <div>
-          <h3 id="required-category-title" className="text-xs font-bold text-foreground-900">Uniform category</h3>
+          <h3 id="required-category-title" className="text-xs font-bold text-foreground-900">Uniform Category</h3>
           <p className="text-[8px] text-foreground-500">Choose a category, then its required fit.</p>
         </div>
         <RequiredIndicator />
@@ -2089,7 +2089,7 @@ export default function UniformStudioPage() {
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-700 text-lg text-white"><i className="ri-apps-2-line" /></span>
         <span className="min-w-0">
           <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-primary-700">Step 1</span>
-          <h2 className="font-heading text-lg font-semibold leading-tight">Choose a category</h2>
+          <h2 className="font-heading text-lg font-semibold leading-tight">Choose a Category</h2>
           <p className="text-[10px] text-foreground-500">Loads the correct AI uniform foundation</p>
         </span>
       </header>
@@ -2310,7 +2310,7 @@ export default function UniformStudioPage() {
             type="button"
             onClick={() => setStudioSettingsOpen(true)}
             aria-label="Studio settings"
-            title="AI Studio settings"
+            title="AI Studio Settings"
             aria-haspopup="dialog"
             aria-expanded={studioSettingsOpen}
             className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-background-50/75 transition hover:border-primary-500/45 hover:bg-primary-950/45 hover:text-primary-100"
@@ -2322,9 +2322,9 @@ export default function UniformStudioPage() {
 
       <nav
         aria-label="Uniform order progress"
-        className="relative z-30 flex-shrink-0 border-b border-white/[0.06] bg-[#12130f] px-3 py-2.5 sm:px-5"
+        className="relative z-30 flex-shrink-0 border-b border-white/[0.06] bg-[#12130f] px-3 py-1.5 sm:px-5"
       >
-        <div className="mx-auto flex max-w-[1500px] items-center gap-1.5 overflow-x-auto py-0.5">
+        <div className="mx-auto flex max-w-[1500px] items-center gap-1 overflow-x-auto">
           {studioWorkflow.map((step, index) => {
             const active = index === workflowIndex;
             const complete = index < workflowIndex;
@@ -2333,13 +2333,13 @@ export default function UniformStudioPage() {
               ? `${categoryDetails[activeSport]?.title || "Category"} · ${hasSelectedFit ? fitType : "Fit required"}`
               : step.description;
             return (
-              <div key={step.key} className="flex min-w-0 flex-1 items-center gap-1.5">
+              <div key={step.key} className="flex min-w-0 flex-1 items-center gap-1">
                 <button
                   type="button"
                   aria-current={active ? "step" : undefined}
                   disabled={locked}
                   onClick={() => openWorkflowStep(index)}
-                  className={`group flex min-w-[156px] flex-1 items-center gap-2.5 rounded-xl border px-3 py-2 text-left transition ${
+                  className={`group flex min-w-[142px] flex-1 items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition ${
                     active
                       ? "cursor-pointer border-primary-400/45 bg-primary-700 text-white shadow-[0_8px_22px_rgba(0,116,73,0.2)]"
                       : complete
@@ -2349,7 +2349,7 @@ export default function UniformStudioPage() {
                           : "cursor-pointer border-white/[0.07] bg-white/[0.025] text-background-50/55 hover:border-white/[0.14] hover:bg-white/[0.06] hover:text-background-50/80"
                   }`}
                 >
-                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${
+                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold ${
                     active
                       ? "border-white/20 bg-white/15"
                       : complete
@@ -2359,11 +2359,11 @@ export default function UniformStudioPage() {
                     {complete ? <i className="ri-check-line" /> : locked ? <i className="ri-lock-line" /> : step.step}
                   </span>
                   <span className="min-w-0">
-                    <span className="flex items-center gap-1.5 whitespace-nowrap text-[11px] font-bold">
-                      <i className={`${step.icon} text-xs opacity-70`} />
+                    <span className="flex items-center gap-1.5 whitespace-nowrap text-[10px] font-bold capitalize">
+                      <i className={`${step.icon} text-[11px] opacity-70`} />
                       {step.label}
                     </span>
-                    <span className={`mt-0.5 hidden whitespace-nowrap text-[9px] xl:block ${active ? "text-white/65" : "text-current opacity-55"}`}>
+                    <span className={`hidden whitespace-nowrap text-[8px] xl:block ${active ? "text-white/65" : "text-current opacity-55"}`}>
                       {stepDescription}
                     </span>
                   </span>
@@ -2371,7 +2371,7 @@ export default function UniformStudioPage() {
                 {index < studioWorkflow.length - 1 && (
                   <span
                     aria-hidden="true"
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-sm transition ${
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs transition ${
                       complete
                         ? "border-primary-500/35 bg-primary-950/50 text-primary-300"
                         : "border-white/[0.07] bg-white/[0.025] text-background-50/30"
@@ -2398,12 +2398,13 @@ export default function UniformStudioPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="studio-settings-title"
+            aria-label="AI Studio settings"
             className="flex h-full w-full max-w-[390px] flex-col border-l border-background-300 bg-[#f8f7f2] text-foreground-950 shadow-[-24px_0_70px_rgba(0,0,0,.38)]"
           >
             <header className="flex items-center justify-between gap-4 border-b border-background-200 bg-white px-5 py-4">
               <span className="flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-700 text-white"><i className="ri-settings-3-line" /></span>
-                <span><h2 id="studio-settings-title" className="font-heading text-lg font-semibold">AI Studio settings</h2><p className="text-[10px] text-foreground-500">AI workspace and canvas appearance</p></span>
+                <span><h2 id="studio-settings-title" className="font-heading text-lg font-semibold">AI Studio Settings</h2><p className="text-[10px] text-foreground-500">AI workspace and canvas appearance</p></span>
               </span>
               <button type="button" onClick={() => setStudioSettingsOpen(false)} aria-label="Close studio settings" className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-background-300 bg-background-50 text-foreground-600 hover:bg-background-100"><i className="ri-close-line text-lg" /></button>
             </header>
@@ -2484,17 +2485,18 @@ export default function UniformStudioPage() {
                     <aside aria-labelledby="uniform-order-setup-title" className="flex max-h-[45dvh] min-h-0 w-full min-w-0 max-w-none flex-shrink-0 flex-col border-b border-background-300 bg-[#f8f7f2] text-foreground-950 shadow-[0_18px_44px_rgba(0,0,0,.2)] md:max-h-none md:w-[360px] md:min-w-[340px] md:max-w-[380px] md:border-b-0 md:border-r md:shadow-[18px_0_44px_rgba(0,0,0,.2)] xl:w-[380px]">
                       <header className="flex flex-shrink-0 items-center gap-2.5 border-b border-background-200 bg-white px-3 py-2">
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-700 text-sm text-white"><i className="ri-shirt-line" /></span>
-                        <span className="min-w-0"><h2 id="uniform-order-setup-title" className="font-heading text-[15px] font-semibold leading-tight">Uniform &amp; order setup</h2><p className="truncate text-[8px] text-foreground-500">Required category and fit, followed by production options</p></span>
+                        <span className="min-w-0"><h2 id="uniform-order-setup-title" aria-label="Uniform &amp; order setup" className="font-heading text-[15px] font-semibold leading-tight">Uniform &amp; Order Setup</h2><p className="truncate text-[8px] text-foreground-500">Required category and fit, followed by production options</p></span>
                       </header>
-                      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain p-2">{categoryRequiredPanel}{uniformSetupPanel}</div>
+                      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain p-2">{categoryRequiredPanel}{uniformSetupPanel}</div>
                       <footer className="flex-shrink-0 border-t border-background-200 bg-white p-2 shadow-[0_-10px_28px_rgba(31,43,35,.08)]">
                         <button
                           type="button"
                           onClick={continueWorkflow}
                           title={designContinueTitle}
+                          aria-label="Continue to Team roster"
                           className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(0,116,73,.22)] transition hover:bg-primary-500"
                         >
-                          Continue to Team roster <i className="ri-arrow-right-line text-base" aria-hidden="true" />
+                          Continue to Team Roster <i className="ri-arrow-right-line text-base" aria-hidden="true" />
                         </button>
                       </footer>
                     </aside>
@@ -2613,7 +2615,7 @@ export default function UniformStudioPage() {
                             <span className={`flex h-11 w-11 flex-none items-center justify-center rounded-xl border text-xl shadow-sm ${isDarkStudioBackground(studioBackground) ? "border-white/15 bg-white/10 text-white/90" : "border-primary-200/70 bg-primary-50/85 text-primary-800"}`} aria-hidden="true">
                               <i className="ri-sparkling-2-line" />
                             </span>
-                            <h2 className={`font-heading text-xl font-medium leading-tight sm:text-2xl ${isDarkStudioBackground(studioBackground) ? "text-white/95" : "text-foreground-950"}`}>Your design will appear here</h2>
+                            <h2 className={`font-heading text-xl font-medium leading-tight sm:text-2xl ${isDarkStudioBackground(studioBackground) ? "text-white/95" : "text-foreground-950"}`}>Your Design Will Appear Here</h2>
                           </div>
                         </div>
                       </div>
@@ -3233,7 +3235,7 @@ function RosterTool({
   return (
     <div>
       <div className="mb-3 flex items-center justify-between rounded-lg bg-primary-50 px-3 py-2 text-[11px] font-label text-primary-800">
-        <span className="font-semibold">Fit type: {fitType}</span>
+        <span className="font-semibold capitalize">Fit type: {fitType}</span>
         <span>Sizes follow the Step 2 fit selection</span>
       </div>
 
@@ -3247,7 +3249,7 @@ function RosterTool({
               {minimumKits} full-kit minimum · {unitCount} added
             </p>
             <p className="text-[10px] font-label text-foreground-500">
-              {unitCount >= minimumKits ? "Minimum met. Continue to Review & quote to confirm your order." : `Add ${minimumKits - unitCount} more full kit${minimumKits - unitCount === 1 ? "" : "s"}. Extra shirts do not count.`}
+              {unitCount >= minimumKits ? "Minimum met. Continue to Review & Quote to confirm your order." : `Add ${minimumKits - unitCount} more full kit${minimumKits - unitCount === 1 ? "" : "s"}. Extra shirts do not count.`}
             </p>
           </div>
         </div>
@@ -3255,7 +3257,7 @@ function RosterTool({
 
       <div className="flex items-center justify-between mb-4">
         <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-foreground-500">
-          Team roster <RequiredIndicator />
+          Team Roster <RequiredIndicator />
         </h3>
         <button
           type="button"
@@ -3921,7 +3923,7 @@ function ReviewOrderTool({
 
         {!totals && (
           <div className="mb-4 rounded-2xl border border-background-200 bg-background-50 p-3.5">
-            <h3 className="text-sm font-semibold text-foreground-900">Payment options</h3>
+            <h3 className="text-sm font-semibold text-foreground-900">Payment Options</h3>
             <p className="mb-3 mt-1 text-[10px] leading-relaxed text-foreground-500">
               Complete the required contact and delivery fields, then calculate the final total to continue with payment.
             </p>
@@ -3955,7 +3957,7 @@ function ReviewOrderTool({
 
         {totals && (
           <div className="mb-4 rounded-2xl border border-background-200 bg-background-50 p-3.5">
-            <h3 className="mb-3 text-sm font-semibold text-foreground-900">Choose payment method</h3>
+            <h3 className="mb-3 text-sm font-semibold text-foreground-900">Choose Payment Method</h3>
             <div className="mb-3 grid grid-cols-2 gap-2">
               <div className="rounded-xl border border-primary-200 bg-primary-50 p-3 text-center">
                 <i className="ri-bank-card-line text-xl text-primary-700" />

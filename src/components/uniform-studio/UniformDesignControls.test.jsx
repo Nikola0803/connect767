@@ -158,7 +158,7 @@ describe("uniform design controls", () => {
     expect(screen.queryByRole("button", { name: "Crew" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "V-Neck" })).not.toBeInTheDocument();
     expect(screen.getByText(/Crew, V-Neck and short sleeves included in base price/i)).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: /Polo style collar/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Polo Style Collar/ }));
     expect(setCollar).toHaveBeenCalledWith("Polo");
     expect(screen.queryByRole("button", { name: "Sleeveless" })).not.toBeInTheDocument();
     expect(screen.queryByRole("checkbox", { name: /Long sleeves/ })).not.toBeInTheDocument();
@@ -166,7 +166,7 @@ describe("uniform design controls", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "Mixed Sleeve Team Order" }));
     expect(setSleeve).toHaveBeenCalledWith("Mixed");
     rerender(<DesignPanel {...props} sleeve="Mixed" />);
-    expect(screen.getByText(/Choose sleeve length per player in Team roster/i)).toBeInTheDocument();
+    expect(screen.getByText(/Choose sleeve length per player in Team Roster/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("checkbox", { name: "Mixed Sleeve Team Order" }));
     expect(setSleeve).toHaveBeenLastCalledWith("Short");
   });
@@ -247,7 +247,7 @@ describe("uniform design controls", () => {
 
     expect(screen.queryByRole("button", { name: "Crew" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "V-Neck" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Polo style collar/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Polo Style Collar/ }));
     expect(setCollar).toHaveBeenCalledWith("Polo");
     expect(screen.queryByRole("checkbox", { name: /Long sleeves/ })).not.toBeInTheDocument();
 
