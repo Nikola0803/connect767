@@ -83,7 +83,12 @@ describe("AI design generation endpoint", () => {
     const res = response();
     await handler(request("GET"), res);
     expect(res.statusCode).toBe(200);
-    expect(res.payload).toEqual({ configured: true, model: "gpt-image-2.6-flare" });
+    expect(res.payload).toEqual({
+      configured: true,
+      model: "gpt-image-2.6-flare",
+      previewModel: "gpt-image-2.6-flare",
+      proofModel: "gpt-image-2.6-sunburst",
+    });
     expect(JSON.stringify(res.payload)).not.toContain("test-only-key");
   });
 
@@ -138,8 +143,31 @@ describe("AI design generation endpoint", () => {
     }), res);
 
     const upstreamBody = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(upstreamBody).toMatchObject({ size: "1536x1024", quality: "high" });
-    expect(res.payload).toMatchObject({ size: "1536x1024", quality: "high", renderTier: "proof" });
+    expect(upstreamBody).toMatchObject({ model: "gpt-image-2.6-sunburst", size: "1536x1024", quality: "high", complexity: "high", output_format: "png" });
+    expect(res.payload).toMatchObject({ model: "gpt-image-2.6-sunburst", size: "1536x1024", quality: "high", renderTier: "proof" });
+  });
+
+  it("uses the fast Flare profile and compressed WebP for uniform previews", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: [{ b64_json: "cHJldmlldw==" }] }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const res = response();
+
+    await handler(request("POST", { ...validBrief, generationMode: "uniform", renderTier: "preview" }), res);
+
+    const upstreamBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(upstreamBody).toMatchObject({
+      model: "gpt-image-2.6-flare",
+      size: "1024x1024",
+      quality: "medium",
+      complexity: "medium",
+      output_format: "webp",
+      output_compression: 88,
+    });
+    expect(res.payload).toMatchObject({ mimeType: "image/webp", renderTier: "preview" });
   });
 
   it("uses the image edit endpoint when refining an existing uniform concept", async () => {

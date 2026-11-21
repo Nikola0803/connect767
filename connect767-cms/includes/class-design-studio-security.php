@@ -16,7 +16,7 @@ class C767_Design_Studio_Security
 {
     const NAMESPACE_ = 'connect767/v1';
     const OPTION_KEY = 'c767_design_security_settings';
-    const DB_VERSION = '1.0.0';
+    const DB_VERSION = '1.1.0';
     const TOKEN_TTL = 2592000; // 30 days.
 
     public static function init()
@@ -131,6 +131,37 @@ class C767_Design_Studio_Security
             KEY user_file (user_id,file_id,downloaded_at)
         ) $charset;");
 
+        dbDelta('CREATE TABLE ' . self::table('design_conversations') . " (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            public_id varchar(64) NOT NULL,
+            project_id bigint(20) unsigned NOT NULL,
+            user_id bigint(20) unsigned NOT NULL,
+            title varchar(190) NOT NULL DEFAULT '',
+            status varchar(20) NOT NULL DEFAULT 'active',
+            created_at datetime NOT NULL,
+            updated_at datetime NOT NULL,
+            PRIMARY KEY  (id),
+            UNIQUE KEY public_id (public_id),
+            KEY user_project (user_id,project_id),
+            KEY project_status (project_id,status)
+        ) $charset;");
+
+        dbDelta('CREATE TABLE ' . self::table('design_messages') . " (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            conversation_id bigint(20) unsigned NOT NULL,
+            entry_id varchar(80) NOT NULL,
+            prompt text NOT NULL,
+            mode varchar(30) NOT NULL DEFAULT 'uniform',
+            kind varchar(40) NOT NULL DEFAULT 'AI design',
+            brand_name varchar(190) NOT NULL DEFAULT '',
+            style varchar(80) NOT NULL DEFAULT '',
+            response text NOT NULL,
+            created_at datetime NOT NULL,
+            PRIMARY KEY  (id),
+            UNIQUE KEY conversation_entry (conversation_id,entry_id),
+            KEY conversation_created (conversation_id,created_at)
+        ) $charset;");
+
         if (!get_option(self::OPTION_KEY)) {
             add_option(self::OPTION_KEY, self::defaults(), '', false);
         }
@@ -165,6 +196,81 @@ class C767_Design_Studio_Security
         register_rest_route(self::NAMESPACE_, '/design-security/download', [
             'methods' => 'GET', 'callback' => [__CLASS__, 'download'], 'permission_callback' => '__return_true',
         ]);
+        register_rest_route(self::NAMESPACE_, '/design-security/history', [
+            'methods' => ['GET', 'POST', 'DELETE'], 'callback' => [__CLASS__, 'history'],
+            'permission_callback' => '__return_true',
+        ]);
+    }
+
+    public static function history(WP_REST_Request $request)
+    {
+        global $wpdb;
+        $identity = self::identity($request, false);
+        if (is_wp_error($identity)) return $identity;
+        if (empty($identity['user_id'])) {
+            return new WP_Error('c767_history_login', 'Sign in to sync AI design history across devices.', ['status' => 401]);
+        }
+        $project = self::owned_project((string) $request->get_param('projectId'), $identity);
+        if (is_wp_error($project)) return $project;
+        $method = strtoupper($request->get_method());
+
+        if ($method === 'DELETE') {
+            $conversation_ids = $wpdb->get_col($wpdb->prepare(
+                'SELECT id FROM ' . self::table('design_conversations') . ' WHERE project_id=%d AND user_id=%d',
+                (int) $project['id'], (int) $identity['user_id']
+            ));
+            if ($conversation_ids) {
+                $ids = implode(',', array_map('absint', $conversation_ids));
+                $wpdb->query('DELETE FROM ' . self::table('design_messages') . " WHERE conversation_id IN ($ids)");
+            }
+            $wpdb->delete(self::table('design_conversations'), [
+                'project_id' => (int) $project['id'], 'user_id' => (int) $identity['user_id'],
+            ], ['%d','%d']);
+            return rest_ensure_response(['current' => [], 'archived' => []]);
+        }
+
+        if ($method === 'POST') {
+            $action = sanitize_key((string) $request->get_param('action')) ?: 'append';
+            if ($action === 'new') {
+                $wpdb->update(self::table('design_conversations'), [
+                    'status' => 'archived', 'updated_at' => gmdate('Y-m-d H:i:s'),
+                ], [
+                    'project_id' => (int) $project['id'], 'user_id' => (int) $identity['user_id'], 'status' => 'active',
+                ], ['%s','%s'], ['%d','%d','%s']);
+                $conversation = self::create_conversation($project, $identity, (string) $request->get_param('title'));
+                return rest_ensure_response(['conversationId' => $conversation['public_id']]);
+            }
+
+            if ($action === 'import') {
+                $existing = (int) $wpdb->get_var($wpdb->prepare(
+                    'SELECT COUNT(*) FROM ' . self::table('design_conversations') . ' WHERE project_id=%d AND user_id=%d',
+                    (int) $project['id'], (int) $identity['user_id']
+                ));
+                if (!$existing) {
+                    $archived = array_slice((array) $request->get_param('archived'), 0, 70);
+                    $current = array_slice((array) $request->get_param('current'), 0, 30);
+                    if ($archived) {
+                        $conversation = self::create_conversation($project, $identity, 'Imported design history', 'archived');
+                        foreach (array_reverse($archived) as $entry) self::insert_history_entry($conversation['id'], (array) $entry);
+                    }
+                    if ($current) {
+                        $conversation = self::create_conversation($project, $identity, 'Current design');
+                        foreach (array_reverse($current) as $entry) self::insert_history_entry($conversation['id'], (array) $entry);
+                    }
+                }
+                return rest_ensure_response(self::history_payload($project, $identity));
+            }
+
+            $conversation = self::active_conversation($project, $identity);
+            if (!$conversation) $conversation = self::create_conversation($project, $identity, 'Current design');
+            $entry = (array) $request->get_param('entry');
+            if (empty($entry['prompt'])) return new WP_Error('c767_history_prompt', 'A prompt is required.', ['status' => 400]);
+            self::insert_history_entry((int) $conversation['id'], $entry);
+            $wpdb->update(self::table('design_conversations'), ['updated_at' => gmdate('Y-m-d H:i:s')], ['id' => (int) $conversation['id']], ['%s'], ['%d']);
+            return rest_ensure_response(['conversationId' => $conversation['public_id'], 'saved' => true]);
+        }
+
+        return rest_ensure_response(self::history_payload($project, $identity));
     }
 
     public static function service_permission(WP_REST_Request $request)
@@ -532,6 +638,82 @@ class C767_Design_Studio_Security
     {
         if (defined('C767_AI_SERVICE_SECRET') && C767_AI_SERVICE_SECRET) return (string) C767_AI_SERVICE_SECRET;
         return (string) self::settings()['service_secret'];
+    }
+
+    private static function active_conversation($project, $identity)
+    {
+        global $wpdb;
+        return $wpdb->get_row($wpdb->prepare(
+            'SELECT * FROM ' . self::table('design_conversations') . ' WHERE project_id=%d AND user_id=%d AND status=\'active\' ORDER BY updated_at DESC,id DESC LIMIT 1',
+            (int) $project['id'], (int) $identity['user_id']
+        ), ARRAY_A);
+    }
+
+    private static function create_conversation($project, $identity, $title = '', $status = 'active')
+    {
+        global $wpdb;
+        $now = gmdate('Y-m-d H:i:s');
+        $public_id = wp_generate_uuid4();
+        $wpdb->insert(self::table('design_conversations'), [
+            'public_id' => $public_id,
+            'project_id' => (int) $project['id'],
+            'user_id' => (int) $identity['user_id'],
+            'title' => sanitize_text_field($title ?: 'AI design conversation'),
+            'status' => $status === 'archived' ? 'archived' : 'active',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ], ['%s','%d','%d','%s','%s','%s','%s']);
+        return ['id' => (int) $wpdb->insert_id, 'public_id' => $public_id];
+    }
+
+    private static function insert_history_entry($conversation_id, $entry)
+    {
+        global $wpdb;
+        $entry_id = sanitize_text_field((string) ($entry['id'] ?? ''));
+        if (!$entry_id) $entry_id = wp_generate_uuid4();
+        $created = !empty($entry['createdAt']) ? strtotime((string) $entry['createdAt']) : false;
+        $wpdb->query($wpdb->prepare(
+            'INSERT IGNORE INTO ' . self::table('design_messages') . ' (conversation_id,entry_id,prompt,mode,kind,brand_name,style,response,created_at) VALUES (%d,%s,%s,%s,%s,%s,%s,%s,%s)',
+            (int) $conversation_id,
+            substr($entry_id, 0, 80),
+            sanitize_textarea_field((string) ($entry['prompt'] ?? '')),
+            substr(sanitize_key((string) ($entry['mode'] ?? 'uniform')), 0, 30),
+            substr(sanitize_text_field((string) ($entry['kind'] ?? 'AI design')), 0, 40),
+            substr(sanitize_text_field((string) ($entry['brandName'] ?? '')), 0, 190),
+            substr(sanitize_text_field((string) ($entry['style'] ?? '')), 0, 80),
+            sanitize_textarea_field(is_string($entry['response'] ?? '') ? $entry['response'] : wp_json_encode($entry['response'] ?? '')),
+            gmdate('Y-m-d H:i:s', $created ?: time())
+        ));
+    }
+
+    private static function history_payload($project, $identity)
+    {
+        global $wpdb;
+        $conversations = $wpdb->get_results($wpdb->prepare(
+            'SELECT id,public_id,status,updated_at FROM ' . self::table('design_conversations') . ' WHERE project_id=%d AND user_id=%d ORDER BY (status=\'active\') DESC,updated_at DESC,id DESC',
+            (int) $project['id'], (int) $identity['user_id']
+        ), ARRAY_A);
+        if (!$conversations) return ['current' => [], 'archived' => []];
+        $ids = implode(',', array_map('absint', wp_list_pluck($conversations, 'id')));
+        $messages = $wpdb->get_results(
+            'SELECT * FROM ' . self::table('design_messages') . " WHERE conversation_id IN ($ids) ORDER BY created_at DESC,id DESC",
+            ARRAY_A
+        );
+        $status_by_id = [];
+        foreach ($conversations as $conversation) $status_by_id[(int) $conversation['id']] = $conversation['status'];
+        $payload = ['current' => [], 'archived' => []];
+        foreach ($messages ?: [] as $message) {
+            $entry = [
+                'id' => $message['entry_id'], 'prompt' => $message['prompt'], 'mode' => $message['mode'],
+                'kind' => $message['kind'], 'brandName' => $message['brand_name'], 'style' => $message['style'],
+                'response' => $message['response'], 'createdAt' => gmdate('c', strtotime($message['created_at'])),
+            ];
+            $bucket = ($status_by_id[(int) $message['conversation_id']] ?? '') === 'active' ? 'current' : 'archived';
+            $payload[$bucket][] = $entry;
+        }
+        $payload['current'] = array_slice($payload['current'], 0, 30);
+        $payload['archived'] = array_slice($payload['archived'], 0, 70);
+        return $payload;
     }
 
     private static function identity(WP_REST_Request $request, $create_guest)

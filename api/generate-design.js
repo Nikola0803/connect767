@@ -5,7 +5,8 @@ export const config = { maxDuration: 60 };
 
 const OPENAI_IMAGES_URL = "https://api.openai.com/v1/images/generations";
 const OPENAI_IMAGE_EDITS_URL = "https://api.openai.com/v1/images/edits";
-const DEFAULT_MODEL = "gpt-image-2.6-flare";
+const DEFAULT_PREVIEW_MODEL = "gpt-image-2.6-flare";
+const DEFAULT_PROOF_MODEL = "gpt-image-2.6-sunburst";
 const WINDOW_MS = 10 * 60 * 1000;
 const MAX_REQUESTS_PER_WINDOW = 6;
 const requestWindows = new Map();
@@ -92,8 +93,13 @@ function outputSettings(brief) {
     ? process.env.OPENAI_IMAGE_PROOF_QUALITY
     : process.env.OPENAI_IMAGE_PREVIEW_QUALITY;
   return {
+    model: proof
+      ? process.env.OPENAI_IMAGE_PROOF_MODEL || DEFAULT_PROOF_MODEL
+      : process.env.OPENAI_IMAGE_PREVIEW_MODEL || process.env.OPENAI_IMAGE_MODEL || DEFAULT_PREVIEW_MODEL,
     size: proof && brief.generationMode === "uniform" ? "1536x1024" : "1024x1024",
-    quality: IMAGE_QUALITIES.has(configuredQuality) ? configuredQuality : proof ? "high" : "medium",
+    quality: IMAGE_QUALITIES.has(configuredQuality) ? configuredQuality : proof ? "xhigh" : "medium",
+    complexity: proof ? "high" : "medium",
+    outputFormat: !proof && brief.generationMode === "uniform" ? "webp" : "png",
   };
 }
 
@@ -156,10 +162,11 @@ function responseJson(res, status, payload) {
 
 export default async function handler(req, res) {
   const apiKey = process.env.OPENAI_API_KEY;
-  const model = process.env.OPENAI_IMAGE_MODEL || DEFAULT_MODEL;
+  const previewModel = process.env.OPENAI_IMAGE_PREVIEW_MODEL || process.env.OPENAI_IMAGE_MODEL || DEFAULT_PREVIEW_MODEL;
+  const proofModel = process.env.OPENAI_IMAGE_PROOF_MODEL || DEFAULT_PROOF_MODEL;
 
   if (req.method === "GET") {
-    return responseJson(res, 200, { configured: Boolean(apiKey), model });
+    return responseJson(res, 200, { configured: Boolean(apiKey), model: previewModel, previewModel, proofModel });
   }
   if (req.method !== "POST") {
     res.setHeader?.("Allow", "GET, POST");
@@ -202,6 +209,8 @@ export default async function handler(req, res) {
 
   try {
     const output = outputSettings(brief);
+    const model = output.model;
+    const mimeType = output.outputFormat === "webp" ? "image/webp" : "image/png";
     let upstreamUrl = OPENAI_IMAGES_URL;
     let upstreamBody;
     let upstreamHeaders = {
@@ -219,7 +228,9 @@ export default async function handler(req, res) {
       form.append("n", "1");
       form.append("size", output.size);
       form.append("quality", output.quality);
-      form.append("output_format", "png");
+      form.append("complexity", output.complexity);
+      form.append("output_format", output.outputFormat);
+      if (output.outputFormat === "webp") form.append("output_compression", "88");
       form.append("background", brief.generationMode === "artwork" ? "transparent" : "opaque");
       form.append("safety_identifier", safetyIdentifier(req));
       upstreamBody = form;
@@ -231,7 +242,9 @@ export default async function handler(req, res) {
         n: 1,
         size: output.size,
         quality: output.quality,
-        output_format: "png",
+        complexity: output.complexity,
+        output_format: output.outputFormat,
+        ...(output.outputFormat === "webp" ? { output_compression: 88 } : {}),
         background: brief.generationMode === "artwork" ? "transparent" : "opaque",
         safety_identifier: safetyIdentifier(req),
       });
@@ -263,19 +276,20 @@ export default async function handler(req, res) {
     const secured = await secureGeneratedFile(req, {
       requestId,
       b64: image.b64_json,
-      mimeType: "image/png",
-      fileType: brief.generationMode === "artwork" ? "png" : "png",
-      originalName: `connect767-${brief.generationMode}-${requestId}.png`,
+      mimeType,
+      fileType: brief.generationMode === "artwork" ? "png" : output.outputFormat,
+      originalName: `connect767-${brief.generationMode}-${requestId}.${output.outputFormat}`,
     });
     if (settlesLogicalRequest) await settleAIRequest(req, { requestId, successful: true, providerReference: data?.id || "" });
 
     return responseJson(res, 200, {
       b64: secured?.b64 || image.b64_json,
-      mimeType: secured?.mimeType || "image/png",
+      mimeType: secured?.mimeType || mimeType,
       mode: brief.generationMode,
       model,
       size: data.size || output.size,
       quality: output.quality,
+      complexity: output.complexity,
       renderTier: brief.renderTier,
       usage: data.usage || null,
       revisedPrompt: image.revised_prompt || null,
