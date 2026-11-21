@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import TierBadge from "./ui/TierBadge";
-import { imageCropStyle, normalizeImageFit } from "../lib/imagePosition";
 import { directoryCategories } from "../data/directory";
 import { findIndustry } from "../data/industries";
 import { isRentalBookingType, normalizeRentalRateUnit } from "../lib/bookingTypes";
@@ -142,13 +141,10 @@ function ListingHighlights({ listing }) {
 }
 
 function Cover({ listing, listView = false }) {
-  const coverPosition = listing.coverPosition || "center";
-  const coverFit = normalizeImageFit(listing.coverFit, "contain");
-  const showFullImage = coverFit === "contain";
   return (
     <div className={`relative flex-shrink-0 overflow-hidden rounded-[1.15rem] ${listView ? "m-2 sm:w-64" : "m-2 mb-0"}`}>
       <div className={`w-full overflow-hidden bg-background-100 ${listView ? "h-52 sm:h-full" : "aspect-[4/3]"}`}>
-        {listing.image && showFullImage ? (
+        {listing.image ? (
           <div className="relative h-full w-full overflow-hidden bg-background-100">
             <img
               aria-hidden="true"
@@ -168,16 +164,6 @@ function Cover({ listing, listView = false }) {
               src={listing.image}
             />
           </div>
-        ) : listing.image ? (
-          <img
-            loading="lazy"
-            decoding="async"
-            alt={`${listing.title} — ${industryLabel(listing)}`}
-            title={`${listing.title} — ${industryLabel(listing)}`}
-            className="listing-cover-media h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.045]"
-            src={listing.image}
-            style={imageCropStyle(coverPosition, listing.coverZoom, coverFit)}
-          />
         ) : (
           <DefaultListingCover title={listing.title} compact />
         )}
