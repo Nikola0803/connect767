@@ -42,4 +42,45 @@ describe("PositionPicker cover controls", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reposition" }));
     expect(onFitChange).toHaveBeenCalledWith("cover");
   });
+
+  it("activates repositioning from the photo toolbar", () => {
+    const onFitChange = vi.fn();
+    render(
+      <PositionPicker
+        src="https://example.com/cover.jpg"
+        shape="cover"
+        position="center"
+        zoom={1}
+        fit="contain"
+        onPositionChange={vi.fn()}
+        onZoomChange={vi.fn()}
+        onFitChange={onFitChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Reposition photo" }));
+    expect(onFitChange).toHaveBeenCalledWith("cover");
+  });
+
+  it("changes zoom from the photo toolbar icons", () => {
+    const onZoomChange = vi.fn();
+    render(
+      <PositionPicker
+        src="https://example.com/cover.jpg"
+        shape="cover"
+        position="center"
+        zoom={1.2}
+        fit="cover"
+        onPositionChange={vi.fn()}
+        onZoomChange={onZoomChange}
+        onFitChange={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+    expect(onZoomChange).toHaveBeenLastCalledWith(1.3);
+
+    fireEvent.click(screen.getByRole("button", { name: "Zoom out" }));
+    expect(onZoomChange).toHaveBeenLastCalledWith(1.1);
+  });
 });
