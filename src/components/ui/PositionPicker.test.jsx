@@ -19,8 +19,9 @@ describe("PositionPicker cover controls", () => {
 
     expect(screen.getByRole("button", { name: "Fit full image" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reposition" })).toBeInTheDocument();
-    expect(screen.getByText(/entire photo will be visible/i)).toBeInTheDocument();
+    expect(screen.getByText(/entire photo is visible/i)).toBeInTheDocument();
     expect(screen.getByRole("slider")).toBeDisabled();
+    expect(screen.queryByText("Drag to reposition")).not.toBeInTheDocument();
   });
 
   it("switches to reposition mode when requested", () => {

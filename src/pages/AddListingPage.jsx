@@ -1231,10 +1231,10 @@ export default function AddListingPage() {
                   </FormField>
                   <FormField
                     label="Cover photo"
-                    hint="Best fit: 1600 × 1200 px (4:3), max 2 MB. Keep important content centered for the best directory and profile display."
+                    hint="Recommended: 1600 × 900 px (16:9), max 2 MB. Keep important content centered for the best directory and profile display."
                   >
                     <div className="relative w-full group">
-                      <label className="relative flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-lg border-2 border-dashed border-background-300 text-center transition-colors hover:border-primary-400 cursor-pointer">
+                        <label className="relative flex aspect-[16/9] w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-lg border-2 border-dashed border-background-300 text-center transition-colors hover:border-primary-400 cursor-pointer">
                         {form.photoPreview ? (
                           <img
                             src={form.photoPreview}
@@ -1476,7 +1476,7 @@ export default function AddListingPage() {
                         Cover photo
                       </span>
                       {form.photoPreview ? (
-                        <div className="w-40 aspect-[4/3] rounded-lg overflow-hidden border border-background-200/70 bg-background-100">
+                          <div className="w-40 aspect-[16/9] rounded-lg overflow-hidden border border-background-200/70 bg-background-100">
                           <img
                             src={form.photoPreview}
                             alt="Cover"
@@ -1485,7 +1485,7 @@ export default function AddListingPage() {
                           />
                         </div>
                       ) : (
-                        <div className="w-40 aspect-[4/3] rounded-lg border border-dashed border-background-300 flex items-center justify-center">
+                          <div className="w-40 aspect-[16/9] rounded-lg border border-dashed border-background-300 flex items-center justify-center">
                           <span className="text-[11px] text-foreground-400 font-label">
                             Not added
                           </span>
