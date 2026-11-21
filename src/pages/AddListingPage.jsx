@@ -540,6 +540,24 @@ export default function AddListingPage() {
     setForm((f) => ({ ...f, [field]: e.target.value }));
   };
 
+  const handleLogoPhotoChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setForm((current) => {
+      if (current.logoPreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(current.logoPreview);
+      }
+      return {
+        ...current,
+        logoFile: file,
+        logoPreview: URL.createObjectURL(file),
+        logoPosition: "center",
+        logoZoom: 1,
+      };
+    });
+    event.target.value = "";
+  };
+
   const handleCoverPhotoChange = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -1219,68 +1237,66 @@ export default function AddListingPage() {
                     </div>
                   )}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-5 items-start">
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:items-start">
                   <FormField
                     label="Profile Photo"
                     hint="Your account photo, shared across all listings."
                   >
-                    <div className="relative w-32 h-32 group">
-                      <label className="flex flex-col items-center justify-center gap-2 w-32 h-32 rounded-full border-2 border-dashed border-background-300 hover:border-primary-400 cursor-pointer transition-colors text-center overflow-hidden bg-background-100/40">
-                        {form.logoPreview ? (
-                          <img
-                            src={form.logoPreview}
-                            alt="Logo preview"
-                            className="w-full h-full object-cover"
-                            style={imageCropStyle(form.logoPosition, form.logoZoom)}
-                          />
-                        ) : (
+                    {!form.logoPreview ? (
+                      <label className="flex h-32 w-32 cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-full border-2 border-dashed border-background-300 bg-background-100/40 text-center transition-colors hover:border-primary-400">
                           <>
                             <i className="ri-image-add-line text-xl text-foreground-400" />
                             <span className="text-[11px] text-foreground-500 font-label px-3 leading-tight">
-                              Upload logo
+                              Upload photo
                             </span>
                           </>
-                        )}
                         <input
                           type="file"
                           accept="image/*"
                           className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            setForm((f) => ({
-                              ...f,
-                              logoFile: file,
-                              logoPreview: URL.createObjectURL(file),
-                            }));
-                          }}
+                          onChange={handleLogoPhotoChange}
                         />
                       </label>
-                      {form.logoPreview && (
-                        <button
-                          type="button"
-                          aria-label="Remove logo"
-                          onClick={() =>
-                            setForm((f) => ({ ...f, logoFile: null, logoPreview: "" }))
+                    ) : (
+                      <>
+                        <PositionPicker
+                          src={form.logoPreview}
+                          shape="logo"
+                          position={form.logoPosition}
+                          zoom={form.logoZoom}
+                          onPositionChange={(value) =>
+                            setForm((f) => ({ ...f, logoPosition: value }))
                           }
-                          className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded-full bg-foreground-950/70 text-background-50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                        >
-                          <i className="ri-close-line text-sm" />
-                        </button>
-                      )}
-                    </div>
-                    {form.logoPreview && (
-                      <PositionPicker
-                        label="Position"
-                        src={form.logoPreview}
-                        shape="logo"
-                        position={form.logoPosition}
-                        zoom={form.logoZoom}
-                        onPositionChange={(value) =>
-                          setForm((f) => ({ ...f, logoPosition: value }))
-                        }
-                        onZoomChange={(value) => setForm((f) => ({ ...f, logoZoom: value }))}
-                      />
+                          onZoomChange={(value) => setForm((f) => ({ ...f, logoZoom: value }))}
+                        />
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-background-300 bg-background-50 px-3 py-2 text-xs font-semibold text-foreground-700 transition-colors hover:border-primary-400 hover:text-primary-800">
+                            <i className="ri-image-edit-line text-base" aria-hidden="true" />
+                            Change photo
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleLogoPhotoChange}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setForm((current) => {
+                                if (current.logoPreview?.startsWith("blob:")) {
+                                  URL.revokeObjectURL(current.logoPreview);
+                                }
+                                return { ...current, logoFile: null, logoPreview: "" };
+                              })
+                            }
+                            className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50"
+                          >
+                            <i className="ri-delete-bin-line text-base" aria-hidden="true" />
+                            Remove photo
+                          </button>
+                        </div>
+                      </>
                     )}
                   </FormField>
                   <FormField
