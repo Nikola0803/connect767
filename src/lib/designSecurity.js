@@ -115,6 +115,40 @@ export async function refreshDesignSecurity(projectId = "") {
   return securityRequest(`/design-security/status${query}`);
 }
 
+export async function loadDesignHistory(projectId) {
+  if (!projectId || !getStoredToken() || !config.customApiUrl) return null;
+  return securityRequest(`/design-security/history?projectId=${encodeURIComponent(projectId)}`);
+}
+
+export async function saveDesignHistoryEntry(projectId, entry) {
+  if (!projectId || !entry || !getStoredToken() || !config.customApiUrl) return null;
+  return securityRequest("/design-security/history", {
+    method: "POST",
+    body: { projectId, action: "append", entry },
+  });
+}
+
+export async function startDesignConversation(projectId, title = "New design") {
+  if (!projectId || !getStoredToken() || !config.customApiUrl) return null;
+  return securityRequest("/design-security/history", {
+    method: "POST",
+    body: { projectId, action: "new", title },
+  });
+}
+
+export async function importDesignHistory(projectId, current = [], archived = []) {
+  if (!projectId || !getStoredToken() || !config.customApiUrl) return null;
+  return securityRequest("/design-security/history", {
+    method: "POST",
+    body: { projectId, action: "import", current, archived },
+  });
+}
+
+export async function clearDesignHistory(projectId) {
+  if (!projectId || !getStoredToken() || !config.customApiUrl) return null;
+  return securityRequest(`/design-security/history?projectId=${encodeURIComponent(projectId)}`, { method: "DELETE" });
+}
+
 export function aiSecurityHeaders(context, requestId) {
   const token = getStoredToken();
   return {

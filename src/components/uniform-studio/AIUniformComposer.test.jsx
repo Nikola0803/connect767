@@ -42,6 +42,7 @@ function renderComposer(overrides = {}) {
     onRestoreVersion: vi.fn(),
     onCompareVersions: vi.fn(),
     onGenerateVariation: vi.fn(),
+    onGenerateProof: vi.fn(),
     onSaveDesign: vi.fn(),
     onDownloadDesign: vi.fn(),
     onDownloadPrompts: vi.fn(),
@@ -81,7 +82,7 @@ describe("AIUniformComposer", () => {
     expect(props.onSend).not.toHaveBeenCalled();
 
     fireEvent.keyDown(message, { key: "Enter" });
-    expect(props.onSend).toHaveBeenCalledWith("proof", "uniform", "Create a modern green kit");
+    expect(props.onSend).toHaveBeenCalledWith("preview", "uniform", "Create a modern green kit");
     expect(props.onPromptChange).toHaveBeenCalledWith("");
   });
 
@@ -92,7 +93,7 @@ describe("AIUniformComposer", () => {
     expect(screen.queryByRole("button", { name: "Render high-quality proof" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Generate preview" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Generate Changes" })).not.toBeInTheDocument();
-    expect(screen.getByText(/Enter to generate/i)).toBeVisible();
+    expect(screen.getByText(/Enter creates a fast preview/i)).toBeVisible();
   });
 
   it("routes background-removal prompts to the transparent-file utility without redesigning", () => {
@@ -109,7 +110,7 @@ describe("AIUniformComposer", () => {
     fireEvent.keyDown(screen.getByLabelText("Message Connect767 AI"), { key: "Enter" });
 
     expect(props.onModeChange).toHaveBeenCalledWith("artwork");
-    expect(props.onSend).toHaveBeenCalledWith("proof", "artwork", "Create a transparent team crest");
+    expect(props.onSend).toHaveBeenCalledWith("preview", "artwork", "Create a transparent team crest");
   });
 
   it("automatically routes uniform prompts from artwork mode", () => {
@@ -117,7 +118,13 @@ describe("AIUniformComposer", () => {
     fireEvent.keyDown(screen.getByLabelText("Message Connect767 AI"), { key: "Enter" });
 
     expect(props.onModeChange).toHaveBeenCalledWith("uniform");
-    expect(props.onSend).toHaveBeenCalledWith("proof", "uniform", "Design a basketball uniform with front side and back views");
+    expect(props.onSend).toHaveBeenCalledWith("preview", "uniform", "Design a basketball uniform with front side and back views");
+  });
+
+  it("offers a high-quality final proof after a fast preview", () => {
+    const props = renderComposer({ uniformPlan: { name: "Riverside FC" }, renderTier: "preview" });
+    fireEvent.click(screen.getByRole("button", { name: "Final proof" }));
+    expect(props.onGenerateProof).toHaveBeenCalledTimes(1);
   });
 
   it("labels the transparent artwork workspace clearly", () => {

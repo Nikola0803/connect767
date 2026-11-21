@@ -22,9 +22,14 @@ import { embossConnect767ConceptBackground } from "./aiConceptEmboss";
 import { RequiredIndicator } from "../ui/FormField";
 import {
   aiSecurityHeaders,
+  clearDesignHistory,
+  importDesignHistory,
   initializeDesignSecurity,
+  loadDesignHistory,
   newAIRequestId,
   downloadProtectedDesign,
+  saveDesignHistoryEntry,
+  startDesignConversation,
 } from "../../lib/designSecurity";
 
 /** #rrggbb → {r,g,b}, tolerating a missing leading hash. */
@@ -1096,10 +1101,12 @@ export function AIArtworkPanel({
   const [historyOpen, setHistoryOpen] = useState(false);
   const [promptToolbarTarget, setPromptToolbarTarget] = useState(null);
   const [error, setError] = useState("");
-  const [renderTier, setRenderTier] = useState("proof");
+  const [renderTier, setRenderTier] = useState("preview");
   const [securityContext, setSecurityContext] = useState(null);
   const [securityLoading, setSecurityLoading] = useState(true);
+  const [generationPhase, setGenerationPhase] = useState("");
   const generationControllerRef = useRef(null);
+  const historySyncRef = useRef("");
   const allDesignControlsLocked = locks.collar && locks.sleeve && locks.colors && locks.pattern;
   const lockedControlCount = Object.values(locks).filter(Boolean).length;
   const activePrompt = mode === "uniform" && uniformPlan ? refinementBrief : brief;
@@ -1181,6 +1188,36 @@ export function AIArtworkPanel({
     }
   }, [promptArchiveKey]);
 
+  useEffect(() => {
+    const projectId = securityContext?.projectId;
+    if (!securityContext?.authenticated || !projectId || historySyncRef.current === projectId) return;
+    historySyncRef.current = projectId;
+    let active = true;
+    const localCurrent = (() => {
+      try { return JSON.parse(window.localStorage.getItem(promptHistoryKey) || "[]"); } catch { return []; }
+    })();
+    const localArchived = (() => {
+      try { return JSON.parse(window.localStorage.getItem(promptArchiveKey) || "[]"); } catch { return []; }
+    })();
+    loadDesignHistory(projectId)
+      .then(async (history) => {
+        if (!active || !history) return;
+        const serverHasHistory = history.current?.length || history.archived?.length;
+        const localHasHistory = localCurrent.length || localArchived.length;
+        const resolved = !serverHasHistory && localHasHistory
+          ? await importDesignHistory(projectId, localCurrent, localArchived)
+          : history;
+        if (!active || !resolved) return;
+        setPromptHistory(Array.isArray(resolved.current) ? resolved.current.slice(0, 30) : []);
+        setArchivedPrompts(Array.isArray(resolved.archived) ? resolved.archived.slice(0, 70) : []);
+      })
+      .catch(() => {
+        historySyncRef.current = "";
+        /* Browser history remains available if account sync is temporarily offline. */
+      });
+    return () => { active = false; };
+  }, [securityContext?.authenticated, securityContext?.projectId, promptHistoryKey, promptArchiveKey]);
+
   const savePrompt = ({ prompt, promptMode, kind, name, promptStyle, response }) => {
     const entry = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -1197,6 +1234,9 @@ export function AIArtworkPanel({
       try { window.localStorage.setItem(promptHistoryKey, JSON.stringify(next)); } catch { /* storage unavailable */ }
       return next;
     });
+    if (securityContext?.authenticated && securityContext.projectId) {
+      saveDesignHistoryEntry(securityContext.projectId, entry).catch(() => { /* Local history is the offline fallback. */ });
+    }
     setHistoryOpen(true);
   };
 
@@ -1205,6 +1245,9 @@ export function AIArtworkPanel({
     setArchivedPrompts([]);
     try { window.localStorage.removeItem(promptHistoryKey); } catch { /* storage unavailable */ }
     try { window.localStorage.removeItem(promptArchiveKey); } catch { /* storage unavailable */ }
+    if (securityContext?.authenticated && securityContext.projectId) {
+      clearDesignHistory(securityContext.projectId).catch(() => { /* Local history has already been cleared. */ });
+    }
   };
 
   const reusePrompt = (entry) => {
@@ -1233,6 +1276,7 @@ export function AIArtworkPanel({
     const requestId = newAIRequestId();
     const effectiveBrandName = brandName.trim() || "Team artwork";
     setGenerating(true);
+    setGenerationPhase(requestedTier === "proof" ? "Rendering final artwork proof…" : "Creating a fast artwork preview…");
     setError("");
     setPreview(null);
     generationControllerRef.current?.abort();
@@ -1278,6 +1322,7 @@ export function AIArtworkPanel({
       if (generationError.name !== "AbortError") setError(generationError.message || "AI generation failed.");
     } finally {
       setGenerating(false);
+      setGenerationPhase("");
       generationControllerRef.current = null;
     }
   };
@@ -1294,6 +1339,7 @@ export function AIArtworkPanel({
     const existingConcept = refinement ? uniformPlan?.conceptImage?.src || "" : "";
     const currentDesign = uniformPlan || { collar, sleeve, colors, pattern: { key: currentPatternKey } };
     setGenerating(true);
+    setGenerationPhase("Preparing the editable uniform plan…");
     setError("");
     generationControllerRef.current?.abort();
     generationControllerRef.current = new AbortController();
@@ -1335,6 +1381,7 @@ export function AIArtworkPanel({
       updateSecurityQuota(data);
       if (!response.ok || !data.plan) throw new Error(securityErrorMessage(data, "AI uniform design failed."));
       const plan = data.plan;
+      setGenerationPhase(requestedTier === "proof" ? "Rendering the high-quality final proof…" : "Rendering a fast uniform preview…");
       const artworkElement = plan.productionElements?.find((element) => element.kind === "artwork");
       const productionPlacementSummary = (plan.productionElements || []).length
         ? plan.productionElements.map((element) => (
@@ -1448,6 +1495,7 @@ export function AIArtworkPanel({
       if (generationError.name !== "AbortError") setError(generationError.message || "AI uniform design failed.");
     } finally {
       setGenerating(false);
+      setGenerationPhase("");
       generationControllerRef.current = null;
     }
   };
@@ -1489,6 +1537,7 @@ export function AIArtworkPanel({
     generationControllerRef.current?.abort();
     generationControllerRef.current = null;
     setGenerating(false);
+    setGenerationPhase("");
   };
 
   const startNewChat = () => {
@@ -1501,6 +1550,9 @@ export function AIArtworkPanel({
       });
       setPromptHistory([]);
       try { window.localStorage.removeItem(promptHistoryKey); } catch { /* storage unavailable */ }
+    }
+    if (securityContext?.authenticated && securityContext.projectId) {
+      startDesignConversation(securityContext.projectId, `${sport || "Uniform"} design`).catch(() => { /* Continue with a local chat if sync is offline. */ });
     }
     setBrandName("");
     setBrief("");
@@ -1612,7 +1664,7 @@ export function AIArtworkPanel({
       onModeChange?.(nextMode);
       setError("");
     };
-    const sendPrompt = (requestedTier = "proof", requestedMode = mode, promptOverride = activePrompt) => {
+    const sendPrompt = (requestedTier = "preview", requestedMode = mode, promptOverride = activePrompt) => {
       setRenderTier(requestedTier);
       if (requestedMode === "artwork") {
         if (mode !== "artwork") {
@@ -1646,6 +1698,8 @@ export function AIArtworkPanel({
         onPromptChange={isRefinement ? setRefinementBrief : setBrief}
         isRefinement={isRefinement}
         generating={generating}
+        generationPhase={generationPhase}
+        renderTier={renderTier}
         canSend={canSend}
         onSend={sendPrompt}
         onStop={stopGenerating}
@@ -1676,7 +1730,13 @@ export function AIArtworkPanel({
         onRestoreVersion={onRestoreAIVersion}
         onCompareVersions={onCompareVersions}
         comparisonActive={comparisonActive}
-        onGenerateVariation={() => generateUniform("", renderTier)}
+        onGenerateVariation={() => { setRenderTier("preview"); return generateUniform("", "preview"); }}
+        onGenerateProof={() => {
+          setRenderTier("proof");
+          return mode === "uniform"
+            ? generateUniform("", "proof")
+            : generateArtwork("proof", promptHistory[0]?.prompt || activePrompt);
+        }}
         onSaveDesign={onSaveDesign}
         onDownloadDesign={downloadSecuredDesign}
         onDownloadPrompts={downloadPromptHistory}

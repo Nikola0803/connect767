@@ -78,6 +78,8 @@ export default function AIUniformComposer({
   onPromptChange,
   isRefinement,
   generating,
+  generationPhase = "",
+  renderTier = "preview",
   canSend,
   onSend,
   onStop,
@@ -107,6 +109,7 @@ export default function AIUniformComposer({
   onCompareVersions,
   comparisonActive = false,
   onGenerateVariation,
+  onGenerateProof,
   onSaveDesign,
   onDownloadDesign,
   onDownloadPrompts,
@@ -145,7 +148,7 @@ export default function AIUniformComposer({
     }
   }, [promptHistory.length, uniformPlan, artworkPreview, generating]);
 
-  const submit = (requestedTier = "proof") => {
+  const submit = (requestedTier = "preview") => {
     if (!canSend || generating) return;
     if (isBackgroundRemovalIntent(prompt) && onOpenBackgroundRemoval) {
       closePopovers();
@@ -190,7 +193,7 @@ export default function AIUniformComposer({
   const handleKeyDown = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      submit("proof");
+      submit("preview");
     }
     if (event.key === "Escape") {
       closePopovers();
@@ -343,7 +346,7 @@ export default function AIUniformComposer({
             {generating && (
               <div className={`inline-flex items-center gap-2 rounded-2xl rounded-bl-md border px-3.5 py-3 text-[11px] ${card}`}>
                 <span className="flex gap-1"><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary-600 [animation-delay:-.3s]" /><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary-600 [animation-delay:-.15s]" /><span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary-600" /></span>
-                <span className={muted}>{mode === "uniform" ? "Designing your uniform…" : "Creating transparent artwork…"}</span>
+                <span className={muted}>{generationPhase || (mode === "uniform" ? "Designing your uniform…" : "Creating transparent artwork…")}</span>
               </div>
             )}
 
@@ -364,6 +367,12 @@ export default function AIUniformComposer({
           <div role="status" className="mb-2 flex items-center justify-between gap-3 rounded-xl border border-background-300 bg-white px-3 py-2 text-[10px] text-background-800">
             <span><i className="ri-lock-line mr-1 text-primary-700" />Complete your order to unlock high-resolution downloads and production-ready design files.</span>
             <button type="button" onClick={onCompleteOrder} className="shrink-0 rounded-lg bg-primary-700 px-2.5 py-1.5 font-bold text-white">Complete Order</button>
+          </div>
+        )}
+        {(uniformPlan || artworkPreview) && renderTier === "preview" && !generating && (
+          <div role="status" className="mb-2 flex items-center justify-between gap-3 rounded-xl border border-primary-200 bg-primary-50 px-3 py-2 text-[10px] text-primary-950">
+            <span><i className="ri-flashlight-line mr-1 text-primary-700" />Fast preview ready. Render the final image when the direction is approved.</span>
+            <button type="button" onClick={onGenerateProof} className="shrink-0 rounded-lg bg-primary-700 px-2.5 py-1.5 font-bold text-white hover:bg-primary-800">Final proof</button>
           </div>
         )}
 
@@ -417,7 +426,7 @@ export default function AIUniformComposer({
             )}
           </div>
         </div>
-        <p className={`mx-auto mt-2 max-w-md break-words px-1 text-center text-[8px] leading-relaxed ${muted}`}>Enter to generate · Shift + Enter for a new line · Highest-quality rendering enabled</p>
+        <p className={`mx-auto mt-2 max-w-md break-words px-1 text-center text-[8px] leading-relaxed ${muted}`}>Enter creates a fast preview · Shift + Enter adds a new line · Final proof renders at high quality</p>
       </div>
     </section>
   );
