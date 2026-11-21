@@ -381,6 +381,35 @@ describe("required uniform fit selection", () => {
     expect(screen.getAllByText(/22 full kits/).length).toBeGreaterThan(0);
   });
 
+  it("saves the current item and starts another design in the same order", async () => {
+    window.localStorage.setItem("connect767-ai-prompt-history:Soccer", JSON.stringify([{
+      id: "prompt-1",
+      prompt: "Create a navy and gold home kit",
+      response: "Navy base with gold trim",
+      createdAt: "2026-11-20T12:00:00.000Z",
+    }]));
+    const progress = openStudio("design");
+    fireEvent.click(openUniformSetup().getByRole("button", { name: "Men", exact: true }));
+    fireEvent.click(progress.getByRole("button", { name: /Team roster/ }));
+    fireEvent.change(screen.getAllByRole("textbox", { name: "Name" })[0], { target: { value: "Minimum order" } });
+    fireEvent.change(screen.getAllByRole("spinbutton", { name: "Player quantity" })[0], { target: { value: "22" } });
+    fireEvent.click(screen.getAllByRole("button", { name: "Add player" })[0]);
+    fireEvent.click(progress.getByRole("button", { name: /Review & quote/ }));
+
+    expect(screen.getAllByRole("heading", { name: "Order Designs" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: "Save Design" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: "Save & Add Another Design" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("1 item").length).toBeGreaterThan(0);
+    await act(async () => fireEvent.click(screen.getAllByRole("button", { name: "Save & Add Another Design" })[0]));
+    const draft = JSON.parse(window.localStorage.getItem("c767:uniform-order-designs:v1"));
+    expect(draft).toHaveLength(1);
+    expect(draft[0].payload.sport).toBe("soccer");
+    expect(draft[0].payload.aiPromptHistory[0].prompt).toBe("Create a navy and gold home kit");
+    expect(window.localStorage.getItem("connect767-ai-prompt-history:Soccer")).toBeNull();
+    expect(progress.getByRole("button", { name: /Design/ })).toHaveAttribute("aria-current", "step");
+    expect(openUniformSetup().getByRole("group", { name: "Fit type (required)" })).toBeVisible();
+  });
+
   it("uses the shipping contact by default and reveals a different order contact only when requested", () => {
     const progress = openStudio("design");
     fireEvent.click(openUniformSetup().getByRole("button", { name: "Men", exact: true }));

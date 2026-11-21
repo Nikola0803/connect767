@@ -50,16 +50,29 @@ class C767_REST_Uniform_Quotes
 
     public static function submit(WP_REST_Request $request)
     {
-        $template = sanitize_text_field((string) $request->get_param('template'));
-        $roster = self::sanitize_roster($request->get_param('roster'));
-
-        if (empty($roster)) {
-            return new WP_Error('c767_empty_roster', 'At least one player is required.', ['status' => 400]);
+        $user = C767_REST_Auth::user_from_request($request);
+        if (is_wp_error($user)) {
+            return new WP_Error('c767_account_required', 'Sign in before requesting a uniform quote.', ['status' => 401]);
         }
+        $raw_designs = (array) $request->get_param('designs');
+        if (empty($raw_designs)) $raw_designs = [(array) $request->get_params()];
+        if (count($raw_designs) > 10) return new WP_Error('c767_too_many_designs', 'A quote can contain up to 10 uniform designs.', ['status' => 400]);
+        $quote_designs = [];
+        $unit_count = 0;
+        foreach ($raw_designs as $index => $raw_design) {
+            $design = self::sanitize_quote_design((array) $raw_design);
+            if (empty($design['roster'])) return new WP_Error('c767_empty_roster', 'At least one player is required for design ' . ($index + 1) . '.', ['status' => 400]);
+            $design_unit_count = self::roster_unit_count($design['roster']);
+            $minimum_check = self::validate_full_kit_minimum($design['sport'], $design_unit_count);
+            if (is_wp_error($minimum_check)) return $minimum_check;
+            $design['unitCount'] = $design_unit_count;
+            $unit_count += $design_unit_count;
+            $quote_designs[] = $design;
+        }
+        $template = $quote_designs[0]['template'];
+        $roster = $quote_designs[0]['roster'];
 
-        // This route is public (no auth), so the frontend's own check can't be
-        // trusted — a quote with no reachable email is unactionable, and
-        // accepting it silently is worse than rejecting it loudly.
+        // Validate the reachable contact address independently of account auth.
         $contact_email = sanitize_email((string) (((array) $request->get_param('contact'))['email'] ?? ''));
         if (!is_email($contact_email)) {
             return new WP_Error(
@@ -69,14 +82,10 @@ class C767_REST_Uniform_Quotes
             );
         }
 
-        $unit_count = self::roster_unit_count($roster);
-        $minimum_check = self::validate_full_kit_minimum($request->get_param('sport'), $unit_count);
-        if (is_wp_error($minimum_check)) {
-            return $minimum_check;
-        }
         $title = sprintf(
-            '%s — %d kit%s — %s',
+            '%s%s — %d kit%s — %s',
             $template ?: 'Custom design',
+            count($quote_designs) > 1 ? ' +' . (count($quote_designs) - 1) . ' design' . (count($quote_designs) === 2 ? '' : 's') : '',
             $unit_count,
             $unit_count === 1 ? '' : 's',
             current_time('Y-m-d H:i')
@@ -99,40 +108,17 @@ class C767_REST_Uniform_Quotes
             update_post_meta($post_id, 'inside_collar_attachment', $collar_attachment);
         }
 
-        $payload = [
-            'template' => $template,
-            'sport' => sanitize_text_field((string) $request->get_param('sport')),
-            'collar' => sanitize_text_field((string) $request->get_param('collar')),
-            'sleeve' => sanitize_text_field((string) $request->get_param('sleeve')),
-            'fitType' => sanitize_text_field((string) $request->get_param('fitType')),
-            'kitType' => sanitize_text_field((string) $request->get_param('kitType')),
-            'extraTeamShirts' => self::sanitize_supporter_jerseys($request->get_param('extraTeamShirts')),
-            'logoApplication' => sanitize_text_field((string) $request->get_param('logoApplication')),
-            'insideCollarMessage' => rest_sanitize_boolean($request->get_param('insideCollarMessage')),
-            'insideCollarText' => sanitize_text_field((string) $request->get_param('insideCollarText')),
-            'insideCollarAttachment' => $collar_attachment ? array_diff_key($collar_attachment, ['src' => true]) : null,
-            'fanJerseyAdded' => rest_sanitize_boolean($request->get_param('fanJerseyAdded')),
-            'supporterJerseys' => self::sanitize_supporter_jerseys($request->get_param('supporterJerseys')),
-            'unitPrice' => round((float) $request->get_param('unitPrice'), 2),
-            'grandTotal' => round((float) $request->get_param('grandTotal'), 2),
-            'unitCount' => $unit_count,
-            'colors' => self::sanitize_shallow_array($request->get_param('colors')),
-            'layers' => $request->get_param('layers'),
-            // Where each piece of artwork actually sits on the garment, as
-            // placed in the 3D configurator. Without this the quote carried
-            // only the flat editor's default coordinates, so a crest dragged
-            // onto the left chest reached production dead-centre.
-            'placements3d' => $request->get_param('placements3d'),
-            // 'flat' or '3d' — tells production which coordinate system is
-            // authoritative for this design.
-            'designMode' => sanitize_text_field((string) $request->get_param('designMode')),
-            'roster' => $roster,
-            'contact' => $contact,
-        ];
+        $payload = $quote_designs[0];
+        $payload['designs'] = $quote_designs;
+        $payload['designCount'] = count($quote_designs);
+        $payload['unitCount'] = $unit_count;
+        $payload['grandTotal'] = round((float) $request->get_param('grandTotal'), 2);
+        $payload['contact'] = $contact;
 
         update_post_meta($post_id, 'quote_payload', wp_json_encode($payload));
         update_post_meta($post_id, 'roster_count', count($roster));
         update_post_meta($post_id, 'unit_count', $unit_count);
+        update_post_meta($post_id, 'design_count', count($quote_designs));
 
         // Promoted out of the payload blob so wp-admin can show and search
         // them as columns, and so a reply doesn't require opening the JSON.
@@ -148,20 +134,29 @@ class C767_REST_Uniform_Quotes
         if ($preview) {
             update_post_meta($post_id, 'preview_image', $preview);
         }
+        foreach ($raw_designs as $index => $raw_design) {
+            $design_preview = (string) (((array) $raw_design)['previewImage'] ?? '');
+            if (strpos($design_preview, 'data:image/') === 0 && strlen($design_preview) <= 5242880) {
+                update_post_meta($post_id, 'preview_image_' . ($index + 1), $design_preview);
+            }
+        }
 
         $user = get_user_by('id', get_current_user_id());
         $to = get_option('admin_email');
         $subject = sprintf(
-            '[Connect767] Uniform quote — %s — %d kits',
+            '[Connect767] Uniform quote — %s — %d design%s / %d kits',
             $contact['club'] !== '' ? $contact['club'] : ($contact['name'] !== '' ? $contact['name'] : 'New request'),
+            count($quote_designs),
+            count($quote_designs) === 1 ? '' : 's',
             $unit_count
         );
         $body = sprintf(
-            "Template: %s\nSport: %s\nKits: %d\n\n"
+            "Template: %s\nSport: %s\nDesigns: %d\nKits: %d\n\n"
                 . "FROM\n  Name:  %s\n  Email: %s\n  Phone: %s\n  Club:  %s\n\nNotes:\n%s\n\n"
                 . "Account: %s\n\nView in wp-admin: %s",
             $template ?: 'Custom design',
-            sanitize_text_field((string) $request->get_param('sport')) ?: 'n/a',
+            $quote_designs[0]['sport'] ?: 'n/a',
+            count($quote_designs),
             $unit_count,
             $contact['name'] !== '' ? $contact['name'] : '(not given)',
             $contact['email'] !== '' ? $contact['email'] : '(not given)',
@@ -192,11 +187,12 @@ class C767_REST_Uniform_Quotes
                 $contact['email'],
                 'We received your Connect767 uniform quote request',
                 sprintf(
-                    "Hi %s,\n\nThanks — we've got your %s design for %d kit%s.\n\n"
+                    "Hi %s,\n\nThanks — we've got your %d uniform design%s for %d kit%s.\n\n"
                         . "Our team will follow up with pricing and a production proof, usually "
                         . "within one business day.\n\n— Connect767",
                     $contact['name'] !== '' ? $contact['name'] : 'there',
-                    $template ?: 'custom',
+                    count($quote_designs),
+                    count($quote_designs) === 1 ? '' : 's',
                     $unit_count,
                     $unit_count === 1 ? '' : 's'
                 )
@@ -231,6 +227,59 @@ class C767_REST_Uniform_Quotes
             if (!$image || ($image['mime'] ?? '') !== $matches[1]) return null;
         }
         return ['name' => sanitize_file_name((string) ($value['name'] ?? 'collar-artwork')), 'type' => $matches[1], 'size' => strlen($bytes), 'src' => $src];
+    }
+
+    private static function sanitize_quote_design(array $input)
+    {
+        $collar_attachment = rest_sanitize_boolean($input['insideCollarMessage'] ?? false)
+            ? self::sanitize_collar_attachment($input['insideCollarAttachment'] ?? null) : null;
+        return [
+            'template' => sanitize_text_field((string) ($input['template'] ?? 'Custom design')),
+            'templateSlug' => sanitize_key((string) ($input['templateSlug'] ?? '')),
+            'sport' => sanitize_key((string) ($input['sport'] ?? '')),
+            'collar' => sanitize_text_field((string) ($input['collar'] ?? '')),
+            'sleeve' => sanitize_text_field((string) ($input['sleeve'] ?? '')),
+            'fitType' => sanitize_text_field((string) ($input['fitType'] ?? '')),
+            'kitType' => 'Full',
+            'extraTeamShirts' => self::sanitize_supporter_jerseys($input['extraTeamShirts'] ?? []),
+            'logoApplication' => sanitize_text_field((string) ($input['logoApplication'] ?? '')),
+            'insideCollarMessage' => rest_sanitize_boolean($input['insideCollarMessage'] ?? false),
+            'insideCollarText' => sanitize_text_field((string) ($input['insideCollarText'] ?? '')),
+            'insideCollarAttachment' => $collar_attachment ? array_diff_key($collar_attachment, ['src' => true]) : null,
+            'fanJerseyAdded' => rest_sanitize_boolean($input['fanJerseyAdded'] ?? false),
+            'supporterJerseys' => self::sanitize_supporter_jerseys($input['supporterJerseys'] ?? []),
+            'unitPrice' => round((float) ($input['unitPrice'] ?? 0), 2),
+            'grandTotal' => round((float) ($input['grandTotal'] ?? 0), 2),
+            'colors' => self::sanitize_shallow_array($input['colors'] ?? []),
+            'layers' => $input['layers'] ?? [],
+            'placements3d' => $input['placements3d'] ?? [],
+            'designMode' => sanitize_text_field((string) ($input['designMode'] ?? 'flat')),
+            'roster' => self::sanitize_roster($input['roster'] ?? []),
+            'socksQuantity' => absint($input['socksQuantity'] ?? 0),
+            'projectId' => sanitize_text_field((string) ($input['projectId'] ?? '')),
+            'aiPromptHistory' => self::sanitize_prompt_history($input['aiPromptHistory'] ?? []),
+        ];
+    }
+
+    private static function sanitize_prompt_history($value)
+    {
+        $out = [];
+        foreach (array_slice((array) $value, 0, 100) as $entry) {
+            $row = (array) $entry;
+            $response = $row['response'] ?? '';
+            if (!is_string($response)) $response = wp_json_encode($response);
+            $out[] = [
+                'id' => sanitize_text_field((string) ($row['id'] ?? '')),
+                'prompt' => sanitize_textarea_field((string) ($row['prompt'] ?? '')),
+                'mode' => sanitize_key((string) ($row['mode'] ?? 'uniform')),
+                'kind' => sanitize_text_field((string) ($row['kind'] ?? 'AI design')),
+                'brandName' => sanitize_text_field((string) ($row['brandName'] ?? '')),
+                'style' => sanitize_text_field((string) ($row['style'] ?? '')),
+                'response' => sanitize_textarea_field((string) $response),
+                'createdAt' => sanitize_text_field((string) ($row['createdAt'] ?? '')),
+            ];
+        }
+        return $out;
     }
 
     private static function sanitize_contact($value)

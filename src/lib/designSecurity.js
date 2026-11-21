@@ -3,7 +3,6 @@ import { getStoredToken, getStoredUser } from "./apiClient";
 
 const GUEST_TOKEN_KEY = "c767_design_guest_token";
 const initializationPromises = new Map();
-const guestProjectStorageKey = (sport) => `c767_design_project:guest:${String(sport || "other").toLowerCase()}`;
 const projectStorageKey = (sport) => {
   const user = getStoredUser();
   return `c767_design_project:${user?.id ? `user-${user.id}` : "guest"}:${String(sport || "other").toLowerCase()}`;
@@ -55,28 +54,21 @@ async function initializeDesignSecurityInternal({ sport, title }) {
       localPreview: true,
     };
   }
+  if (!getStoredUser()?.id || !getStoredToken()) {
+    return {
+      authenticated: false,
+      accountRequired: true,
+      projectId: "",
+      guestToken: "",
+      limit: 0,
+      remaining: 0,
+      downloadUnlocked: false,
+      projectFiles: [],
+    };
+  }
   let session = await securityRequest("/design-security/session", { method: "POST", body: {} });
   const key = projectStorageKey(sport);
   let projectId = stored(key);
-  if (!projectId && getStoredUser()?.id) {
-    const guestProjectId = stored(guestProjectStorageKey(sport));
-    const guestToken = stored(GUEST_TOKEN_KEY);
-    if (guestProjectId && guestToken) {
-      try {
-        const claimed = await securityRequest("/design-security/projects/claim", {
-          method: "POST",
-          body: { projectId: guestProjectId },
-          guestToken,
-        });
-        projectId = claimed.projectId;
-        session = { ...session, ...claimed };
-        persist(key, projectId);
-        persist(guestProjectStorageKey(sport), "");
-      } catch {
-        // A stale guest project must not prevent a signed-in customer from starting fresh.
-      }
-    }
-  }
   if (projectId) {
     try {
       session = await securityRequest(`/design-security/status?projectId=${encodeURIComponent(projectId)}`, {
@@ -92,7 +84,6 @@ async function initializeDesignSecurityInternal({ sport, title }) {
     const project = await securityRequest("/design-security/projects", {
       method: "POST",
       body: { sport, title },
-      guestToken: session.guestToken || stored(GUEST_TOKEN_KEY),
     });
     projectId = project.projectId;
     session = { ...session, ...project };

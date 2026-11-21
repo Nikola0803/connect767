@@ -275,22 +275,6 @@ class C767_Uniform_Checkout
     private static function build_order(WP_REST_Request $request, $temporary = false)
     {
         $payload = (array) $request->get_param('order');
-        $roster = (array) ($payload['roster'] ?? []);
-        $unit_count = 0;
-        foreach ($roster as $entry) {
-            $entry = (array) $entry;
-            if (sanitize_text_field((string) ($entry['name'] ?? '')) !== '') {
-                $unit_count += max(1, min(99, absint($entry['quantity'] ?? 1)));
-            }
-        }
-        if ($unit_count < 1) {
-            return new WP_Error('c767_empty_roster', 'Add at least one player before checkout.', ['status' => 400]);
-        }
-        $minimum_check = C767_REST_Uniform_Quotes::validate_full_kit_minimum($payload['sport'] ?? '', $unit_count);
-        if (is_wp_error($minimum_check)) {
-            return $minimum_check;
-        }
-
         $email = sanitize_email((string) $request->get_param('email'));
         if (!is_email($email)) {
             return new WP_Error('c767_invalid_email', 'A valid email address is required.', ['status' => 400]);
@@ -306,33 +290,17 @@ class C767_Uniform_Checkout
             return $address_check;
         }
 
-        $unit_price = self::authoritative_unit_price($payload);
-        $long_sleeve_count = 0;
-        if (($payload['sleeve'] ?? '') === 'Mixed') {
-            foreach ($roster as $entry) {
-                $entry = (array) $entry;
-                if (sanitize_text_field((string) ($entry['name'] ?? '')) !== '' && ($entry['sleevePreference'] ?? '') === 'Long') {
-                    $long_sleeve_count += max(1, min(99, absint($entry['quantity'] ?? 1)));
-                }
-            }
+        $raw_designs = !empty($payload['designs']) && is_array($payload['designs']) ? array_values($payload['designs']) : [$payload];
+        if (count($raw_designs) > 10) {
+            return new WP_Error('c767_too_many_designs', 'A single order can contain up to 10 uniform designs.', ['status' => 400]);
         }
-        $kits_total = round($unit_price * $unit_count + $long_sleeve_count * 2.00, 2);
-        // Extra shirts are added only after a valid full-kit roster exists.
-        $extra_team_shirts = self::sanitize_supporter_jerseys($payload['extraTeamShirts'] ?? []);
-        $extra_shirt_count = array_reduce($extra_team_shirts, function ($total, $row) {
-            return $total + $row['quantity'];
-        }, 0);
-        $fan_added = rest_sanitize_boolean($payload['fanJerseyAdded'] ?? false);
-        $supporter_jerseys = $fan_added ? self::sanitize_supporter_jerseys($payload['supporterJerseys'] ?? []) : [];
-        if ($fan_added && empty($supporter_jerseys)) {
-            // Backward compatibility for a design saved before size selection
-            // existed: the old checkbox represented one adult-medium jersey.
-            $supporter_jerseys[] = ['size' => 'AM', 'quantity' => 1];
+        $designs = [];
+        foreach ($raw_designs as $index => $raw_design) {
+            $prepared = self::prepare_design_payload((array) $raw_design, $index);
+            if (is_wp_error($prepared)) return $prepared;
+            $designs[] = $prepared;
         }
-        $supporter_count = array_reduce($supporter_jerseys, function ($total, $row) {
-            return $total + $row['quantity'];
-        }, 0);
-        $template = sanitize_text_field((string) ($payload['template'] ?? 'Custom design')) ?: 'Custom design';
+
         $product = self::uniform_product();
         if (is_wp_error($product)) {
             return $product;
@@ -351,63 +319,14 @@ class C767_Uniform_Checkout
             }
         }
 
-        $kit_item_id = $order->add_product($product, $unit_count, [
-            'subtotal' => $kits_total,
-            'total' => $kits_total,
-        ]);
-        $kit_item = $order->get_item($kit_item_id);
-        if ($kit_item) {
-            $kit_item->set_name($template . ' team kit');
-            $kit_item->add_meta_data('Base kit price', wc_price(self::category_base_price($payload['sport'] ?? 'soccer')), true);
-            $kit_item->add_meta_data('Final unit price', wc_price($unit_price), true);
-            if (($payload['sleeve'] ?? '') === 'Long') {
-                $kit_item->add_meta_data('Long sleeves', $unit_count . ' × ' . wc_price(2.00), true);
-            }
-            if ($long_sleeve_count > 0) {
-                $kit_item->add_meta_data('Long sleeve upgrades', $long_sleeve_count . ' × ' . wc_price(2.00), true);
-            }
-            if (($payload['collar'] ?? '') === 'Polo') {
-                $kit_item->add_meta_data('Polo-style collars', $unit_count . ' × ' . wc_price(2.00), true);
-            }
-            if (rest_sanitize_boolean($payload['insideCollarMessage'] ?? false)) {
-                $kit_item->add_meta_data('Inside-collar logo/message', $unit_count . ' × ' . wc_price(1.00), true);
-            }
-            if (($payload['logoApplication'] ?? '') === 'Embroidery') {
-                $kit_item->add_meta_data('Embroidered team logo', $unit_count . ' × ' . wc_price(1.50), true);
-            }
-            $kit_item->save();
-        }
-
-        if ($extra_shirt_count > 0) {
-            $extra_shirt_total = round(self::EXTRA_TEAM_SHIRT_PRICE * $extra_shirt_count, 2);
-            $extra_item_id = $order->add_product($product, $extra_shirt_count, ['subtotal' => $extra_shirt_total, 'total' => $extra_shirt_total]);
-            $extra_item = $order->get_item($extra_item_id);
-            if ($extra_item) {
-                $extra_item->set_name($template . ' extra team shirt');
-                $extra_item->add_meta_data('Unit price', wc_price(self::EXTRA_TEAM_SHIRT_PRICE), true);
-                $extra_item->add_meta_data('Sizes', implode(', ', array_map(function ($row) {
-                    return $row['size'] . ' × ' . $row['quantity'];
-                }, $extra_team_shirts)), true);
-                $extra_item->save();
-            }
-        }
-
-        if ($supporter_count > 0) {
-            $supporter_total = round(self::EXTRA_TEAM_SHIRT_PRICE * $supporter_count, 2);
-            $fan_item_id = $order->add_product($product, $supporter_count, [
-                'subtotal' => $supporter_total,
-                'total' => $supporter_total,
-            ]);
-            $fan_item = $order->get_item($fan_item_id);
-            if ($fan_item) {
-                $fan_item->set_name($template . ' supporter jersey');
-                $fan_item->add_meta_data('Unit price', wc_price(self::EXTRA_TEAM_SHIRT_PRICE), true);
-                $fan_item->add_meta_data('Sizes', implode(', ', array_map(function ($row) {
-                    return $row['size'] . ' × ' . $row['quantity'];
-                }, $supporter_jerseys)), true);
-                $fan_item->add_meta_data('Player numbers', 'None', true);
-                $fan_item->save();
-            }
+        $unit_count = 0;
+        $supporter_count = 0;
+        $shipping_units = 0;
+        foreach ($designs as $design_number => $design) {
+            self::add_design_items($order, $product, $design, $design_number + 1, count($designs));
+            $unit_count += $design['unit_count'];
+            $supporter_count += $design['supporter_count'];
+            $shipping_units += $design['unit_count'] + $design['extra_shirt_count'] + $design['supporter_count'];
         }
 
         $billing = $shipping;
@@ -416,7 +335,6 @@ class C767_Uniform_Checkout
         $order->set_address($shipping, 'shipping');
         $order->calculate_totals(false);
 
-        $shipping_units = $unit_count + $extra_shirt_count + $supporter_count;
         $shipping_rate = self::uniform_shipping_rate($shipping['country'] ?? '', $shipping_units);
         if (is_wp_error($shipping_rate)) {
             $order->delete(true);
@@ -446,32 +364,128 @@ class C767_Uniform_Checkout
             $order->set_status('pending');
         }
         $order->update_meta_data('_c767_uniform_order', '1');
+        $order->update_meta_data('_c767_uniform_design_count', count($designs));
         $order->update_meta_data('_c767_uniform_unit_count', $unit_count);
-        $order->update_meta_data('_c767_uniform_unit_price', $unit_price);
+        $order->update_meta_data('_c767_uniform_unit_price', $designs[0]['unit_price']);
         $order->update_meta_data('_c767_uniform_supporter_count', $supporter_count);
         $order->update_meta_data('_c767_uniform_shipping_zone', $shipping_rate['zone']);
         $order->update_meta_data('_c767_uniform_shipping_units', $shipping_units);
 
-        $design_payload = $payload;
-        $design_payload['kitType'] = 'Full';
-        $design_payload['extraTeamShirts'] = $extra_team_shirts;
-        $collar_attachment = rest_sanitize_boolean($payload['insideCollarMessage'] ?? false)
-            ? C767_REST_Uniform_Quotes::sanitize_collar_attachment($payload['insideCollarAttachment'] ?? null) : null;
-        if ($collar_attachment) {
-            $order->update_meta_data('_c767_uniform_collar_attachment', $collar_attachment);
+        $stored_designs = [];
+        foreach ($designs as $index => $design) {
+            $design_payload = $design['payload'];
+            $design_payload['kitType'] = 'Full';
+            $design_payload['extraTeamShirts'] = $design['extra_team_shirts'];
+            $design_payload['insideCollarAttachment'] = $design['collar_attachment'] ? array_diff_key($design['collar_attachment'], ['src' => true]) : null;
+            unset($design_payload['previewImage'], $design_payload['designs']);
+            $stored_designs[] = $design_payload;
+            if ($design['collar_attachment']) {
+                $order->update_meta_data('_c767_uniform_collar_attachment_' . ($index + 1), $design['collar_attachment']);
+            }
+            $preview = (string) ($design['payload']['previewImage'] ?? '');
+            if (strpos($preview, 'data:image/') === 0 && strlen($preview) <= 5242880) {
+                $order->update_meta_data('_c767_uniform_preview_' . ($index + 1), $preview);
+                if ($index === 0) $order->update_meta_data('_c767_uniform_preview', $preview);
+            }
         }
-        $design_payload['insideCollarAttachment'] = $collar_attachment ? array_diff_key($collar_attachment, ['src' => true]) : null;
-        unset($design_payload['previewImage']);
-        $encoded = wp_json_encode($design_payload);
-        if ($encoded && strlen($encoded) <= 524288) {
-            $order->update_meta_data('_c767_uniform_design', $encoded);
-        }
-        $preview = (string) ($payload['previewImage'] ?? '');
-        if (strpos($preview, 'data:image/') === 0 && strlen($preview) <= 5242880) {
-            $order->update_meta_data('_c767_uniform_preview', $preview);
-        }
+        $encoded = wp_json_encode($stored_designs);
+        if ($encoded && strlen($encoded) <= 2097152) $order->update_meta_data('_c767_uniform_designs', $encoded);
+        $legacy_encoded = wp_json_encode($stored_designs[0]);
+        if ($legacy_encoded && strlen($legacy_encoded) <= 524288) $order->update_meta_data('_c767_uniform_design', $legacy_encoded);
         $order->save();
         return $order;
+    }
+
+    private static function prepare_design_payload(array $payload, $index)
+    {
+        $payload['aiPromptHistory'] = self::sanitize_prompt_history($payload['aiPromptHistory'] ?? []);
+        $roster = (array) ($payload['roster'] ?? []);
+        $unit_count = 0;
+        foreach ($roster as $entry) {
+            $entry = (array) $entry;
+            if (sanitize_text_field((string) ($entry['name'] ?? '')) !== '') {
+                $unit_count += max(1, min(99, absint($entry['quantity'] ?? 1)));
+            }
+        }
+        if ($unit_count < 1) return new WP_Error('c767_empty_roster', 'Add at least one player to design ' . ($index + 1) . ' before checkout.', ['status' => 400]);
+        $minimum_check = C767_REST_Uniform_Quotes::validate_full_kit_minimum($payload['sport'] ?? '', $unit_count);
+        if (is_wp_error($minimum_check)) return $minimum_check;
+
+        $unit_price = self::authoritative_unit_price($payload);
+        $long_sleeve_count = 0;
+        if (($payload['sleeve'] ?? '') === 'Mixed') {
+            foreach ($roster as $entry) {
+                $entry = (array) $entry;
+                if (sanitize_text_field((string) ($entry['name'] ?? '')) !== '' && ($entry['sleevePreference'] ?? '') === 'Long') {
+                    $long_sleeve_count += max(1, min(99, absint($entry['quantity'] ?? 1)));
+                }
+            }
+        }
+        $extra_team_shirts = self::sanitize_supporter_jerseys($payload['extraTeamShirts'] ?? []);
+        $extra_shirt_count = array_reduce($extra_team_shirts, function ($total, $row) { return $total + $row['quantity']; }, 0);
+        $fan_added = rest_sanitize_boolean($payload['fanJerseyAdded'] ?? false);
+        $supporter_jerseys = $fan_added ? self::sanitize_supporter_jerseys($payload['supporterJerseys'] ?? []) : [];
+        if ($fan_added && empty($supporter_jerseys)) $supporter_jerseys[] = ['size' => 'AM', 'quantity' => 1];
+        $supporter_count = array_reduce($supporter_jerseys, function ($total, $row) { return $total + $row['quantity']; }, 0);
+        $collar_attachment = rest_sanitize_boolean($payload['insideCollarMessage'] ?? false)
+            ? C767_REST_Uniform_Quotes::sanitize_collar_attachment($payload['insideCollarAttachment'] ?? null) : null;
+        return [
+            'payload' => $payload,
+            'roster' => $roster,
+            'unit_count' => $unit_count,
+            'unit_price' => $unit_price,
+            'long_sleeve_count' => $long_sleeve_count,
+            'kits_total' => round($unit_price * $unit_count + $long_sleeve_count * 2.00, 2),
+            'extra_team_shirts' => $extra_team_shirts,
+            'extra_shirt_count' => $extra_shirt_count,
+            'supporter_jerseys' => $supporter_jerseys,
+            'supporter_count' => $supporter_count,
+            'template' => sanitize_text_field((string) ($payload['template'] ?? 'Custom design')) ?: 'Custom design',
+            'collar_attachment' => $collar_attachment,
+        ];
+    }
+
+    private static function add_design_items(WC_Order $order, WC_Product $product, array $design, $number, $total_designs)
+    {
+        $payload = $design['payload'];
+        $prefix = $total_designs > 1 ? 'Design ' . $number . ' — ' : '';
+        $kit_item_id = $order->add_product($product, $design['unit_count'], ['subtotal' => $design['kits_total'], 'total' => $design['kits_total']]);
+        $kit_item = $order->get_item($kit_item_id);
+        if ($kit_item) {
+            $kit_item->set_name($prefix . $design['template'] . ' team kit');
+            $kit_item->add_meta_data('Sport category', sanitize_text_field((string) ($payload['sport'] ?? 'soccer')), true);
+            $kit_item->add_meta_data('Base kit price', wc_price(self::category_base_price($payload['sport'] ?? 'soccer')), true);
+            $kit_item->add_meta_data('Final unit price', wc_price($design['unit_price']), true);
+            if (($payload['sleeve'] ?? '') === 'Long') $kit_item->add_meta_data('Long sleeves', $design['unit_count'] . ' × ' . wc_price(2.00), true);
+            if ($design['long_sleeve_count'] > 0) $kit_item->add_meta_data('Long sleeve upgrades', $design['long_sleeve_count'] . ' × ' . wc_price(2.00), true);
+            if (($payload['collar'] ?? '') === 'Polo') $kit_item->add_meta_data('Polo-style collars', $design['unit_count'] . ' × ' . wc_price(2.00), true);
+            if (rest_sanitize_boolean($payload['insideCollarMessage'] ?? false)) $kit_item->add_meta_data('Inside-collar logo/message', $design['unit_count'] . ' × ' . wc_price(1.00), true);
+            if (($payload['logoApplication'] ?? '') === 'Embroidery') $kit_item->add_meta_data('Embroidered team logo', $design['unit_count'] . ' × ' . wc_price(1.50), true);
+            $kit_item->save();
+        }
+        if ($design['extra_shirt_count'] > 0) {
+            $total = round(self::EXTRA_TEAM_SHIRT_PRICE * $design['extra_shirt_count'], 2);
+            $item_id = $order->add_product($product, $design['extra_shirt_count'], ['subtotal' => $total, 'total' => $total]);
+            $item = $order->get_item($item_id);
+            if ($item) {
+                $item->set_name($prefix . $design['template'] . ' extra team shirt');
+                $item->add_meta_data('Unit price', wc_price(self::EXTRA_TEAM_SHIRT_PRICE), true);
+                $item->add_meta_data('Sizes', implode(', ', array_map(function ($row) { return $row['size'] . ' × ' . $row['quantity']; }, $design['extra_team_shirts'])), true);
+                $item->save();
+            }
+        }
+        if ($design['supporter_count'] > 0) {
+            $total = round(self::EXTRA_TEAM_SHIRT_PRICE * $design['supporter_count'], 2);
+            $item_id = $order->add_product($product, $design['supporter_count'], ['subtotal' => $total, 'total' => $total]);
+            $item = $order->get_item($item_id);
+            if ($item) {
+                $item->set_name($prefix . $design['template'] . ' supporter jersey');
+                $item->add_meta_data('Unit price', wc_price(self::EXTRA_TEAM_SHIRT_PRICE), true);
+                $item->add_meta_data('Sizes', implode(', ', array_map(function ($row) { return $row['size'] . ' × ' . $row['quantity']; }, $design['supporter_jerseys'])), true);
+                $item->add_meta_data('Player numbers', 'None', true);
+                $item->save();
+            }
+        }
     }
 
     private static function sanitize_supporter_jerseys($value)
@@ -492,6 +506,27 @@ class C767_Uniform_Checkout
         return array_map(function ($size, $quantity) {
             return ['size' => $size, 'quantity' => $quantity];
         }, array_keys($combined), array_values($combined));
+    }
+
+    private static function sanitize_prompt_history($value)
+    {
+        $out = [];
+        foreach (array_slice((array) $value, 0, 100) as $entry) {
+            $row = (array) $entry;
+            $response = $row['response'] ?? '';
+            if (!is_string($response)) $response = wp_json_encode($response);
+            $out[] = [
+                'id' => sanitize_text_field((string) ($row['id'] ?? '')),
+                'prompt' => sanitize_textarea_field((string) ($row['prompt'] ?? '')),
+                'mode' => sanitize_key((string) ($row['mode'] ?? 'uniform')),
+                'kind' => sanitize_text_field((string) ($row['kind'] ?? 'AI design')),
+                'brandName' => sanitize_text_field((string) ($row['brandName'] ?? '')),
+                'style' => sanitize_text_field((string) ($row['style'] ?? '')),
+                'response' => sanitize_textarea_field((string) $response),
+                'createdAt' => sanitize_text_field((string) ($row['createdAt'] ?? '')),
+            ];
+        }
+        return $out;
     }
 
     private static function authoritative_unit_price(array $payload)
