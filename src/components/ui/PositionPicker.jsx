@@ -115,6 +115,15 @@ export default function PositionPicker({
 
   const chooseReposition = () => onFitChange("cover");
 
+  const beginRepositionFromHandle = (event) => {
+    event.stopPropagation();
+    if (!src) return;
+    if (canChooseFit && fit !== "cover") {
+      onFitChange("cover");
+    }
+    beginDrag(event);
+  };
+
   const changeZoom = (amount) => {
     const nextZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z + amount));
     onZoomChange(Number(nextZoom.toFixed(2)));
@@ -192,9 +201,11 @@ export default function PositionPicker({
                   <button
                     type="button"
                     aria-label="Reposition photo"
-                    title="Reposition photo"
+                    title="Drag to reposition photo"
+                    onMouseDown={beginRepositionFromHandle}
+                    onTouchStart={beginRepositionFromHandle}
                     onClick={chooseReposition}
-                    className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
+                    className={`flex h-9 w-9 cursor-move items-center justify-center rounded-lg transition-colors ${
                       fit === "cover"
                         ? "bg-primary-600 text-background-50"
                         : "text-foreground-600 hover:bg-primary-50 hover:text-primary-800"

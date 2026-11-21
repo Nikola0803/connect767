@@ -62,6 +62,31 @@ describe("PositionPicker cover controls", () => {
     expect(onFitChange).toHaveBeenCalledWith("cover");
   });
 
+  it("uses the reposition icon as a working drag handle", () => {
+    const onFitChange = vi.fn();
+    const onPositionChange = vi.fn();
+    render(
+      <PositionPicker
+        src="https://example.com/cover.jpg"
+        shape="cover"
+        position="center"
+        zoom={1}
+        fit="contain"
+        onPositionChange={onPositionChange}
+        onZoomChange={vi.fn()}
+        onFitChange={onFitChange}
+      />,
+    );
+
+    const handle = screen.getByRole("button", { name: "Reposition photo" });
+    fireEvent.mouseDown(handle, { clientX: 100, clientY: 100 });
+    fireEvent.mouseMove(window, { clientX: 115, clientY: 108 });
+    fireEvent.mouseUp(window);
+
+    expect(onFitChange).toHaveBeenCalledWith("cover");
+    expect(onPositionChange).toHaveBeenCalled();
+  });
+
   it("changes zoom from the photo toolbar icons", () => {
     const onZoomChange = vi.fn();
     render(
