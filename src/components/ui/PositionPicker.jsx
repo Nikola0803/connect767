@@ -43,6 +43,10 @@ export default function PositionPicker({
   const beginDrag = (e) => {
     if (!src) return;
     e.preventDefault();
+    // Exact-ratio images have no movable overflow at 1x. Give the image a
+    // small amount of travel as soon as repositioning starts so dragging is
+    // visibly responsive instead of appearing broken.
+    if (z <= ZOOM_MIN) onZoomChange(1.1);
     const point = e.touches?.[0] ?? e;
     dragRef.current = {
       startX: point.clientX,
@@ -137,6 +141,50 @@ export default function PositionPicker({
 
   const zoomDisabled = !src || isContained;
 
+  const photoToolbar = (className) => (
+    <div
+      className={className}
+      onMouseDown={(event) => event.stopPropagation()}
+      onTouchStart={(event) => event.stopPropagation()}
+    >
+      <button
+        type="button"
+        aria-label="Reposition photo"
+        title="Drag to reposition photo"
+        onMouseDown={beginRepositionFromHandle}
+        onTouchStart={beginRepositionFromHandle}
+        onClick={chooseReposition}
+        className={`flex h-9 w-9 cursor-move items-center justify-center rounded-lg transition-colors ${
+          isLogo || fit === "cover"
+            ? "bg-primary-600 text-background-50"
+            : "text-foreground-600 hover:bg-primary-50 hover:text-primary-800"
+        }`}
+      >
+        <i className="ri-drag-move-2-line text-base" aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        aria-label="Zoom out"
+        title="Zoom out"
+        disabled={zoomDisabled || z <= ZOOM_MIN}
+        onClick={() => changeZoom(-0.1)}
+        className="flex h-9 w-9 items-center justify-center rounded-lg text-foreground-600 transition-colors hover:bg-primary-50 hover:text-primary-800 disabled:cursor-not-allowed disabled:opacity-35"
+      >
+        <i className="ri-subtract-line text-base" aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        aria-label="Zoom in"
+        title="Zoom in"
+        disabled={zoomDisabled || z >= ZOOM_MAX}
+        onClick={() => changeZoom(0.1)}
+        className="flex h-9 w-9 items-center justify-center rounded-lg text-foreground-600 transition-colors hover:bg-primary-50 hover:text-primary-800 disabled:cursor-not-allowed disabled:opacity-35"
+      >
+        <i className="ri-add-line text-base" aria-hidden="true" />
+      </button>
+    </div>
+  );
+
   return (
     <div className="mt-3 rounded-2xl border border-background-200/80 bg-background-50/70 p-4 sm:p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -194,47 +242,6 @@ export default function PositionPicker({
                   <div className="absolute top-2/3 inset-x-0 h-px bg-background-50/50" />
                 </div>
               )}
-              <div
-                className="absolute bottom-2.5 right-2.5 flex items-center gap-1 rounded-xl border border-background-200 bg-background-50/95 p-1 shadow-md backdrop-blur-sm"
-                onMouseDown={(event) => event.stopPropagation()}
-                onTouchStart={(event) => event.stopPropagation()}
-              >
-                <button
-                  type="button"
-                  aria-label="Reposition photo"
-                  title="Drag to reposition photo"
-                  onMouseDown={beginRepositionFromHandle}
-                  onTouchStart={beginRepositionFromHandle}
-                  onClick={chooseReposition}
-                  className={`flex h-9 w-9 cursor-move items-center justify-center rounded-lg transition-colors ${
-                    isLogo || fit === "cover"
-                      ? "bg-primary-600 text-background-50"
-                      : "text-foreground-600 hover:bg-primary-50 hover:text-primary-800"
-                  }`}
-                >
-                  <i className="ri-drag-move-2-line text-base" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Zoom out"
-                  title="Zoom out"
-                  disabled={zoomDisabled || z <= ZOOM_MIN}
-                  onClick={() => changeZoom(-0.1)}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-foreground-600 transition-colors hover:bg-primary-50 hover:text-primary-800 disabled:cursor-not-allowed disabled:opacity-35"
-                >
-                  <i className="ri-subtract-line text-base" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Zoom in"
-                  title="Zoom in"
-                  disabled={zoomDisabled || z >= ZOOM_MAX}
-                  onClick={() => changeZoom(0.1)}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-foreground-600 transition-colors hover:bg-primary-50 hover:text-primary-800 disabled:cursor-not-allowed disabled:opacity-35"
-                >
-                  <i className="ri-add-line text-base" aria-hidden="true" />
-                </button>
-              </div>
             </>
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -243,6 +250,11 @@ export default function PositionPicker({
           )}
         </div>
       </div>
+
+      {src &&
+        photoToolbar(
+          `${isLogo ? "mx-auto" : ""} mt-3 flex w-fit items-center gap-1 rounded-xl border border-background-200 bg-background-50 p-1 shadow-sm`,
+        )}
 
       <div className="mt-4 min-w-0">
           {canChooseFit && (

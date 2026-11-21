@@ -110,6 +110,15 @@ export function imageCropStyle(position, zoom, fit = "cover") {
   const z = clampZoom(zoom ?? 1);
   return {
     objectPosition: cssObjectPosition(position),
-    ...(z !== 1 ? { transform: `scale(${z})` } : {}),
+    ...(z !== 1
+      ? {
+          transform: `scale(${z})`,
+          // A scaled image has no object-position travel when its intrinsic
+          // ratio matches the frame (especially common for square profile
+          // photos). Moving the transform origin makes the saved x/y focal
+          // point visibly pan the zoomed image in every aspect ratio.
+          transformOrigin: cssObjectPosition(position),
+        }
+      : {}),
   };
 }
