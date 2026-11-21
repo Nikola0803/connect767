@@ -1104,6 +1104,9 @@ export function AIArtworkPanel({
   const [renderTier, setRenderTier] = useState("preview");
   const [securityContext, setSecurityContext] = useState(null);
   const [securityLoading, setSecurityLoading] = useState(true);
+  const [securityError, setSecurityError] = useState("");
+  const [setupAttempt, setSetupAttempt] = useState(0);
+  const lastRequestRef = useRef(null);
   const [generationPhase, setGenerationPhase] = useState("");
   const generationControllerRef = useRef(null);
   const historySyncRef = useRef("");
@@ -1120,6 +1123,7 @@ export function AIArtworkPanel({
   useEffect(() => {
     let active = true;
     setSecurityLoading(true);
+    setSecurityError("");
     initializeDesignSecurity({ sport, title: templateName || `${sport || "Uniform"} design` })
       .then((context) => {
         if (!active) return;
@@ -1130,11 +1134,30 @@ export function AIArtworkPanel({
       .catch((securityError) => {
         if (!active) return;
         setSecurityContext(null);
+        onSecurityContextChange?.(null);
         setSecurityLoading(false);
-        setError(securityError.message || "Design security could not be initialized.");
+        setSecurityError(securityError.name === "AbortError" ? "The usage check timed out. Please retry." : securityError.message || "AI usage is unavailable. Please retry.");
       });
     return () => { active = false; };
-  }, [sport, templateName, onSecurityContextChange]);
+  }, [sport, templateName, onSecurityContextChange, setupAttempt]);
+
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    setConnection("checking");
+    Promise.all(["/api/generate-design", "/api/generate-uniform-design"].map(async (url) => {
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) throw new Error("AI service unavailable");
+      return response.json();
+    }))
+      .then((statuses) => {
+        if (active) setConnection(statuses.every((status) => status.configured) ? "connected" : "unavailable");
+      })
+      .catch(() => { if (active) setConnection("unavailable"); })
+      .finally(() => clearTimeout(timer));
+    return () => { active = false; controller.abort(); clearTimeout(timer); };
+  }, [setupAttempt]);
 
   const updateSecurityQuota = (payload) => {
     if (!payload || typeof payload.remaining !== "number") return;
@@ -1259,20 +1282,9 @@ export function AIArtworkPanel({
     else setBrief(entry.prompt);
   };
 
-  useEffect(() => {
-    let active = true;
-    Promise.all([
-      fetch("/api/generate-design").then((response) => response.json()),
-      fetch("/api/generate-uniform-design").then((response) => response.json()),
-    ])
-      .then(([artwork, uniform]) => active && setConnection(artwork.configured && uniform.configured ? "connected" : "setup"))
-      .catch(() => active && setConnection("offline"));
-    return () => { active = false; };
-  }, []);
-
   const generateArtwork = async (requestedTier = renderTier, promptOverride = "") => {
     const artworkBrief = String(promptOverride || brief).trim();
-    if (!artworkBrief || !securityContext?.projectId) return;
+    if (!artworkBrief || !securityContext?.projectId || Number(securityContext.remaining) <= 0 || connection !== "connected") return;
     const requestId = newAIRequestId();
     const effectiveBrandName = brandName.trim() || "Team artwork";
     setGenerating(true);
@@ -1332,7 +1344,7 @@ export function AIArtworkPanel({
     const promptKind = refinement ? "Refinement" : uniformPlan ? "Variation" : "Initial";
     const effectiveBrandName = brandName.trim() || uniformPlan?.name || "Team uniform";
     const effectiveBrief = String(promptOverride || brief).trim() || uniformPlan?.summary || "Preserve the current uniform direction.";
-    if (!effectiveBrandName || (!effectiveBrief && !refinement) || !securityContext?.projectId) return;
+    if (!effectiveBrandName || (!effectiveBrief && !refinement) || !securityContext?.projectId || Number(securityContext.remaining) <= 0 || connection !== "connected") return;
     const requestId = newAIRequestId();
     const securityHeaders = aiSecurityHeaders(securityContext, requestId);
     const aiOperation = refinement ? "refinement" : uniformPlan ? "variation" : "generation";
@@ -1665,6 +1677,8 @@ export function AIArtworkPanel({
       setError("");
     };
     const sendPrompt = (requestedTier = "preview", requestedMode = mode, promptOverride = activePrompt) => {
+      if (!canSend || generating) return;
+      lastRequestRef.current = { requestedTier, requestedMode, promptOverride };
       setRenderTier(requestedTier);
       if (requestedMode === "artwork") {
         if (mode !== "artwork") {
@@ -1684,7 +1698,7 @@ export function AIArtworkPanel({
 
     return (
       <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
-        <div className="relative z-20 flex-shrink-0 overflow-visible border-b border-white/10 bg-[#11140f] px-2 py-2">
+        <div className="ai-panel-toolbar relative z-20 flex-shrink-0 overflow-visible border-b border-white/10 bg-[#11140f] px-2 py-2">
           <div ref={setPromptToolbarTarget} className="w-full" aria-label="AI prompt tools" />
         </div>
         <AIUniformComposer
@@ -1701,6 +1715,7 @@ export function AIArtworkPanel({
         generationPhase={generationPhase}
         renderTier={renderTier}
         canSend={canSend}
+        canGenerate={Boolean(securityContext?.projectId) && Number(securityContext?.remaining) > 0}
         onSend={sendPrompt}
         onStop={stopGenerating}
         style={style}
@@ -1714,7 +1729,12 @@ export function AIArtworkPanel({
         onReusePrompt={reusePrompt}
         onClearHistory={clearPromptHistory}
         error={error}
-        onRetry={sendPrompt}
+        onRetry={() => {
+          const request = lastRequestRef.current;
+          if (!request || !securityContext?.projectId || generating || Number(securityContext.remaining) <= 0) return;
+          if (request.requestedMode === "artwork") generateArtwork(request.requestedTier, request.promptOverride);
+          else generateUniform(uniformPlan ? request.promptOverride : "", request.requestedTier, request.promptOverride);
+        }}
         uniformPlan={uniformPlan}
         applied={applied}
         onApplyUniform={applyUniform}
@@ -1738,12 +1758,16 @@ export function AIArtworkPanel({
             : generateArtwork("proof", promptHistory[0]?.prompt || activePrompt);
         }}
         onSaveDesign={onSaveDesign}
+        canSaveDesign={Boolean(securityContext?.authenticated)}
         onDownloadDesign={downloadSecuredDesign}
         onDownloadPrompts={downloadPromptHistory}
         onOpenBackgroundRemoval={onOpenBackgroundRemoval}
         toolbarTarget={promptToolbarTarget}
         aiQuota={securityContext}
-        accountRequired={Boolean(securityContext) && !securityLoading && !securityContext.authenticated && Number(securityContext.remaining) <= 0}
+        securityLoading={securityLoading}
+        securityError={securityError}
+        onRetrySetup={() => setSetupAttempt((value) => value + 1)}
+        accountRequired={Boolean(securityContext?.accountRequired)}
         downloadUnlocked={Boolean(securityContext?.downloadUnlocked)}
         onCompleteOrder={onCompleteOrder}
         />

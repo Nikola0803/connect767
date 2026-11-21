@@ -13,6 +13,8 @@ const ProductionViewport = forwardRef(function ProductionViewport({
   const viewportRef = useRef(null);
   const contentRef = useRef(null);
   const dragRef = useRef(null);
+  const pointersRef = useRef(new Map());
+  const pinchRef = useRef(null);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [fitScale, setFitScale] = useState(1);
@@ -34,6 +36,8 @@ const ProductionViewport = forwardRef(function ProductionViewport({
 
   const reset = useCallback(() => {
     dragRef.current = null;
+    pointersRef.current.clear();
+    pinchRef.current = null;
     setDragging(false);
     setPan({ x: 0, y: 0 });
     onZoomChange(1);
@@ -56,6 +60,8 @@ const ProductionViewport = forwardRef(function ProductionViewport({
   }, [onZoomChange]);
 
   const endDrag = (event) => {
+    pointersRef.current.delete(event.pointerId);
+    if (pointersRef.current.size < 2) pinchRef.current = null;
     if (dragRef.current?.pointerId !== event.pointerId) return;
     dragRef.current = null;
     setDragging(false);
@@ -70,10 +76,22 @@ const ProductionViewport = forwardRef(function ProductionViewport({
     className="relative z-0 flex min-h-0 w-full flex-1 items-start justify-center overflow-hidden rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
     style={{ touchAction: "none", cursor: dragging ? "grabbing" : panMode ? "grab" : undefined }}
     onPointerDownCapture={(event) => {
+      if (event.pointerType === "touch" && !event.target.closest?.(CONTROLS)) {
+        pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        if (pointersRef.current.size === 2) {
+          const [a, b] = [...pointersRef.current.values()];
+          pinchRef.current = { distance: Math.hypot(a.x - b.x, a.y - b.y), zoom };
+          dragRef.current = null;
+          setDragging(false);
+          event.stopPropagation();
+          event.currentTarget.setPointerCapture?.(event.pointerId);
+          return;
+        }
+      }
       if (placingArtwork || event.target.closest?.(CONTROLS) || (event.button !== 0 && event.button !== 1)) return;
       const forcedPan = panMode || event.button === 1 || event.altKey;
       if (!forcedPan && isEditingTarget(event.target)) return;
-      event.preventDefault();
+      if (event.pointerType !== "touch") event.preventDefault();
       event.stopPropagation();
       event.currentTarget.focus({ preventScroll: true });
       event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -81,13 +99,19 @@ const ProductionViewport = forwardRef(function ProductionViewport({
       setDragging(true);
     }}
     onPointerMove={(event) => {
+      if (pointersRef.current.has(event.pointerId)) pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (pinchRef.current && pointersRef.current.size === 2) {
+        const [a, b] = [...pointersRef.current.values()];
+        if (pinchRef.current.distance) onZoomChange(pinchRef.current.zoom * Math.hypot(a.x - b.x, a.y - b.y) / pinchRef.current.distance);
+        return;
+      }
       const drag = dragRef.current;
       if (!drag || drag.pointerId !== event.pointerId) return;
       setPan({ x: drag.pan.x + event.clientX - drag.x, y: drag.pan.y + event.clientY - drag.y });
     }}
     onPointerUp={endDrag}
     onPointerCancel={endDrag}
-    onLostPointerCapture={() => { dragRef.current = null; setDragging(false); }}
+    onLostPointerCapture={(event) => { pointersRef.current.delete(event.pointerId); if (pointersRef.current.size < 2) pinchRef.current = null; dragRef.current = null; setDragging(false); }}
     onDoubleClick={(event) => {
       if (placingArtwork || isEditingTarget(event.target)) return;
       reset();

@@ -72,11 +72,19 @@ const profiles = {
   },
 };
 
+const hasVerifiedCommandBoundary = (item) => item?.verified === true
+  && Array.isArray(item.commands) && item.commands.length >= 3
+  && item.commands[0]?.type === "M"
+  && item.commands.every((command) => {
+    const keys = command.type === "M" ? ["x", "y"] : command.type === "C" ? ["x", "y", "c1x", "c1y", "c2x", "c2y"] : [];
+    return keys.length > 0 && keys.every((key) => Number.isFinite(command[key]));
+  });
+
 const hasVerifiedTracedZones = (zoneModel) =>
   ["front", "back"].every((side) =>
     Array.isArray(zoneModel?.[side])
     && zoneModel[side].length > 0
-    && zoneModel[side].every((item) => item?.id && item?.path)
+    && zoneModel[side].every((item) => item?.id && (item.path || hasVerifiedCommandBoundary(item)))
   );
 
 export function detectGarmentCapabilities({

@@ -22,7 +22,7 @@ function Preview({ panMode = false, placingArtwork = false, onArtworkDown, onArt
 describe("production viewport", () => {
   beforeEach(() => {
     vi.stubGlobal("PointerEvent", class extends MouseEvent {
-      constructor(type, options = {}) { super(type, options); this.pointerId = options.pointerId || 1; }
+      constructor(type, options = {}) { super(type, options); this.pointerId = options.pointerId || 1; this.pointerType = options.pointerType || "mouse"; }
     });
   });
   afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
@@ -105,5 +105,19 @@ describe("production viewport", () => {
     expect(container.querySelector('[data-production-transform]').style.transform).toBe("translate3d(16px, 0px, 0) scale(1.1)");
     fireEvent.keyDown(viewport, { key: "0" });
     expect(container.querySelector('[data-production-transform]').style.transform).toBe("translate3d(0px, 0px, 0) scale(1)");
+  });
+
+  it("pinches with two touches without moving artwork and recovers after cancellation", () => {
+    const onArtworkDown = vi.fn();
+    const { container } = render(<Preview panMode onArtworkDown={onArtworkDown} />);
+    const viewport = screen.getByRole("group", { name: "Production map viewport" });
+    fireEvent.pointerDown(viewport, { pointerId: 1, pointerType: "touch", clientX: 50, clientY: 50 });
+    fireEvent.pointerDown(viewport, { pointerId: 2, pointerType: "touch", clientX: 150, clientY: 50 });
+    fireEvent.pointerMove(viewport, { pointerId: 2, pointerType: "touch", clientX: 200, clientY: 50 });
+    expect(screen.getByLabelText("Zoom")).toHaveTextContent("1.5");
+    expect(onArtworkDown).not.toHaveBeenCalled();
+    fireEvent.pointerCancel(viewport, { pointerId: 2, pointerType: "touch" });
+    fireEvent.click(screen.getByText("Fit"));
+    expect(container.querySelector('[data-production-transform]').style.transform).toContain("scale(1)");
   });
 });

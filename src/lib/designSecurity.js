@@ -21,52 +21,64 @@ const persist = (key, value) => {
 async function securityRequest(path, { method = "GET", body, guestToken = stored(GUEST_TOKEN_KEY) } = {}) {
   if (!config.customApiUrl) throw new Error("Design security requires the Connect767 server.");
   const token = getStoredToken();
-  const response = await fetch(`${config.customApiUrl}${path}`, {
-    method,
-    headers: {
-      ...(body ? { "Content-Type": "application/json" } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(guestToken ? { "X-C767-Guest-Token": guestToken } : {}),
-    },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const error = new Error(payload.message || "The design security service is unavailable.");
-    error.status = response.status;
-    error.payload = payload;
-    throw error;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  try {
+    const response = await fetch(`${config.customApiUrl}${path}`, {
+      method,
+      headers: {
+        ...(body ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(guestToken ? { "X-C767-Guest-Token": guestToken } : {}),
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+      signal: controller.signal,
+    });
+    const payload = await response.json().catch((error) => {
+      if (error.name === "AbortError") throw error;
+      return {};
+    });
+    if (!response.ok) {
+      const error = new Error(payload.message || "The design security service is unavailable.");
+      error.status = response.status;
+      error.payload = payload;
+      throw error;
+    }
+    if (payload.guestToken) persist(GUEST_TOKEN_KEY, payload.guestToken);
+    return payload;
+  } finally {
+    clearTimeout(timeout);
   }
-  if (payload.guestToken) persist(GUEST_TOKEN_KEY, payload.guestToken);
-  return payload;
 }
 
 async function initializeDesignSecurityInternal({ sport, title }) {
   if (!config.customApiUrl) {
     return {
       authenticated: Boolean(getStoredUser()?.id),
-      projectId: `local-${String(sport || "uniform").toLowerCase()}`,
+      projectId: "",
       guestToken: "",
-      limit: 3,
-      remaining: 3,
+      limit: null,
+      remaining: null,
       downloadUnlocked: false,
       projectFiles: [],
       localPreview: true,
     };
   }
-  if (!getStoredUser()?.id || !getStoredToken()) {
+  let session = await securityRequest("/design-security/session", { method: "POST", body: {} });
+  if (!Number.isFinite(session.limit) || !Number.isFinite(session.remaining) || session.limit < 0 || session.remaining < 0) {
+    throw new Error("AI usage could not be verified. Please retry the usage check.");
+  }
+  if (!session.authenticated) {
     return {
+      ...session,
       authenticated: false,
       accountRequired: true,
       projectId: "",
-      guestToken: "",
-      limit: 0,
-      remaining: 0,
+      guestToken: session.guestToken || stored(GUEST_TOKEN_KEY),
       downloadUnlocked: false,
       projectFiles: [],
     };
   }
-  let session = await securityRequest("/design-security/session", { method: "POST", body: {} });
   const key = projectStorageKey(sport);
   let projectId = stored(key);
   if (projectId) {

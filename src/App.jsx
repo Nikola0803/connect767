@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-const CHROMELESS_ROUTES = ["/shop/customize", "/design-studio"];
+const CHROMELESS_ROUTES = ["/uniforms", "/shop/customize", "/design-studio"];
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { CartProvider, useCart } from "./hooks/useCart";
@@ -70,7 +70,7 @@ function Chrome({ children }) {
   if (bare) {
     // Landing states can be taller than one viewport. Their editors still
     // own fixed 100dvh canvases and manage overflow internally.
-    return <main className="min-h-[100dvh] w-full overflow-x-hidden bg-background-50">{children}</main>;
+    return <main className="min-h-[100dvh] w-full overflow-x-hidden bg-background-50">{children}<CartDrawerGate /></main>;
   }
 
   return (
