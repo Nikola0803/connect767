@@ -530,6 +530,47 @@ export default function AddListingPage() {
   const update = (field) => (e) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
 
+  const handleCoverPhotoChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const fileError = coverPhotoFileError(file);
+    if (fileError) {
+      setCoverPhotoError(fileError);
+      event.target.value = "";
+      return;
+    }
+    try {
+      const { width, height } = await readImageDimensions(file);
+      const dimensionError = coverPhotoDimensionError(width, height);
+      if (dimensionError) {
+        setCoverPhotoError(dimensionError);
+        event.target.value = "";
+        return;
+      }
+    } catch {
+      setCoverPhotoError(
+        "We couldn't display this image. It may be damaged or use an unsupported format. Choose a different picture.",
+      );
+      event.target.value = "";
+      return;
+    }
+    setCoverPhotoError("");
+    setForm((current) => {
+      if (current.photoPreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(current.photoPreview);
+      }
+      return {
+        ...current,
+        photoFile: file,
+        photoPreview: URL.createObjectURL(file),
+        coverFit: "smart",
+        coverPosition: "center",
+        coverZoom: 1,
+      };
+    });
+    event.target.value = "";
+  };
+
   const canContinue = () => {
     // Description is required — it's the part of a listing that actually
     // sells the business, and an empty one makes the profile look abandoned.
@@ -1231,78 +1272,68 @@ export default function AddListingPage() {
                   </FormField>
                   <FormField
                     label="Cover photo"
-                    hint="Recommended: 1600 × 900 px (16:9), max 2 MB. Keep important content centered for the best directory and profile display."
+                    hint="Recommended exact fit: 1600 × 900 px or 1500 × 844 px (16:9), max 2 MB. Use Reposition for a full-bleed cover or Full image to avoid cropping."
                   >
-                    <div className="relative w-full group">
+                    {!form.photoPreview ? (
+                      <div className="relative w-full group">
                         <label className="relative flex aspect-[16/9] w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-lg border-2 border-dashed border-background-300 text-center transition-colors hover:border-primary-400 cursor-pointer">
-                        {form.photoPreview ? (
-                          <img
-                            src={form.photoPreview}
-                            alt="Cover photo preview"
-                            className={`absolute inset-0 h-full w-full ${form.coverFit === "cover" ? "object-cover" : "object-contain"}`}
-                            style={imageCropStyle(form.coverPosition, form.coverZoom, form.coverFit)}
-                          />
-                        ) : (
                           <>
                             <i className="ri-image-add-line text-2xl text-foreground-400" />
                             <span className="text-sm text-foreground-600 font-label">
                               Click to upload a photo
                             </span>
                           </>
-                        )}
-                        <input
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp,image/gif"
-                          className="hidden"
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const fileError = coverPhotoFileError(file);
-                            if (fileError) {
-                              setCoverPhotoError(fileError);
-                              e.target.value = "";
-                              return;
-                            }
-                            try {
-                              const { width, height } = await readImageDimensions(file);
-                              const dimensionError = coverPhotoDimensionError(width, height);
-                              if (dimensionError) {
-                                setCoverPhotoError(dimensionError);
-                                e.target.value = "";
-                                return;
-                              }
-                            } catch {
-                              setCoverPhotoError(
-                                "We couldn't display this image. It may be damaged or use an unsupported format. Choose a different picture.",
-                              );
-                              e.target.value = "";
-                              return;
-                            }
-                            setCoverPhotoError("");
-                            setForm((f) => ({
-                              ...f,
-                              photoFile: file,
-                              photoPreview: URL.createObjectURL(file),
-                              coverFit: "smart",
-                              coverPosition: "center",
-                              coverZoom: 1,
-                            }));
-                          }}
-                        />
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            className="hidden"
+                            onChange={handleCoverPhotoChange}
+                          />
                       </label>
-                      {form.photoPreview && (
-                        <button
-                          type="button"
-                          aria-label="Remove cover photo"
-                          onClick={() =>
-                            setForm((f) => ({ ...f, photoFile: null, photoPreview: "" }))
+                      </div>
+                    ) : (
+                      <>
+                        <PositionPicker
+                          src={form.photoPreview}
+                          shape="cover"
+                          position={form.coverPosition}
+                          zoom={form.coverZoom}
+                          fit={form.coverFit}
+                          onPositionChange={(value) =>
+                            setForm((f) => ({ ...f, coverPosition: value }))
                           }
-                          className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full bg-foreground-950/70 text-background-50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                        >
-                          <i className="ri-close-line text-sm" />
-                        </button>
-                      )}
-                    </div>
+                          onZoomChange={(value) => setForm((f) => ({ ...f, coverZoom: value }))}
+                          onFitChange={(value) => setForm((f) => ({ ...f, coverFit: value }))}
+                        />
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-background-300 bg-background-50 px-3 py-2 text-xs font-semibold text-foreground-700 transition-colors hover:border-primary-400 hover:text-primary-800">
+                            <i className="ri-image-edit-line text-base" aria-hidden="true" />
+                            Change photo
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp,image/gif"
+                              className="hidden"
+                              onChange={handleCoverPhotoChange}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setForm((current) => {
+                                if (current.photoPreview?.startsWith("blob:")) {
+                                  URL.revokeObjectURL(current.photoPreview);
+                                }
+                                return { ...current, photoFile: null, photoPreview: "" };
+                              })
+                            }
+                            className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50"
+                          >
+                            <i className="ri-delete-bin-line text-base" aria-hidden="true" />
+                            Remove photo
+                          </button>
+                        </div>
+                      </>
+                    )}
                     {coverPhotoError && (
                       <div
                         role="alert"
@@ -1311,21 +1342,6 @@ export default function AddListingPage() {
                         <i className="ri-error-warning-line mt-0.5 flex-shrink-0" />
                         <span>{coverPhotoError}</span>
                       </div>
-                    )}
-                    {form.photoPreview && (
-                      <PositionPicker
-                        label="Position"
-                        src={form.photoPreview}
-                        shape="cover"
-                        position={form.coverPosition}
-                        zoom={form.coverZoom}
-                        fit={form.coverFit}
-                        onPositionChange={(value) =>
-                          setForm((f) => ({ ...f, coverPosition: value }))
-                        }
-                        onZoomChange={(value) => setForm((f) => ({ ...f, coverZoom: value }))}
-                        onFitChange={(value) => setForm((f) => ({ ...f, coverFit: value }))}
-                      />
                     )}
                   </FormField>
                 </div>
