@@ -52,9 +52,18 @@ function localApiPlugin(mode) {
 export default defineConfig(({ mode }) => ({
   root: projectRoot,
   plugins: [react(), tailwindcss(), localApiPlugin(mode)],
-  esbuild: {
-    jsx: "automatic",
-    jsxImportSource: "react",
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined
+          if (id.includes('/three/') || id.includes('\\three\\') || id.includes('@react-three')) return 'vendor-three'
+          if (id.includes('@stripe')) return 'vendor-stripe'
+          if (id.includes('html-to-image')) return 'vendor-image-export'
+          return undefined
+        },
+      },
+    },
   },
   test: {
     environment: "jsdom",

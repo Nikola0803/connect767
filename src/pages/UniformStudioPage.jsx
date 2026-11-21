@@ -1,9 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { toPng } from "html-to-image";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
-import * as THREE from "three";
 import {
   sports,
   templates,
@@ -98,6 +96,13 @@ import {
   quoteUniformCheckout,
   submitUniformQuote,
 } from "../data/repository";
+
+// Keep the image-export library out of the already feature-rich studio chunk.
+// It is downloaded only when a customer actually exports or saves a preview.
+const toPng = async (...args) => {
+  const imageExport = await import("html-to-image");
+  return imageExport.toPng(...args);
+};
 
 const emptyUniformShipping = {
   firstName: "", lastName: "", company: "", address1: "", address2: "",
@@ -1079,24 +1084,26 @@ export default function UniformStudioPage() {
    * pinned to the surface normal, so only this roll is the user's to change —
    * rotating about a world axis would tip the artwork off a curved panel.
    */
-  const rotateLayer = (id, dir) =>
+  const rotateLayer = async (id, dir) => {
+    const { Euler, Quaternion, Vector3 } = await import("three");
     setPlacements3d((prev) => {
       const p = prev[id];
       if (!p) return prev;
       const step = (Math.PI / 24) * dir;
-      const e = new THREE.Euler().fromArray(p.orientation);
-      const q = new THREE.Quaternion().setFromEuler(e);
-      const axis = new THREE.Vector3(0, 0, 1).applyQuaternion(q).normalize();
-      q.premultiply(new THREE.Quaternion().setFromAxisAngle(axis, step));
+      const e = new Euler().fromArray(p.orientation);
+      const q = new Quaternion().setFromEuler(e);
+      const axis = new Vector3(0, 0, 1).applyQuaternion(q).normalize();
+      q.premultiply(new Quaternion().setFromAxisAngle(axis, step));
       return {
         ...prev,
         [id]: {
           ...p,
           roll: (p.roll ?? 0) + step,
-          orientation: new THREE.Euler().setFromQuaternion(q).toArray().slice(0, 3),
+          orientation: new Euler().setFromQuaternion(q).toArray().slice(0, 3),
         },
       };
     });
+  };
 
   /** Applies a preset colourway: [body, trim, accent]. */
   const applyColourway = ([body, trim, accent]) => {

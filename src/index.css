@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "remixicon/fonts/remixicon.css";
+@import "./generated/remixicon-subset.css";
 
 @theme {
   --font-heading: "Fraunces", "Georgia", serif;
@@ -213,6 +213,14 @@ h1, h2, h3, h4, h5, h6 {
   [role="button"]:not([class*="h-"]):not([class*="py-"]) {
     min-height: 44px;
   }
+}
+
+/* Skip layout and paint work for long, below-the-fold feeds while reserving
+   enough space to keep scrolling stable. Browsers without support simply
+   render the cards normally. */
+.content-auto-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 32rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

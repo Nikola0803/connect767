@@ -8,3 +8,4 @@ dist
 .chrome-preview/
 .chrome-meeting-preview*/
 preview-images/
+src/generated/

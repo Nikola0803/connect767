@@ -504,7 +504,7 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
   };
 
   return (
-    <article id={`community-post-${post.id}`} className="group/post relative scroll-mt-24 overflow-visible rounded-2xl border border-background-200 bg-white p-4 shadow-[0_4px_18px_rgba(24,48,36,0.035)] transition-colors duration-200 hover:border-primary-200 sm:p-5">
+    <article id={`community-post-${post.id}`} className="content-auto-card group/post relative scroll-mt-24 overflow-visible rounded-2xl border border-background-200 bg-white p-4 shadow-[0_4px_18px_rgba(24,48,36,0.035)] transition-colors duration-200 hover:border-primary-200 sm:p-5">
       <header className="flex items-start gap-2.5 sm:gap-3">
         {post.listingLogo ? (
           <img src={post.listingLogo} alt={`${post.listingTitle} profile`} className="h-10 w-10 rounded-full border-2 border-white object-cover shadow-sm ring-1 ring-background-200 sm:h-12 sm:w-12" />

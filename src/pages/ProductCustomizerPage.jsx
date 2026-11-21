@@ -1,16 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toPng } from "html-to-image";
 import { productTypes as fallbackProductTypes, garmentColorPalette as fallbackColorPalette, fontOptions } from "../data/customizer";
 import { getProductTypes, submitProductCustomOrder } from "../data/repository";
 import ProductStage from "../components/product-customizer/ProductStage";
 import ProductGallery from "../components/product-customizer/ProductGallery";
 import SimpleDesignPanel from "../components/product-customizer/SimpleDesignPanel";
 import SelectedLayerBar from "../components/product-customizer/SelectedLayerBar";
-import Product3DStage from "../components/product-customizer/garment3d/Product3DStage";
-import DesignCapture from "../components/product-customizer/garment3d/DesignCapture";
 import Button from "../components/ui/Button";
 import { Input, Textarea } from "../components/ui/FormField";
+
+const Product3DStage = lazy(() => import("../components/product-customizer/garment3d/Product3DStage"));
+const DesignCapture = lazy(() => import("../components/product-customizer/garment3d/DesignCapture"));
 
 /**
  * Rebuilt as a plain 3-step flow — pick a product, design it (color, text,
@@ -180,6 +180,7 @@ export default function ProductCustomizerPage() {
     let preview = null;
     if (stageRef.current) {
       try {
+        const { toPng } = await import("html-to-image");
         preview = await toPng(stageRef.current, { pixelRatio: 1.5, skipFonts: true });
         setPreviewImg(preview);
       } catch {
@@ -323,7 +324,9 @@ export default function ProductCustomizerPage() {
                 onUploadDrop={handleNewUpload}
               />
             ) : (
-              <Product3DStage productType={product} color={color} textures={textures} fullscreen={true} />
+              <Suspense fallback={<div className="grid h-full place-items-center text-sm text-foreground-500">Loading 3D preview…</div>}>
+                <Product3DStage productType={product} color={color} textures={textures} fullscreen={true} />
+              </Suspense>
             )}
 
             <button
@@ -377,7 +380,9 @@ export default function ProductCustomizerPage() {
           </div>
         </div>
 
-        <DesignCapture layers={layers} placements={product.placements} onTextureUpdate={handleTextureUpdate} />
+        <Suspense fallback={null}>
+          <DesignCapture layers={layers} placements={product.placements} onTextureUpdate={handleTextureUpdate} />
+        </Suspense>
       </div>
     );
   }

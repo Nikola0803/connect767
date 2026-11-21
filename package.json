@@ -4,10 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "icons:build": "node scripts/build-icon-font.mjs",
+    "predev": "node scripts/build-icon-font.mjs",
     "dev": "vite",
-    "build": "vite build && node scripts/generate-seo-pages.mjs",
+    "prebuild": "node scripts/build-icon-font.mjs",
+    "build": "vite build && node scripts/generate-seo-pages.mjs && node scripts/check-build-budget.mjs",
     "lint": "oxlint",
     "preview": "vite preview",
+    "pretest": "node scripts/build-icon-font.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

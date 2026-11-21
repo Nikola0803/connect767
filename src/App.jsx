@@ -3,9 +3,8 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 const CHROMELESS_ROUTES = ["/shop/customize", "/design-studio"];
 import Header from "./components/Header";
 import Footer from "./components/Footer";
-import { CartProvider } from "./hooks/useCart";
+import { CartProvider, useCart } from "./hooks/useCart";
 import { SavedListingsProvider } from "./hooks/useSavedListings";
-import CartDrawer from "./components/CartDrawer";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ScrollToTop from "./components/ScrollToTop";
 import RouteSeo from "./components/RouteSeo";
@@ -39,6 +38,7 @@ const SavedListingsPage = lazy(() => import("./pages/SavedListingsPage"));
 const AIDesignStudioPage = lazy(() => import("./pages/AIDesignStudioPage"));
 const ListingStorefrontPage = lazy(() => import("./pages/ListingStorefrontPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
+const CartDrawer = lazy(() => import("./components/CartDrawer"));
 
 function RouteLoading() {
   return (
@@ -56,6 +56,12 @@ function RouteBoundary({ children }) {
   return <ErrorBoundary key={location.pathname}>{children}</ErrorBoundary>;
 }
 
+function CartDrawerGate() {
+  const { isOpen } = useCart();
+  if (!isOpen) return null;
+  return <Suspense fallback={null}><CartDrawer /></Suspense>;
+}
+
 function Chrome({ children }) {
   const { pathname } = useLocation();
   const bare = CHROMELESS_ROUTES.includes(pathname);
@@ -71,7 +77,7 @@ function Chrome({ children }) {
       <Header />
       <main>{children}</main>
       <Footer />
-      <CartDrawer />
+      <CartDrawerGate />
     </div>
   );
 }
