@@ -42,6 +42,9 @@ describe("AI design generation endpoint", () => {
     delete process.env.OPENAI_IMAGE_MODEL;
     delete process.env.OPENAI_IMAGE_PREVIEW_QUALITY;
     delete process.env.OPENAI_IMAGE_PROOF_QUALITY;
+    delete process.env.C767_AI_SERVICE_SECRET;
+    delete process.env.C767_AI_SECURITY_REQUIRED;
+    delete process.env.C767_WP_BASE_URL;
   });
 
   it("validates and constrains the customer brief", () => {
@@ -180,5 +183,63 @@ describe("AI design generation endpoint", () => {
     expect(res.statusCode).toBe(502);
     expect(res.payload.error).toMatch(/rejected the server credential/i);
     expect(JSON.stringify(res.payload)).not.toContain("test-only-key");
+  });
+
+  it("blocks a direct AI request when the authoritative guest allowance is exhausted", async () => {
+    process.env.C767_AI_SERVICE_SECRET = "shared-test-secret";
+    process.env.C767_AI_SECURITY_REQUIRED = "1";
+    process.env.C767_WP_BASE_URL = "https://cms.example.test";
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 429,
+      json: async () => ({
+        code: "c767_ai_limit_reached",
+        message: "Your free AI design previews have been used. Create a free Connect767 account to continue designing.",
+        data: { remaining: 0, limit: 3, requiresAccount: true },
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const res = response();
+    const req = request("POST", { ...validBrief, projectId: "project-1" });
+    req.headers["x-c767-request-id"] = "request-1";
+    req.headers["x-c767-guest-token"] = "signed-guest-token";
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(429);
+    expect(res.payload).toMatchObject({ remaining: 0, limit: 3, requiresAccount: true });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toContain("/design-security/ai/reserve");
+  });
+
+  it("returns only the secured watermarked preview while the original is stored server-side", async () => {
+    process.env.C767_AI_SERVICE_SECRET = "shared-test-secret";
+    process.env.C767_AI_SECURITY_REQUIRED = "1";
+    process.env.C767_WP_BASE_URL = "https://cms.example.test";
+    const original = "b3JpZ2luYWw=";
+    const watermarked = "d2F0ZXJtYXJrZWQ=";
+    const fetchMock = vi.fn(async (url) => {
+      if (String(url).includes("/ai/reserve")) return { ok: true, status: 200, json: async () => ({ allowed: true, remaining: 2, limit: 3 }) };
+      if (url === "https://api.openai.com/v1/images/generations") return { ok: true, status: 200, json: async () => ({ data: [{ b64_json: original }], id: "provider-1" }) };
+      if (String(url).includes("/files/store")) return { ok: true, status: 200, json: async () => ({ fileId: 71, b64: watermarked, mimeType: "image/png", previewOnly: true, watermarked: true }) };
+      if (String(url).includes("/ai/settle")) return { ok: true, status: 200, json: async () => ({ status: "completed" }) };
+      throw new Error(`Unexpected URL ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const res = response();
+    const req = request("POST", { ...validBrief, projectId: "project-1" });
+    req.headers["x-c767-request-id"] = "request-2";
+    req.headers["x-c767-guest-token"] = "signed-guest-token";
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload).toMatchObject({ b64: watermarked, projectFileId: 71, previewOnly: true, watermarked: true });
+    expect(res.payload.b64).not.toBe(original);
+    expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual(expect.arrayContaining([
+      expect.stringContaining("/ai/reserve"),
+      expect.stringContaining("/files/store"),
+      expect.stringContaining("/ai/settle"),
+    ]));
   });
 });

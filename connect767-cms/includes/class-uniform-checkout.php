@@ -343,6 +343,14 @@ class C767_Uniform_Checkout
             return new WP_Error('c767_uniform_order_failed', $order->get_error_message(), ['status' => 400]);
         }
 
+        if (!$temporary) {
+            $project_check = C767_Design_Studio_Security::attach_order_project($order, $request, $payload);
+            if (is_wp_error($project_check)) {
+                $order->delete(true);
+                return $project_check;
+            }
+        }
+
         $kit_item_id = $order->add_product($product, $unit_count, [
             'subtotal' => $kits_total,
             'total' => $kits_total,

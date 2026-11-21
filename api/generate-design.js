@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { reserveAIRequest, secureGeneratedFile, securityErrorResponse, settleAIRequest } from "./_ai-security.js";
 
 export const config = { maxDuration: 60 };
 
@@ -183,7 +184,21 @@ export default async function handler(req, res) {
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 55_000);
-  const requestId = randomUUID();
+  const requestedId = text(req.headers?.["x-c767-request-id"], 80);
+  const requestId = requestedId || randomUUID();
+  const requestedOperation = text(req.body?.aiOperation, 30);
+  const operation = ["generation", "refinement", "variation", "artwork"].includes(requestedOperation)
+    ? requestedOperation
+    : brief.generationMode === "artwork" ? "artwork" : brief.referenceImage ? "refinement" : "generation";
+  const settlesLogicalRequest = req.body?.settleRequest !== false;
+  let reservation;
+
+  try {
+    reservation = await reserveAIRequest(req, { requestId, operation, projectId: text(req.body?.projectId, 80) });
+  } catch (error) {
+    const security = securityErrorResponse(error, requestId);
+    return responseJson(res, security.status, security.payload);
+  }
 
   try {
     const output = outputSettings(brief);
@@ -235,17 +250,28 @@ export default async function handler(req, res) {
       const message = generation.status === 401
         ? "The AI service rejected the server credential."
         : data?.error?.message || "The AI image service could not complete this design.";
-      return responseJson(res, status, { error: message, requestId });
+      if (settlesLogicalRequest) await settleAIRequest(req, { requestId, successful: false, providerReference: data?.id || "" });
+      return responseJson(res, status, { error: message, requestId, remaining: reservation?.remaining ?? null });
     }
 
     const image = data.data?.[0];
     if (!image?.b64_json) {
+      if (settlesLogicalRequest) await settleAIRequest(req, { requestId, successful: false, providerReference: data?.id || "" });
       return responseJson(res, 502, { error: "The AI service returned no image.", requestId });
     }
 
-    return responseJson(res, 200, {
+    const secured = await secureGeneratedFile(req, {
+      requestId,
       b64: image.b64_json,
       mimeType: "image/png",
+      fileType: brief.generationMode === "artwork" ? "png" : "png",
+      originalName: `connect767-${brief.generationMode}-${requestId}.png`,
+    });
+    if (settlesLogicalRequest) await settleAIRequest(req, { requestId, successful: true, providerReference: data?.id || "" });
+
+    return responseJson(res, 200, {
+      b64: secured?.b64 || image.b64_json,
+      mimeType: secured?.mimeType || "image/png",
       mode: brief.generationMode,
       model,
       size: data.size || output.size,
@@ -254,8 +280,14 @@ export default async function handler(req, res) {
       usage: data.usage || null,
       revisedPrompt: image.revised_prompt || null,
       requestId,
+      projectFileId: secured?.fileId || null,
+      previewOnly: secured?.previewOnly !== false,
+      watermarked: Boolean(secured?.watermarked),
+      remaining: reservation?.remaining ?? null,
+      limit: reservation?.limit ?? null,
     });
   } catch (error) {
+    if (settlesLogicalRequest) await settleAIRequest(req, { requestId, successful: false });
     const timedOut = error?.name === "AbortError";
     console.error("generate-design error", { requestId, timedOut, message: error?.message });
     return responseJson(res, timedOut ? 504 : 500, {

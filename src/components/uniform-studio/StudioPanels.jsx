@@ -20,6 +20,12 @@ import AIUniformComposer from "./AIUniformComposer";
 import CollarAttachment from "./CollarAttachment";
 import { embossConnect767ConceptBackground } from "./aiConceptEmboss";
 import { RequiredIndicator } from "../ui/FormField";
+import {
+  aiSecurityHeaders,
+  initializeDesignSecurity,
+  newAIRequestId,
+  downloadProtectedDesign,
+} from "../../lib/designSecurity";
 
 /** #rrggbb → {r,g,b}, tolerating a missing leading hash. */
 function hexToRgb(hex) {
@@ -1070,8 +1076,9 @@ export function AIArtworkPanel({
   onCompareVersions,
   comparisonActive = false,
   onSaveDesign,
-  onDownloadDesign,
   onOpenBackgroundRemoval,
+  onSecurityContextChange,
+  onCompleteOrder,
 }) {
   const [mode, setMode] = useState("uniform");
   const [brandName, setBrandName] = useState("");
@@ -1090,6 +1097,8 @@ export function AIArtworkPanel({
   const [promptToolbarTarget, setPromptToolbarTarget] = useState(null);
   const [error, setError] = useState("");
   const [renderTier, setRenderTier] = useState("proof");
+  const [securityContext, setSecurityContext] = useState(null);
+  const [securityLoading, setSecurityLoading] = useState(true);
   const generationControllerRef = useRef(null);
   const allDesignControlsLocked = locks.collar && locks.sleeve && locks.colors && locks.pattern;
   const lockedControlCount = Object.values(locks).filter(Boolean).length;
@@ -1100,6 +1109,53 @@ export function AIArtworkPanel({
   useEffect(() => {
     onGeneratingChange?.(generating);
   }, [generating, onGeneratingChange]);
+
+  useEffect(() => {
+    let active = true;
+    setSecurityLoading(true);
+    initializeDesignSecurity({ sport, title: templateName || `${sport || "Uniform"} design` })
+      .then((context) => {
+        if (!active) return;
+        setSecurityContext(context);
+        onSecurityContextChange?.(context);
+        setSecurityLoading(false);
+      })
+      .catch((securityError) => {
+        if (!active) return;
+        setSecurityContext(null);
+        setSecurityLoading(false);
+        setError(securityError.message || "Design security could not be initialized.");
+      });
+    return () => { active = false; };
+  }, [sport, templateName, onSecurityContextChange]);
+
+  const updateSecurityQuota = (payload) => {
+    if (!payload || typeof payload.remaining !== "number") return;
+    setSecurityContext((current) => {
+      const next = { ...current, remaining: payload.remaining, limit: payload.limit ?? current?.limit };
+      onSecurityContextChange?.(next);
+      return next;
+    });
+  };
+
+  const securityErrorMessage = (responsePayload, fallback) => {
+    if (responsePayload?.requiresAccount) {
+      return "Your free AI design previews have been used. Create a free Connect767 account to continue designing.";
+    }
+    return responsePayload?.error || responsePayload?.message || fallback;
+  };
+
+  const downloadSecuredDesign = async () => {
+    if (!securityContext?.downloadUnlocked) {
+      onCompleteOrder?.();
+      return;
+    }
+    try {
+      await downloadProtectedDesign(securityContext.projectFiles?.[0]);
+    } catch (downloadError) {
+      setError(downloadError.message || "The protected design could not be downloaded.");
+    }
+  };
 
   useEffect(() => {
     if (hasExistingArtwork) {
@@ -1173,7 +1229,8 @@ export function AIArtworkPanel({
 
   const generateArtwork = async (requestedTier = renderTier, promptOverride = "") => {
     const artworkBrief = String(promptOverride || brief).trim();
-    if (!artworkBrief) return;
+    if (!artworkBrief || !securityContext?.projectId) return;
+    const requestId = newAIRequestId();
     const effectiveBrandName = brandName.trim() || "Team artwork";
     setGenerating(true);
     setError("");
@@ -1183,7 +1240,7 @@ export function AIArtworkPanel({
     try {
       const response = await fetch("/api/generate-design", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: aiSecurityHeaders(securityContext, requestId),
         signal: generationControllerRef.current.signal,
         body: JSON.stringify({
           productType: "Jersey",
@@ -1195,13 +1252,19 @@ export function AIArtworkPanel({
           generationMode: "artwork",
           renderTier: requestedTier,
           sport,
+          projectId: securityContext.projectId,
+          aiOperation: "artwork",
         }),
       });
       const data = await response.json();
-      if (!response.ok || !data.b64) throw new Error(data.error || "AI generation failed.");
+      updateSecurityQuota(data);
+      if (!response.ok || !data.b64) throw new Error(securityErrorMessage(data, "AI generation failed."));
       setPreview({
         src: `data:${data.mimeType || "image/png"};base64,${data.b64}`,
         name: `${effectiveBrandName} AI artwork`,
+        projectFileId: data.projectFileId,
+        previewOnly: data.previewOnly !== false,
+        watermarked: Boolean(data.watermarked),
       });
       savePrompt({
         prompt: artworkBrief,
@@ -1224,7 +1287,10 @@ export function AIArtworkPanel({
     const promptKind = refinement ? "Refinement" : uniformPlan ? "Variation" : "Initial";
     const effectiveBrandName = brandName.trim() || uniformPlan?.name || "Team uniform";
     const effectiveBrief = String(promptOverride || brief).trim() || uniformPlan?.summary || "Preserve the current uniform direction.";
-    if (!effectiveBrandName || (!effectiveBrief && !refinement)) return;
+    if (!effectiveBrandName || (!effectiveBrief && !refinement) || !securityContext?.projectId) return;
+    const requestId = newAIRequestId();
+    const securityHeaders = aiSecurityHeaders(securityContext, requestId);
+    const aiOperation = refinement ? "refinement" : uniformPlan ? "variation" : "generation";
     const existingConcept = refinement ? uniformPlan?.conceptImage?.src || "" : "";
     const currentDesign = uniformPlan || { collar, sleeve, colors, pattern: { key: currentPatternKey } };
     setGenerating(true);
@@ -1242,7 +1308,7 @@ export function AIArtworkPanel({
         : "";
       const response = await fetch("/api/generate-uniform-design", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: securityHeaders,
         signal: generationControllerRef.current.signal,
         body: JSON.stringify({
           sport,
@@ -1261,10 +1327,13 @@ export function AIArtworkPanel({
           },
           locks,
           referenceImage: designReference,
+          projectId: securityContext.projectId,
+          aiOperation,
         }),
       });
       const data = await response.json();
-      if (!response.ok || !data.plan) throw new Error(data.error || "AI uniform design failed.");
+      updateSecurityQuota(data);
+      if (!response.ok || !data.plan) throw new Error(securityErrorMessage(data, "AI uniform design failed."));
       const plan = data.plan;
       const artworkElement = plan.productionElements?.find((element) => element.kind === "artwork");
       const productionPlacementSummary = (plan.productionElements || []).length
@@ -1274,7 +1343,7 @@ export function AIArtworkPanel({
         : "No text, number, crest, logo or sponsor placements.";
       const conceptRequest = fetch("/api/generate-design", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: securityHeaders,
         signal: generationControllerRef.current.signal,
         body: JSON.stringify({
           productType: "Jersey",
@@ -1300,12 +1369,14 @@ export function AIArtworkPanel({
             `Editable Front / Side / Back placement map: ${productionPlacementSummary}`,
           ].join(" "),
           referenceImage: designReference,
+          projectId: securityContext.projectId,
+          aiOperation,
         }),
       });
       const artworkRequest = artworkElement
         ? fetch("/api/generate-design", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: securityHeaders,
             signal: generationControllerRef.current.signal,
             body: JSON.stringify({
               productType: "Jersey",
@@ -1317,19 +1388,24 @@ export function AIArtworkPanel({
               renderTier: requestedTier,
               sport,
               notes: artworkElement.content,
+              projectId: securityContext.projectId,
+              aiOperation,
+              settleRequest: false,
             }),
           })
         : Promise.resolve(null);
       const [conceptResponse, artworkResponse] = await Promise.all([conceptRequest, artworkRequest]);
       const conceptData = await conceptResponse.json();
+      updateSecurityQuota(conceptData);
       if (!conceptResponse.ok || !conceptData.b64) {
-        throw new Error(conceptData.error || "The editable design was created, but its full-uniform preview could not be rendered.");
+        throw new Error(securityErrorMessage(conceptData, "The editable design was created, but its full-uniform preview could not be rendered."));
       }
       let productionElements = plan.productionElements || [];
       if (artworkResponse) {
         const artworkData = await artworkResponse.json();
+        updateSecurityQuota(artworkData);
         if (!artworkResponse.ok || !artworkData.b64) {
-          throw new Error(artworkData.error || "The uniform was created, but its editable crest could not be rendered.");
+          throw new Error(securityErrorMessage(artworkData, "The uniform was created, but its editable crest could not be rendered."));
         }
         let artworkAttached = false;
         productionElements = productionElements.map((element) => {
@@ -1354,6 +1430,9 @@ export function AIArtworkPanel({
           quality: conceptData.quality,
           renderTier: conceptData.renderTier,
           backgroundBranding: "connect767-embossed-v1",
+          projectFileId: conceptData.projectFileId,
+          previewOnly: conceptData.previewOnly !== false,
+          watermarked: Boolean(conceptData.watermarked),
         },
       });
       savePrompt({
@@ -1523,6 +1602,9 @@ export function AIArtworkPanel({
   if (composerVariant === "unified") {
     const isRefinement = mode === "uniform" && Boolean(uniformPlan);
     const canSend = connection === "connected"
+      && !securityLoading
+      && Boolean(securityContext?.projectId)
+      && Number(securityContext?.remaining ?? 0) > 0
       && Boolean(activePrompt.trim())
       && !(mode === "uniform" && allDesignControlsLocked);
     const changeMode = (nextMode) => {
@@ -1596,10 +1678,14 @@ export function AIArtworkPanel({
         comparisonActive={comparisonActive}
         onGenerateVariation={() => generateUniform("", renderTier)}
         onSaveDesign={onSaveDesign}
-        onDownloadDesign={onDownloadDesign}
+        onDownloadDesign={downloadSecuredDesign}
         onDownloadPrompts={downloadPromptHistory}
         onOpenBackgroundRemoval={onOpenBackgroundRemoval}
         toolbarTarget={promptToolbarTarget}
+        aiQuota={securityContext}
+        accountRequired={Boolean(securityContext) && !securityLoading && !securityContext.authenticated && Number(securityContext.remaining) <= 0}
+        downloadUnlocked={Boolean(securityContext?.downloadUnlocked)}
+        onCompleteOrder={onCompleteOrder}
         />
       </div>
     );
