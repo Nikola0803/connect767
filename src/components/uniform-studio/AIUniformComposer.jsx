@@ -8,14 +8,14 @@ const MODE_COPY = {
   uniform: {
     label: "Full uniform",
     icon: "ri-shirt-line",
-    title: "Design your uniform",
+    title: "Design Your Uniform",
     description: "Describe a complete kit, then refine the generated result with AI instructions.",
     placeholder: "Describe the uniform you want to design…",
   },
   artwork: {
     label: "Transparent artwork",
     icon: "ri-image-edit-line",
-    title: "Create transparent artwork",
+    title: "Create Transparent Artwork",
     description: "Describe a crest, sponsor mark, graphic or pattern. The AI will generate an isolated transparent asset.",
     placeholder: "Describe the crest, graphic or pattern you want…",
   },
@@ -42,12 +42,33 @@ const inferPromptMode = (value = "", currentMode = "uniform") => {
 function EmptyConversation({ dark, mode }) {
   const modeCopy = MODE_COPY[mode] || MODE_COPY.uniform;
   return (
-    <div className="mx-auto flex h-full max-w-sm flex-col items-center justify-center px-5 py-8 text-center">
-      <img src={AI_COMMAND_LOGO_SRC} alt="Connect767 AI" className="h-28 w-44 object-contain drop-shadow-[0_12px_24px_rgba(0,116,73,.18)]" />
-      <h3 className={`mt-4 font-heading text-xl font-semibold ${dark ? "text-white" : "text-foreground-950"}`}>{modeCopy.title}</h3>
-      <p className={`mt-2 text-[11px] leading-relaxed ${dark ? "text-white/55" : "text-foreground-500"}`}>
-        {modeCopy.description}
-      </p>
+    <div className="mx-auto flex h-full w-full max-w-md items-center justify-center px-4 py-8">
+      <div className={`w-full rounded-[26px] border p-5 text-left shadow-[0_20px_60px_rgba(25,43,33,.08)] backdrop-blur-sm ${dark ? "border-white/10 bg-white/[.06]" : "border-background-200/90 bg-white/80"}`}>
+        <div className="flex items-center gap-3.5">
+          <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border ${dark ? "border-white/10 bg-white/[.06]" : "border-primary-100 bg-primary-50/70"}`}>
+            <img src={AI_COMMAND_LOGO_SRC} alt="Connect767 AI" className="h-10 w-12 object-contain opacity-75" />
+          </div>
+          <div className="min-w-0">
+            <span className={`text-[8px] font-bold uppercase tracking-[0.18em] ${dark ? "text-primary-200" : "text-primary-700"}`}>AI Design Studio</span>
+            <h3 className={`mt-1 font-heading text-lg font-semibold leading-tight ${dark ? "text-white" : "text-foreground-950"}`}>{modeCopy.title}</h3>
+          </div>
+        </div>
+        <p className={`mt-4 text-[10px] leading-relaxed ${dark ? "text-white/60" : "text-foreground-500"}`}>
+          {modeCopy.description}
+        </p>
+        <div className={`mt-4 grid grid-cols-3 gap-2 border-t pt-4 ${dark ? "border-white/10" : "border-background-200"}`} aria-label="AI design workflow">
+          {[
+            ["ri-image-add-line", "Reference"],
+            ["ri-quill-pen-line", "Describe"],
+            ["ri-sparkling-2-line", "Refine"],
+          ].map(([icon, label]) => (
+            <div key={label} className={`flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-[8px] font-semibold ${dark ? "bg-white/[.05] text-white/65" : "bg-background-50 text-foreground-600"}`}>
+              <i className={`${icon} text-primary-600`} aria-hidden="true" />
+              <span className="truncate">{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -276,7 +297,7 @@ export default function AIUniformComposer({
               <img src={AI_LOGO_SRC} alt="Connect767 AI" className="h-8 w-12 shrink-0 object-contain drop-shadow-sm" />
               <span className={`h-1.5 w-1.5 rounded-full ${connection === "connected" ? "bg-emerald-500" : connection === "checking" ? "bg-amber-400" : "bg-red-400"}`} />
             </div>
-            <p className={`truncate text-[9px] ${muted}`}>Uniform design assistant · {MODE_COPY[mode].label}</p>
+            <p className={`truncate text-[9px] ${muted}`}>Uniform Design Assistant · {MODE_COPY[mode].label}</p>
           </div>
         </div>
       </header>}
@@ -284,7 +305,7 @@ export default function AIUniformComposer({
       {historyOpen && (
         <aside data-ai-popover className={`absolute inset-x-3 top-[68px] z-30 max-h-[60%] overflow-hidden rounded-2xl border shadow-2xl ${card}`} aria-label="AI design conversation history">
           <div className="flex items-center justify-between border-b border-current/10 px-3 py-2.5">
-              <div><strong className="block text-xs">Design history</strong><span className={`text-[9px] ${muted}`}>{historyEntries.length} saved {historyEntries.length === 1 ? "prompt" : "prompts"}</span></div>
+              <div><strong className="block text-xs">Design History</strong><span className={`text-[9px] ${muted}`}>{historyEntries.length} saved {historyEntries.length === 1 ? "prompt" : "prompts"}</span></div>
             <button type="button" onClick={onClearHistory} disabled={!historyEntries.length} className="cursor-pointer text-[9px] font-bold text-foreground-400 hover:text-red-600 disabled:opacity-40">Clear</button>
           </div>
           <div className="max-h-72 space-y-1 overflow-y-auto p-2">
@@ -343,7 +364,7 @@ export default function AIUniformComposer({
 
         {settingsOpen && (
           <div data-ai-popover className={`absolute bottom-[calc(100%-4px)] left-3 right-3 z-20 max-h-72 overflow-y-auto rounded-2xl border p-3 shadow-2xl ${card}`}>
-            <div className="flex items-center justify-between"><strong className="text-xs">Design controls</strong><button type="button" onClick={() => setSettingsOpen(false)} className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg hover:bg-black/5" aria-label="Close design controls"><i className="ri-close-line" /></button></div>
+            <div className="flex items-center justify-between"><strong className="text-xs">Design Controls</strong><button type="button" onClick={() => setSettingsOpen(false)} className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg hover:bg-black/5" aria-label="Close design controls"><i className="ri-close-line" /></button></div>
             <label className={`mt-3 block text-[9px] font-bold uppercase tracking-wide ${muted}`}>Team or brand</label>
             <input value={brandName} onChange={(event) => onBrandNameChange(event.target.value)} placeholder="e.g. Riverside FC" maxLength={80} className="mt-1 w-full rounded-xl border border-background-300 bg-white px-3 py-2.5 text-xs text-foreground-950 outline-none focus:border-primary-500" />
             <label className={`mt-3 block text-[9px] font-bold uppercase tracking-wide ${muted}`}>Creative direction</label>
@@ -355,9 +376,9 @@ export default function AIUniformComposer({
 
         {toolsOpen && (
           <div data-ai-popover className={`absolute bottom-[calc(100%-4px)] left-2 right-2 z-30 overflow-hidden rounded-2xl border p-2 shadow-2xl sm:left-3 sm:right-auto sm:w-64 ${card}`} role="menu" aria-label="AI composer tools">
-            <button type="button" onClick={() => { fileInputRef.current?.click(); setToolsOpen(false); }} className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-700"><i className="ri-image-add-line" /></span><span><strong className="block text-[10px]">Upload inspiration image</strong><span className={`text-[8px] ${muted}`}>PNG, JPG or WebP · up to 10 MB</span></span></button>
-            {mode === "artwork" && <button type="button" onClick={() => { onModeChange("uniform"); setToolsOpen(false); }} className="mt-1 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-700"><i className="ri-shirt-line" /></span><span><strong className="block text-[10px]">Design full uniform</strong><span className={`text-[8px] ${muted}`}>Return to the complete kit designer</span></span></button>}
-            {mode === "uniform" && !uniformPlan && <button type="button" onClick={() => { onModeChange("artwork"); setToolsOpen(false); }} className="mt-1 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-50 text-accent-600"><i className="ri-image-edit-line" /></span><span><strong className="block text-[10px]">Create transparent artwork</strong><span className={`text-[8px] ${muted}`}>Generate artwork to place on the kit</span></span></button>}
+            <button type="button" onClick={() => { fileInputRef.current?.click(); setToolsOpen(false); }} className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-700"><i className="ri-image-add-line" /></span><span><strong className="block text-[10px]">Upload Inspiration Image</strong><span className={`text-[8px] ${muted}`}>PNG, JPG or WebP · up to 10 MB</span></span></button>
+            {mode === "artwork" && <button type="button" onClick={() => { onModeChange("uniform"); setToolsOpen(false); }} className="mt-1 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-700"><i className="ri-shirt-line" /></span><span><strong className="block text-[10px]">Design Full Uniform</strong><span className={`text-[8px] ${muted}`}>Return to the complete kit designer</span></span></button>}
+            {mode === "uniform" && !uniformPlan && <button type="button" onClick={() => { onModeChange("artwork"); setToolsOpen(false); }} className="mt-1 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-primary-50" role="menuitem"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-50 text-accent-600"><i className="ri-image-edit-line" /></span><span><strong className="block text-[10px]">Create Transparent Artwork</strong><span className={`text-[8px] ${muted}`}>Generate artwork to place on the kit</span></span></button>}
           </div>
         )}
 

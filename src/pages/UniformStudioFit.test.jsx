@@ -91,7 +91,7 @@ describe("required uniform fit selection", () => {
     expect(watermark.style.maskSize).toBe("contain");
     expect(watermark.style.backgroundColor).toBe("rgb(245, 240, 231)");
     expect(watermark.style.filter).toContain("drop-shadow");
-    expect(screen.getByRole("heading", { name: "Your design will appear here" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Your Design Will Appear Here" })).toBeVisible();
     expect(screen.queryByText("Use the AI panel to begin.")).not.toBeInTheDocument();
     expect(screen.queryByText("Your generated uniform will appear here")).not.toBeInTheDocument();
     expect(screen.queryByText("Reference", { selector: "strong" })).not.toBeInTheDocument();
@@ -170,8 +170,7 @@ describe("required uniform fit selection", () => {
     const setup = within(screen.getByRole("complementary", { name: "Uniform & order setup" }));
     expect(setup.getByRole("heading", { name: "Uniform & order setup" })).toBeVisible();
     const productionExtras = screen.getByRole("region", { name: "Production extras" });
-    expect(productionExtras).toHaveClass("flex-none");
-    expect(productionExtras).not.toHaveClass("flex-1");
+    expect(productionExtras).toHaveClass("flex-1");
     expect(setup.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent("$35.00");
     expect(setup.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("$15.00");
     expect(setup.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("supporter jerseys use this price");
@@ -187,7 +186,7 @@ describe("required uniform fit selection", () => {
     const studioSettings = header.getByRole("button", { name: "Studio settings" });
     expect(studioSettings).toBeVisible();
     fireEvent.click(studioSettings);
-    expect(screen.getByRole("dialog", { name: "AI Studio settings" })).toBeVisible();
+    expect(screen.getByRole("dialog", { name: "AI Studio Settings" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Studio background" })).toBeVisible();
     expect(screen.getByLabelText("Custom studio background color")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Close studio settings" }));
