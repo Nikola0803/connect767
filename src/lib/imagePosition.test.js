@@ -87,6 +87,12 @@ describe("imageCropStyle", () => {
     const style = imageCropStyle("top", 1.5);
     expect(style.transform).toBe("scale(1.5)");
     expect(style.objectPosition).toBe("center top");
+    expect(style.transformOrigin).toBe("center top");
+  });
+
+  it("uses a free-form saved position as the zoom transform origin", () => {
+    const style = imageCropStyle("28% 64%", 1.4);
+    expect(style.transformOrigin).toBe("28% 64%");
   });
 
   it("defaults zoom to 1x when not provided", () => {

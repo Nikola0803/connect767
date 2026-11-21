@@ -65,6 +65,7 @@ describe("PositionPicker cover controls", () => {
   it("uses the reposition icon as a working drag handle", () => {
     const onFitChange = vi.fn();
     const onPositionChange = vi.fn();
+    const onZoomChange = vi.fn();
     render(
       <PositionPicker
         src="https://example.com/cover.jpg"
@@ -73,17 +74,20 @@ describe("PositionPicker cover controls", () => {
         zoom={1}
         fit="contain"
         onPositionChange={onPositionChange}
-        onZoomChange={vi.fn()}
+        onZoomChange={onZoomChange}
         onFitChange={onFitChange}
       />,
     );
 
     const handle = screen.getByRole("button", { name: "Reposition photo" });
+    expect(handle.parentElement).not.toHaveClass("absolute");
+    expect(handle.parentElement).toHaveClass("mt-3");
     fireEvent.mouseDown(handle, { clientX: 100, clientY: 100 });
     fireEvent.mouseMove(window, { clientX: 115, clientY: 108 });
     fireEvent.mouseUp(window);
 
     expect(onFitChange).toHaveBeenCalledWith("cover");
+    expect(onZoomChange).toHaveBeenCalledWith(1.1);
     expect(onPositionChange).toHaveBeenCalled();
   });
 
@@ -102,6 +106,8 @@ describe("PositionPicker cover controls", () => {
     );
 
     const handle = screen.getByRole("button", { name: "Reposition photo" });
+    expect(handle.parentElement).not.toHaveClass("absolute");
+    expect(handle.parentElement).toHaveClass("mt-3");
     fireEvent.mouseDown(handle, { clientX: 100, clientY: 100 });
     fireEvent.mouseMove(window, { clientX: 112, clientY: 105 });
     fireEvent.mouseUp(window);
