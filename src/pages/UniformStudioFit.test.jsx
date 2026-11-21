@@ -46,7 +46,12 @@ describe("required uniform fit selection", () => {
 
     const entry = screen.getByRole("button", { name: "Enter Design Studio" });
     expect(entry).toBeVisible();
-    expect(screen.getAllByTestId("studio-cover-category")).toHaveLength(6);
+    const categoryImages = screen.getAllByTestId("studio-cover-category");
+    expect(categoryImages).toHaveLength(6);
+    categoryImages.forEach((image) => {
+      expect(image).toHaveClass("object-contain", "h-auto", "w-auto", "max-h-full", "max-w-full");
+      expect(image).not.toHaveClass("object-cover", "h-full", "w-full");
+    });
     expect(screen.getAllByTestId("studio-cover-category-label").map((label) => label.textContent.trim())).toEqual([
       "Soccer",
       "Basketball",
