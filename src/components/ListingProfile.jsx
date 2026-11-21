@@ -219,11 +219,11 @@ export default function ListingProfile({ data, isPreview = false }) {
               {gallery[activeImage]?.src ? (
                 <img
                   alt={gallery[activeImage]?.alt}
-                  className={`h-full w-full ${activeImage === 0 ? "listing-profile-cover-media object-cover" : "object-contain bg-background-100"}`}
+                  className={`h-full w-full ${activeImage === 0 ? `listing-profile-cover-media ${data.coverFit === "contain" ? "object-contain bg-background-100" : "object-cover"}` : "object-contain bg-background-100"}`}
                   src={gallery[activeImage]?.src}
                   style={
                     activeImage === 0
-                      ? imageCropStyle(data.coverPosition, data.coverZoom, "cover")
+                      ? imageCropStyle(data.coverPosition, data.coverZoom, data.coverFit)
                       : undefined
                   }
                 />
@@ -391,11 +391,11 @@ export default function ListingProfile({ data, isPreview = false }) {
                   {gallery[activeImage]?.src ? (
                     <img
                       alt={gallery[activeImage]?.alt}
-                      className={`w-full h-full ${activeImage === 0 ? "listing-profile-cover-media object-cover" : "object-contain"}`}
+                      className={`h-full w-full ${activeImage === 0 ? `listing-profile-cover-media ${data.coverFit === "contain" ? "object-contain" : "object-cover"}` : "object-contain"}`}
                       src={gallery[activeImage]?.src}
                       style={
                         activeImage === 0
-                          ? imageCropStyle(data.coverPosition, data.coverZoom, "cover")
+                          ? imageCropStyle(data.coverPosition, data.coverZoom, data.coverFit)
                           : undefined
                       }
                     />

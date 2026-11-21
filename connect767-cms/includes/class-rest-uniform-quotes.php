@@ -14,6 +14,8 @@ if (!defined('ABSPATH')) {
 class C767_REST_Uniform_Quotes
 {
     const NAMESPACE_ = 'connect767/v1';
+    const MAX_REQUEST_BYTES = 12582912;
+    const MAX_PREVIEW_BYTES = 5242880;
 
     public static function minimum_full_kits($sport)
     {
@@ -50,9 +52,16 @@ class C767_REST_Uniform_Quotes
 
     public static function submit(WP_REST_Request $request)
     {
+        $limited = C767_Stripe_Checkout::check_public_rate_limit('uniform-quote', 10, HOUR_IN_SECONDS);
+        if (is_wp_error($limited)) {
+            return $limited;
+        }
         $user = C767_REST_Auth::user_from_request($request);
         if (is_wp_error($user)) {
             return new WP_Error('c767_account_required', 'Sign in before requesting a uniform quote.', ['status' => 401]);
+        }
+        if (strlen(wp_json_encode($request->get_params())) > self::MAX_REQUEST_BYTES) {
+            return new WP_Error('c767_quote_too_large', 'The quote request is too large. Remove oversized previews or attachments and try again.', ['status' => 413]);
         }
         $raw_designs = (array) $request->get_param('designs');
         if (empty($raw_designs)) $raw_designs = [(array) $request->get_params()];
@@ -131,7 +140,7 @@ class C767_REST_Uniform_Quotes
         // The preview image is a large base64 PNG from html-to-image — store
         // it as its own meta key so it's easy to skip when just listing quotes.
         $preview = (string) $request->get_param('previewImage');
-        if ($preview) {
+        if ($preview && strpos($preview, 'data:image/') === 0 && strlen($preview) <= self::MAX_PREVIEW_BYTES) {
             update_post_meta($post_id, 'preview_image', $preview);
         }
         foreach ($raw_designs as $index => $raw_design) {

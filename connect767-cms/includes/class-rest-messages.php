@@ -10,6 +10,7 @@ class C767_REST_Messages
     const MAX_MESSAGE_LENGTH = 4000;
     const MAX_ATTACHMENTS = 5;
     const MAX_ATTACHMENT_SIZE = 10485760;
+    const ATTACHMENT_URL_TTL = 600;
 
     public static function init()
     {
@@ -52,6 +53,9 @@ class C767_REST_Messages
         ]);
         register_rest_route(self::NAMESPACE_, '/messages/unread-count', [
             'methods' => 'GET', 'callback' => [__CLASS__, 'unread_count'], 'permission_callback' => [__CLASS__, 'check_auth'],
+        ]);
+        register_rest_route(self::NAMESPACE_, '/messages/attachments/(?P<id>\d+)/download', [
+            'methods' => 'GET', 'callback' => [__CLASS__, 'download_attachment'], 'permission_callback' => '__return_true',
         ]);
     }
 
@@ -178,23 +182,80 @@ class C767_REST_Messages
         return $ids;
     }
 
+    private static function attachment_signature($attachment_id, $message_id, $expires)
+    {
+        $payload = implode('|', [(int) $attachment_id, (int) $message_id, (int) $expires]);
+        return hash_hmac('sha256', $payload, C767_JWT::secret());
+    }
+
+    private static function attachment_download_url($attachment_id, $message_id)
+    {
+        $expires = time() + self::ATTACHMENT_URL_TTL;
+        return add_query_arg([
+            'message' => (int) $message_id,
+            'expires' => $expires,
+            'signature' => self::attachment_signature($attachment_id, $message_id, $expires),
+        ], rest_url(self::NAMESPACE_ . '/messages/attachments/' . (int) $attachment_id . '/download'));
+    }
+
     private static function format_attachments($message_id)
     {
         $ids = array_filter(array_map('absint', (array) get_post_meta($message_id, 'attachment_ids', true)));
-        return array_values(array_filter(array_map(function ($attachment_id) {
-            $url = wp_get_attachment_url($attachment_id);
-            if (!$url) return null;
+        return array_values(array_filter(array_map(function ($attachment_id) use ($message_id) {
             $file = get_attached_file($attachment_id);
+            if (!$file || !is_file($file)) return null;
             $mime_type = (string) get_post_mime_type($attachment_id);
             return [
                 'id' => $attachment_id,
                 'name' => get_post_meta($attachment_id, '_c767_original_name', true) ?: (get_the_title($attachment_id) ?: basename((string) $file)),
-                'url' => esc_url_raw($url),
+                'url' => esc_url_raw(self::attachment_download_url($attachment_id, $message_id)),
                 'mimeType' => $mime_type,
                 'size' => $file && file_exists($file) ? (int) filesize($file) : 0,
                 'isImage' => strpos($mime_type, 'image/') === 0,
             ];
         }, $ids)));
+    }
+
+    public static function download_attachment(WP_REST_Request $request)
+    {
+        $attachment_id = absint($request->get_param('id'));
+        $message_id = absint($request->get_param('message'));
+        $expires = (int) $request->get_param('expires');
+        $signature = (string) $request->get_param('signature');
+
+        if ($expires < time() || $expires > time() + self::ATTACHMENT_URL_TTL + 60) {
+            return new WP_Error('c767_attachment_link_expired', 'This attachment link has expired. Reopen the conversation to get a new link.', ['status' => 403]);
+        }
+
+        $expected = self::attachment_signature($attachment_id, $message_id, $expires);
+        if ($signature === '' || !hash_equals($expected, $signature)) {
+            return new WP_Error('c767_attachment_link_invalid', 'This attachment link is invalid.', ['status' => 403]);
+        }
+
+        $message = get_post($message_id);
+        $attachment_ids = array_filter(array_map('absint', (array) get_post_meta($message_id, 'attachment_ids', true)));
+        if (!$message || $message->post_type !== 'c767_message' || !in_array($attachment_id, $attachment_ids, true)) {
+            return new WP_Error('c767_attachment_not_found', 'Attachment not found.', ['status' => 404]);
+        }
+
+        $file = get_attached_file($attachment_id);
+        $real_file = $file ? realpath($file) : false;
+        if (!$real_file || !is_file($real_file)) {
+            return new WP_Error('c767_attachment_not_found', 'Attachment not found.', ['status' => 404]);
+        }
+
+        $mime_type = (string) get_post_mime_type($attachment_id);
+        $name = get_post_meta($attachment_id, '_c767_original_name', true) ?: basename($real_file);
+        $safe_name = str_replace(["\r", "\n", '"'], '', sanitize_file_name($name));
+        $disposition = strpos($mime_type, 'image/') === 0 ? 'inline' : 'attachment';
+
+        nocache_headers();
+        header('X-Content-Type-Options: nosniff');
+        header('Content-Type: ' . ($mime_type ?: 'application/octet-stream'));
+        header('Content-Length: ' . filesize($real_file));
+        header('Content-Disposition: ' . $disposition . '; filename="' . $safe_name . '"');
+        readfile($real_file);
+        exit;
     }
 
     private static function rate_limit($user_id)

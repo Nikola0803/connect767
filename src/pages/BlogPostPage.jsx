@@ -6,6 +6,7 @@ import { authors } from "../data/blog";
 import BlogPostCard from "../components/BlogPostCard";
 import ShareMenu from "../components/ShareMenu";
 import { Spinner, ErrorState } from "../components/ui/States";
+import { sanitizeHtml } from "../lib/sanitizeHtml";
 
 function headingId(text, index) {
   const value = String(text || "")
@@ -73,7 +74,7 @@ function ArticleBody({ blocks }) {
             <div
               key={i}
               className="my-5 text-[17px] leading-8 text-foreground-700 [&_a]:font-medium [&_a]:text-primary-700 [&_a]:underline [&_blockquote]:my-8 [&_blockquote]:border-l-4 [&_blockquote]:border-accent-500 [&_blockquote]:pl-6 [&_h2]:scroll-mt-28 [&_h2]:mt-10 [&_h2]:border-l-4 [&_h2]:border-primary-500 [&_h2]:pl-4 [&_h2]:font-heading [&_h2]:text-3xl [&_h2]:font-medium [&_h2]:text-foreground-950 [&_h3]:pt-5 [&_h3]:font-heading [&_h3]:text-2xl [&_h3]:text-foreground-950 [&_img]:my-8 [&_img]:w-full [&_img]:rounded-2xl [&_li]:mb-2 [&_ol]:my-5 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-5 [&_ul]:my-5 [&_ul]:list-disc [&_ul]:pl-6"
-              dangerouslySetInnerHTML={{ __html: block.html }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.html) }}
             />
           );
         }

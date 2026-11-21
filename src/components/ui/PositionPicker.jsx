@@ -17,7 +17,7 @@ import {
  * already know from every social profile editor.
  *
  * The preview frame matches the real aspect ratio of the destination (round
- * for a logo, 16:9 for a cover), so what's framed here is what gets published
+ * for a logo, 4:3 for a cover), so what's framed here is what gets published
  * — the old picker gave no preview at all.
  */
 export default function PositionPicker({
@@ -27,7 +27,7 @@ export default function PositionPicker({
   onZoomChange,
   label,
   src,
-  shape = "cover", // 'cover' (16:9) | 'logo' (circle)
+  shape = "cover", // 'cover' (4:3) | 'logo' (circle)
   fit = "cover",
   onFitChange,
 }) {
@@ -115,7 +115,7 @@ export default function PositionPicker({
           onMouseDown={isContained ? undefined : beginDrag}
           onTouchStart={isContained ? undefined : beginDrag}
           className={`relative overflow-hidden bg-background-100 border-2 flex-shrink-0 select-none ${
-            isLogo ? "w-24 h-24 rounded-full" : "w-40 aspect-[16/9] rounded-lg"
+            isLogo ? "w-24 h-24 rounded-full" : "w-40 aspect-[4/3] rounded-lg"
           } ${
             src && !isContained
               ? dragging

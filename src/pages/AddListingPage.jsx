@@ -115,7 +115,7 @@ const initialForm = {
   photoPreview: "",
   coverPosition: "center",
   coverZoom: 1,
-  coverFit: "cover",
+  coverFit: "contain",
   galleryFiles: [],
   galleryPreviews: [],
   sellProducts: false,
@@ -236,7 +236,7 @@ function buildPreviewData(form) {
     logoZoom: form.logoZoom || 1,
     coverPosition: form.coverPosition || "center",
     coverZoom: form.coverZoom || 1,
-    coverFit: "cover",
+    coverFit: form.coverFit || "contain",
     bookingEnabled: form.bookingEnabled,
     bookingType: form.bookingType,
     bookingPriceCents: Math.max(0, Math.round((Number(form.bookingPrice) || 0) * 100)),
@@ -389,9 +389,7 @@ export default function AddListingPage() {
           photoPreview: data.coverPhoto || "",
           coverPosition: data.coverPosition || "center",
           coverZoom: data.coverZoom || 1,
-          // Every cover fills the public card and profile frame. Existing
-          // reposition and zoom values remain available for precise framing.
-          coverFit: "cover",
+          coverFit: data.coverFit || "contain",
           // gallery[0] is the cover once mapListingDetail prepends it, so the
           // gallery previews start after it.
           galleryPreviews: (data.gallery || [])
@@ -1236,13 +1234,13 @@ export default function AddListingPage() {
                     hint="Best fit: 1600 × 1200 px (4:3), max 2 MB. Keep important content centered for the best directory and profile display."
                   >
                     <div className="relative w-full group">
-                      <label className="relative flex flex-col items-center justify-center gap-2 w-full aspect-[16/9] rounded-lg border-2 border-dashed border-background-300 hover:border-primary-400 cursor-pointer transition-colors text-center overflow-hidden">
+                      <label className="relative flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-lg border-2 border-dashed border-background-300 text-center transition-colors hover:border-primary-400 cursor-pointer">
                         {form.photoPreview ? (
                           <img
                             src={form.photoPreview}
                             alt="Cover photo preview"
-                            className="absolute inset-0 w-full h-full object-cover"
-                            style={imageCropStyle(form.coverPosition, form.coverZoom, "cover")}
+                            className={`absolute inset-0 h-full w-full ${form.coverFit === "contain" ? "object-contain" : "object-cover"}`}
+                            style={imageCropStyle(form.coverPosition, form.coverZoom, form.coverFit)}
                           />
                         ) : (
                           <>
@@ -1285,7 +1283,7 @@ export default function AddListingPage() {
                               ...f,
                               photoFile: file,
                               photoPreview: URL.createObjectURL(file),
-                              coverFit: "cover",
+                              coverFit: "contain",
                               coverPosition: "center",
                               coverZoom: 1,
                             }));
@@ -1321,11 +1319,12 @@ export default function AddListingPage() {
                         shape="cover"
                         position={form.coverPosition}
                         zoom={form.coverZoom}
-                        fit="cover"
+                        fit={form.coverFit}
                         onPositionChange={(value) =>
                           setForm((f) => ({ ...f, coverPosition: value }))
                         }
                         onZoomChange={(value) => setForm((f) => ({ ...f, coverZoom: value }))}
+                        onFitChange={(value) => setForm((f) => ({ ...f, coverFit: value }))}
                       />
                     )}
                   </FormField>
@@ -1477,16 +1476,16 @@ export default function AddListingPage() {
                         Cover photo
                       </span>
                       {form.photoPreview ? (
-                        <div className="w-40 aspect-[16/9] rounded-lg overflow-hidden border border-background-200/70">
+                        <div className="w-40 aspect-[4/3] rounded-lg overflow-hidden border border-background-200/70 bg-background-100">
                           <img
                             src={form.photoPreview}
                             alt="Cover"
-                            className="w-full h-full object-cover"
-                            style={imageCropStyle(form.coverPosition, form.coverZoom, "cover")}
+                            className={`h-full w-full ${form.coverFit === "contain" ? "object-contain" : "object-cover"}`}
+                            style={imageCropStyle(form.coverPosition, form.coverZoom, form.coverFit)}
                           />
                         </div>
                       ) : (
-                        <div className="w-40 aspect-[16/9] rounded-lg border border-dashed border-background-300 flex items-center justify-center">
+                        <div className="w-40 aspect-[4/3] rounded-lg border border-dashed border-background-300 flex items-center justify-center">
                           <span className="text-[11px] text-foreground-400 font-label">
                             Not added
                           </span>

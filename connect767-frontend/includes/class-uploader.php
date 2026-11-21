@@ -15,6 +15,9 @@ if (!defined('ABSPATH')) {
 
 class C767F_Uploader
 {
+    const MAX_ZIP_ENTRIES = 10000;
+    const MAX_UNCOMPRESSED_BYTES = 262144000; // 250 MB.
+
     public static function init()
     {
         add_action('admin_menu', [__CLASS__, 'add_menu']);
@@ -148,16 +151,26 @@ class C767F_Uploader
         // credentials on some hosts even when direct writes would work
         // fine, which silently no-ops this exact upload with no visible
         // error — using plain PHP sidesteps that entirely.
-        self::clear_directory(C767F_DIST_DIR);
-        if (!file_exists(C767F_DIST_DIR)) {
-            wp_mkdir_p(C767F_DIST_DIR);
-        }
-
         $zip = new ZipArchive();
         $opened = $zip->open($file['tmp_name']);
         if ($opened !== true) {
             self::redirect_with_error('Could not open the uploaded zip (error code ' . $opened . ').');
         }
+
+        $valid = self::validate_archive($zip);
+        if (is_wp_error($valid)) {
+            $zip->close();
+            self::redirect_with_error($valid->get_error_message());
+        }
+
+        // Validate the complete archive before touching the currently installed
+        // build. This prevents traversal, symlink and decompression-bomb ZIPs
+        // from writing outside dist/ or exhausting server storage.
+        self::clear_directory(C767F_DIST_DIR);
+        if (!file_exists(C767F_DIST_DIR)) {
+            wp_mkdir_p(C767F_DIST_DIR);
+        }
+
         $extracted = $zip->extractTo(C767F_DIST_DIR);
         $zip->close();
         if (!$extracted) {
@@ -188,6 +201,57 @@ class C767F_Uploader
 
         wp_safe_redirect(add_query_arg(['page' => 'connect767-frontend', 'uploaded' => '1'], admin_url('admin.php')));
         exit;
+    }
+
+    /** Validate every ZIP entry before extracting anything to disk. */
+    private static function validate_archive($zip)
+    {
+        if ($zip->numFiles < 1 || $zip->numFiles > self::MAX_ZIP_ENTRIES) {
+            return new WP_Error('c767f_zip_entries', 'The build archive contains too many files.');
+        }
+
+        $total_size = 0;
+        $paths = [];
+        for ($index = 0; $index < $zip->numFiles; $index++) {
+            $stat = $zip->statIndex($index);
+            if (!is_array($stat) || !isset($stat['name'])) {
+                return new WP_Error('c767f_zip_entry', 'The build archive contains an unreadable entry.');
+            }
+
+            $name = str_replace('\\', '/', (string) $stat['name']);
+            if ($name === '' || strpos($name, "\0") !== false || preg_match('#^(?:/|[A-Za-z]:/)#', $name)) {
+                return new WP_Error('c767f_zip_path', 'The build archive contains an unsafe file path.');
+            }
+
+            $parts = array_values(array_filter(explode('/', rtrim($name, '/')), 'strlen'));
+            if (!$parts || in_array('..', $parts, true) || in_array('.', $parts, true)) {
+                return new WP_Error('c767f_zip_path', 'The build archive contains an unsafe file path.');
+            }
+
+            $normalized = implode('/', $parts);
+            if (isset($paths[$normalized])) {
+                return new WP_Error('c767f_zip_duplicate', 'The build archive contains duplicate file paths.');
+            }
+            $paths[$normalized] = true;
+
+            $total_size += max(0, (int) ($stat['size'] ?? 0));
+            if ($total_size > self::MAX_UNCOMPRESSED_BYTES) {
+                return new WP_Error('c767f_zip_size', 'The extracted build would exceed the 250 MB safety limit.');
+            }
+
+            if (method_exists($zip, 'getExternalAttributesIndex')) {
+                $operations = 0;
+                $attributes = 0;
+                if ($zip->getExternalAttributesIndex($index, $operations, $attributes)) {
+                    $file_type = ($attributes >> 16) & 0xF000;
+                    if ($file_type === 0xA000) {
+                        return new WP_Error('c767f_zip_symlink', 'Symbolic links are not allowed in frontend build archives.');
+                    }
+                }
+            }
+        }
+
+        return true;
     }
 
     /** Recursively deletes everything inside a directory, in plain PHP. */

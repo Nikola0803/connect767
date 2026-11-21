@@ -16,6 +16,16 @@ if (!defined('ABSPATH')) {
 
 class C767_JWT
 {
+    public static function init()
+    {
+        add_action('wp_set_password', [__CLASS__, 'password_changed'], 10, 2);
+    }
+
+    public static function password_changed($password, $user_id)
+    {
+        self::revoke_user((int) $user_id);
+    }
+
     public static function secret()
     {
         if (defined('C767_JWT_SECRET') && C767_JWT_SECRET) {
@@ -28,12 +38,16 @@ class C767_JWT
         return wp_salt('auth') . wp_salt('secure_auth');
     }
 
-    public static function issue($payload, $ttlSeconds = DAY_IN_SECONDS * 14)
+    public static function issue($payload, $ttlSeconds = DAY_IN_SECONDS)
     {
         $header = self::base64UrlEncode(json_encode(['typ' => 'JWT', 'alg' => 'HS256']));
 
         $payload['iat'] = time();
         $payload['exp'] = time() + $ttlSeconds;
+        $payload['jti'] = wp_generate_uuid4();
+        if (!empty($payload['user_id'])) {
+            $payload['ver'] = self::user_token_version((int) $payload['user_id']);
+        }
         $body = self::base64UrlEncode(json_encode($payload));
 
         $signature = self::sign("$header.$body");
@@ -64,7 +78,27 @@ class C767_JWT
             return new WP_Error('c767_expired_token', 'Token has expired.', ['status' => 401]);
         }
 
+        if (!empty($payload['user_id'])) {
+            if (!array_key_exists('ver', $payload)) {
+                return new WP_Error('c767_revoked_token', 'This session must be renewed.', ['status' => 401]);
+            }
+            $issued_version = (int) $payload['ver'];
+            if (!hash_equals((string) self::user_token_version((int) $payload['user_id']), (string) $issued_version)) {
+                return new WP_Error('c767_revoked_token', 'This session has been revoked.', ['status' => 401]);
+            }
+        }
+
         return $payload;
+    }
+
+    public static function revoke_user($user_id)
+    {
+        update_user_meta((int) $user_id, 'c767_token_version', self::user_token_version((int) $user_id) + 1);
+    }
+
+    private static function user_token_version($user_id)
+    {
+        return max(0, (int) get_user_meta((int) $user_id, 'c767_token_version', true));
     }
 
     /** Pulls "Bearer <token>" out of the Authorization header, if present. */

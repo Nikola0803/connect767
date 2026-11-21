@@ -73,6 +73,12 @@ class C767_REST_Auth
             'callback' => [__CLASS__, 'me'],
             'permission_callback' => '__return_true',
         ]);
+
+        register_rest_route(self::NAMESPACE_, '/auth/logout', [
+            'methods' => 'POST',
+            'callback' => [__CLASS__, 'logout'],
+            'permission_callback' => [__CLASS__, 'is_authenticated'],
+        ]);
     }
 
     public static function register(WP_REST_Request $request)
@@ -229,6 +235,22 @@ class C767_REST_Auth
             return $user;
         }
         return rest_ensure_response(['user' => self::format_user($user)]);
+    }
+
+    public static function is_authenticated(WP_REST_Request $request)
+    {
+        $user = self::user_from_request($request);
+        return is_wp_error($user) ? $user : true;
+    }
+
+    public static function logout(WP_REST_Request $request)
+    {
+        $user = self::user_from_request($request);
+        if (is_wp_error($user)) {
+            return $user;
+        }
+        C767_JWT::revoke_user($user->ID);
+        return rest_ensure_response(['loggedOut' => true]);
     }
 
     /**

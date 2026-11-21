@@ -9,7 +9,8 @@ vi.mock("./apiClient", () => ({
 }));
 
 import { customClient } from "./apiClient";
-import { requestPasswordReset, resetPassword } from "./authClient";
+import { getStoredToken, setStoredToken, setStoredUser } from "./apiClient";
+import { logout, requestPasswordReset, resetPassword } from "./authClient";
 
 describe("password recovery API", () => {
   beforeEach(() => {
@@ -43,5 +44,16 @@ describe("password recovery API", () => {
 
     await expect(resetPassword({ login: "person", key: "bad-key", password: "new-password" }))
       .rejects.toThrow("This password reset link is invalid or has expired.");
+  });
+
+  it("revokes the server session before clearing local authentication", () => {
+    getStoredToken.mockReturnValue("active-token");
+    customClient.post.mockResolvedValue({ loggedOut: true });
+
+    logout();
+
+    expect(customClient.post).toHaveBeenCalledWith("/auth/logout", {});
+    expect(setStoredToken).toHaveBeenCalledWith(null);
+    expect(setStoredUser).toHaveBeenCalledWith(null);
   });
 });

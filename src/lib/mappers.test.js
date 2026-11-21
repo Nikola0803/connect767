@@ -561,14 +561,14 @@ describe("mapListingCpt", () => {
     expect(mapped.title).toBe("Acme Co");
   });
 
-  it("standardizes legacy and new covers to fill their frames", () => {
-    expect(mapListingCpt({ id: 1, slug: "legacy", title: "Legacy", acf: {} }).coverFit).toBe("cover");
+  it("shows legacy and full-image covers completely while preserving explicit crops", () => {
+    expect(mapListingCpt({ id: 1, slug: "legacy", title: "Legacy", acf: {} }).coverFit).toBe("contain");
     expect(
       mapListingCpt({ id: 2, slug: "new", title: "New", acf: { cover_fit: "contain" } }).coverFit,
-    ).toBe("cover");
+    ).toBe("contain");
     expect(
       mapListingCpt({ id: 3, slug: "bad", title: "Bad", acf: { cover_fit: "stretch" } }).coverFit,
-    ).toBe("cover");
+    ).toBe("contain");
     expect(
       mapListingCpt({ id: 4, slug: "cropped", title: "Cropped", acf: { cover_fit: "cover" } }).coverFit,
     ).toBe("cover");

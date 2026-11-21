@@ -202,7 +202,7 @@ describe("DirectoryListingCard parent category", () => {
     expect(document.querySelector('img[src=""]')).not.toBeInTheDocument();
   });
 
-  it("uses one uploaded image to fill the directory-card cover frame", () => {
+  it("shows the complete uploaded image over a soft edge-to-edge backdrop", () => {
     render(
       <MemoryRouter>
         <DirectoryListingCard listing={{ ...listing, coverFit: "contain" }} />
@@ -210,8 +210,21 @@ describe("DirectoryListingCard parent category", () => {
     );
 
     const cover = screen.getByRole("img", { name: /Island Bookkeeper/ });
+    expect(cover).toHaveClass("object-contain", "listing-cover-media");
+    expect(cover).not.toHaveClass("object-cover");
+    expect(document.querySelectorAll('img[src="/bookkeeper.jpg"]')).toHaveLength(2);
+    expect(document.querySelector('img[aria-hidden="true"]')).toHaveClass("blur-xl", "object-cover");
+  });
+
+  it("honors an owner-selected edge-to-edge crop", () => {
+    render(
+      <MemoryRouter>
+        <DirectoryListingCard listing={{ ...listing, coverFit: "cover" }} />
+      </MemoryRouter>,
+    );
+
+    const cover = screen.getByRole("img", { name: /Island Bookkeeper/ });
     expect(cover).toHaveClass("object-cover", "listing-cover-media");
-    expect(cover).not.toHaveClass("object-contain");
     expect(document.querySelectorAll('img[src="/bookkeeper.jpg"]')).toHaveLength(1);
   });
 
