@@ -1403,13 +1403,17 @@ function normalizeUniformCheckoutTotals(totals, requireServerFee = false) {
 /** Uniform Studio checkout totals, calculated by WooCommerce for the delivery address. */
 export async function quoteUniformCheckout(order, email, shipping) {
   if (!isLiveApi) {
-    const subtotal = Number(order?.grandTotal || 0);
-    const rosterUnits = (order?.roster || []).reduce((total, entry) => total + Math.max(0, Number(entry?.quantity) || 0), 0);
-    const extraUnits = (order?.extraTeamShirts || []).reduce((total, entry) => total + Math.max(0, Number(entry?.quantity) || 0), 0);
-    const supporterUnits = order?.fanJerseyAdded
-      ? (order?.supporterJerseys || []).reduce((total, entry) => total + Math.max(0, Number(entry?.quantity) || 0), 0)
-      : 0;
-    const rate = uniformShippingRate(shipping?.country, rosterUnits + extraUnits + supporterUnits);
+    const designs = Array.isArray(order?.designs) && order.designs.length ? order.designs : [order];
+    const subtotal = designs.reduce((total, design) => total + Math.max(0, Number(design?.grandTotal) || 0), 0);
+    const shippingUnits = designs.reduce((total, design) => {
+      const rosterUnits = (design?.roster || []).reduce((sum, entry) => sum + Math.max(0, Number(entry?.quantity) || 0), 0);
+      const extraUnits = (design?.extraTeamShirts || []).reduce((sum, entry) => sum + Math.max(0, Number(entry?.quantity) || 0), 0);
+      const supporterUnits = design?.fanJerseyAdded
+        ? (design?.supporterJerseys || []).reduce((sum, entry) => sum + Math.max(0, Number(entry?.quantity) || 0), 0)
+        : 0;
+      return total + rosterUnits + extraUnits + supporterUnits;
+    }, 0);
+    const rate = uniformShippingRate(shipping?.country, shippingUnits);
     if (!rate) throw new Error("Custom Uniform Studio shipping is available only in North America and the Caribbean.");
     const designerFee = uniformAiDesignerFee(subtotal, rate.amount);
     return {

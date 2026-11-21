@@ -81,6 +81,14 @@ import { isLiveApi } from "../lib/config";
 import { UNIFORM_SHIPPING_COUNTRIES, uniformShippingRate } from "../lib/uniformShipping";
 import { uniformAddressRegions, validateUniformShippingAddress } from "../lib/uniformAddress";
 import {
+  createUniformOrderDesign,
+  designOrderUnitCount,
+  loadUniformOrderDesigns,
+  persistUniformOrderDesigns,
+  removeUniformOrderDesign,
+  upsertUniformOrderDesign,
+} from "../lib/uniformOrderDraft";
+import {
   captureUniformPaypalOrder,
   confirmUniformPayment,
   createUniformPaymentIntent,
@@ -96,6 +104,39 @@ const emptyUniformShipping = {
   city: "", state: "", postcode: "", country: "DM", email: "", phone: "",
 };
 const CONNECT767_AI_TEMPLATE_LOGO = "/connect767-ai-logo-transparent.png";
+
+const promptStorageKeys = (sportSlug) => {
+  const label = sports.find((item) => item.slug === sportSlug)?.label || sportSlug || "uniform";
+  return {
+    current: `connect767-ai-prompt-history:${label}`,
+    archive: `connect767-ai-prompt-archive:${label}`,
+  };
+};
+
+const readDesignPromptHistory = (sportSlug) => {
+  try {
+    const keys = promptStorageKeys(sportSlug);
+    const current = JSON.parse(window.localStorage.getItem(keys.current) || "[]");
+    const archive = JSON.parse(window.localStorage.getItem(keys.archive) || "[]");
+    return [...(Array.isArray(current) ? current : []), ...(Array.isArray(archive) ? archive : [])].slice(0, 100);
+  } catch {
+    return [];
+  }
+};
+
+const restoreDesignPromptHistory = (sportSlug, entries = []) => {
+  try {
+    const keys = promptStorageKeys(sportSlug);
+    const history = Array.isArray(entries) ? entries : [];
+    if (history.length) {
+      window.localStorage.setItem(keys.current, JSON.stringify(history.slice(0, 30)));
+      window.localStorage.setItem(keys.archive, JSON.stringify(history.slice(30, 100)));
+    } else {
+      window.localStorage.removeItem(keys.current);
+      window.localStorage.removeItem(keys.archive);
+    }
+  } catch { /* Prompt history remains attached to the saved order item. */ }
+};
 
 function EmbossedAIWorkspaceBackdrop({ studioBackground = DEFAULT_STUDIO_BACKGROUND }) {
   const backgroundColor = normalizeStudioBackground(studioBackground);
@@ -609,7 +650,14 @@ export default function UniformStudioPage() {
   const [placementError, setPlacementError] = useState("");
   const [manualSaveStatus, setManualSaveStatus] = useState("idle");
   const [designSecurityContext, setDesignSecurityContext] = useState(null);
+  const [orderDesigns, setOrderDesigns] = useState(loadUniformOrderDesigns);
+  const [editingOrderDesignId, setEditingOrderDesignId] = useState("");
+  const [designPromptSessionKey, setDesignPromptSessionKey] = useState("initial-design");
   const manualSaveResetRef = useRef(null);
+
+  useEffect(() => {
+    persistUniformOrderDesigns(orderDesigns);
+  }, [orderDesigns]);
 
   // Local screenshot fixture only; Vite removes this branch from production.
   useEffect(() => {
@@ -1833,6 +1881,7 @@ export default function UniformStudioPage() {
     const categoryPricing = uniformPricingFor(activeSport);
     return {
       template: template?.name || "Blank Canvas",
+      templateSlug: selectedTemplate || "blank-canvas",
       sport: activeSport,
       collar,
       sleeve,
@@ -1858,7 +1907,80 @@ export default function UniformStudioPage() {
       projectId: designSecurityContext?.projectId || "",
       aiDesignName: aiUniformPlan?.name || aiWorkspaceConcept?.name || null,
       aiDesignSummary: aiUniformPlan?.summary || null,
+      aiPromptHistory: readDesignPromptHistory(activeSport),
     };
+  };
+
+  const combinedOrderDesigns = (currentPayload) => [
+    ...orderDesigns.filter((item) => item.id !== editingOrderDesignId).map((item) => item.payload),
+    currentPayload,
+  ];
+
+  const saveCurrentOrderDesign = async () => {
+    if (!editingOrderDesignId && orderDesigns.length >= 10) {
+      throw new Error("A single order can contain up to 10 uniform designs.");
+    }
+    const preview = await capturePreview();
+    const item = createUniformOrderDesign(buildUniformPayload(preview), editingOrderDesignId);
+    setOrderDesigns((current) => upsertUniformOrderDesign(current, item));
+    setEditingOrderDesignId(item.id);
+    return item;
+  };
+
+  const startAnotherOrderDesign = async () => {
+    const savedCurrentDesign = editingOrderDesignId && orderDesigns.some((item) => item.id === editingOrderDesignId);
+    const designCountAfterSave = orderDesigns.length + (savedCurrentDesign ? 0 : 1);
+    if (designCountAfterSave >= 10) {
+      throw new Error("This order already contains the maximum of 10 uniform designs.");
+    }
+    await saveCurrentOrderDesign();
+    const nextTemplate = primaryTemplateForSport(activeSport);
+    restoreDesignPromptHistory(activeSport, []);
+    discardSaved();
+    if (nextTemplate) selectTemplate(nextTemplate, activeSport, "ai");
+    setEditingOrderDesignId("");
+    setDesignPromptSessionKey(`new-${Date.now()}`);
+    setCategoryConfirmed(false);
+    setFitType("");
+    setActiveTool("ai");
+  };
+
+  const editSavedOrderDesign = (item) => {
+    const payload = item?.payload;
+    if (!payload) return;
+    restoreDesignPromptHistory(payload.sport || activeSport, payload.aiPromptHistory || []);
+    const savedTemplate = templates.find((candidate) => candidate.slug === payload.templateSlug)
+      || primaryTemplateForSport(payload.sport)
+      || primaryTemplateForSport(activeSport);
+    if (savedTemplate) selectTemplate(savedTemplate, payload.sport || activeSport, "ai");
+    setEditingOrderDesignId(item.id);
+    setDesignPromptSessionKey(item.id);
+    setCategoryConfirmed(true);
+    setFitType(payload.fitType || "");
+    setCollar(payload.collar || "Crew");
+    setSleeve(payload.sleeve || "Short");
+    setColors(normalizeZoneColors(payload.colors || defaultZoneColors));
+    setLayers(payload.layers || []);
+    setPlacements3d(payload.placements3d || {});
+    setRoster(payload.roster || []);
+    setSockQuantityOverride(Number.isFinite(Number(payload.socksQuantity)) ? Number(payload.socksQuantity) : null);
+    setLogoApplication(payload.logoApplication || "Sublimated");
+    setInsideCollarMessage(Boolean(payload.insideCollarMessage));
+    setInsideCollarText(payload.insideCollarText || "");
+    setInsideCollarAttachment(payload.insideCollarAttachment || null);
+    setFanJerseyAdded(Boolean(payload.fanJerseyAdded));
+    setSupporterJerseys(payload.supporterJerseys?.length ? payload.supporterJerseys : [newSupporterJersey()]);
+    setDesignSecurityContext((current) => ({ ...current, projectId: payload.projectId || current?.projectId || "" }));
+    setAiWorkspaceConcept(payload.previewImage ? {
+      src: payload.previewImage,
+      name: payload.aiDesignName || payload.template || "Saved design",
+    } : null);
+    setActiveTool("ai");
+  };
+
+  const removeSavedOrderDesign = (id) => {
+    setOrderDesigns((current) => removeUniformOrderDesign(current, id));
+    if (editingOrderDesignId === id) setEditingOrderDesignId("");
   };
 
   const handleRequestQuote = async () => {
@@ -1885,7 +2007,13 @@ export default function UniformStudioPage() {
     setQuoteError(null);
     setSubmittingQuote(true);
     try {
-      await submitUniformQuote(buildUniformPayload(preview));
+      const current = buildUniformPayload(preview);
+      const designs = combinedOrderDesigns(current);
+      await submitUniformQuote({
+        ...current,
+        designs,
+        grandTotal: designs.reduce((total, design) => total + Math.max(0, Number(design.grandTotal) || 0), 0),
+      });
       setSubmitted(true);
     } catch (err) {
       setQuoteError(err.message || "Couldn't send your quote request. Please try again.");
@@ -2760,6 +2888,7 @@ export default function UniformStudioPage() {
                 {activeTool === "text" && <TextPanel onAdd={armTextPlacement} armed={pendingLayer?.type === "text"} />}
                 {(activeTool === "ai" || workflowStep.key === "category") && (
                   <AIArtworkPanel
+                    key={`desktop-${designPromptSessionKey}`}
                     sport={sports.find((item) => item.slug === activeSport)?.label || "Team sport"}
                     templateName={template?.name}
                     templateDescription={template?.description}
@@ -2865,6 +2994,13 @@ export default function UniformStudioPage() {
                     error={quoteError}
                     onEditStep={(tool) => setActiveTool(tool)}
                     onView3d={ENABLE_3D ? () => setStageMode("3d") : undefined}
+                    savedOrderDesigns={orderDesigns}
+                    editingOrderDesignId={editingOrderDesignId}
+                    combineOrderDesigns={combinedOrderDesigns}
+                    onSaveOrderDesign={saveCurrentOrderDesign}
+                    onAddAnotherDesign={startAnotherOrderDesign}
+                    onEditOrderDesign={editSavedOrderDesign}
+                    onRemoveOrderDesign={removeSavedOrderDesign}
                   />
                 )}
                 </div>
@@ -2912,6 +3048,7 @@ export default function UniformStudioPage() {
         {activeTool === "text" && <TextPanel onAdd={armTextPlacement} armed={pendingLayer?.type === "text"} />}
         {(activeTool === "ai" || workflowStep.key === "category") && (
           <AIArtworkPanel
+            key={`mobile-${designPromptSessionKey}`}
             sport={sports.find((item) => item.slug === activeSport)?.label || "Team sport"}
             templateName={template?.name}
             templateDescription={template?.description}
@@ -3017,6 +3154,13 @@ export default function UniformStudioPage() {
             error={quoteError}
             onEditStep={(tool) => setActiveTool(tool)}
             onView3d={ENABLE_3D ? () => setStageMode("3d") : undefined}
+            savedOrderDesigns={orderDesigns}
+            editingOrderDesignId={editingOrderDesignId}
+            combineOrderDesigns={combinedOrderDesigns}
+            onSaveOrderDesign={saveCurrentOrderDesign}
+            onAddAnotherDesign={startAnotherOrderDesign}
+            onEditOrderDesign={editSavedOrderDesign}
+            onRemoveOrderDesign={removeSavedOrderDesign}
           />
         )}
       </div>
@@ -3561,6 +3705,13 @@ function ReviewOrderTool({
   error,
   onEditStep,
   onView3d,
+  savedOrderDesigns = [],
+  editingOrderDesignId = "",
+  combineOrderDesigns,
+  onSaveOrderDesign,
+  onAddAnotherDesign,
+  onEditOrderDesign,
+  onRemoveOrderDesign,
 }) {
   const categoryPricing = uniformPricingFor(activeSport);
   const unitCount = rosterUnitCount(roster);
@@ -3584,7 +3735,12 @@ function ReviewOrderTool({
   const extraShirtTotal = extraShirtCount * categoryPricing.shirtPrice;
   const extraShirtsKey = JSON.stringify(orderPayload.extraTeamShirts || []);
   const grandTotal = kitsTotal + supporterTotal + extraShirtTotal;
-  const shippingUnitCount = unitCount + extraShirtCount + supporterCount;
+  const additionalOrderDesigns = savedOrderDesigns.filter((item) => item.id !== editingOrderDesignId);
+  const savedDesignSubtotal = additionalOrderDesigns.reduce((total, item) => total + Math.max(0, Number(item.payload?.grandTotal) || 0), 0);
+  const combinedGrandTotal = grandTotal + savedDesignSubtotal;
+  const orderDesignCount = additionalOrderDesigns.length + 1;
+  const shippingUnitCount = unitCount + extraShirtCount + supporterCount
+    + additionalOrderDesigns.reduce((total, item) => total + designOrderUnitCount(item.payload), 0);
   const selectedShippingRate = uniformShippingRate(shipping.country, shippingUnitCount);
   const sportLabel = sports.find((sport) => sport.slug === activeSport)?.label || activeSport;
   const [config, setConfig] = useState(null);
@@ -3597,6 +3753,7 @@ function ReviewOrderTool({
   const [cardSession, setCardSession] = useState(null);
   const [startingCard, setStartingCard] = useState(false);
   const [placingLocalOrder, setPlacingLocalOrder] = useState(false);
+  const [savingDesign, setSavingDesign] = useState(false);
   const shippingContact = {
     name: `${shipping.firstName || ""} ${shipping.lastName || ""}`.trim(),
     email: shipping.email || "",
@@ -3623,12 +3780,13 @@ function ReviewOrderTool({
   useEffect(() => {
     setTotals(null);
     setCardSession(null);
-  }, [fanJerseyAdded, supporterJerseys, unitCount, unitPrice, sleeveSurcharge, roster, extraShirtsKey]);
+  }, [fanJerseyAdded, supporterJerseys, unitCount, unitPrice, sleeveSurcharge, roster, extraShirtsKey, savedDesignSubtotal]);
 
   useEffect(() => {
     if (!import.meta.env.DEV || !window.location.search.includes("preview=checkout") || !canCheckout || totals) return;
     setCalculating(true);
-    quoteUniformCheckout({ ...orderPayload, contact: checkoutContact, fanJerseyAdded, supporterJerseys, grandTotal }, checkoutContact.email, shipping)
+    const current = { ...orderPayload, contact: checkoutContact, fanJerseyAdded, supporterJerseys, grandTotal };
+    quoteUniformCheckout({ ...current, designs: combineOrderDesigns?.(current) || [current], grandTotal: combinedGrandTotal }, checkoutContact.email, shipping)
       .then(setTotals)
       .catch((err) => setCheckoutError(err.message || "Couldn't calculate the preview total."))
       .finally(() => setCalculating(false));
@@ -3643,14 +3801,21 @@ function ReviewOrderTool({
     setCardSession(null);
   };
 
-  const completeOrderPayload = async () => ({
-    ...orderPayload,
-    fanJerseyAdded,
-    supporterJerseys: fanJerseyAdded ? supporterJerseys : [],
-    contact: checkoutContact,
-    grandTotal,
-    previewImage: await capturePreview(),
-  });
+  const completeOrderPayload = async () => {
+    const current = {
+      ...orderPayload,
+      fanJerseyAdded,
+      supporterJerseys: fanJerseyAdded ? supporterJerseys : [],
+      contact: checkoutContact,
+      grandTotal,
+      previewImage: await capturePreview(),
+    };
+    return {
+      ...current,
+      designs: combineOrderDesigns?.(current) || [current],
+      grandTotal: combinedGrandTotal,
+    };
+  };
 
   const calculateTotal = async () => {
     setAddressValidationAttempted(true);
@@ -3669,11 +3834,29 @@ function ReviewOrderTool({
     setCalculating(true);
     setCheckoutError(null);
     try {
-      setTotals(await quoteUniformCheckout({ ...orderPayload, contact: checkoutContact, fanJerseyAdded, supporterJerseys, grandTotal }, checkoutContact.email, shipping));
+      const current = { ...orderPayload, contact: checkoutContact, fanJerseyAdded, supporterJerseys, grandTotal };
+      setTotals(await quoteUniformCheckout({
+        ...current,
+        designs: combineOrderDesigns?.(current) || [current],
+        grandTotal: combinedGrandTotal,
+      }, checkoutContact.email, shipping));
     } catch (err) {
       setCheckoutError(err.message || "Couldn't calculate tax and shipping.");
     } finally {
       setCalculating(false);
+    }
+  };
+
+  const saveDesignToOrder = async (addAnother = false) => {
+    setSavingDesign(true);
+    setCheckoutError(null);
+    try {
+      if (addAnother) await onAddAnotherDesign?.();
+      else await onSaveOrderDesign?.();
+    } catch (saveError) {
+      setCheckoutError(saveError?.message || "The design could not be saved to this order.");
+    } finally {
+      setSavingDesign(false);
     }
   };
 
@@ -3764,6 +3947,44 @@ function ReviewOrderTool({
         />
       </div>
 
+      <div className="mb-5 rounded-2xl border border-background-200 bg-background-50 p-3.5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold text-foreground-900">Order Designs</h3>
+            <p className="mt-0.5 text-[10px] text-foreground-500">Save this design or add another category to the same order.</p>
+          </div>
+          <span className="rounded-full bg-primary-100 px-2.5 py-1 text-[10px] font-bold text-primary-800">
+            {orderDesignCount} item{orderDesignCount === 1 ? "" : "s"}
+          </span>
+        </div>
+        {additionalOrderDesigns.length > 0 && (
+          <div className="mt-3 space-y-2">
+            {additionalOrderDesigns.map((item, index) => {
+              const savedSport = sports.find((sport) => sport.slug === item.payload?.sport)?.label || item.payload?.sport || "Uniform";
+              return (
+                <div key={item.id} className="flex items-center gap-2 rounded-xl border border-background-200 bg-white p-2.5">
+                  {item.payload?.previewImage ? <img src={item.payload.previewImage} alt="" className="h-12 w-12 rounded-lg border border-background-200 object-cover" /> : <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50 text-primary-700"><i className="ri-shirt-line" /></span>}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-bold text-foreground-900">Design {index + 1}: {savedSport}</p>
+                    <p className="truncate text-[10px] text-foreground-500">{item.payload?.template || "Custom design"} · {rosterUnitCount(item.payload?.roster || [])} kits · ${(Number(item.payload?.grandTotal) || 0).toFixed(2)}</p>
+                  </div>
+                  <button type="button" onClick={() => onEditOrderDesign?.(item)} className="rounded-lg px-2 py-1 text-[10px] font-bold text-primary-700 hover:bg-primary-50">Edit</button>
+                  <button type="button" onClick={() => onRemoveOrderDesign?.(item.id)} className="flex h-7 w-7 items-center justify-center rounded-lg text-red-600 hover:bg-red-50" aria-label={`Remove ${savedSport} design`}><i className="ri-delete-bin-6-line" /></button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <Button type="button" variant="secondary" disabled={savingDesign || !minimumKitsMet} onClick={() => saveDesignToOrder(false)} icon="ri-save-3-line">
+            {savingDesign ? "Saving…" : editingOrderDesignId ? "Update Saved Design" : "Save Design"}
+          </Button>
+          <Button type="button" variant="primary" disabled={savingDesign || !minimumKitsMet || orderDesignCount >= 10} onClick={() => saveDesignToOrder(true)} icon="ri-add-line">
+            {orderDesignCount >= 10 ? "10 Design Maximum Reached" : "Save & Add Another Design"}
+          </Button>
+        </div>
+      </div>
+
       <div className="mb-5 rounded-2xl bg-primary-950 p-4 text-background-50 shadow-[0_14px_30px_rgba(0,48,30,0.2)]">
         <div className="flex items-end justify-between gap-3">
           <div>
@@ -3788,7 +4009,10 @@ function ReviewOrderTool({
           ))}
           {extraShirtCount > 0 && <div className="flex justify-between"><span>{extraShirtCount} extra top{extraShirtCount === 1 ? "" : "s"} × ${categoryPricing.shirtPrice.toFixed(2)}</span><span>${extraShirtTotal.toFixed(2)}</span></div>}
           {fanJerseyAdded && <div className="flex justify-between"><span>{supporterCount} supporter jersey{supporterCount === 1 ? "" : "s"} × ${categoryPricing.shirtPrice.toFixed(2)}</span><span>${supporterTotal.toFixed(2)}</span></div>}
-          <div className="flex justify-between"><span>Subtotal</span><span>${(totals?.subtotal ?? grandTotal).toFixed(2)}</span></div>
+          {additionalOrderDesigns.map((item, index) => (
+            <div key={item.id} className="flex justify-between gap-3"><span>Saved design {index + 1} · {sports.find((sport) => sport.slug === item.payload?.sport)?.label || "Uniform"}</span><span>${(Number(item.payload?.grandTotal) || 0).toFixed(2)}</span></div>
+          ))}
+          <div className="flex justify-between"><span>Subtotal</span><span>${(totals?.subtotal ?? combinedGrandTotal).toFixed(2)}</span></div>
           <div className="flex justify-between"><span>Tax</span><span>{totals ? `$${totals.tax.toFixed(2)}` : "—"}</span></div>
           <div className="flex justify-between"><span>{totals?.shippingLabel || "Shipping"}</span><span>{totals ? `$${totals.shipping.toFixed(2)}` : "—"}</span></div>
           {totals?.designerFee > 0 && (

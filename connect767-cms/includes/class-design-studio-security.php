@@ -149,9 +149,6 @@ class C767_Design_Studio_Security
         register_rest_route(self::NAMESPACE_, '/design-security/projects', [
             'methods' => 'POST', 'callback' => [__CLASS__, 'create_project'], 'permission_callback' => '__return_true',
         ]);
-        register_rest_route(self::NAMESPACE_, '/design-security/projects/claim', [
-            'methods' => 'POST', 'callback' => [__CLASS__, 'claim_project'], 'permission_callback' => '__return_true',
-        ]);
         foreach ([
             '/design-security/ai/reserve' => 'reserve_ai',
             '/design-security/ai/settle' => 'settle_ai',
@@ -202,14 +199,17 @@ class C767_Design_Studio_Security
     public static function create_project(WP_REST_Request $request)
     {
         global $wpdb;
-        $identity = self::identity($request, true);
-        if (is_wp_error($identity)) return $identity;
+        $user = C767_REST_Auth::user_from_request($request);
+        if (is_wp_error($user)) {
+            return new WP_Error('c767_account_required', 'Sign in before creating a design project.', ['status' => 401]);
+        }
+        $identity = ['type' => 'user', 'user_id' => (int) $user->ID, 'session_key' => '', 'token' => ''];
         $public_id = wp_generate_uuid4();
         $now = gmdate('Y-m-d H:i:s');
         $wpdb->insert(self::table('design_projects'), [
             'public_id' => $public_id,
             'owner_user_id' => $identity['user_id'],
-            'guest_session_key' => $identity['session_key'],
+            'guest_session_key' => '',
             'sport' => sanitize_key((string) $request->get_param('sport')),
             'title' => sanitize_text_field((string) $request->get_param('title')),
             'status' => 'draft', 'created_at' => $now, 'updated_at' => $now,
@@ -217,33 +217,6 @@ class C767_Design_Studio_Security
         if (!$wpdb->insert_id) return new WP_Error('c767_project_failed', 'Could not create the design project.', ['status' => 500]);
         $payload = self::quota_payload($identity);
         $payload['projectId'] = $public_id;
-        return rest_ensure_response($payload);
-    }
-
-    public static function claim_project(WP_REST_Request $request)
-    {
-        global $wpdb;
-        $user = C767_REST_Auth::user_from_request($request);
-        if (is_wp_error($user)) return $user;
-        $guest_token = (string) ($request->get_header('x-c767-guest-token') ?: $request->get_param('guestToken'));
-        $guest_payload = self::verify_payload($guest_token);
-        if (is_wp_error($guest_payload) || empty($guest_payload['sid']) || !self::touch_session($guest_payload['sid'])) {
-            return new WP_Error('c767_guest_session', 'The guest design session cannot be claimed.', ['status' => 401]);
-        }
-        $project = $wpdb->get_row($wpdb->prepare(
-            'SELECT * FROM ' . self::table('design_projects') . ' WHERE public_id=%s AND guest_session_key=%s AND owner_user_id=0',
-            sanitize_text_field((string) $request->get_param('projectId')), $guest_payload['sid']
-        ), ARRAY_A);
-        if (!$project) return new WP_Error('c767_project_not_found', 'Guest design project not found.', ['status' => 404]);
-        $wpdb->update(self::table('design_projects'), [
-            'owner_user_id' => (int) $user->ID,
-            'guest_session_key' => '',
-            'updated_at' => gmdate('Y-m-d H:i:s'),
-        ], ['id' => (int) $project['id']], ['%d','%s','%s'], ['%d']);
-        $identity = ['type' => 'user', 'user_id' => (int) $user->ID, 'session_key' => '', 'token' => ''];
-        $payload = self::quota_payload($identity);
-        $payload['projectId'] = $project['public_id'];
-        $payload['claimed'] = true;
         return rest_ensure_response($payload);
     }
 
@@ -426,16 +399,27 @@ class C767_Design_Studio_Security
 
     public static function attach_order_project(WC_Order $order, WP_REST_Request $request, array $payload)
     {
-        $project_id = sanitize_text_field((string) ($payload['projectId'] ?? ''));
-        if (!$project_id) return new WP_Error('c767_project_required', 'Save this design project before checkout.', ['status' => 400]);
         $user = C767_REST_Auth::user_from_request($request);
         if (is_wp_error($user)) return new WP_Error('c767_account_required', 'Create an account or sign in before completing a protected design order.', ['status' => 401]);
         $identity = ['type' => 'user', 'user_id' => (int) $user->ID, 'session_key' => ''];
-        $project = self::owned_project($project_id, $identity);
-        if (is_wp_error($project)) return $project;
+        $designs = !empty($payload['designs']) && is_array($payload['designs']) ? array_values($payload['designs']) : [$payload];
+        $projects = [];
+        foreach ($designs as $design) {
+            $design = (array) $design;
+            $project_id = sanitize_text_field((string) ($design['projectId'] ?? ''));
+            if (!$project_id) return new WP_Error('c767_project_required', 'Save every design project before checkout.', ['status' => 400]);
+            $project = self::owned_project($project_id, $identity);
+            if (is_wp_error($project)) return $project;
+            $projects[(int) $project['id']] = $project['public_id'];
+        }
         $order->set_customer_id($user->ID);
-        $order->update_meta_data('_c767_design_project_id', (int) $project['id']);
-        $order->update_meta_data('_c767_design_project_public_id', $project['public_id']);
+        $project_ids = array_keys($projects);
+        $public_ids = array_values($projects);
+        $order->update_meta_data('_c767_design_project_ids', $project_ids);
+        $order->update_meta_data('_c767_design_project_public_ids', $public_ids);
+        // Preserve the original single-design metadata for existing admin tools.
+        $order->update_meta_data('_c767_design_project_id', (int) $project_ids[0]);
+        $order->update_meta_data('_c767_design_project_public_id', $public_ids[0]);
         return true;
     }
 
@@ -444,14 +428,18 @@ class C767_Design_Studio_Security
         global $wpdb;
         $order = wc_get_order($order_id);
         if (!$order || !$order->is_paid() || !$order->get_meta('_c767_uniform_order')) return;
-        $project_id = absint($order->get_meta('_c767_design_project_id'));
         $user_id = absint($order->get_customer_id());
-        if (!$project_id || !$user_id) return;
+        $project_ids = array_values(array_filter(array_map('absint', (array) $order->get_meta('_c767_design_project_ids'))));
+        if (empty($project_ids)) $project_ids = [absint($order->get_meta('_c767_design_project_id'))];
+        if (!$user_id) return;
         $now = gmdate('Y-m-d H:i:s');
-        $existing = $wpdb->get_var($wpdb->prepare('SELECT id FROM ' . self::table('design_entitlements') . ' WHERE project_id=%d AND order_id=%d', $project_id, $order->get_id()));
-        $data = ['user_id' => $user_id, 'file_types' => wp_json_encode(self::settings()['supported_export_types']), 'status' => 'active', 'granted_at' => $now, 'revoked_at' => null];
-        if ($existing) $wpdb->update(self::table('design_entitlements'), $data, ['id' => $existing]);
-        else $wpdb->insert(self::table('design_entitlements'), array_merge(['project_id' => $project_id, 'order_id' => $order->get_id()], $data));
+        foreach (array_unique($project_ids) as $project_id) {
+            if (!$project_id) continue;
+            $existing = $wpdb->get_var($wpdb->prepare('SELECT id FROM ' . self::table('design_entitlements') . ' WHERE project_id=%d AND order_id=%d', $project_id, $order->get_id()));
+            $data = ['user_id' => $user_id, 'file_types' => wp_json_encode(self::settings()['supported_export_types']), 'status' => 'active', 'granted_at' => $now, 'revoked_at' => null];
+            if ($existing) $wpdb->update(self::table('design_entitlements'), $data, ['id' => $existing]);
+            else $wpdb->insert(self::table('design_entitlements'), array_merge(['project_id' => $project_id, 'order_id' => $order->get_id()], $data));
+        }
     }
 
     public static function revoke_for_order($order_id)

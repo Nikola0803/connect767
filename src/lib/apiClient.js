@@ -20,6 +20,8 @@ const INVALID_SESSION_CODES = new Set([
 
 async function request(url, options = {}) {
   const token = getStoredToken();
+  let designGuestToken = "";
+  try { designGuestToken = localStorage.getItem("c767_design_guest_token") || ""; } catch { /* optional design-session context */ }
   const isFormData = options.body instanceof FormData;
   const headers = {
     // Never set Content-Type for FormData — the browser must set it itself
@@ -27,6 +29,7 @@ async function request(url, options = {}) {
     // if the header isn't already present.
     ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(designGuestToken ? { "X-C767-Guest-Token": designGuestToken } : {}),
     ...options.headers,
   };
 
