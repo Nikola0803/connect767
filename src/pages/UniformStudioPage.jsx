@@ -3284,6 +3284,7 @@ function RosterTool({
           icon="ri-file-upload-line"
           iconPosition="left"
           onClick={() => rosterFileRef.current?.click()}
+          className="w-full min-w-0"
         >
           Import CSV
         </Button>
@@ -3294,7 +3295,7 @@ function RosterTool({
           icon="ri-download-line"
           iconPosition="left"
           onClick={downloadRosterTemplate}
-          className="border-accent-400 bg-accent-50 font-bold text-accent-700 hover:border-accent-500 hover:bg-accent-100"
+          className="w-full min-w-0 border-accent-400 bg-accent-50 font-bold text-accent-700 hover:border-accent-500 hover:bg-accent-100"
         >
           Download CSV Template
         </Button>
@@ -3339,7 +3340,7 @@ function RosterTool({
         </div>
       )}
 
-      <div id="roster-entry-form" data-validation-highlight={validationAttempted && unitCount < minimumKits ? "true" : undefined} className={`space-y-3 mb-4 rounded-xl border p-3 transition ${validationAttempted && unitCount < minimumKits ? "border-accent-400 bg-accent-50/60 ring-2 ring-accent-200" : "border-transparent p-0"}`}>
+      <div id="roster-entry-form" data-validation-highlight={validationAttempted && unitCount < minimumKits ? "true" : undefined} className={`mb-4 space-y-3 rounded-xl border transition ${validationAttempted && unitCount < minimumKits ? "border-accent-400 bg-accent-50/60 p-3 ring-2 ring-accent-200" : "border-transparent p-0"}`}>
         {validationAttempted && unitCount < minimumKits && (
           <p role="alert" className="text-[11px] font-semibold text-accent-800">
             {rosterEntry.name.trim()
