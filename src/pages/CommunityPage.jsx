@@ -504,7 +504,7 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
   };
 
   return (
-    <article id={`community-post-${post.id}`} className="group/post relative scroll-mt-24 overflow-visible rounded-[1.5rem] border border-background-200/80 bg-white/95 p-3.5 shadow-[0_12px_35px_rgba(24,48,36,0.055)] transition duration-300 hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-[0_20px_55px_rgba(24,48,36,0.1)] sm:rounded-[1.75rem] sm:p-6">
+    <article id={`community-post-${post.id}`} className="group/post relative scroll-mt-24 overflow-visible rounded-2xl border border-background-200 bg-white p-4 shadow-[0_4px_18px_rgba(24,48,36,0.035)] transition-colors duration-200 hover:border-primary-200 sm:p-5">
       <header className="flex items-start gap-2.5 sm:gap-3">
         {post.listingLogo ? (
           <img src={post.listingLogo} alt={`${post.listingTitle} profile`} className="h-10 w-10 rounded-full border-2 border-white object-cover shadow-sm ring-1 ring-background-200 sm:h-12 sm:w-12" />
@@ -548,7 +548,7 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
         </span>
         <button type="button" onClick={() => setCommentsOpen((open) => !open)}>{comments.length} comment{comments.length === 1 ? "" : "s"}</button>
       </div>
-      <div className="mt-1.5 flex items-center gap-1 rounded-xl bg-background-100/65 px-1.5 py-0.5 sm:mt-2 sm:gap-2 sm:rounded-2xl sm:px-2 sm:py-1">
+      <div className="mt-1.5 flex items-center gap-1 border-t border-background-200 px-0.5 pt-1.5 sm:mt-2 sm:gap-2 sm:px-1 sm:pt-2">
         <div role="toolbar" aria-label="Post actions" className="flex min-w-0 flex-1 items-center justify-around gap-1 sm:flex-none sm:justify-start">
           <div ref={reactionsRef} className="relative">
             {reactionsOpen && authenticated && <div role="menu" aria-label="Choose a reaction" className="absolute bottom-full left-0 z-30 mb-2 flex w-max max-w-[calc(100vw-2.5rem)] items-center rounded-full border border-background-200 bg-white p-1.5 shadow-[0_14px_40px_rgba(24,48,36,0.18)] sm:max-w-[42rem]">
@@ -932,17 +932,21 @@ export default function CommunityPage() {
   const reportPost = (postId, reason) => reportCommunityPost(postId, reason);
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#f8f6f0] pb-24 pt-20 font-sans before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-[34rem] before:bg-[radial-gradient(circle_at_15%_10%,rgba(0,107,60,0.08),transparent_38%),radial-gradient(circle_at_88%_18%,rgba(239,90,60,0.08),transparent_32%)] sm:pt-24 md:pt-28">
-      <section className="relative z-10 mx-auto max-w-6xl px-3 sm:px-4 md:px-6">
-        <div className="relative overflow-hidden rounded-[2rem] border border-white/80 bg-gradient-to-br from-white via-background-50 to-primary-50/55 p-6 shadow-[0_24px_70px_rgba(24,48,36,0.08)] sm:p-8">
-          <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-accent-100/35 blur-3xl" />
-          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.22em] text-primary-700">Connect · Share · Grow</p><h1 className="mt-2 text-3xl font-extrabold leading-[1.08] tracking-[-0.04em] text-foreground-950 sm:text-4xl">Community <span className="font-semibold italic text-accent-500">Feed</span></h1><p className="mt-3 max-w-2xl text-sm leading-6 text-foreground-600 sm:text-[15px]">Where people, businesses, and opportunities connect.</p></div><div className="flex flex-wrap gap-2"><span className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-white/80 px-3 py-1.5 text-[10px] font-bold text-primary-800 shadow-sm"><i className="ri-shield-check-line" />Verified Businesses</span><span className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-white/80 px-3 py-1.5 text-[10px] font-bold text-foreground-700 shadow-sm"><i className="ri-global-line text-accent-500" />Local &amp; Global</span></div></div>
+    <div className="min-h-screen overflow-x-hidden bg-[#faf9f6] pb-20 pt-20 font-sans sm:pt-24 md:pt-28">
+      <section className="mx-auto max-w-5xl px-3 sm:px-4 md:px-6">
+        <div className="rounded-2xl border border-background-200 bg-white px-5 py-5 shadow-[0_4px_20px_rgba(24,48,36,0.035)] sm:px-6 sm:py-6">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">Connect · Share · Grow</p>
+          <div className="mt-1.5 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+            <h1 className="text-3xl font-bold leading-tight tracking-[-0.035em] text-foreground-950">Community <span className="font-semibold italic text-accent-500">Feed</span></h1>
+            <p className="text-sm leading-5 text-foreground-500 sm:pb-1 sm:text-right">People, businesses and opportunities—together.</p>
+          </div>
         </div>
 
-        <div className="mt-5 grid items-start gap-5 sm:mt-6 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_19rem]">
-          <main className="space-y-4 sm:space-y-5">
-            <section className="rounded-[1.75rem] border border-background-200/80 bg-white/95 p-4 shadow-[0_18px_55px_rgba(24,48,36,0.08)] backdrop-blur sm:p-5">
-              <div className="mb-3 flex justify-end">
+        <div className="mt-4 grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_16rem]">
+          <main className="space-y-4">
+            <section className="rounded-2xl border border-background-200 bg-white p-4 shadow-[0_4px_18px_rgba(24,48,36,0.035)] sm:p-5">
+              <div className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${isAuthenticated && listings.length ? "mb-4" : ""}`}>
+                {!isAuthenticated ? <div className="flex min-w-0 items-center justify-between gap-3 sm:flex-1"><p className="truncate text-sm text-foreground-600">Sign in to share an update.</p><Link to="/auth/login" className="shrink-0 rounded-lg bg-primary-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-primary-800">Sign in</Link></div> : !listings.length ? <p className="text-sm text-foreground-600">Create a listing to post. <Link to="/listings/submit" className="font-bold text-primary-700">Add listing</Link></p> : <p className="text-xs font-bold uppercase tracking-[0.12em] text-foreground-400">Create a post</p>}
                 <section aria-label="Community feed filters" className="grid w-full min-w-0 grid-cols-2 gap-2 sm:w-auto sm:shrink-0">
                   <FeedFilterMenu compact label="Feed view" value={activeTab} options={FEED_VIEWS} onChange={setActiveTab} />
                   <FeedFilterMenu compact label="Post type" value={categoryFilter} options={FEED_CATEGORIES} onChange={selectCategoryFilter} />
@@ -1000,7 +1004,7 @@ export default function CommunityPage() {
                   </div>}
                   {message && <p role="alert" className="mt-3 text-xs text-red-600">{message}</p>}
                 </form>
-              ) : isAuthenticated ? <div className="text-sm text-foreground-600">Publish a directory listing before posting to the community. <Link to="/listings/submit" className="font-bold text-primary-700">Create your listing</Link></div> : <div className="flex items-center justify-between gap-4"><p className="text-sm text-foreground-600">Sign in as a listing owner to share business updates.</p><Link to="/auth/login" className="shrink-0 rounded-xl bg-primary-700 px-4 py-2.5 text-xs font-bold text-white">Sign in</Link></div>}
+              ) : null}
             </section>
             <div id="community-feed-updates" className="scroll-mt-24" aria-hidden="true" />
             {loading && !posts.length && <div className="py-16 text-center text-sm text-foreground-500">Loading community updates…</div>}
@@ -1009,9 +1013,9 @@ export default function CommunityPage() {
             {visiblePosts.map((post) => <CommunityPost key={post.id} post={post} authenticated={isAuthenticated} canManage={Boolean(post.canManage) || ownedListingIds.has(String(post.listingId))} onReact={react} onComment={comment} onDelete={removePost} onEdit={editPost} onHide={hidePost} onMute={muteBusiness} onReport={reportPost} onBookmark={bookmarkPost} onRepost={repostPost} onFollow={followBusiness} />)}
           </main>
 
-          <aside className="space-y-4 lg:sticky lg:top-28">
-            <section className="overflow-hidden rounded-[1.75rem] border border-background-200/80 bg-white/90 p-5 shadow-[0_16px_45px_rgba(24,48,36,0.065)]"><div className="flex items-center justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-accent-500">Discover</p><h2 className="mt-1 text-xl font-extrabold tracking-[-0.025em]">Trending now</h2></div><span className="grid h-9 w-9 place-items-center rounded-xl bg-accent-50 text-accent-500"><i className="ri-fire-line" /></span></div><div className="mt-4 space-y-2">{[["#ShopLocal767", "38 updates", "all"], ["Holiday services", "24 offers", "offer"], ["Small-business tips", "17 conversations", "all"]].map(([label, detail, postType], index) => <button type="button" key={label} onClick={() => { setActiveTab("trending"); setCategoryFilter(postType); document.getElementById("community-feed-updates")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} className="flex min-h-12 w-full items-center gap-3 rounded-2xl p-3 text-left transition hover:bg-background-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" aria-label={`Show ${label} in the community feed`}><span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-background-100 text-sm font-bold text-accent-500">{index + 1}</span><span><span className="block text-xs font-bold text-foreground-900">{label}</span><span className="mt-0.5 block text-[10px] text-foreground-500">{detail}</span></span></button>)}</div></section>
-            <section className="rounded-[1.75rem] border border-primary-100 bg-gradient-to-br from-primary-50 to-white p-5 shadow-[0_14px_38px_rgba(24,48,36,0.055)]"><span className="grid h-10 w-10 place-items-center rounded-2xl bg-primary-700 text-white shadow-sm"><i className="ri-shield-check-line" /></span><h2 className="mt-4 text-sm font-bold">Business-first by design</h2><p className="mt-2 text-xs leading-5 text-foreground-500">Every update is connected to a published listing. Reporting, moderation and posting limits help reduce spam.</p><div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-primary-700"><i className="ri-check-double-line" />Trusted community standards</div></section>
+          <aside className="space-y-3 lg:sticky lg:top-28">
+            <section className="rounded-2xl border border-background-200 bg-white p-4 shadow-[0_4px_18px_rgba(24,48,36,0.03)]"><div className="flex items-center justify-between"><h2 className="text-sm font-bold tracking-[-0.01em]">Trending</h2><i className="ri-fire-line text-accent-500" /></div><div className="mt-2 divide-y divide-background-200">{[["#ShopLocal767", "38 updates", "all"], ["Holiday services", "24 offers", "offer"], ["Small-business tips", "17 conversations", "all"]].map(([label, detail, postType]) => <button type="button" key={label} onClick={() => { setActiveTab("trending"); setCategoryFilter(postType); document.getElementById("community-feed-updates")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} className="block w-full py-3 text-left transition hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" aria-label={`Show ${label} in the community feed`}><span className="block text-xs font-bold">{label}</span><span className="mt-0.5 block text-[10px] text-foreground-500">{detail}</span></button>)}</div></section>
+            <section className="rounded-2xl border border-primary-100 bg-primary-50/45 p-4"><div className="flex items-center gap-2 text-primary-700"><i className="ri-shield-check-line" /><h2 className="text-xs font-bold">Trusted community</h2></div><p className="mt-2 text-[11px] leading-5 text-foreground-500">Posts connect to published listings and include reporting and moderation.</p></section>
           </aside>
         </div>
       </section>
