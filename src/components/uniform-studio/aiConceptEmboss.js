@@ -29,7 +29,7 @@ function cornerBackground(data, width, height) {
  * remains untouched, so the mark reads as part of the same backdrop and sits
  * visually behind the kit instead of on a separate canvas layer.
  */
-export async function embossConnect767ConceptBackground(dataUrl) {
+export async function embossConnect767ConceptBackground(dataUrl, { backgroundColor } = {}) {
   if (!dataUrl || typeof document === "undefined" || typeof Image === "undefined") return dataUrl;
   if (typeof navigator !== "undefined" && /jsdom/i.test(navigator.userAgent || "")) return dataUrl;
 
@@ -43,6 +43,17 @@ export async function embossConnect767ConceptBackground(dataUrl) {
     context.drawImage(concept, 0, 0, canvas.width, canvas.height);
     const original = context.getImageData(0, 0, canvas.width, canvas.height);
     const background = cornerBackground(original.data, canvas.width, canvas.height);
+    let backdrop = null;
+    if (backgroundColor) {
+      // Render the existing image on the same solid color as the studio.
+      // Source files and foreground garment pixels are never replaced.
+      const colorCanvas = document.createElement("canvas");
+      colorCanvas.width = 1; colorCanvas.height = 1;
+      const colorContext = colorCanvas.getContext("2d", { willReadFrequently: true });
+      colorContext.fillStyle = backgroundColor;
+      colorContext.fillRect(0, 0, 1, 1);
+      backdrop = colorContext.getImageData(0, 0, 1, 1).data;
+    }
 
     const maskCanvas = document.createElement("canvas");
     maskCanvas.width = canvas.width; maskCanvas.height = canvas.height;
@@ -71,6 +82,11 @@ export async function embossConnect767ConceptBackground(dataUrl) {
           pixels[index + 2] - background[2],
         );
         if (distance > 28) continue;
+        if (backdrop) {
+          pixels[index] = backdrop[0];
+          pixels[index + 1] = backdrop[1];
+          pixels[index + 2] = backdrop[2];
+        }
         const centre = alphaAt(x, y);
         const highlight = alphaAt(x + offset, y + offset);
         const shadow = alphaAt(x - offset, y - offset);

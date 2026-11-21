@@ -11,6 +11,7 @@
 .studio-foundation { display:flex; flex:1; min-height:0; width:100%; align-items:center; justify-content:center; overflow:hidden; }
 .studio-foundation-content { height:100%; }
 .studio-foundation-content .studio-foundation { height:100%; }
+.studio-foundation > img { display:block; width:100%; height:100%; max-height:100%; min-width:0; min-height:0; object-fit:contain; }
 .studio-foundation svg { height:100%; width:100%; max-height:100%; }
 .studio-foundation .approved-uniform-image { height:100%; object-fit:contain; }
 .studio-canvas-image { width:100%; height:100%; object-fit:contain; }

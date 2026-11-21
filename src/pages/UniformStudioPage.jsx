@@ -29,6 +29,7 @@ import useStudioViewport from "../components/uniform-studio/useStudioViewport";
 import useDesignHistory from "../components/uniform-studio/useDesignHistory";
 import Header from "../components/Header";
 import { uniformSampleFor } from "../components/uniform-studio/uniformSamples";
+import AIUniformSample from "../components/uniform-studio/AIUniformSample";
 import UniformOrderAgreement, { UNIFORM_ORDER_TERMS_VERSION } from "../components/uniform-studio/UniformOrderAgreement";
 import "../components/uniform-studio/mobileStudio.css";
 import JerseyStage from "../components/uniform-studio/JerseyStage";
@@ -2774,7 +2775,7 @@ export default function UniformStudioPage() {
                         <div className="relative flex min-h-0 flex-1">
                           <ProductionViewport ref={productionViewportRef} zoom={zoom} onZoomChange={setClampedZoom} panMode contentClassName="studio-foundation-content">
                             <div className="studio-foundation" data-testid="uniform-foundation" aria-label="AI-generated uniform example">
-                              <img src={uniformSampleFor(activeSport).src} alt={uniformSampleFor(activeSport).alt} className="h-full w-full object-contain" draggable={false} />
+                              <AIUniformSample sport={activeSport} backgroundColor={normalizeStudioBackground(studioBackground)} />
                             </div>
                           </ProductionViewport>
                         </div>
