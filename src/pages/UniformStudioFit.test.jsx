@@ -109,6 +109,8 @@ describe("required uniform fit selection", () => {
     expect(watermark.style.backgroundColor).toBe("rgb(245, 240, 231)");
     expect(watermark.style.filter).toContain("drop-shadow");
     expect(screen.getByRole("heading", { name: "Your Design Will Appear Here" })).toBeVisible();
+    expect(screen.getByTestId("ai-workspace-logo-frame")).toHaveClass("bottom-14");
+    expect(screen.getByTestId("ai-workspace-empty-caption")).toHaveClass("absolute", "inset-x-0", "bottom-0", "h-14");
     expect(screen.queryByText("Use the AI panel to begin.")).not.toBeInTheDocument();
     expect(screen.queryByText("Your generated uniform will appear here")).not.toBeInTheDocument();
     expect(screen.queryByText("Reference", { selector: "strong" })).not.toBeInTheDocument();
