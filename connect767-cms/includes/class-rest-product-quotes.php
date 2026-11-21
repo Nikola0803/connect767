@@ -15,6 +15,10 @@ if (!defined('ABSPATH')) {
 class C767_REST_Product_Quotes
 {
     const NAMESPACE_ = 'connect767/v1';
+    const MAX_QUANTITY = 500;
+    const MAX_LAYERS = 50;
+    const MAX_LAYERS_JSON_BYTES = 262144;
+    const MAX_PREVIEW_BYTES = 3145728;
 
     public static function init()
     {
@@ -32,12 +36,31 @@ class C767_REST_Product_Quotes
 
     public static function submit(WP_REST_Request $request)
     {
+        $limited = C767_Stripe_Checkout::check_public_rate_limit('product-quote', 5, HOUR_IN_SECONDS);
+        if (is_wp_error($limited)) {
+            return $limited;
+        }
+
         $product_type = sanitize_text_field((string) $request->get_param('productType'));
-        $quantity = max(1, (int) $request->get_param('quantity'));
+        $quantity = max(1, min(self::MAX_QUANTITY, (int) $request->get_param('quantity')));
         $layers = $request->get_param('layers');
 
-        if (empty($layers)) {
+        if (!is_array($layers) || empty($layers)) {
             return new WP_Error('c767_empty_design', 'Add at least one text or artwork layer before requesting an order.', ['status' => 400]);
+        }
+        if (count($layers) > self::MAX_LAYERS || strlen(wp_json_encode($layers)) > self::MAX_LAYERS_JSON_BYTES) {
+            return new WP_Error('c767_design_too_large', 'The submitted design contains too much data.', ['status' => 413]);
+        }
+
+        $email = sanitize_email((string) $request->get_param('email'));
+        if (!$email || !is_email($email)) {
+            return new WP_Error('c767_quote_email_required', 'Enter a valid email address before requesting an order.', ['status' => 400]);
+        }
+
+        $preview = (string) $request->get_param('previewImage');
+        if ($preview !== '' && (!preg_match('#^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$#D', $preview)
+            || strlen($preview) > self::MAX_PREVIEW_BYTES)) {
+            return new WP_Error('c767_preview_invalid', 'The design preview must be a PNG, JPEG, or WebP under 3 MB.', ['status' => 413]);
         }
 
         $title = sprintf(
@@ -70,15 +93,11 @@ class C767_REST_Product_Quotes
 
         // The preview image is a large base64 PNG from html-to-image — store
         // it as its own meta key so it's easy to skip when just listing orders.
-        $preview = (string) $request->get_param('previewImage');
         if ($preview) {
             update_post_meta($post_id, 'preview_image', $preview);
         }
 
-        $email = sanitize_email((string) $request->get_param('email'));
-        if ($email) {
-            update_post_meta($post_id, 'contact_email', $email);
-        }
+        update_post_meta($post_id, 'contact_email', $email);
 
         $user = get_user_by('id', get_current_user_id());
         $to = get_option('admin_email');

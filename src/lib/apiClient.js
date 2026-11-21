@@ -15,6 +15,7 @@ const INVALID_SESSION_CODES = new Set([
   "c767_bad_signature",
   "c767_bad_payload",
   "c767_expired_token",
+  "c767_revoked_token",
   "c767_user_not_found",
 ]);
 

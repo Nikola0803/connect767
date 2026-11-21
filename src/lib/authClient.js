@@ -84,6 +84,9 @@ export async function resetPassword({ login: userLogin, key, password }) {
 }
 
 export function logout() {
+  if (isLiveApi && getStoredToken()) {
+    customClient.post("/auth/logout", {}).catch(() => {});
+  }
   setStoredToken(null);
   setStoredUser(null);
 }

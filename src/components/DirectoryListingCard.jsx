@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import TierBadge from "./ui/TierBadge";
-import { imageCropStyle } from "../lib/imagePosition";
+import { imageCropStyle, normalizeImageFit } from "../lib/imagePosition";
 import { directoryCategories } from "../data/directory";
 import { findIndustry } from "../data/industries";
 import { isRentalBookingType, normalizeRentalRateUnit } from "../lib/bookingTypes";
@@ -143,10 +143,32 @@ function ListingHighlights({ listing }) {
 
 function Cover({ listing, listView = false }) {
   const coverPosition = listing.coverPosition || "center";
+  const coverFit = normalizeImageFit(listing.coverFit, "contain");
+  const showFullImage = coverFit === "contain";
   return (
     <div className={`relative flex-shrink-0 overflow-hidden rounded-[1.15rem] ${listView ? "m-2 sm:w-64" : "m-2 mb-0"}`}>
       <div className={`w-full overflow-hidden bg-background-100 ${listView ? "h-52 sm:h-full" : "aspect-[4/3]"}`}>
-        {listing.image ? (
+        {listing.image && showFullImage ? (
+          <div className="relative h-full w-full overflow-hidden bg-background-100">
+            <img
+              aria-hidden="true"
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 h-full w-full scale-110 object-cover opacity-40 blur-xl"
+              src={listing.image}
+            />
+            <div className="absolute inset-0 bg-background-50/20" aria-hidden="true" />
+            <img
+              loading="lazy"
+              decoding="async"
+              alt={`${listing.title} — ${industryLabel(listing)}`}
+              title={`${listing.title} — ${industryLabel(listing)}`}
+              className="listing-cover-media relative z-[1] h-full w-full object-contain"
+              src={listing.image}
+            />
+          </div>
+        ) : listing.image ? (
           <img
             loading="lazy"
             decoding="async"
@@ -154,7 +176,7 @@ function Cover({ listing, listView = false }) {
             title={`${listing.title} — ${industryLabel(listing)}`}
             className="listing-cover-media h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.045]"
             src={listing.image}
-            style={imageCropStyle(coverPosition, listing.coverZoom, "cover")}
+            style={imageCropStyle(coverPosition, listing.coverZoom, coverFit)}
           />
         ) : (
           <DefaultListingCover title={listing.title} compact />
