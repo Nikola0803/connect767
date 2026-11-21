@@ -3296,7 +3296,7 @@ function RosterTool({
           onClick={downloadRosterTemplate}
           className="border-accent-400 bg-accent-50 font-bold text-accent-700 hover:border-accent-500 hover:bg-accent-100"
         >
-          Download template
+          Download CSV Template
         </Button>
       </div>
       {importMessage && (
