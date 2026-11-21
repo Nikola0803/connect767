@@ -92,6 +92,7 @@ describe("uniform design controls", () => {
     const productionHeading = screen.getByRole("heading", { name: "Production extras" });
     expect(productionHeading).toBeVisible();
     expect(productionHeading.closest("details")).toBeNull();
+    expect(productionHeading.closest("section")).not.toHaveClass("overflow-hidden");
     expect(screen.getByRole("checkbox", { name: /Embroidered team logo/ })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Yes" }));
     expect(setInsideCollarMessage).toHaveBeenCalledWith(true);
