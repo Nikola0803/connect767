@@ -68,7 +68,7 @@ export default function Featured() {
   };
 
   return (
-    <section className="w-full px-4 md:px-8 lg:px-12 py-16 md:py-24 bg-background-100/50">
+    <section className="w-full bg-background-100/50 px-4 py-10 md:px-8 md:py-14 lg:px-12">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10">
           <div>
