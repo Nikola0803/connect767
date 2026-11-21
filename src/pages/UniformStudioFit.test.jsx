@@ -28,6 +28,8 @@ describe("required uniform fit selection", () => {
   it("opens directly on the combined required Design step with the AI prompt chat", async () => {
     render(<MemoryRouter initialEntries={["/uniforms?mode=scratch"]}><UniformStudioPage /></MemoryRouter>);
     const progress = within(screen.getByRole("navigation", { name: "Uniform order progress" }));
+    const studioHeader = within(screen.getByRole("button", { name: "Back" }).closest("header"));
+    expect(studioHeader.queryByText("AI Uniform")).not.toBeInTheDocument();
     expect(progress.getByRole("button", { name: /Design/ })).toHaveAttribute("aria-current", "step");
     expect(progress.getAllByRole("button")).toHaveLength(3);
     const setup = openUniformSetup();

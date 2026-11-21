@@ -2313,7 +2313,7 @@ export default function UniformStudioPage() {
 
   // ---------- The studio itself: fills the viewport beneath site navigation ----------
   const studioHeaderTitle = aiUniformPlan?.name || (template?.slug === "blank-canvas" ? "AI Uniform" : template?.name) || "AI Uniform";
-  const showStudioHeaderTitle = studioHeaderTitle !== "Classic Crew";
+  const showStudioHeaderTitle = !["AI Uniform", "Classic Crew"].includes(studioHeaderTitle);
 
   return (
     <div data-testid="uniform-studio-workspace" className="mt-16 flex h-[calc(100dvh-4rem)] flex-col overflow-hidden bg-[#10110f] text-background-50 md:mt-20 md:h-[calc(100dvh-5rem)]">
