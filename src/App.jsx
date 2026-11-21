@@ -11,6 +11,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import ScrollToTop from "./components/ScrollToTop";
 import RouteSeo from "./components/RouteSeo";
 import ListingOnboardingGate from "./components/ListingOnboardingGate";
+import MarketingAnalytics from "./components/MarketingAnalytics";
 
 // Keep each route in its own chunk. This prevents the 3D design studios and
 // dashboard code from slowing down the homepage on mobile connections.
@@ -99,6 +100,7 @@ function App() {
         <SavedListingsProvider>
           <ScrollToTop />
           <RouteSeo />
+          <MarketingAnalytics />
           <Chrome>
             <RouteBoundary>
               <Suspense fallback={<RouteLoading />}>

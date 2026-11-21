@@ -3,7 +3,7 @@
  * Plugin Name: Connect767 CMS
  * Plugin URI: https://connect767.com
  * Description: Content management, REST API, auth, and WooCommerce checkout bridge for the Connect767 headless React frontend. Registers the Listing and Uniform Template custom post types, exposes the connect767/v1 REST namespace (auth, AI matching, listing submissions, uniform quotes, headless checkout), and includes a one-click sample content importer matching the frontend's local fixture data.
- * Version: 2.2.1
+ * Version: 2.3.0
  * Author: Connect767
  * Text Domain: connect767-cms
  * Requires PHP: 7.4
@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
     exit; // No direct access.
 }
 
-define('C767_VERSION', '2.2.1');
+define('C767_VERSION', '2.3.0');
 define('C767_PLUGIN_FILE', __FILE__);
 define('C767_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('C767_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -120,6 +120,7 @@ function c767_require_includes()
         'includes/class-stripe-listing-checkout.php',
         'includes/class-rest-vendor-products.php',
         'includes/class-admin-dashboard.php',
+        'includes/class-marketing-growth.php',
         'includes/class-listing-review.php',
         'includes/class-notifications.php',
         'includes/class-importer.php',
@@ -166,6 +167,7 @@ function c767_init_plugin()
     C767_Stripe_Listing_Checkout::init();
     C767_Rest_Vendor_Products::init();
     C767_Admin_Dashboard::init();
+    C767_Marketing_Growth::init();
     C767_Listing_Review::init();
     C767_Notifications::init();
     C767_Importer::init();
@@ -185,6 +187,7 @@ function c767_activate()
     C767_Post_Types::register_taxonomies();
     C767_Social_Database::install();
     C767_Design_Studio_Security::install();
+    C767_Marketing_Growth::install();
     flush_rewrite_rules();
 }
 register_activation_hook(__FILE__, 'c767_activate');
@@ -193,6 +196,9 @@ function c767_deactivate()
 {
     if (class_exists('C767_Notifications')) {
         C767_Notifications::clear_profile_reminder_schedule();
+    }
+    if (class_exists('C767_Marketing_Growth')) {
+        C767_Marketing_Growth::deactivate();
     }
     flush_rewrite_rules();
 }
