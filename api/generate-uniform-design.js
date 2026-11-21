@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { reserveAIRequest, securityErrorResponse, settleAIRequest } from "./_ai-security.js";
 
 export const config = { maxDuration: 60 };
 
@@ -272,7 +273,19 @@ export default async function handler(req, res) {
     return responseJson(res, 429, { error: "Design limit reached. Please wait a few minutes and try again." });
   }
 
-  const requestId = randomUUID();
+  const requestedId = text(req.headers?.["x-c767-request-id"], 80);
+  const requestId = requestedId || randomUUID();
+  const requestedOperation = text(req.body?.aiOperation, 30);
+  const operation = ["generation", "refinement", "variation"].includes(requestedOperation)
+    ? requestedOperation
+    : input.referenceImage ? "refinement" : "generation";
+  let reservation;
+  try {
+    reservation = await reserveAIRequest(req, { requestId, operation, projectId: text(req.body?.projectId, 80) });
+  } catch (error) {
+    const security = securityErrorResponse(error, requestId);
+    return responseJson(res, security.status, security.payload);
+  }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 55_000);
 
@@ -320,15 +333,20 @@ export default async function handler(req, res) {
       const message = upstream.status === 401
         ? "The AI service rejected the server credential."
         : data?.error?.message || "The AI service could not create this uniform plan.";
-      return responseJson(res, status, { error: message, requestId });
+      await settleAIRequest(req, { requestId, successful: false, providerReference: data?.id || "" });
+      return responseJson(res, status, { error: message, requestId, remaining: reservation?.remaining ?? null });
     }
 
     const output = extractOutputText(data);
-    if (!output) return responseJson(res, 502, { error: "The AI service returned no design plan.", requestId });
+    if (!output) {
+      await settleAIRequest(req, { requestId, successful: false, providerReference: data?.id || "" });
+      return responseJson(res, 502, { error: "The AI service returned no design plan.", requestId });
+    }
     let plan;
     try {
       plan = JSON.parse(output);
     } catch {
+      await settleAIRequest(req, { requestId, successful: false, providerReference: data?.id || "" });
       return responseJson(res, 502, { error: "The AI service returned an unreadable design plan.", requestId });
     }
 
@@ -336,10 +354,13 @@ export default async function handler(req, res) {
       plan: normalizeUniformPlan(plan, input),
       model,
       requestId,
+      remaining: reservation?.remaining ?? null,
+      limit: reservation?.limit ?? null,
     });
   } catch (error) {
     const timedOut = error?.name === "AbortError";
     console.error("generate-uniform-design error", { requestId, timedOut, message: error?.message });
+    await settleAIRequest(req, { requestId, successful: false });
     return responseJson(res, timedOut ? 504 : 500, {
       error: timedOut ? "AI uniform design timed out. Please try again." : "AI uniform design failed unexpectedly.",
       requestId,

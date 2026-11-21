@@ -34,7 +34,7 @@ class C767_CORS
 
         header('Access-Control-Allow-Origin: ' . self::allowed_origin());
         header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
-        header('Access-Control-Allow-Headers: Authorization, Content-Type, X-WP-Nonce');
+        header('Access-Control-Allow-Headers: Authorization, Content-Type, X-WP-Nonce, X-C767-Guest-Token');
         header('Access-Control-Allow-Credentials: true');
         header('Access-Control-Max-Age: 600');
         status_header(200);
@@ -48,7 +48,7 @@ class C767_CORS
         add_filter('rest_pre_serve_request', function ($value) {
             header('Access-Control-Allow-Origin: ' . self::allowed_origin());
             header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
-            header('Access-Control-Allow-Headers: Authorization, Content-Type, X-WP-Nonce');
+            header('Access-Control-Allow-Headers: Authorization, Content-Type, X-WP-Nonce, X-C767-Guest-Token');
             header('Access-Control-Allow-Credentials: true');
 
             return $value;

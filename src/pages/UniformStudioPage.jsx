@@ -608,6 +608,7 @@ export default function UniformStudioPage() {
   const [exporting, setExporting] = useState(false);
   const [placementError, setPlacementError] = useState("");
   const [manualSaveStatus, setManualSaveStatus] = useState("idle");
+  const [designSecurityContext, setDesignSecurityContext] = useState(null);
   const manualSaveResetRef = useRef(null);
 
   // Local screenshot fixture only; Vite removes this branch from production.
@@ -1854,6 +1855,7 @@ export default function UniformStudioPage() {
       socksQuantity,
       contact,
       previewImage,
+      projectId: designSecurityContext?.projectId || "",
       aiDesignName: aiUniformPlan?.name || aiWorkspaceConcept?.name || null,
       aiDesignSummary: aiUniformPlan?.summary || null,
     };
@@ -2546,6 +2548,7 @@ export default function UniformStudioPage() {
                             setAiConceptPan((current) => ({ x: current.x + movement.x, y: current.y + movement.y }));
                           }}
                           onDoubleClick={resetAIConceptView}
+                          onContextMenu={(event) => event.preventDefault()}
                           onPointerDown={(event) => {
                             if (event.button !== 0) return;
                             event.preventDefault();
@@ -2576,6 +2579,9 @@ export default function UniformStudioPage() {
                           onPointerCancel={() => { aiConceptDragRef.current = null; }}
                           style={{ touchAction: "none", backgroundColor: aiConceptBackground }}
                         >
+                          <div className="pointer-events-none absolute left-3 top-3 z-20 rounded-full border border-white/20 bg-foreground-950/75 px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-white/90 backdrop-blur">
+                            AI-Generated Preview — Edit with AI Only
+                          </div>
                           {aiComparisonPlan?.conceptImage?.src ? (
                             <div className="relative z-10 grid max-h-full max-w-full grid-cols-2 gap-px bg-foreground-900 p-px">
                               <figure className="relative min-w-0 bg-[#f5f0e7]" style={{ backgroundColor: aiComparisonBackgrounds.previous }}>
@@ -2793,6 +2799,8 @@ export default function UniformStudioPage() {
                     onSaveDesign={saveProgress}
                     onDownloadDesign={handleDownload}
                     onOpenBackgroundRemoval={() => setActiveTool("remove-bg")}
+                    onSecurityContextChange={setDesignSecurityContext}
+                    onCompleteOrder={() => openWorkflowStep(1)}
                     hasExistingArtwork={layers.some(
                       (layer) => ["text", "logo", "clipart"].includes(layer.type) && !layer.source?.startsWith("ai-uniform"),
                     )}
@@ -2943,6 +2951,8 @@ export default function UniformStudioPage() {
             onSaveDesign={saveProgress}
             onDownloadDesign={handleDownload}
             onOpenBackgroundRemoval={() => setActiveTool("remove-bg")}
+            onSecurityContextChange={setDesignSecurityContext}
+            onCompleteOrder={() => openWorkflowStep(1)}
             hasExistingArtwork={layers.some(
               (layer) => ["text", "logo", "clipart"].includes(layer.type) && !layer.source?.startsWith("ai-uniform"),
             )}

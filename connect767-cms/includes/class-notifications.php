@@ -46,6 +46,8 @@ class C767_Notifications
         add_action(self::PROFILE_REMINDER_HOOK, [__CLASS__, 'send_profile_completion_reminder'], 10, 2);
         add_action(self::PROFILE_REMINDER_SWEEP_HOOK, [__CLASS__, 'send_existing_account_profile_reminders']);
         add_action('init', [__CLASS__, 'maybe_schedule_profile_reminder_sweep']);
+        add_action('admin_menu', [__CLASS__, 'add_profile_reminder_test_page'], 20);
+        add_action('admin_init', [__CLASS__, 'ensure_profile_reminder_templates']);
         add_action('c767_listing_submitted', [__CLASS__, 'on_listing_submitted'], 10, 3);
         add_action('c767_listing_approved', [__CLASS__, 'on_listing_approved']);
         add_action('transition_post_status', [__CLASS__, 'on_listing_status_changed'], 10, 3);
@@ -197,7 +199,6 @@ class C767_Notifications
         wp_clear_scheduled_hook(self::PROFILE_REMINDER_SWEEP_HOOK);
         $user_ids = get_users([
             'fields' => 'ids',
-            'role__in' => ['subscriber'],
         ]);
         foreach ($user_ids as $user_id) {
             self::clear_profile_completion_reminders($user_id);
@@ -223,10 +224,19 @@ class C767_Notifications
         return !empty($listing_ids);
     }
 
+    /** Directory reminders are for registered customers, not site administrators. */
+    private static function user_can_receive_profile_reminder($user)
+    {
+        return $user instanceof WP_User
+            && is_email($user->user_email)
+            && !user_can($user, 'manage_options');
+    }
+
     private static function schedule_profile_completion_reminders($user_id)
     {
         $user_id = (int) $user_id;
-        if (!$user_id || self::user_has_listing($user_id)) {
+        $user = $user_id ? get_userdata($user_id) : false;
+        if (!self::user_can_receive_profile_reminder($user) || self::user_has_listing($user_id)) {
             return;
         }
 
@@ -252,12 +262,14 @@ class C767_Notifications
         }
     }
 
-    private static function profile_reminder_email($user, $stage, $listing_url)
+    private static function profile_reminder_template_option($stage)
     {
-        $name = $user->display_name ?: $user->user_login;
+        return 'c767_profile_reminder_template_' . ((int) $stage === 2 ? 2 : 1);
+    }
+
+    private static function default_profile_reminder_template($stage)
+    {
         $is_follow_up = (int) $stage === 2;
-        $favicon_url = self::frontend_url('/connect767-favicon.png');
-        $website_url = self::frontend_url('/');
         $subject = $is_follow_up
             ? 'Your Connect767 directory listing is waiting'
             : 'Complete your Connect767 directory profile';
@@ -268,30 +280,206 @@ class C767_Notifications
             ? 'Add your category, industry, experience, contact details, and photos. It only takes a few minutes, and you can begin with a free listing and update it whenever your business changes.'
             : 'Add your category, industry, experience, contact details, and photos to create a professional profile that is ready to share.';
 
-        $html = sprintf(
-            '<div style="margin:0;padding:32px 16px;background:#f8f5ef;font-family:Arial,sans-serif;color:#172019;">'
+        $html = '<div style="margin:0;padding:32px 16px;background:#f8f5ef;font-family:Arial,sans-serif;color:#172019;">'
             . '<div style="max-width:620px;margin:0 auto;padding:36px;border:1px solid #e4ded2;border-radius:18px;background:#fffdf9;">'
             . '<p style="margin:0 0 20px;color:#006a46;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;">Connect767 Directory</p>'
-            . '<h1 style="margin:0 0 18px;font-family:Georgia,serif;font-size:30px;line-height:1.2;color:#111a14;">%s</h1>'
-            . '<p style="margin:0 0 16px;font-size:16px;line-height:1.7;">%s</p>'
-            . '<p style="margin:0 0 26px;font-size:16px;line-height:1.7;">%s</p>'
-            . '<a href="%s" style="display:inline-block;padding:14px 22px;border-radius:999px;background:#006a46;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;">Create or update your listing &rarr;</a>'
-            . '<p style="margin:26px 0 0;font-size:13px;line-height:1.6;color:#5d675f;">If the button does not open, copy this link into your browser:<br><a href="%s" style="color:#006a46;word-break:break-all;">%s</a></p>'
+            . '<h1 style="margin:0 0 18px;font-family:Georgia,serif;font-size:30px;line-height:1.2;color:#111a14;">{{greeting}}</h1>'
+            . '<p style="margin:0 0 16px;font-size:16px;line-height:1.7;">' . esc_html($intro) . '</p>'
+            . '<p style="margin:0 0 26px;font-size:16px;line-height:1.7;">' . esc_html($supporting_copy) . '</p>'
+            . '<a href="{{listing_url}}" style="display:inline-block;padding:14px 22px;border-radius:999px;background:#006a46;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;">Create or update your listing &rarr;</a>'
+            . '<p style="margin:26px 0 0;font-size:13px;line-height:1.6;color:#5d675f;">If the button does not open, copy this link into your browser:<br><a href="{{listing_url}}" style="color:#006a46;word-break:break-all;">{{listing_url}}</a></p>'
             . '<p style="margin:24px 0 0;padding-top:20px;border-top:1px solid #ece6dc;font-size:13px;line-height:1.6;color:#5d675f;">Already created your listing? No action is needed. Connect767 checks automatically and stops these reminders once a listing exists.</p>'
-            . '<p style="margin:24px 0 10px;"><img src="%s" alt="Connect767 C" width="38" height="38" style="display:block;width:38px;height:38px;border:0;object-fit:contain;" /></p>'
-            . '<p style="margin:0;font-size:15px;line-height:1.6;color:#172019;"><strong>The Connect767 Team</strong><br><a href="%s" style="color:#006a46;text-decoration:none;">connect767.com</a></p>'
-            . '</div></div>',
-            esc_html('Hi ' . $name . ','),
-            esc_html($intro),
-            esc_html($supporting_copy),
-            esc_url($listing_url),
-            esc_url($listing_url),
-            esc_html($listing_url),
-            esc_url($favicon_url),
-            esc_url($website_url)
-        );
+            . '<p style="margin:24px 0 10px;"><img src="{{favicon_url}}" alt="Connect767 C" width="38" height="38" style="display:block;width:38px;height:38px;border:0;object-fit:contain;" /></p>'
+            . '<p style="margin:0;font-size:15px;line-height:1.6;color:#172019;"><strong>The Connect767 Team</strong><br><a href="{{website_url}}" style="color:#006a46;text-decoration:none;">connect767.com</a></p>'
+            . '</div></div>';
 
-        return [$subject, $html];
+        return ['subject' => $subject, 'html' => $html];
+    }
+
+    public static function ensure_profile_reminder_templates()
+    {
+        foreach ([1, 2] as $stage) {
+            $option = self::profile_reminder_template_option($stage);
+            if (get_option($option, null) === null) {
+                add_option($option, self::default_profile_reminder_template($stage), '', false);
+            }
+        }
+    }
+
+    private static function profile_reminder_template($stage)
+    {
+        $default = self::default_profile_reminder_template($stage);
+        $saved = get_option(self::profile_reminder_template_option($stage), null);
+        if (!is_array($saved)) {
+            add_option(self::profile_reminder_template_option($stage), $default, '', false);
+            return $default;
+        }
+
+        return [
+            'subject' => !empty($saved['subject']) ? (string) $saved['subject'] : $default['subject'],
+            'html' => !empty($saved['html']) ? (string) $saved['html'] : $default['html'],
+        ];
+    }
+
+    private static function profile_reminder_email($user, $stage, $listing_url)
+    {
+        $name = $user->display_name ?: $user->user_login;
+        $template = self::profile_reminder_template($stage);
+        $html = strtr($template['html'], [
+            '{{greeting}}' => esc_html('Hi ' . $name . ','),
+            '{{listing_url}}' => esc_url($listing_url),
+            '{{favicon_url}}' => esc_url(self::frontend_url('/connect767-favicon.png')),
+            '{{website_url}}' => esc_url(self::frontend_url('/')),
+        ]);
+
+        return [$template['subject'], $html];
+    }
+
+    private static function profile_reminder_listing_url($stage)
+    {
+        return add_query_arg([
+            'onboarding' => 1,
+            'tier' => 'free',
+            'utm_source' => 'profile_reminder',
+            'utm_medium' => 'email',
+            'utm_campaign' => 'complete_listing',
+            'reminder' => (int) $stage === 2 ? 2 : 1,
+        ], self::frontend_url('/listings/submit'));
+    }
+
+    public static function add_profile_reminder_test_page()
+    {
+        add_submenu_page(
+            'connect767-cms',
+            'Profile Reminder Test',
+            'Profile Reminder Test',
+            'manage_options',
+            'connect767-profile-reminder-test',
+            [__CLASS__, 'render_profile_reminder_test_page']
+        );
+    }
+
+    public static function render_profile_reminder_test_page()
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('You do not have permission to send test emails.', 'connect767-cms'));
+        }
+
+        $recipient = isset($_POST['recipient']) ? sanitize_email(wp_unslash($_POST['recipient'])) : '';
+        $display_name = isset($_POST['display_name']) ? sanitize_text_field(wp_unslash($_POST['display_name'])) : 'James';
+        $stage = isset($_POST['stage']) && (int) $_POST['stage'] === 2 ? 2 : 1;
+        $notice = '';
+        $notice_class = 'notice-success';
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['c767_save_profile_reminder_templates'])) {
+            check_admin_referer('c767_save_profile_reminder_templates');
+            foreach ([1, 2] as $template_stage) {
+                $subject_key = 'template_subject_' . $template_stage;
+                $html_key = 'template_html_' . $template_stage;
+                $subject = isset($_POST[$subject_key]) ? sanitize_text_field(wp_unslash($_POST[$subject_key])) : '';
+                $html = isset($_POST[$html_key]) ? wp_unslash($_POST[$html_key]) : '';
+                if ($subject && $html) {
+                    update_option(self::profile_reminder_template_option($template_stage), [
+                        'subject' => $subject,
+                        'html' => $html,
+                    ], false);
+                }
+            }
+            $notice = 'Both automated profile reminder templates were saved in WordPress.';
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['c767_send_existing_profile_reminders_now'])) {
+            check_admin_referer('c767_send_existing_profile_reminders_now');
+            $result = self::send_existing_account_profile_reminders();
+            $notice = sprintf(
+                'Existing-account reminder run complete: %d sent, %d failed.',
+                (int) $result['sent'],
+                (int) $result['failed']
+            );
+            $notice_class = $result['failed'] ? 'notice-warning' : 'notice-success';
+        }
+
+        $eligible_reminders = self::eligible_existing_profile_reminders();
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['c767_send_profile_reminder_test'])) {
+            check_admin_referer('c767_send_profile_reminder_test');
+            if (!$recipient || !is_email($recipient)) {
+                $notice = 'Enter a valid recipient email address.';
+                $notice_class = 'notice-error';
+            } else {
+                $test_user = (object) [
+                    'display_name' => $display_name ?: 'there',
+                    'user_login' => $display_name ?: 'there',
+                ];
+                [$subject, $html] = self::profile_reminder_email(
+                    $test_user,
+                    $stage,
+                    self::profile_reminder_listing_url($stage)
+                );
+                $sent = self::send_directory_mail(
+                    $recipient,
+                    $subject,
+                    $html,
+                    ['Content-Type: text/html; charset=UTF-8']
+                );
+                $notice = $sent
+                    ? 'The exact profile reminder template was sent to ' . $recipient . '.'
+                    : 'WordPress could not send the profile reminder test. Check FluentSMTP logs for details.';
+                $notice_class = $sent ? 'notice-success' : 'notice-error';
+            }
+        }
+        ?>
+        <div class="wrap">
+            <h1>Profile Reminder Test</h1>
+            <p>Send the same subject, HTML body, links, sender settings, and headers used by the automated incomplete-profile reminder.</p>
+            <?php if ($notice) : ?>
+                <div class="notice <?php echo esc_attr($notice_class); ?> is-dismissible"><p><?php echo esc_html($notice); ?></p></div>
+            <?php endif; ?>
+            <form method="post" style="max-width:680px;margin-top:24px">
+                <?php wp_nonce_field('c767_send_profile_reminder_test'); ?>
+                <input type="hidden" name="c767_send_profile_reminder_test" value="1">
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th scope="row"><label for="c767-test-recipient">Send to</label></th>
+                        <td><input id="c767-test-recipient" name="recipient" type="email" class="regular-text" required value="<?php echo esc_attr($recipient); ?>"></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="c767-test-name">Greeting name</label></th>
+                        <td><input id="c767-test-name" name="display_name" type="text" class="regular-text" value="<?php echo esc_attr($display_name); ?>"></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="c767-test-stage">Reminder</label></th>
+                        <td><select id="c767-test-stage" name="stage"><option value="1" <?php selected($stage, 1); ?>>First reminder (about 4 hours)</option><option value="2" <?php selected($stage, 2); ?>>Follow-up reminder (about 3 days)</option></select></td>
+                    </tr>
+                </table>
+                <?php submit_button('Send exact reminder test'); ?>
+            </form>
+            <hr style="margin:36px 0">
+            <h2>Existing accounts without a listing</h2>
+            <p><strong><?php echo esc_html(count($eligible_reminders)); ?></strong> existing WordPress user account(s) are currently eligible for one profile reminder. Administrators and accounts with any directory listing are excluded automatically.</p>
+            <form method="post">
+                <?php wp_nonce_field('c767_send_existing_profile_reminders_now'); ?>
+                <input type="hidden" name="c767_send_existing_profile_reminders_now" value="1">
+                <?php submit_button('Send reminders to eligible existing users now', 'primary', 'submit', false, empty($eligible_reminders) ? ['disabled' => 'disabled'] : []); ?>
+            </form>
+            <hr style="margin:36px 0">
+            <h2>Saved WordPress templates</h2>
+            <p>Both automated emails are stored in the WordPress database. Available placeholders: <code>{{greeting}}</code>, <code>{{listing_url}}</code>, <code>{{favicon_url}}</code>, and <code>{{website_url}}</code>.</p>
+            <form method="post" style="max-width:980px;margin-top:24px">
+                <?php wp_nonce_field('c767_save_profile_reminder_templates'); ?>
+                <input type="hidden" name="c767_save_profile_reminder_templates" value="1">
+                <?php foreach ([1 => 'First reminder (about 4 hours)', 2 => 'Follow-up reminder (about 3 days)'] as $template_stage => $template_label) :
+                    $saved_template = self::profile_reminder_template($template_stage); ?>
+                    <div class="card" style="max-width:none;margin:0 0 24px;padding:20px">
+                        <h3 style="margin-top:0"><?php echo esc_html($template_label); ?></h3>
+                        <p><label><strong>Subject</strong><br><input type="text" class="large-text" name="template_subject_<?php echo esc_attr($template_stage); ?>" value="<?php echo esc_attr($saved_template['subject']); ?>"></label></p>
+                        <p><label><strong>HTML template</strong><br><textarea class="large-text code" rows="16" name="template_html_<?php echo esc_attr($template_stage); ?>"><?php echo esc_textarea($saved_template['html']); ?></textarea></label></p>
+                    </div>
+                <?php endforeach; ?>
+                <?php submit_button('Save both reminder templates', 'secondary'); ?>
+            </form>
+        </div>
+        <?php
     }
 
     public static function send_profile_completion_reminder($user_id, $stage = 1)
@@ -301,26 +489,18 @@ class C767_Notifications
         $meta_key = self::profile_reminder_meta_key($stage);
         $user = get_userdata($user_id);
 
-        if (!$user || !is_email($user->user_email) || get_user_meta($user_id, $meta_key, true)) {
-            return;
+        if (!self::user_can_receive_profile_reminder($user) || get_user_meta($user_id, $meta_key, true)) {
+            return false;
         }
         if (self::user_has_listing($user_id)) {
             self::clear_profile_completion_reminders($user_id);
-            return;
+            return false;
         }
         if ($stage === 2 && !get_user_meta($user_id, self::profile_reminder_meta_key(1), true)) {
-            self::send_profile_completion_reminder($user_id, 1);
-            return;
+            return self::send_profile_completion_reminder($user_id, 1);
         }
 
-        $listing_url = add_query_arg([
-            'onboarding' => 1,
-            'tier' => 'free',
-            'utm_source' => 'profile_reminder',
-            'utm_medium' => 'email',
-            'utm_campaign' => 'complete_listing',
-            'reminder' => $stage,
-        ], self::frontend_url('/listings/submit'));
+        $listing_url = self::profile_reminder_listing_url($stage);
         [$subject, $html] = self::profile_reminder_email($user, $stage, $listing_url);
 
         if (self::send_directory_mail(
@@ -333,23 +513,25 @@ class C767_Notifications
             if ($stage === 1 && !wp_next_scheduled(self::PROFILE_REMINDER_HOOK, [$user_id, 2])) {
                 wp_schedule_single_event(time() + 3 * DAY_IN_SECONDS, self::PROFILE_REMINDER_HOOK, [$user_id, 2]);
             }
+            return true;
         } else {
             error_log('Connect767 profile-completion reminder could not be sent for user ' . $user_id . '.');
+            return false;
         }
     }
 
-    /** Backfill reminders for existing subscriber accounts without directory listings. */
-    public static function send_existing_account_profile_reminders()
+    private static function eligible_existing_profile_reminders()
     {
+        $eligible = [];
         $user_ids = get_users([
             'fields' => 'ids',
-            'role__in' => ['subscriber'],
         ]);
         $now = time();
 
         foreach ($user_ids as $user_id) {
-            $user = get_userdata((int) $user_id);
-            if (!$user || self::user_has_listing($user_id)) {
+            $user_id = (int) $user_id;
+            $user = get_userdata($user_id);
+            if (!self::user_can_receive_profile_reminder($user) || self::user_has_listing($user_id)) {
                 self::clear_profile_completion_reminders($user_id);
                 continue;
             }
@@ -359,13 +541,29 @@ class C767_Notifications
             $second_sent_at = (int) get_user_meta($user_id, self::profile_reminder_meta_key(2), true);
 
             if (!$first_sent_at && (!$registered_at || $registered_at <= $now - 4 * HOUR_IN_SECONDS)) {
-                self::send_profile_completion_reminder($user_id, 1);
-                continue;
-            }
-            if ($first_sent_at && !$second_sent_at && $first_sent_at <= $now - 3 * DAY_IN_SECONDS) {
-                self::send_profile_completion_reminder($user_id, 2);
+                $eligible[] = ['user_id' => $user_id, 'stage' => 1];
+            } elseif ($first_sent_at && !$second_sent_at && $first_sent_at <= $now - 3 * DAY_IN_SECONDS) {
+                $eligible[] = ['user_id' => $user_id, 'stage' => 2];
             }
         }
+
+        return $eligible;
+    }
+
+    /** Backfill reminders for existing WordPress users without directory listings. */
+    public static function send_existing_account_profile_reminders()
+    {
+        $sent = 0;
+        $failed = 0;
+        foreach (self::eligible_existing_profile_reminders() as $reminder) {
+            if (self::send_profile_completion_reminder($reminder['user_id'], $reminder['stage'])) {
+                $sent++;
+            } else {
+                $failed++;
+            }
+        }
+
+        return ['sent' => $sent, 'failed' => $failed];
     }
 
     public static function on_user_registered($user_id, $account_type)

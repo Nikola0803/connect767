@@ -112,6 +112,10 @@ export default function AIUniformComposer({
   onDownloadPrompts,
   onOpenBackgroundRemoval,
   toolbarTarget,
+  aiQuota,
+  accountRequired = false,
+  downloadUnlocked = true,
+  onCompleteOrder,
 }) {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -249,16 +253,16 @@ export default function AIUniformComposer({
             <button type="button" onClick={() => { setToolbarMenuOpen(false); onOpenBackgroundRemoval?.(); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className="ri-eraser-line text-sm" /> Remove background / Make transparent</button>
             <div className="my-1 border-t border-background-200" />
             <button type="button" onClick={() => { setToolbarMenuOpen(false); onSaveDesign?.(); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className="ri-save-3-line text-sm" /> Save design</button>
-            <button type="button" onClick={() => { setToolbarMenuOpen(false); onDownloadDesign?.(); }} disabled={!uniformPlan && !artworkPreview} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className="ri-download-2-line text-sm" /> Download design</button>
+            <button type="button" onClick={() => { setToolbarMenuOpen(false); if (downloadUnlocked) onDownloadDesign?.(); else onCompleteOrder?.(); }} disabled={!uniformPlan && !artworkPreview} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className={downloadUnlocked ? "ri-download-2-line text-sm" : "ri-lock-line text-sm"} /> {downloadUnlocked ? "Download design" : "Unlock after payment"}</button>
             <button type="button" onClick={() => { setToolbarMenuOpen(false); onDownloadPrompts?.(); }} disabled={!historyEntries.length} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className="ri-file-download-line text-sm" /> Download prompts</button>
             <button type="button" onClick={() => { setToolbarMenuOpen(false); setSettingsOpen(true); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className="ri-settings-3-line text-sm" /> Settings</button>
             {(uniformPlan || artworkPreview) && <button type="button" onClick={() => { setToolbarMenuOpen(false); onClearCurrentDesign?.(); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-red-50 hover:text-red-700" role="menuitem"><i className="ri-delete-bin-6-line text-sm" /> Clear current design</button>}
             {mode === "uniform" && uniformPlan && <>
               <div className="my-1 border-t border-background-200" />
               <p className="px-3 pb-1 pt-1 text-[8px] font-bold uppercase tracking-[0.14em] text-foreground-500">Versions</p>
-              <button type="button" onClick={() => { setToolbarMenuOpen(false); previousVersion && onRestoreVersion?.(previousVersion); }} disabled={!previousVersion || generating} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className="ri-arrow-left-line" /> Previous version</button>
+              <button type="button" onClick={() => { setToolbarMenuOpen(false); if (previousVersion) onRestoreVersion?.(previousVersion); }} disabled={!previousVersion || generating} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className="ri-arrow-left-line" /> Previous version</button>
               <button type="button" onClick={() => { setToolbarMenuOpen(false); onCompareVersions?.(comparisonActive ? null : previousVersion); }} disabled={!previousVersion || generating} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className="ri-split-cells-horizontal" /> {comparisonActive ? "Close comparison" : "Compare versions"}</button>
-              <button type="button" onClick={() => { setToolbarMenuOpen(false); originalVersion && onRestoreVersion?.(originalVersion); }} disabled={!originalVersion || versions.length < 2 || generating} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className="ri-restart-line" /> Restore original</button>
+              <button type="button" onClick={() => { setToolbarMenuOpen(false); if (originalVersion) onRestoreVersion?.(originalVersion); }} disabled={!originalVersion || versions.length < 2 || generating} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className="ri-restart-line" /> Restore original</button>
               <button type="button" onClick={() => { setToolbarMenuOpen(false); onGenerateVariation?.(); }} disabled={generating || connection !== "connected"} className="flex cursor-pointer items-center gap-2 rounded-lg bg-primary-50 px-3 py-2 text-left text-[9px] font-bold text-primary-800 hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className="ri-refresh-line" /> New variation</button>
             </>}
           </div>
@@ -355,6 +359,13 @@ export default function AIUniformComposer({
 
       <div role="region" aria-label="AI command prompt" className={`relative min-w-0 flex-shrink-0 border-t px-2 py-2 pb-[max(.5rem,env(safe-area-inset-bottom))] sm:px-3 sm:py-3 sm:pb-[max(.75rem,env(safe-area-inset-bottom))] ${dark ? "border-white/10 bg-[#11140f]" : "border-background-200 bg-[#f8f7f2]"}`}>
         {error && <div role="alert" className="mb-2 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[10px] text-red-700"><span>{error}</span><button type="button" onClick={onRetry} className="shrink-0 cursor-pointer font-bold underline">Retry</button></div>}
+        {accountRequired && <div role="alert" className="mb-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[10px] text-amber-950"><strong className="block">Your free AI design previews have been used.</strong><span>Create a free Connect767 account to continue designing.</span><div className="mt-2 flex gap-2"><a href="/register" className="rounded-lg bg-primary-700 px-2.5 py-1.5 font-bold text-white">Create Account</a><a href="/login" className="rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 font-bold">Sign In</a></div></div>}
+        {(uniformPlan || artworkPreview) && !downloadUnlocked && (
+          <div role="status" className="mb-2 flex items-center justify-between gap-3 rounded-xl border border-background-300 bg-white px-3 py-2 text-[10px] text-background-800">
+            <span><i className="ri-lock-line mr-1 text-primary-700" />Complete your order to unlock high-resolution downloads and production-ready design files.</span>
+            <button type="button" onClick={onCompleteOrder} className="shrink-0 rounded-lg bg-primary-700 px-2.5 py-1.5 font-bold text-white">Complete Order</button>
+          </div>
+        )}
 
         {settingsOpen && (
           <div data-ai-popover className={`absolute bottom-[calc(100%-4px)] left-3 right-3 z-20 max-h-72 overflow-y-auto rounded-2xl border p-3 shadow-2xl ${card}`}>
@@ -383,6 +394,7 @@ export default function AIUniformComposer({
           onDrop={acceptDroppedFile}
           className={`relative mx-auto w-full min-w-0 max-w-xl rounded-2xl border bg-white shadow-[0_4px_18px_rgba(31,43,35,.06)] transition ${dragging ? "border-primary-500 ring-4 ring-primary-100" : "border-background-300 focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-100"}`}
         >
+          {typeof aiQuota?.remaining === "number" && <div className="flex items-center justify-between border-b border-background-200 px-3 py-1.5 text-[8px] font-semibold text-foreground-500"><span>{aiQuota.authenticated ? "Daily AI allowance" : "Free AI previews"}</span><span>{aiQuota.remaining} of {aiQuota.limit} remaining</span></div>}
           {dragging && <div className="absolute inset-1 z-10 flex items-center justify-center rounded-[18px] border-2 border-dashed border-primary-400 bg-primary-50/95 text-xs font-bold text-primary-800"><i className="ri-upload-cloud-2-line mr-2" /> Drop an image to use as reference</div>}
           {reference && <div className="flex items-center gap-2 border-b border-background-200 px-3 py-2"><img src={reference.src} alt="Attached uniform reference" className="h-9 w-9 rounded-lg border border-background-200 object-cover" /><div className="min-w-0 flex-1"><strong className="block truncate text-[9px] text-foreground-700">{reference.name}</strong><span className="block text-[8px] text-foreground-400">Reference image</span></div><button type="button" onClick={onRemoveReference} className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-foreground-400 hover:bg-red-50 hover:text-red-600" aria-label="Remove reference image"><i className="ri-close-line" /></button></div>}
           <textarea
