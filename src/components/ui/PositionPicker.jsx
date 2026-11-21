@@ -113,7 +113,9 @@ export default function PositionPicker({
     onZoomChange(1);
   };
 
-  const chooseReposition = () => onFitChange("cover");
+  const chooseReposition = () => {
+    if (onFitChange) onFitChange("cover");
+  };
 
   const beginRepositionFromHandle = (event) => {
     event.stopPropagation();
@@ -197,23 +199,21 @@ export default function PositionPicker({
                 onMouseDown={(event) => event.stopPropagation()}
                 onTouchStart={(event) => event.stopPropagation()}
               >
-                {canChooseFit && (
-                  <button
-                    type="button"
-                    aria-label="Reposition photo"
-                    title="Drag to reposition photo"
-                    onMouseDown={beginRepositionFromHandle}
-                    onTouchStart={beginRepositionFromHandle}
-                    onClick={chooseReposition}
-                    className={`flex h-9 w-9 cursor-move items-center justify-center rounded-lg transition-colors ${
-                      fit === "cover"
-                        ? "bg-primary-600 text-background-50"
-                        : "text-foreground-600 hover:bg-primary-50 hover:text-primary-800"
-                    }`}
-                  >
-                    <i className="ri-drag-move-2-line text-base" aria-hidden="true" />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  aria-label="Reposition photo"
+                  title="Drag to reposition photo"
+                  onMouseDown={beginRepositionFromHandle}
+                  onTouchStart={beginRepositionFromHandle}
+                  onClick={chooseReposition}
+                  className={`flex h-9 w-9 cursor-move items-center justify-center rounded-lg transition-colors ${
+                    isLogo || fit === "cover"
+                      ? "bg-primary-600 text-background-50"
+                      : "text-foreground-600 hover:bg-primary-50 hover:text-primary-800"
+                  }`}
+                >
+                  <i className="ri-drag-move-2-line text-base" aria-hidden="true" />
+                </button>
                 <button
                   type="button"
                   aria-label="Zoom out"

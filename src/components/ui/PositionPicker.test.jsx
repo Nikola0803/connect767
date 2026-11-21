@@ -87,6 +87,30 @@ describe("PositionPicker cover controls", () => {
     expect(onPositionChange).toHaveBeenCalled();
   });
 
+  it("shows the same working reposition and zoom toolbar on profile photos", () => {
+    const onPositionChange = vi.fn();
+    const onZoomChange = vi.fn();
+    render(
+      <PositionPicker
+        src="https://example.com/profile.jpg"
+        shape="logo"
+        position="center"
+        zoom={1.2}
+        onPositionChange={onPositionChange}
+        onZoomChange={onZoomChange}
+      />,
+    );
+
+    const handle = screen.getByRole("button", { name: "Reposition photo" });
+    fireEvent.mouseDown(handle, { clientX: 100, clientY: 100 });
+    fireEvent.mouseMove(window, { clientX: 112, clientY: 105 });
+    fireEvent.mouseUp(window);
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+
+    expect(onPositionChange).toHaveBeenCalled();
+    expect(onZoomChange).toHaveBeenCalledWith(1.3);
+  });
+
   it("changes zoom from the photo toolbar icons", () => {
     const onZoomChange = vi.fn();
     render(
