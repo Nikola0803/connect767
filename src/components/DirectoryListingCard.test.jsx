@@ -157,9 +157,9 @@ describe("DirectoryListingCard parent category", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByTestId("listing-description-row")).toHaveClass("h-9");
-    expect(screen.getByTestId("listing-highlights")).toHaveClass("min-h-[4.35rem]", "items-stretch");
-    expect(screen.getByTestId("listing-booking-row")).toHaveClass("min-h-8");
+    expect(screen.getByTestId("listing-description-row")).toHaveClass("h-8");
+    expect(screen.getByTestId("listing-highlights")).toHaveClass("min-h-[3.45rem]", "items-stretch");
+    expect(screen.getByTestId("listing-booking-row")).toHaveClass("min-h-7");
   });
 
   it("shows a rental rate unit instead of an appointment duration", () => {
