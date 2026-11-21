@@ -1976,14 +1976,14 @@ export default function UniformStudioPage() {
             >
               <span className="grid h-[320px] grid-cols-3 grid-rows-2 sm:h-[350px]" aria-hidden="true">
                 {studioCoverTemplates.map(({ sport, template }, index) => (
-                  <span key={sport.slug} className="relative flex items-center justify-center overflow-hidden border border-white/[0.04] bg-[radial-gradient(circle_at_center,rgba(255,255,255,.08),transparent_70%)] p-4">
+                  <span key={sport.slug} className="relative flex min-h-0 min-w-0 items-center justify-center overflow-hidden border border-white/[0.04] bg-[radial-gradient(circle_at_center,rgba(255,255,255,.08),transparent_70%)] p-4 sm:p-5">
                     <img
                       data-testid="studio-cover-category"
                       src={template.image}
                       alt=""
                       loading="lazy"
                       decoding="async"
-                      className="h-full w-full select-none object-contain opacity-45 grayscale contrast-125 mix-blend-luminosity drop-shadow-[-2px_-2px_2px_rgba(255,255,255,.15)] drop-shadow-[4px_5px_5px_rgba(0,0,0,.46)] transition duration-300 group-hover:opacity-60 group-hover:scale-[1.02]"
+                      className="h-auto w-auto max-h-full max-w-full select-none object-contain opacity-45 grayscale contrast-125 mix-blend-luminosity drop-shadow-[-2px_-2px_2px_rgba(255,255,255,.15)] drop-shadow-[4px_5px_5px_rgba(0,0,0,.46)] transition duration-300 group-hover:opacity-60 group-hover:scale-[1.02]"
                     />
                     <span
                       data-testid="studio-cover-category-label"
