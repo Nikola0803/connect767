@@ -4,7 +4,11 @@ import StarRating from "./ui/StarRating";
 import TierBadge from "./ui/TierBadge";
 import { geocodeLocation, staticMapUrl, embedMapUrl, MAPBOX_TOKEN } from "../lib/mapbox";
 import { useSavedListings } from "../hooks/useSavedListings";
-import { imageCropStyle } from "../lib/imagePosition";
+import {
+  imageCropStyle,
+  normalizeImageFit,
+  resolveSmartImageFit,
+} from "../lib/imagePosition";
 import BookingForm from "./BookingForm";
 import ShareMenu from "./ShareMenu";
 import { WriteReviewButton } from "./WriteReviewModal";
@@ -93,6 +97,7 @@ export function parseBusinessHours(entry) {
  */
 export default function ListingProfile({ data, isPreview = false }) {
   const [activeImage, setActiveImage] = useState(0);
+  const [coverNaturalRatio, setCoverNaturalRatio] = useState(null);
   const [activeSection, setActiveSection] = useState("overview");
   const [mapCoords, setMapCoords] = useState(null);
   const [hasProducts, setHasProducts] = useState(false);
@@ -116,6 +121,20 @@ export default function ListingProfile({ data, isPreview = false }) {
   const parsedHours = data.hours.map(parseBusinessHours);
   const regularHours = parsedHours.filter(({ day }) => !/^(sat(?:urday)?|sun(?:day)?)\b/i.test(day));
   const weekendHours = parsedHours.filter(({ day }) => /^(sat(?:urday)?|sun(?:day)?)\b/i.test(day));
+  const requestedCoverFit = normalizeImageFit(data.coverFit, "smart");
+  const resolvedCoverFit = resolveSmartImageFit(requestedCoverFit, coverNaturalRatio);
+  const coverUsesContain = resolvedCoverFit === "contain";
+
+  useEffect(() => {
+    setCoverNaturalRatio(null);
+  }, [gallery[0]?.src]);
+
+  const captureCoverRatio = (event) => {
+    const image = event.currentTarget;
+    if (image.naturalWidth && image.naturalHeight) {
+      setCoverNaturalRatio(image.naturalWidth / image.naturalHeight);
+    }
+  };
 
   const jumpToSection = (section) => {
     setActiveSection(section);
@@ -215,17 +234,18 @@ export default function ListingProfile({ data, isPreview = false }) {
         <div className="max-w-7xl mx-auto lg:grid lg:grid-cols-3 lg:items-start lg:gap-x-8">
           <div id="listing-gallery" className="max-w-5xl scroll-mt-28 lg:col-span-2 lg:col-start-1 lg:row-start-1">
             <section className="relative w-full overflow-hidden rounded-[1.75rem] border border-background-200/80 bg-background-100 shadow-[0_24px_70px_rgba(29,42,35,0.12)]">
-            <div className="relative aspect-[5/3] w-full">
+            <div className="relative aspect-[16/9] w-full">
               {gallery[activeImage]?.src ? (
                 <img
                   alt={gallery[activeImage]?.alt}
-                  className={`h-full w-full ${activeImage === 0 ? `listing-profile-cover-media ${data.coverFit === "cover" ? "object-cover" : "object-contain bg-background-100"}` : "object-contain bg-background-100"}`}
+                  className={`h-full w-full ${activeImage === 0 ? `listing-profile-cover-media ${coverUsesContain ? "object-contain bg-background-100" : "object-cover"}` : "object-contain bg-background-100"}`}
                   src={gallery[activeImage]?.src}
                   style={
                     activeImage === 0
-                      ? imageCropStyle(data.coverPosition, data.coverZoom, data.coverFit)
+                      ? imageCropStyle(data.coverPosition, data.coverZoom, resolvedCoverFit)
                       : undefined
                   }
+                  onLoad={activeImage === 0 ? captureCoverRatio : undefined}
                 />
               ) : (
                 <DefaultListingCover title={data.title} />
@@ -391,13 +411,14 @@ export default function ListingProfile({ data, isPreview = false }) {
                   {gallery[activeImage]?.src ? (
                     <img
                       alt={gallery[activeImage]?.alt}
-                    className={`h-full w-full ${activeImage === 0 ? `listing-profile-cover-media ${data.coverFit === "cover" ? "object-cover" : "object-contain"}` : "object-contain"}`}
+                    className={`h-full w-full ${activeImage === 0 ? `listing-profile-cover-media ${coverUsesContain ? "object-contain" : "object-cover"}` : "object-contain"}`}
                       src={gallery[activeImage]?.src}
                       style={
                         activeImage === 0
-                          ? imageCropStyle(data.coverPosition, data.coverZoom, data.coverFit)
+                          ? imageCropStyle(data.coverPosition, data.coverZoom, resolvedCoverFit)
                           : undefined
                       }
+                      onLoad={activeImage === 0 ? captureCoverRatio : undefined}
                     />
                   ) : (
                     <DefaultListingCover title={data.title} />
