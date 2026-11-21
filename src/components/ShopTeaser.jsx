@@ -13,7 +13,7 @@ const WP_ORIGIN = config.wpBaseUrl || "https://admin.connect767.com";
 // Confirmed via /wp-json/wp/v2/media?search=DSC_8707 that this is the
 // current real attachment.
 export const shopHeroImage = `${WP_ORIGIN}/wp-content/uploads/2026/07/DSC_8707-Edit_17fdb17b-ddd5-4c9b-857b-83c9d142516a-scaled.jpg`;
-const soccerUniformRender = "/uploads/3d-soccer-uniform-render-watermark.png";
+const soccerUniformRender = "/uploads/uniform-studio-green-white-ai-emboss.png";
 
 const uniformSports = ["Soccer", "Basketball", "Cricket", "Netball", "Management Kit"];
 
@@ -94,7 +94,7 @@ export default function ShopTeaser() {
 
             <div className="relative aspect-square overflow-hidden rounded-[1.15rem] border border-primary-100 bg-primary-50">
               <img
-                alt="Emerald green and cream number 10 soccer uniform with matching shorts and socks"
+                alt="Emerald green and white number 10 soccer uniform with matching shorts and socks"
                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
                 decoding="async"
                 loading="lazy"
