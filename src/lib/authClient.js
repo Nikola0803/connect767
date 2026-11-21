@@ -1,5 +1,24 @@
 import { isLiveApi } from "./config";
-import { customClient, setStoredToken, setStoredUser, getStoredToken } from "./apiClient";
+import { customClient, setStoredToken, setStoredUser, getStoredToken, getStoredUser } from "./apiClient";
+
+let currentUserRefresh = null;
+
+export async function refreshCurrentUser() {
+  if (!getStoredToken()) return null;
+  if (!isLiveApi) return getStoredUser();
+  if (!currentUserRefresh) {
+    currentUserRefresh = customClient
+      .get("/auth/me")
+      .then((payload) => {
+        if (payload?.user) setStoredUser(payload.user);
+        return payload?.user || null;
+      })
+      .finally(() => {
+        currentUserRefresh = null;
+      });
+  }
+  return currentUserRefresh;
+}
 
 /**
  * Auth against the Connect767 CMS plugin's self-contained JWT endpoints

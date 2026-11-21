@@ -599,6 +599,15 @@ class C767_REST_Listings
             $category_names = $terms && !is_wp_error($terms)
                 ? implode(', ', wp_list_pluck($terms, 'name'))
                 : '';
+            $industry_slug = (string) get_post_meta($post->ID, 'category_slug', true);
+            if ($industry_slug === '' && $terms && !is_wp_error($terms)) {
+                foreach ($terms as $term) {
+                    if ((int) $term->parent > 0) {
+                        $industry_slug = (string) $term->slug;
+                        break;
+                    }
+                }
+            }
             $legacy_featured_tier = get_post_meta($post->ID, 'tier', true) === 'Featured';
             $featured_until = (string) get_post_meta($post->ID, 'featured_until', true);
             $featured_active = $legacy_featured_tier || (
@@ -614,6 +623,11 @@ class C767_REST_Listings
                 'logo' => esc_url_raw((string) get_post_meta($post->ID, 'logo', true)),
                 'coverPhoto' => esc_url_raw((string) get_the_post_thumbnail_url($post->ID, 'large')),
                 'category' => $category_names,
+                // Owner data is the authoritative edit source. Returning the
+                // exact saved child slug prevents Edit Profile from falling
+                // back to an empty Industry selector when public REST embeds
+                // are cached or omit taxonomy parent data.
+                'industrySlug' => sanitize_key($industry_slug),
                 'tier' => $legacy_featured_tier ? 'Free' : (get_post_meta($post->ID, 'tier', true) ?: 'Free'),
                 'featured' => $featured_active,
                 'featuredUntil' => $featured_until,
@@ -967,6 +981,7 @@ class C767_REST_Listings
         if (is_wp_error($upload_result)) {
             return $upload_result;
         }
+        self::sync_user_profile_photo($post_id, $user->ID);
 
         do_action('c767_listing_submitted', $post_id, $user->ID, $tier);
 
@@ -1062,6 +1077,7 @@ class C767_REST_Listings
         if (is_wp_error($upload_result)) {
             return $upload_result;
         }
+        self::sync_user_profile_photo($post_id, $user->ID);
 
         return rest_ensure_response([
             'id' => $post_id,
@@ -1156,5 +1172,31 @@ class C767_REST_Listings
             update_post_meta($post_id, 'gallery', wp_json_encode($gallery));
         }
         return true;
+    }
+
+    /**
+     * Keep the signed-in account avatar synchronized with the listing form's
+     * Profile Photo. The user meta gives auth responses a stable, inexpensive
+     * source, while C767_REST_Auth also has a legacy-listing fallback for
+     * accounts created before these fields existed.
+     */
+    private static function sync_user_profile_photo($post_id, $user_id)
+    {
+        $logo = esc_url_raw((string) get_post_meta($post_id, 'logo', true));
+        if ($logo === '') {
+            return;
+        }
+
+        update_user_meta($user_id, 'c767_profile_photo_url', $logo);
+        update_user_meta(
+            $user_id,
+            'c767_profile_photo_position',
+            self::sanitize_position(get_post_meta($post_id, 'logo_position', true))
+        );
+        update_user_meta(
+            $user_id,
+            'c767_profile_photo_zoom',
+            self::sanitize_zoom(get_post_meta($post_id, 'logo_zoom', true) ?: 1)
+        );
     }
 }

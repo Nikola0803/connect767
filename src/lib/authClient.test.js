@@ -2,15 +2,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./config", () => ({ isLiveApi: true }));
 vi.mock("./apiClient", () => ({
-  customClient: { post: vi.fn() },
+  customClient: { get: vi.fn(), post: vi.fn() },
   setStoredToken: vi.fn(),
   setStoredUser: vi.fn(),
   getStoredToken: vi.fn(),
+  getStoredUser: vi.fn(),
 }));
 
 import { customClient } from "./apiClient";
 import { getStoredToken, setStoredToken, setStoredUser } from "./apiClient";
-import { logout, requestPasswordReset, resetPassword } from "./authClient";
+import { logout, refreshCurrentUser, requestPasswordReset, resetPassword } from "./authClient";
 
 describe("password recovery API", () => {
   beforeEach(() => {
@@ -55,5 +56,19 @@ describe("password recovery API", () => {
     expect(customClient.post).toHaveBeenCalledWith("/auth/logout", {});
     expect(setStoredToken).toHaveBeenCalledWith(null);
     expect(setStoredUser).toHaveBeenCalledWith(null);
+  });
+
+  it("refreshes and caches the signed-in user's profile photo", async () => {
+    getStoredToken.mockReturnValue("active-token");
+    const user = {
+      id: 7,
+      email: "owner@example.com",
+      profilePhoto: "https://example.com/profile.jpg",
+    };
+    customClient.get.mockResolvedValue({ user });
+
+    await expect(refreshCurrentUser()).resolves.toEqual(user);
+    expect(customClient.get).toHaveBeenCalledWith("/auth/me");
+    expect(setStoredUser).toHaveBeenCalledWith(user);
   });
 });

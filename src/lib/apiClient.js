@@ -149,6 +149,7 @@ export function setStoredUser(user) {
   } catch {
     /* localStorage unavailable — auth just won't persist */
   }
+  window.dispatchEvent(new CustomEvent("c767-auth-changed"));
 }
 
 export { ApiError };

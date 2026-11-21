@@ -2,8 +2,33 @@ import { describe, expect, it } from "vitest";
 import {
   missingBusinessRequiredFieldIds,
   savedBookingSelection,
+  savedIndustrySelection,
   savedSellProductsSelection,
 } from "./AddListingPage";
+
+describe("savedIndustrySelection", () => {
+  it("prefers the authenticated owner's exact saved industry", () => {
+    const publicListing = { id: 42, slug: "island-accounting", categorySlug: "services" };
+    const ownedListings = [{
+      id: 42,
+      slug: "island-accounting",
+      industrySlug: "accounting-and-bookkeeping",
+    }];
+
+    expect(savedIndustrySelection(publicListing, ownedListings)).toBe(
+      "accounting-and-bookkeeping",
+    );
+  });
+
+  it("recovers the industry from legacy owner category labels", () => {
+    expect(
+      savedIndustrySelection(
+        { id: 42, categorySlug: "services" },
+        [{ id: 42, category: "Services, Accounting & Bookkeeping" }],
+      ),
+    ).toBe("accounting-and-bookkeeping");
+  });
+});
 
 describe("missingBusinessRequiredFieldIds", () => {
   it("flags Industry and every other mandatory business field", () => {

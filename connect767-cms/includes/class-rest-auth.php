@@ -280,11 +280,64 @@ class C767_REST_Auth
 
     private static function format_user($user)
     {
+        $profile_photo = self::profile_photo_for_user($user->ID);
         return [
             'id' => $user->ID,
             'name' => $user->display_name,
             'email' => $user->user_email,
             'accountType' => get_user_meta($user->ID, 'c767_account_type', true) ?: 'customer',
+            'profilePhoto' => $profile_photo['url'],
+            'profilePhotoPosition' => $profile_photo['position'],
+            'profilePhotoZoom' => $profile_photo['zoom'],
+        ];
+    }
+
+    /**
+     * Resolve the account avatar saved from the listing form. Existing users
+     * are migrated lazily from their most recently edited listing, so their
+     * header photo appears immediately after this plugin update without
+     * requiring them to re-upload it.
+     */
+    private static function profile_photo_for_user($user_id)
+    {
+        $url = esc_url_raw((string) get_user_meta($user_id, 'c767_profile_photo_url', true));
+        $position = sanitize_text_field((string) get_user_meta($user_id, 'c767_profile_photo_position', true));
+        $zoom = (float) get_user_meta($user_id, 'c767_profile_photo_zoom', true);
+
+        if ($url === '') {
+            $listing_ids = get_posts([
+                'post_type' => 'listing',
+                'post_status' => ['publish', 'pending', 'draft'],
+                'author' => $user_id,
+                'posts_per_page' => 5,
+                'orderby' => 'modified',
+                'order' => 'DESC',
+                'fields' => 'ids',
+                'meta_query' => [[
+                    'key' => 'logo',
+                    'compare' => 'EXISTS',
+                ]],
+            ]);
+
+            foreach ($listing_ids as $listing_id) {
+                $candidate = esc_url_raw((string) get_post_meta($listing_id, 'logo', true));
+                if ($candidate === '') {
+                    continue;
+                }
+                $url = $candidate;
+                $position = sanitize_text_field((string) get_post_meta($listing_id, 'logo_position', true));
+                $zoom = (float) get_post_meta($listing_id, 'logo_zoom', true);
+                update_user_meta($user_id, 'c767_profile_photo_url', $url);
+                update_user_meta($user_id, 'c767_profile_photo_position', $position ?: 'center');
+                update_user_meta($user_id, 'c767_profile_photo_zoom', $zoom ?: 1);
+                break;
+            }
+        }
+
+        return [
+            'url' => $url,
+            'position' => $position ?: 'center',
+            'zoom' => max(1, min(2.5, $zoom ?: 1)),
         ];
     }
 
