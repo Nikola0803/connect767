@@ -709,7 +709,8 @@ export async function submitListing(form) {
     "coverFit",
   ];
   textFields.forEach((key) => {
-    if (form[key]) payload.append(key, form[key]);
+    const value = key === "coverFit" && form[key] === "cover" ? "manual-cover" : form[key];
+    if (value) payload.append(key, value);
   });
 
   // Boolean fields must always be submitted, including the unchecked state.
@@ -914,7 +915,8 @@ export async function updateListing(id, form) {
     "coverFit",
   ];
   textFields.forEach((key) => {
-    if (form[key]) payload.append(key, form[key]);
+    const value = key === "coverFit" && form[key] === "cover" ? "manual-cover" : form[key];
+    if (value) payload.append(key, value);
   });
 
   // Persist the storefront choice on edits as well as new submissions.

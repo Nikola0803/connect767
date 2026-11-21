@@ -522,10 +522,16 @@ export function mapListingCpt(wp) {
     // Any crop selected by the listing owner still takes precedence.
     coverPosition: acf.cover_position || "top",
     coverZoom: Number(acf.cover_zoom) || 1,
-    // Preserve the owner's display choice. Legacy listings predate this field,
-    // so default them to a complete-image presentation rather than silently
-    // cropping logos, flyers, portrait photos, or wide cover artwork.
-    coverFit: acf.cover_fit === "cover" ? "cover" : "contain",
+    // The first CMS implementation forced every saved value to `cover`, so
+    // that legacy value cannot reliably mean an owner explicitly chose a
+    // crop. Treat it as Smart. New explicit crops are stored as
+    // `manual-cover`, while contain remains an explicit full-image choice.
+    coverFit:
+      acf.cover_fit === "manual-cover"
+        ? "cover"
+        : acf.cover_fit === "contain"
+          ? "contain"
+          : "smart",
     // Precomputed from every public, user-visible profile value so the
     // directory can search details that are not rendered on its cards.
     searchText: createListingSearchText(publicProfile),

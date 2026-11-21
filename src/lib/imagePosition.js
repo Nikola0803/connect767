@@ -23,9 +23,23 @@ export const POSITION_CHOICES = [
 export const ZOOM_MIN = 1;
 export const ZOOM_MAX = 2.5;
 
-/** Only these two values are persisted by the listing editor/CMS. */
+/** Smart is the default; contain and cover remain explicit owner choices. */
 export function normalizeImageFit(value, fallback = "cover") {
-  return value === "contain" || value === "cover" ? value : fallback;
+  return value === "smart" || value === "contain" || value === "cover" ? value : fallback;
+}
+
+/**
+ * Choose a stable card treatment from the source image's natural ratio.
+ * Ordinary square/landscape photography fills the 4:3 frame. Very tall
+ * flyers/portraits and extra-wide logo banners stay complete on a soft
+ * canvas instead of being aggressively cropped.
+ */
+export function resolveSmartImageFit(fit, naturalRatio) {
+  const mode = normalizeImageFit(fit, "smart");
+  if (mode !== "smart") return mode;
+  const ratio = Number(naturalRatio);
+  if (!Number.isFinite(ratio) || ratio <= 0) return "contain";
+  return ratio >= 0.85 && ratio <= 1.9 ? "cover" : "contain";
 }
 
 /** Matches a free-form "37% 62%" position produced by dragging. */
@@ -90,7 +104,7 @@ export function clampZoom(value) {
  * override that class regardless of hover state.
  */
 export function imageCropStyle(position, zoom, fit = "cover") {
-  if (normalizeImageFit(fit) === "contain") {
+  if (normalizeImageFit(fit) !== "cover") {
     return { objectPosition: "center" };
   }
   const z = clampZoom(zoom ?? 1);

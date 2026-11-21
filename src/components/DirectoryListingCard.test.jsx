@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { fireEvent } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import DirectoryListingCard from "./DirectoryListingCard";
 
@@ -216,7 +217,7 @@ describe("DirectoryListingCard parent category", () => {
     expect(document.querySelector('img[aria-hidden="true"]')).toHaveClass("blur-xl", "object-cover");
   });
 
-  it("shows the complete image on directory cards even when an older listing saved cover mode", () => {
+  it("honors a new explicit owner-selected edge-to-edge crop", () => {
     render(
       <MemoryRouter>
         <DirectoryListingCard listing={{ ...listing, coverFit: "cover" }} />
@@ -224,9 +225,24 @@ describe("DirectoryListingCard parent category", () => {
     );
 
     const cover = screen.getByRole("img", { name: /Island Bookkeeper/ });
-    expect(cover).toHaveClass("object-contain", "listing-cover-media");
-    expect(cover).not.toHaveClass("object-cover");
-    expect(document.querySelectorAll('img[src="/bookkeeper.jpg"]')).toHaveLength(2);
+    expect(cover).toHaveClass("object-cover", "listing-cover-media");
+    expect(document.querySelectorAll('img[src="/bookkeeper.jpg"]')).toHaveLength(1);
+  });
+
+  it("uses Smart mode to fill a normal landscape photo", () => {
+    render(
+      <MemoryRouter>
+        <DirectoryListingCard listing={{ ...listing, coverFit: "smart" }} />
+      </MemoryRouter>,
+    );
+
+    const initialCover = screen.getByRole("img", { name: /Island Bookkeeper/ });
+    Object.defineProperty(initialCover, "naturalWidth", { configurable: true, value: 1600 });
+    Object.defineProperty(initialCover, "naturalHeight", { configurable: true, value: 1200 });
+    fireEvent.load(initialCover);
+
+    expect(screen.getByRole("img", { name: /Island Bookkeeper/ })).toHaveClass("object-cover");
+    expect(document.querySelectorAll('img[src="/bookkeeper.jpg"]')).toHaveLength(1);
   });
 
   it("keeps promoted listing badges in front of the cover photo", () => {

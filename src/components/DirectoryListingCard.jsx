@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import TierBadge from "./ui/TierBadge";
 import { directoryCategories } from "../data/directory";
 import { findIndustry } from "../data/industries";
 import { isRentalBookingType, normalizeRentalRateUnit } from "../lib/bookingTypes";
 import DefaultListingCover from "./ui/DefaultListingCover";
+import { imageCropStyle, normalizeImageFit, resolveSmartImageFit } from "../lib/imagePosition";
 
 const getCategoryLabel = (slug) =>
   directoryCategories.find((category) => category.slug === slug)?.label || "";
@@ -141,10 +143,15 @@ function ListingHighlights({ listing }) {
 }
 
 function Cover({ listing, listView = false }) {
+  const [naturalRatio, setNaturalRatio] = useState(null);
+  const requestedFit = normalizeImageFit(listing.coverFit, "smart");
+  const resolvedFit = resolveSmartImageFit(requestedFit, naturalRatio);
+  const showFullImage = resolvedFit === "contain";
+  const imageAlt = `${listing.title} — ${industryLabel(listing)}`;
   return (
     <div className={`relative flex-shrink-0 overflow-hidden rounded-[1.15rem] ${listView ? "m-2 sm:w-64" : "m-2 mb-0"}`}>
       <div className={`w-full overflow-hidden bg-background-100 ${listView ? "h-52 sm:h-full" : "aspect-[4/3]"}`}>
-        {listing.image ? (
+        {listing.image && showFullImage ? (
           <div className="relative h-full w-full overflow-hidden bg-background-100">
             <img
               aria-hidden="true"
@@ -162,8 +169,26 @@ function Cover({ listing, listView = false }) {
               title={`${listing.title} — ${industryLabel(listing)}`}
               className="listing-cover-media relative z-[1] h-full w-full object-contain"
               src={listing.image}
+              onLoad={(event) => {
+                const image = event.currentTarget;
+                setNaturalRatio(image.naturalWidth / image.naturalHeight);
+              }}
             />
           </div>
+        ) : listing.image ? (
+          <img
+            loading="lazy"
+            decoding="async"
+            alt={imageAlt}
+            title={`${imageAlt}. Open the profile to view the original image.`}
+            className="listing-cover-media h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.025]"
+            src={listing.image}
+            style={imageCropStyle(listing.coverPosition || "center", listing.coverZoom, "cover")}
+            onLoad={(event) => {
+              const image = event.currentTarget;
+              setNaturalRatio(image.naturalWidth / image.naturalHeight);
+            }}
+          />
         ) : (
           <DefaultListingCover title={listing.title} compact />
         )}
