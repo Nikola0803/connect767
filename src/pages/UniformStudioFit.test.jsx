@@ -150,7 +150,12 @@ describe("required uniform fit selection", () => {
     for (const [sport, templateName] of categoryTemplates) {
       const label = sport === "goalkeeper" ? "Goal Keeper" : sport === "other" ? "Clothing & Other" : `${sport[0].toUpperCase()}${sport.slice(1)}`;
       fireEvent.click(categoryPanel.getByRole("button", { name: `${label} category` }));
-      expect(screen.getAllByText(templateName).length).toBeGreaterThan(0);
+      if (sport === "soccer") {
+        const studioHeader = within(screen.getByRole("button", { name: "Back" }).closest("header"));
+        expect(studioHeader.queryByText(templateName)).not.toBeInTheDocument();
+      } else {
+        expect(screen.getAllByText(templateName).length).toBeGreaterThan(0);
+      }
     }
     const categoryElement = setup.getByRole("group", { name: "Uniform category (required)" });
     const fitElement = setup.getByRole("group", { name: "Fit type (required)" });
@@ -185,7 +190,8 @@ describe("required uniform fit selection", () => {
     const setup = within(screen.getByRole("complementary", { name: "Uniform & order setup" }));
     expect(setup.getByRole("heading", { name: "Uniform & order setup" })).toBeVisible();
     const productionExtras = screen.getByRole("region", { name: "Production extras" });
-    expect(productionExtras).toHaveClass("flex-1");
+    expect(productionExtras).not.toHaveClass("flex-1");
+    expect(productionExtras).not.toHaveClass("overflow-hidden");
     expect(setup.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent("$35.00");
     expect(setup.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("$15.00");
     expect(setup.getByRole("button", { name: /^Shirt Only/ })).toHaveTextContent("supporter jerseys use this price");

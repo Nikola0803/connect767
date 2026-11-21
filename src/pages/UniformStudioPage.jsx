@@ -2312,6 +2312,9 @@ export default function UniformStudioPage() {
   };
 
   // ---------- The studio itself: fills the viewport beneath site navigation ----------
+  const studioHeaderTitle = aiUniformPlan?.name || (template?.slug === "blank-canvas" ? "AI Uniform" : template?.name) || "AI Uniform";
+  const showStudioHeaderTitle = studioHeaderTitle !== "Classic Crew";
+
   return (
     <div data-testid="uniform-studio-workspace" className="mt-16 flex h-[calc(100dvh-4rem)] flex-col overflow-hidden bg-[#10110f] text-background-50 md:mt-20 md:h-[calc(100dvh-5rem)]">
       <header className="relative z-40 flex min-h-14 flex-shrink-0 items-center justify-between gap-3 border-b border-white/[0.07] bg-[#0c0d0b]/95 px-3 py-2.5 pt-[max(.625rem,env(safe-area-inset-top))] sm:px-4 md:px-5">
@@ -2324,9 +2327,9 @@ export default function UniformStudioPage() {
           Back
         </button>
         <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
-          <span className="truncate text-sm font-semibold text-background-50/85">
-            {aiUniformPlan?.name || (template?.slug === "blank-canvas" ? "AI Uniform" : template?.name) || "AI Uniform"}
-          </span>
+          {showStudioHeaderTitle && (
+            <span className="truncate text-sm font-semibold text-background-50/85">{studioHeaderTitle}</span>
+          )}
           <span className="hidden shrink-0 items-center gap-1.5 rounded-full border border-primary-500/20 bg-primary-950/35 px-2.5 py-1 text-[10px] font-semibold text-primary-200/90 xl:inline-flex">
             <span className="h-1.5 w-1.5 rounded-full bg-primary-400" /> Auto-saved
           </span>
