@@ -700,10 +700,11 @@ class C767_REST_Listings
         return (string) $zoom;
     }
 
-    /** Cover photos always fill the public card/profile frame. */
+    /** Preserve Smart/Fit and distinguish new manual crops from legacy cover values. */
     private static function sanitize_cover_fit($value)
     {
-        return 'cover';
+        $fit = sanitize_key((string) $value);
+        return in_array($fit, ['smart', 'contain', 'manual-cover'], true) ? $fit : 'smart';
     }
 
     /**

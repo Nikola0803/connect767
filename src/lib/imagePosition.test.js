@@ -4,12 +4,14 @@ import {
   clampZoom,
   imageCropStyle,
   normalizeImageFit,
+  resolveSmartImageFit,
   ZOOM_MIN,
   ZOOM_MAX,
 } from "./imagePosition";
 
 describe("normalizeImageFit", () => {
-  it("accepts the two supported fit modes", () => {
+  it("accepts the three supported fit modes", () => {
+    expect(normalizeImageFit("smart")).toBe("smart");
     expect(normalizeImageFit("contain")).toBe("contain");
     expect(normalizeImageFit("cover")).toBe("cover");
   });
@@ -17,6 +19,23 @@ describe("normalizeImageFit", () => {
   it("uses the requested fallback for an invalid value", () => {
     expect(normalizeImageFit("stretch")).toBe("cover");
     expect(normalizeImageFit(undefined, "contain")).toBe("contain");
+  });
+});
+
+describe("resolveSmartImageFit", () => {
+  it("fills ordinary square and landscape photography", () => {
+    expect(resolveSmartImageFit("smart", 1)).toBe("cover");
+    expect(resolveSmartImageFit("smart", 16 / 9)).toBe("cover");
+  });
+
+  it("keeps tall flyers and extra-wide banners complete", () => {
+    expect(resolveSmartImageFit("smart", 0.7)).toBe("contain");
+    expect(resolveSmartImageFit("smart", 2.4)).toBe("contain");
+  });
+
+  it("never overrides an explicit owner choice", () => {
+    expect(resolveSmartImageFit("cover", 0.5)).toBe("cover");
+    expect(resolveSmartImageFit("contain", 1.3)).toBe("contain");
   });
 });
 

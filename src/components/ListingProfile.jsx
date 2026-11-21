@@ -219,7 +219,7 @@ export default function ListingProfile({ data, isPreview = false }) {
               {gallery[activeImage]?.src ? (
                 <img
                   alt={gallery[activeImage]?.alt}
-                  className={`h-full w-full ${activeImage === 0 ? `listing-profile-cover-media ${data.coverFit === "contain" ? "object-contain bg-background-100" : "object-cover"}` : "object-contain bg-background-100"}`}
+                  className={`h-full w-full ${activeImage === 0 ? `listing-profile-cover-media ${data.coverFit === "cover" ? "object-cover" : "object-contain bg-background-100"}` : "object-contain bg-background-100"}`}
                   src={gallery[activeImage]?.src}
                   style={
                     activeImage === 0
@@ -391,7 +391,7 @@ export default function ListingProfile({ data, isPreview = false }) {
                   {gallery[activeImage]?.src ? (
                     <img
                       alt={gallery[activeImage]?.alt}
-                      className={`h-full w-full ${activeImage === 0 ? `listing-profile-cover-media ${data.coverFit === "contain" ? "object-contain" : "object-cover"}` : "object-contain"}`}
+                    className={`h-full w-full ${activeImage === 0 ? `listing-profile-cover-media ${data.coverFit === "cover" ? "object-cover" : "object-contain"}` : "object-contain"}`}
                       src={gallery[activeImage]?.src}
                       style={
                         activeImage === 0

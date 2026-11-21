@@ -5,6 +5,7 @@ import {
   positionToPercent,
   formatPosition,
   imageCropStyle,
+  resolveSmartImageFit,
 } from "../../lib/imagePosition";
 
 /**
@@ -34,6 +35,7 @@ export default function PositionPicker({
   const frameRef = useRef(null);
   const dragRef = useRef(null);
   const [dragging, setDragging] = useState(false);
+  const [naturalRatio, setNaturalRatio] = useState(null);
 
   const pct = positionToPercent(position);
   const z = zoom || 1;
@@ -95,7 +97,15 @@ export default function PositionPicker({
 
   const isLogo = shape === "logo";
   const canChooseFit = !isLogo && onFitChange;
-  const isContained = canChooseFit && fit === "contain";
+  const effectiveFit = resolveSmartImageFit(fit, naturalRatio);
+  const isContained = canChooseFit && effectiveFit === "contain";
+  const isSmart = canChooseFit && fit === "smart";
+
+  const chooseSmart = () => {
+    onFitChange("smart");
+    onPositionChange(formatPosition(50, 50));
+    onZoomChange(1);
+  };
 
   const chooseFit = () => {
     onFitChange("contain");
@@ -133,6 +143,10 @@ export default function PositionPicker({
                 src={src}
                 alt="Position preview"
                 draggable={false}
+                onLoad={(event) => {
+                  const image = event.currentTarget;
+                  setNaturalRatio(image.naturalWidth / image.naturalHeight);
+                }}
                 className={`w-full h-full pointer-events-none ${isContained ? "object-contain" : "object-cover"}`}
                 style={imageCropStyle(position, zoom, isContained ? "contain" : "cover")}
               />
@@ -164,12 +178,24 @@ export default function PositionPicker({
 
         <div className="flex-1 min-w-0 pt-0.5">
           {canChooseFit && (
-            <div className="grid grid-cols-2 gap-2 mb-3" aria-label="Cover photo display">
+            <div className="grid grid-cols-3 gap-2 mb-3" aria-label="Cover photo display">
+              <button
+                type="button"
+                onClick={chooseSmart}
+                className={`inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-2 text-[10px] font-semibold transition-colors cursor-pointer ${
+                  isSmart
+                    ? "border-primary-500 bg-primary-50 text-primary-800"
+                    : "border-background-300 text-foreground-600 hover:border-primary-300"
+                }`}
+              >
+                <i className="ri-magic-line text-sm" />
+                Smart
+              </button>
               <button
                 type="button"
                 onClick={chooseFit}
                 className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-2.5 py-2 text-[11px] font-semibold transition-colors cursor-pointer ${
-                  isContained
+                  fit === "contain"
                     ? "border-primary-500 bg-primary-50 text-primary-800"
                     : "border-background-300 text-foreground-600 hover:border-primary-300"
                 }`}
@@ -181,7 +207,7 @@ export default function PositionPicker({
                 type="button"
                 onClick={chooseReposition}
                 className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-2.5 py-2 text-[11px] font-semibold transition-colors cursor-pointer ${
-                  !isContained
+                  fit === "cover"
                     ? "border-primary-500 bg-primary-50 text-primary-800"
                     : "border-background-300 text-foreground-600 hover:border-primary-300"
                 }`}
@@ -193,9 +219,13 @@ export default function PositionPicker({
           )}
           <p className="text-[11px] font-label text-foreground-500 mb-2">
             {src
-              ? isContained
-                ? "The entire photo will be visible. Choose Reposition to crop and move it."
-                : "Drag the image freely inside the frame."
+              ? isSmart
+                ? effectiveFit === "cover"
+                  ? "Smart mode fills this frame and keeps your focal point."
+                  : "Smart mode keeps this tall or extra-wide artwork complete."
+                : isContained
+                  ? "The entire photo will be visible. Choose Reposition to crop and move it."
+                  : "Drag the image freely inside the frame."
               : "Upload an image to position it."}
           </p>
 
