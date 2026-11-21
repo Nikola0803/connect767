@@ -3269,7 +3269,7 @@ function RosterTool({
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 mb-4">
+      <div className="mb-4 grid grid-cols-2 items-start gap-2">
         <input
           ref={rosterFileRef}
           type="file"
@@ -3287,16 +3287,22 @@ function RosterTool({
         >
           Import CSV
         </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          icon="ri-download-line"
-          iconPosition="left"
-          onClick={downloadRosterTemplate}
-        >
-          CSV template
-        </Button>
+        <div className="min-w-0">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            icon="ri-download-line"
+            iconPosition="left"
+            onClick={downloadRosterTemplate}
+            className="w-full"
+          >
+            CSV template
+          </Button>
+          <p className="mt-1.5 text-[9px] leading-4 text-foreground-500">
+            One row per player. Name is required. Save as CSV UTF-8.
+          </p>
+        </div>
       </div>
       {importMessage && (
         <p className="text-[11px] font-label text-primary-700 mb-4" role="status">
