@@ -55,6 +55,35 @@ function renderComposer(overrides = {}) {
 }
 
 describe("AIUniformComposer", () => {
+  it("sends from the touch-accessible button without a hardware Enter key", () => {
+    const props = renderComposer();
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+    expect(props.onSend).toHaveBeenCalledWith("preview", "uniform", props.prompt);
+  });
+
+  it("does not show fabricated zero credits when a usage check fails", () => {
+    const props = renderComposer({ canSend: false, securityError: "Usage is offline", onRetrySetup: vi.fn() });
+    expect(screen.getByText("AI allowance unavailable")).toBeVisible();
+    expect(screen.queryByText("0 of 0 remaining")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send message" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Retry connection" }));
+    expect(props.onRetrySetup).toHaveBeenCalledOnce();
+  });
+
+  it("keeps guests locked despite a positive backend allowance", () => {
+    renderComposer({ accountRequired: true, aiQuota: { authenticated: false, limit: 3, remaining: 3 } });
+    expect(screen.getByText("3 of 3 remaining")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Send message" })).toBeDisabled();
+    expect(screen.getByRole("link", { name: "Sign In" })).toHaveAttribute("href", expect.stringContaining("redirect="));
+  });
+  it("allows a confirmed exhausted allowance to be refreshed without generating", () => {
+    const props = renderComposer({ canSend: false, aiQuota: { authenticated: true, limit: 10, remaining: 0 }, onRetrySetup: vi.fn() });
+    expect(screen.getByText("0 of 10 remaining")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Send message" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Refresh allowance" }));
+    expect(props.onRetrySetup).toHaveBeenCalledOnce();
+    expect(props.onSend).not.toHaveBeenCalled();
+  });
   it("fits the complete composer inside its docked panel", () => {
     renderComposer();
 

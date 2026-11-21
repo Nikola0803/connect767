@@ -50,7 +50,7 @@ const inferPromptMode = (value = "", currentMode = "uniform") => {
 function EmptyConversation({ dark, mode }) {
   const modeCopy = MODE_COPY[mode] || MODE_COPY.uniform;
   return (
-    <div className="mx-auto flex h-full w-full max-w-sm items-center justify-center px-6 py-10 text-center">
+    <div className="ai-empty-conversation mx-auto flex h-full w-full max-w-sm items-center justify-center px-6 py-10 text-center">
       <div className="w-full">
         <img src={AI_COMMAND_LOGO_SRC} alt="Connect767 AI" className="mx-auto h-10 w-14 object-contain opacity-60 grayscale-[20%]" />
         <span className={`mt-4 block text-[8px] font-bold uppercase tracking-[0.22em] ${dark ? "text-primary-200/80" : "text-primary-700"}`}>AI Design Studio</span>
@@ -89,6 +89,7 @@ export default function AIUniformComposer({
   generationPhase = "",
   renderTier = "preview",
   canSend,
+  canGenerate = true,
   onSend,
   onStop,
   style,
@@ -119,11 +120,15 @@ export default function AIUniformComposer({
   onGenerateVariation,
   onGenerateProof,
   onSaveDesign,
+  canSaveDesign = true,
   onDownloadDesign,
   onDownloadPrompts,
   onOpenBackgroundRemoval,
   toolbarTarget,
   aiQuota,
+  securityLoading = false,
+  securityError = "",
+  onRetrySetup,
   accountRequired = false,
   downloadUnlocked = true,
   onCompleteOrder,
@@ -137,6 +142,7 @@ export default function AIUniformComposer({
   const [feedback, setFeedback] = useState("");
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
+  const mayGenerate = canGenerate && connection === "connected" && !accountRequired && !securityLoading && (!aiQuota || Number(aiQuota.remaining) > 0);
   const conversationRef = useRef(null);
 
   useEffect(() => {
@@ -157,7 +163,7 @@ export default function AIUniformComposer({
   }, [promptHistory.length, uniformPlan, artworkPreview, generating]);
 
   const submit = (requestedTier = "preview") => {
-    if (!canSend || generating) return;
+    if (!canSend || generating || accountRequired || securityLoading) return;
     if (isBackgroundRemovalIntent(prompt) && onOpenBackgroundRemoval) {
       closePopovers();
       onPromptChange("");
@@ -263,9 +269,10 @@ export default function AIUniformComposer({
             <button type="button" onClick={() => { setToolbarMenuOpen(false); focusCommandPrompt(); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold text-primary-800 hover:bg-primary-50" role="menuitem"><i className="ri-magic-line text-sm" /> Refine with AI</button>
             <button type="button" onClick={() => { setToolbarMenuOpen(false); onOpenBackgroundRemoval?.(); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className="ri-eraser-line text-sm" /> Remove background / Make transparent</button>
             <div className="my-1 border-t border-background-200" />
-            <button type="button" onClick={() => { setToolbarMenuOpen(false); onSaveDesign?.(); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className="ri-save-3-line text-sm" /> Save design</button>
+            <button type="button" onClick={() => { setToolbarMenuOpen(false); onSaveDesign?.(); }} disabled={!canSaveDesign || accountRequired || securityLoading} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:opacity-40" role="menuitem"><i className="ri-save-3-line text-sm" /> Save design</button>
             <button type="button" onClick={() => { setToolbarMenuOpen(false); if (downloadUnlocked) onDownloadDesign?.(); else onCompleteOrder?.(); }} disabled={!uniformPlan && !artworkPreview} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className={downloadUnlocked ? "ri-download-2-line text-sm" : "ri-lock-line text-sm"} /> {downloadUnlocked ? "Download design" : "Unlock after payment"}</button>
             <button type="button" onClick={() => { setToolbarMenuOpen(false); onDownloadPrompts?.(); }} disabled={!historyEntries.length} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className="ri-file-download-line text-sm" /> Download prompts</button>
+            {(uniformPlan || artworkPreview) && <button type="button" disabled={!mayGenerate || generating} onClick={() => { setToolbarMenuOpen(false); onGenerateProof?.(); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:opacity-40" role="menuitem"><i className="ri-image-line" /> Render final proof</button>}
             <button type="button" onClick={() => { setToolbarMenuOpen(false); setSettingsOpen(true); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className="ri-settings-3-line text-sm" /> Settings</button>
             {(uniformPlan || artworkPreview) && <button type="button" onClick={() => { setToolbarMenuOpen(false); onClearCurrentDesign?.(); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-red-50 hover:text-red-700" role="menuitem"><i className="ri-delete-bin-6-line text-sm" /> Clear current design</button>}
             {mode === "uniform" && uniformPlan && <>
@@ -274,7 +281,7 @@ export default function AIUniformComposer({
               <button type="button" onClick={() => { setToolbarMenuOpen(false); if (previousVersion) onRestoreVersion?.(previousVersion); }} disabled={!previousVersion || generating} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className="ri-arrow-left-line" /> Previous version</button>
               <button type="button" onClick={() => { setToolbarMenuOpen(false); onCompareVersions?.(comparisonActive ? null : previousVersion); }} disabled={!previousVersion || generating} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className="ri-split-cells-horizontal" /> {comparisonActive ? "Close comparison" : "Compare versions"}</button>
               <button type="button" onClick={() => { setToolbarMenuOpen(false); if (originalVersion) onRestoreVersion?.(originalVersion); }} disabled={!originalVersion || versions.length < 2 || generating} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className="ri-restart-line" /> Restore original</button>
-              <button type="button" onClick={() => { setToolbarMenuOpen(false); onGenerateVariation?.(); }} disabled={generating || connection !== "connected"} className="flex cursor-pointer items-center gap-2 rounded-lg bg-primary-50 px-3 py-2 text-left text-[9px] font-bold text-primary-800 hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className="ri-refresh-line" /> New variation</button>
+              <button type="button" onClick={() => { setToolbarMenuOpen(false); onGenerateVariation?.(); }} disabled={generating || !mayGenerate} className="flex cursor-pointer items-center gap-2 rounded-lg bg-primary-50 px-3 py-2 text-left text-[9px] font-bold text-primary-800 hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-40" role="menuitem"><i className="ri-refresh-line" /> New variation</button>
             </>}
           </div>
         )}
@@ -284,7 +291,7 @@ export default function AIUniformComposer({
   ) : null;
 
   return (
-    <section onPointerDown={handleSurfacePointerDown} className={`relative flex h-full min-h-0 flex-1 flex-col overflow-hidden transition-colors ${surface}`} aria-label="Connect767 AI uniform designer">
+    <section data-connection={connection} onPointerDown={handleSurfacePointerDown} className={`ai-uniform-composer relative flex h-full min-h-0 flex-1 flex-col overflow-hidden transition-colors ${surface}`} aria-label="Connect767 AI uniform designer">
       <input
         ref={fileInputRef}
         type="file"
@@ -370,17 +377,18 @@ export default function AIUniformComposer({
 
       <div role="region" aria-label="AI command prompt" className={`relative min-w-0 flex-shrink-0 border-t px-2 py-2 pb-[max(.5rem,env(safe-area-inset-bottom))] sm:px-3 sm:py-3 sm:pb-[max(.75rem,env(safe-area-inset-bottom))] ${dark ? "border-white/10 bg-[#11140f]" : "border-background-200 bg-[#f8f7f2]"}`}>
         {error && <div role="alert" className="mb-2 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[10px] text-red-700"><span>{error}</span><button type="button" onClick={onRetry} className="shrink-0 cursor-pointer font-bold underline">Retry</button></div>}
-        {accountRequired && <div role="alert" className="mb-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[10px] text-amber-950"><strong className="block">Account Required</strong><span>Sign in or create an account before starting, saving or ordering a design.</span><div className="mt-2 flex gap-2"><a href={authHref("register")} className="rounded-lg bg-primary-700 px-2.5 py-1.5 font-bold text-white">Create Account</a><a href={authHref("login")} className="rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 font-bold">Sign In</a></div></div>}
+        {accountRequired && <div role="status" className="studio-account-notice mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-950"><span>Sign in to create, save or order a design.</span><a href={authHref("login")} className="font-bold underline">Sign In</a><a href={authHref("register")} className="font-bold underline">Create Account</a></div>}
+        {(securityError || connection === "unavailable") && <div role="alert" className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-950"><span>{securityError || "AI service is currently unavailable."}</span><button type="button" onClick={onRetrySetup} className="shrink-0 font-bold underline">Retry connection</button></div>}
         {(uniformPlan || artworkPreview) && !downloadUnlocked && (
-          <div role="status" className="mb-2 flex items-center justify-between gap-3 rounded-xl border border-background-300 bg-white px-3 py-2 text-[10px] text-background-800">
+          <div role="status" className="ai-order-notice mb-2 flex items-center justify-between gap-3 rounded-xl border border-background-300 bg-white px-3 py-2 text-[10px] text-background-800">
             <span><i className="ri-lock-line mr-1 text-primary-700" />Complete your order to unlock high-resolution downloads and production-ready design files.</span>
             <button type="button" onClick={onCompleteOrder} className="shrink-0 rounded-lg bg-primary-700 px-2.5 py-1.5 font-bold text-white">Complete Order</button>
           </div>
         )}
         {(uniformPlan || artworkPreview) && renderTier === "preview" && !generating && (
-          <div role="status" className="mb-2 flex items-center justify-between gap-3 rounded-xl border border-primary-200 bg-primary-50 px-3 py-2 text-[10px] text-primary-950">
+          <div role="status" className="ai-proof-notice mb-2 flex items-center justify-between gap-3 rounded-xl border border-primary-200 bg-primary-50 px-3 py-2 text-[10px] text-primary-950">
             <span><i className="ri-flashlight-line mr-1 text-primary-700" />Fast preview ready. Render the final image when the direction is approved.</span>
-            <button type="button" onClick={onGenerateProof} className="shrink-0 rounded-lg bg-primary-700 px-2.5 py-1.5 font-bold text-white hover:bg-primary-800">Final proof</button>
+            <button type="button" onClick={onGenerateProof} disabled={!mayGenerate || generating} className="shrink-0 rounded-lg bg-primary-700 px-2.5 py-1.5 font-bold text-white hover:bg-primary-800 disabled:opacity-40">Final proof</button>
           </div>
         )}
 
@@ -411,7 +419,10 @@ export default function AIUniformComposer({
           onDrop={acceptDroppedFile}
           className={`relative mx-auto w-full min-w-0 max-w-xl rounded-2xl border bg-white shadow-[0_4px_18px_rgba(31,43,35,.06)] transition ${dragging ? "border-primary-500 ring-4 ring-primary-100" : "border-background-300 focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-100"}`}
         >
-          {typeof aiQuota?.remaining === "number" && <div className="flex items-center justify-between border-b border-background-200 px-3 py-1.5 text-[8px] font-semibold text-foreground-500"><span>{aiQuota.authenticated ? "Daily AI allowance" : "Free AI previews"}</span><span>{aiQuota.remaining} of {aiQuota.limit} remaining</span></div>}
+          <div role="status" className="flex flex-wrap items-center justify-between gap-1 border-b border-background-200 px-3 py-1.5 text-[10px] font-semibold text-foreground-500">
+            {securityLoading ? <span>Checking AI allowance…</span> : securityError ? <span>AI allowance unavailable</span> : typeof aiQuota?.remaining === "number" && typeof aiQuota?.limit === "number" ? <><span>{aiQuota.authenticated ? "Daily AI allowance" : "Guest AI allowance"}</span><span>{aiQuota.remaining} of {aiQuota.limit} remaining</span></> : <span>AI allowance not verified</span>}
+            {!securityLoading && aiQuota?.remaining === 0 && <button type="button" onClick={onRetrySetup} className="font-bold text-primary-700 underline">Refresh allowance</button>}
+          </div>
           {dragging && <div className="absolute inset-1 z-10 flex items-center justify-center rounded-[18px] border-2 border-dashed border-primary-400 bg-primary-50/95 text-xs font-bold text-primary-800"><i className="ri-upload-cloud-2-line mr-2" /> Drop an image to use as reference</div>}
           {reference && <div className="flex items-center gap-2 border-b border-background-200 px-3 py-2"><img src={reference.src} alt="Attached uniform reference" className="h-9 w-9 rounded-lg border border-background-200 object-cover" /><div className="min-w-0 flex-1"><strong className="block truncate text-[9px] text-foreground-700">{reference.name}</strong><span className="block text-[8px] text-foreground-400">Reference image</span></div><button type="button" onClick={onRemoveReference} className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-foreground-400 hover:bg-red-50 hover:text-red-600" aria-label="Remove reference image"><i className="ri-close-line" /></button></div>}
           <textarea
@@ -432,6 +443,7 @@ export default function AIUniformComposer({
             {generating && (
               <button type="button" onClick={onStop} className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-foreground-950 text-white transition hover:bg-red-600" aria-label="Stop generating"><i className="ri-stop-fill" /></button>
             )}
+            {!generating && <button type="button" onClick={() => submit()} disabled={!canSend || accountRequired || securityLoading} aria-label="Send message" className="ml-auto flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary-700 text-white transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-40"><i className="ri-arrow-up-line text-lg" aria-hidden="true" /></button>}
           </div>
         </div>
         <p className={`mx-auto mt-2 max-w-md break-words px-1 text-center text-[8px] leading-relaxed ${muted}`}>Enter creates a fast preview · Shift + Enter adds a new line · Final proof renders at high quality</p>

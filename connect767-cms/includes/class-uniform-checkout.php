@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 class C767_Uniform_Checkout
 {
     const NAMESPACE_ = 'connect767/v1';
+    const CUSTOM_ORDER_TERMS_VERSION = '2026-11-21';
     const BASE_KIT_PRICE = 35.00;
     const EXTRA_TEAM_SHIRT_PRICE = 15.00;
     const AI_DESIGNER_FEE = 50.00;
@@ -275,6 +276,14 @@ class C767_Uniform_Checkout
     private static function build_order(WP_REST_Request $request, $temporary = false)
     {
         $payload = (array) $request->get_param('order');
+        // Quotes stay available before consent. Creating any payable or local
+        // uniform order requires explicit acceptance of the current policy.
+        if (!$temporary && (
+            ($payload['customOrderTermsAccepted'] ?? false) !== true
+            || ($payload['customOrderTermsVersion'] ?? '') !== self::CUSTOM_ORDER_TERMS_VERSION
+        )) {
+            return new WP_Error('c767_uniform_terms_required', 'Agree to the custom-order terms before placing or paying for this order.', ['status' => 400]);
+        }
         $email = sanitize_email((string) $request->get_param('email'));
         if (!is_email($email)) {
             return new WP_Error('c767_invalid_email', 'A valid email address is required.', ['status' => 400]);
@@ -364,6 +373,11 @@ class C767_Uniform_Checkout
             $order->set_status('pending');
         }
         $order->update_meta_data('_c767_uniform_order', '1');
+        if (!$temporary) {
+            $order->update_meta_data('_c767_uniform_terms_version', self::CUSTOM_ORDER_TERMS_VERSION);
+            $order->update_meta_data('_c767_uniform_terms_accepted_at', current_time('mysql', true));
+            $order->update_meta_data('Custom uniform terms', 'Accepted: made-to-order uniforms are non-refundable.');
+        }
         $order->update_meta_data('_c767_uniform_design_count', count($designs));
         $order->update_meta_data('_c767_uniform_unit_count', $unit_count);
         $order->update_meta_data('_c767_uniform_unit_price', $designs[0]['unit_price']);

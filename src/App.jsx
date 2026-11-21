@@ -1,8 +1,6 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-// Routes that own the entire viewport. The uniform studio keeps the standard
-// site header and footer so customers can navigate away at every step.
-const CHROMELESS_ROUTES = ["/shop/customize"];
+const CHROMELESS_ROUTES = ["/uniforms", "/shop/customize", "/design-studio"];
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { CartProvider, useCart } from "./hooks/useCart";
@@ -77,10 +75,9 @@ function Chrome({ children }) {
   const bare = CHROMELESS_ROUTES.includes(pathname);
 
   if (bare) {
-    // The landing state of a full-screen tool can be taller than one viewport
-    // (the uniform category grid is two rows). Let that state scroll; the
-    // editors themselves still own a fixed 100dvh canvas and hide overflow.
-    return <main className="min-h-[100dvh] w-full overflow-x-hidden bg-background-50">{children}</main>;
+    // Landing states can be taller than one viewport. Their editors still
+    // own fixed 100dvh canvases and manage overflow internally.
+    return <main className="min-h-[100dvh] w-full overflow-x-hidden bg-background-50">{children}<CartDrawerGate /></main>;
   }
 
   return (

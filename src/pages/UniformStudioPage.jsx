@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
@@ -24,6 +24,13 @@ import {
   sportConfigFor,
   sportModelUrl,
 } from "../data/uniforms";
+import MobileStudioNavigation from "../components/uniform-studio/MobileStudioNavigation";
+import useStudioViewport from "../components/uniform-studio/useStudioViewport";
+import useDesignHistory from "../components/uniform-studio/useDesignHistory";
+import Header from "../components/Header";
+import { uniformSampleFor } from "../components/uniform-studio/uniformSamples";
+import UniformOrderAgreement, { UNIFORM_ORDER_TERMS_VERSION } from "../components/uniform-studio/UniformOrderAgreement";
+import "../components/uniform-studio/mobileStudio.css";
 import JerseyStage from "../components/uniform-studio/JerseyStage";
 import ProductionViewport from "../components/uniform-studio/ProductionViewport";
 import useGarmentColors from "../components/uniform-studio/useGarmentColors";
@@ -57,7 +64,6 @@ import {
 import { cloneZoneModel, SOCCER_ZONE_MODEL } from "../components/uniform-studio/uniformZoneModel";
 import {
   DEFAULT_STUDIO_BACKGROUND,
-  isDarkStudioBackground,
   normalizeStudioBackground,
 } from "../components/uniform-studio/studioBackgrounds";
 import {
@@ -108,7 +114,6 @@ const emptyUniformShipping = {
   firstName: "", lastName: "", company: "", address1: "", address2: "",
   city: "", state: "", postcode: "", country: "DM", email: "", phone: "",
 };
-const CONNECT767_AI_TEMPLATE_LOGO = "/connect767-ai-logo-transparent.png";
 
 const promptStorageKeys = (sportSlug) => {
   const label = sports.find((item) => item.slug === sportSlug)?.label || sportSlug || "uniform";
@@ -143,55 +148,6 @@ const restoreDesignPromptHistory = (sportSlug, entries = []) => {
   } catch { /* Prompt history remains attached to the saved order item. */ }
 };
 
-function EmbossedAIWorkspaceBackdrop({ studioBackground = DEFAULT_STUDIO_BACKGROUND }) {
-  const backgroundColor = normalizeStudioBackground(studioBackground);
-  const darkBackground = isDarkStudioBackground(backgroundColor);
-  const logoMask = `url("${CONNECT767_AI_TEMPLATE_LOGO}")`;
-  const maskStyle = {
-    WebkitMaskImage: logoMask,
-    maskImage: logoMask,
-    WebkitMaskPosition: "center",
-    maskPosition: "center",
-    WebkitMaskRepeat: "no-repeat",
-    maskRepeat: "no-repeat",
-    WebkitMaskSize: "contain",
-    maskSize: "contain",
-  };
-  return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden" style={{ backgroundColor }}>
-      <div
-        className="absolute inset-[1%] select-none"
-        style={{
-          ...maskStyle,
-          backgroundColor: darkBackground ? "rgba(255,255,255,.22)" : "rgba(255,255,255,.92)",
-          opacity: darkBackground ? 0.72 : 0.88,
-          transform: "translate(-4px, -4px)",
-        }}
-      />
-      <div
-        className="absolute inset-[1%] select-none"
-        style={{
-          ...maskStyle,
-          backgroundColor: darkBackground ? "rgba(0,0,0,.78)" : "rgba(56,48,38,.38)",
-          opacity: darkBackground ? 0.86 : 0.76,
-          transform: "translate(5px, 5px)",
-        }}
-      />
-      <div
-        data-testid="ai-workspace-watermark"
-        data-logo-src={CONNECT767_AI_TEMPLATE_LOGO}
-        className="absolute inset-[1%] select-none"
-        style={{
-          ...maskStyle,
-          backgroundColor,
-          filter: darkBackground
-            ? "brightness(.94) drop-shadow(2px 2px 2px rgba(0,0,0,.48))"
-            : "brightness(.985) drop-shadow(2px 2px 2px rgba(56,48,38,.22))",
-        }}
-      />
-    </div>
-  );
-}
 let uniformStripePromise = null;
 const getUniformStripe = (key) => {
   if (!uniformStripePromise) uniformStripePromise = loadStripe(key);
@@ -275,7 +231,7 @@ const studioWorkflow = [
     icon: "ri-pencil-ruler-2-line",
     step: 1,
     defaultTool: "ai",
-    tools: ["ai"],
+    tools: ["ai", "design", "zones", "text", "logo", "remove-bg", "skins", "layers"],
   },
   {
     key: "roster",
@@ -438,6 +394,25 @@ export default function UniformStudioPage() {
   const [colors, setColors] = useState(defaultZoneColors);
   const [studioBackground, setStudioBackground] = useState(DEFAULT_STUDIO_BACKGROUND);
   const [view, setView] = useState("front");
+  const { shellRef, compact, keyboardOpen } = useStudioViewport();
+  const [mobilePanel, setMobilePanel] = useState("");
+  const [projectMenuOpen, setProjectMenuOpen] = useState(false);
+  useEffect(() => {
+    if (!projectMenuOpen) return;
+    const dismiss = (event) => {
+      if (!event.target.closest?.('.studio-project-menu, [aria-label="Studio project"]')) setProjectMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", dismiss);
+    return () => document.removeEventListener("pointerdown", dismiss);
+  }, [projectMenuOpen]);
+  useEffect(() => {
+    if (!mobilePanel && document.activeElement?.closest?.(".studio-fields-panel, .studio-order-setup")) document.activeElement.blur?.();
+  }, [mobilePanel]);
+  useEffect(() => {
+    const escape = (event) => { if (event.key === "Escape") { setMobilePanel(""); setProjectMenuOpen(false); } };
+    document.addEventListener("keydown", escape);
+    return () => document.removeEventListener("keydown", escape);
+  }, []);
   const [layers, setLayers] = useState([]);
   const [selectedLayerId, setSelectedLayerId] = useState(null);
   const [selectedTool, setActiveTool] = useState(
@@ -449,6 +424,8 @@ export default function UniformStudioPage() {
   const productionViewportRef = useRef(null);
   const [aiConceptPan, setAiConceptPan] = useState({ x: 0, y: 0 });
   const aiConceptDragRef = useRef(null);
+  const aiPointersRef = useRef(new Map());
+  const aiPinchRef = useRef(null);
   const [hoverZone, setHoverZone] = useState(null);
   const [zoneModel, setZoneModel] = useState(() => cloneZoneModel());
   const [zoneStyles, setZoneStyles] = useState({ front: {}, back: {} });
@@ -503,9 +480,10 @@ export default function UniformStudioPage() {
   const [studioMode, setStudioMode] = useState(STUDIO_MODES.AI_OUTPUT);
   const [conversionError, setConversionError] = useState("");
   const aiConceptViewportRef = useRef(null);
-  const [aiConceptViewportWidth, setAiConceptViewportWidth] = useState(null);
   const [studioSettingsOpen, setStudioSettingsOpen] = useState(false);
   const [aiConceptBackground, setAiConceptBackground] = useState(AI_PREVIEW_BACKGROUND_FALLBACK);
+  const [previewImageFailed, setPreviewImageFailed] = useState(false);
+  const [previewImageAttempt, setPreviewImageAttempt] = useState(0);
   const [aiComparisonBackgrounds, setAiComparisonBackgrounds] = useState({
     previous: AI_PREVIEW_BACKGROUND_FALLBACK,
     current: AI_PREVIEW_BACKGROUND_FALLBACK,
@@ -544,6 +522,7 @@ export default function UniformStudioPage() {
   }, [studioSettingsOpen]);
 
   useEffect(() => {
+    setPreviewImageFailed(false);
     setAiConceptBackground(AI_PREVIEW_BACKGROUND_FALLBACK);
     setAiComparisonBackgrounds({
       previous: AI_PREVIEW_BACKGROUND_FALLBACK,
@@ -557,6 +536,8 @@ export default function UniformStudioPage() {
     setZoom(1);
     setAiConceptPan({ x: 0, y: 0 });
     aiConceptDragRef.current = null;
+    aiPointersRef.current.clear();
+    aiPinchRef.current = null;
   };
 
   const switchAICanvasMode = (mode) => {
@@ -654,6 +635,7 @@ export default function UniformStudioPage() {
   const [exporting, setExporting] = useState(false);
   const [placementError, setPlacementError] = useState("");
   const [manualSaveStatus, setManualSaveStatus] = useState("idle");
+  const [draftSaveStatus, setDraftSaveStatus] = useState("idle");
   const [designSecurityContext, setDesignSecurityContext] = useState(null);
   const [orderDesigns, setOrderDesigns] = useState(loadUniformOrderDesigns);
   const [editingOrderDesignId, setEditingOrderDesignId] = useState("");
@@ -710,7 +692,7 @@ export default function UniformStudioPage() {
   const socksQuantity = sockQuantityOverride ?? requiredSocksQuantity;
   const socksQuantityValid = !sportConfig.hasSocks || socksQuantity === requiredSocksQuantity;
   const rosterReadyForReview = minimumKitsMet && socksQuantityValid;
-  const manualEditingAllowed = canUseManualEditing(studioMode);
+  const manualEditingAllowed = canUseManualEditing(studioMode) && (!isLiveApi || Boolean(designSecurityContext?.authenticated));
   const strictAIPreview = isAIPreviewMode(studioMode);
   // Tool availability now follows the actual garment surface instead of a
   // generic step toolbar. A flat AI/reference image is intentionally
@@ -725,7 +707,7 @@ export default function UniformStudioPage() {
   }), [activeSport, view, aiCanvasMode, aiWorkspaceConcept?.src, hasUploadedReference, zoneModel, layers.length]);
   // Gate every entry path, including saved links and artwork selection.
   const selectedWorkflowStep = studioWorkflow.find((step) => step.tools.includes(selectedTool));
-  const gatedTool = strictAIPreview && selectedWorkflowStep?.key === "design"
+  const gatedTool = strictAIPreview && selectedWorkflowStep?.key === "design" && !["ai", "remove-bg"].includes(selectedTool)
     ? "ai"
     : !canContinueDesign && selectedWorkflowStep?.step > 1 ? "ai" : selectedTool;
   const requestedWorkflowIndex = Math.max(
@@ -779,9 +761,12 @@ export default function UniformStudioPage() {
     setPendingLayer(null);
     setSelectedLayerId(null);
     setActiveTool(nextStep.defaultTool);
+    setMobilePanel("");
+    setProjectMenuOpen(false);
   };
 
   const openAIDesigner = () => {
+    setMobilePanel("ai");
     setPendingLayer(null);
     setSelectedLayerId(null);
     setStageMode("edit");
@@ -792,6 +777,7 @@ export default function UniformStudioPage() {
     if (workflowIndex === studioWorkflow.length - 1) return;
     if (workflowStep.key === "design" && !canContinueDesign) {
       setDesignValidationAttempted(true);
+      setMobilePanel("setup");
       const target = document.getElementById(
         !categoryConfirmed
           ? "category-selection-required"
@@ -830,6 +816,7 @@ export default function UniformStudioPage() {
    * between two kits doesn't have them overwrite each other.
    */
   const storageKey = selectedTemplate ? `c767:studio:${activeSport}:${selectedTemplate}` : null;
+  const [hydratedStorageKey, setHydratedStorageKey] = useState(null);
 
   const moveZonePoint = (side, zoneId, commandIndex, pointType, point) => {
     if (!manualEditingAllowed) return;
@@ -889,7 +876,7 @@ export default function UniformStudioPage() {
   });
 
   useEffect(() => {
-    if (!storageKey) return;
+    if (!storageKey || hydratedStorageKey !== storageKey) return;
     try {
       window.localStorage.setItem(
         storageKey,
@@ -924,11 +911,12 @@ export default function UniformStudioPage() {
           savedAt: Date.now(),
         }),
       );
+      setDraftSaveStatus("saved");
     } catch {
-      /* private browsing / quota — the design just won't persist, which is
-         no worse than before this existed */
+      setDraftSaveStatus("error");
+      // Keep work in memory and show the storage warning in the header.
     }
-  }, [storageKey, layers, placements3d, colors, studioBackground, collar, sleeve, zoneModel, zoneStyles, twoTone,
+  }, [storageKey, hydratedStorageKey, layers, placements3d, colors, studioBackground, collar, sleeve, zoneModel, zoneStyles, twoTone,
     fitType, hasSelectedFit, categoryConfirmed, kitType, extraTeamShirts, logoApplication, insideCollarMessage, insideCollarText, insideCollarAttachment, fanJerseyAdded, supporterJerseys, roster, socksQuantity, contact, shipping,
     aiUniformPlan, aiWorkspaceConcept, aiDesignApplied]);
 
@@ -983,7 +971,7 @@ export default function UniformStudioPage() {
       const raw = window.localStorage.getItem(key);
       if (!raw) return false;
       const saved = JSON.parse(raw);
-      if (!saved?.layers?.length && !Object.keys(saved?.placements3d || {}).length && !saved?.zoneModel) return false;
+      if (!saved?.layers?.length && !Object.keys(saved?.placements3d || {}).length && !saved?.zoneModel && !saved?.aiWorkspaceConcept?.src) return false;
       const normalizedLayers = (saved.layers || []).map((layer) => normalizeStoredProductionLayer(layer, savedSport));
       setLayers(removeRestrictedSoccerSockLayers(normalizedLayers, savedSport));
       setPlacements3d(saved.placements3d || {});
@@ -1031,11 +1019,22 @@ export default function UniformStudioPage() {
         }
       }
       if (typeof saved.aiDesignApplied === "boolean") setAiDesignApplied(saved.aiDesignApplied);
+      if (saved.aiDesignApplied && validateEditableUniformPlan({ ...saved.aiUniformPlan, conceptImage: saved.aiWorkspaceConcept }, { hasVerifiedTemplate: Boolean(primaryTemplateForSport(savedSport)) }).valid) {
+        setStudioMode(STUDIO_MODES.EDITABLE);
+        setAiCanvasMode("production");
+        setActiveTool("design");
+      }
       return true;
     } catch {
       return false;
     }
   };
+
+  useEffect(() => {
+    if (!storageKey) return;
+    restoreSaved(storageKey, activeSport);
+    setHydratedStorageKey(storageKey);
+  }, [storageKey]); // Restore before autosave is permitted to write this project.
 
   const discardSaved = () => {
     if (storageKey) {
@@ -1224,7 +1223,11 @@ export default function UniformStudioPage() {
     // Selecting artwork opens the panel that edits that kind of artwork.
     // Skins previously fell through to "logo", which showed an upload box for
     // something that can't be uploaded.
-    if (layer) setActiveTool(TOOL_FOR_LAYER[layer.type] || "logo");
+    if (layer) {
+      setActiveTool(TOOL_FOR_LAYER[layer.type] || "logo");
+      setView(layer.view || "front");
+      if (compact) setMobilePanel("tools");
+    }
   };
 
   /**
@@ -1399,6 +1402,7 @@ export default function UniformStudioPage() {
       return;
     }
     if (plan) {
+      setMobilePanel("");
       if (plan.conceptImage?.src) setAiWorkspaceConcept(plan.conceptImage);
       if (plan.conceptImage?.src) {
         setAiVersions((current) => {
@@ -1419,7 +1423,7 @@ export default function UniformStudioPage() {
     }
   };
 
-  const handleAIGeneratingChange = (generating) => {
+  const handleAIGeneratingChange = useCallback((generating) => {
     if (generating) {
       setStudioMode(STUDIO_MODES.AI_GENERATING);
       setActiveTool("ai");
@@ -1432,14 +1436,15 @@ export default function UniformStudioPage() {
         ? STUDIO_MODES.AI_OUTPUT
         : current === STUDIO_MODES.AI_GENERATING ? STUDIO_MODES.AI_OUTPUT : current
     ));
-  };
+  }, [aiWorkspaceConcept?.src, aiUniformPlan?.conceptImage?.src]);
 
   useEffect(() => {
+    if (storageKey && hydratedStorageKey !== storageKey) return;
     if (!aiUniformPlan && !aiWorkspaceConcept && studioMode !== STUDIO_MODES.AI_GENERATING) {
       setStudioMode(STUDIO_MODES.AI_OUTPUT);
       setAiComparisonPlan(null);
     }
-  }, [aiUniformPlan, aiWorkspaceConcept, studioMode]);
+  }, [aiUniformPlan, aiWorkspaceConcept, studioMode, storageKey, hydratedStorageKey]);
 
   const restoreAIVersion = (version) => {
     if (!version?.conceptImage?.src) return;
@@ -1453,6 +1458,19 @@ export default function UniformStudioPage() {
     setPendingLayer(null);
     setActiveTool("ai");
   };
+
+  const editableSnapshot = useMemo(() => ({ layers, colors, zoneModel, zoneStyles, collar, sleeve, placements3d }), [layers, colors, zoneModel, zoneStyles, collar, sleeve, placements3d]);
+  const designHistory = useDesignHistory({
+    enabled: manualEditingAllowed,
+    identity: `${activeSport}:${selectedTemplate}`,
+    snapshot: editableSnapshot,
+    onRestore: (saved) => {
+      setLayers(saved.layers); setColors(saved.colors); setZoneModel(saved.zoneModel);
+      setZoneStyles(saved.zoneStyles); setCollar(saved.collar); setSleeve(saved.sleeve);
+      setPlacements3d(saved.placements3d); setPendingLayer(null);
+      setSelectedLayerId((id) => saved.layers.some((layer) => layer.id === id) ? id : null);
+    },
+  });
 
   const editablePlanValidation = validateEditableUniformPlan(aiUniformPlan, {
     hasVerifiedTemplate: Boolean(template && zoneModel),
@@ -1478,10 +1496,10 @@ export default function UniformStudioPage() {
   const showingAIConcept = Boolean(
     stageMode === "edit"
     && aiWorkspaceConcept?.src
-    && aiCanvasMode === "concept"
     && strictAIPreview,
   );
-  const showingProductionMap = false;
+  const showingProductionMap = manualEditingAllowed && stageMode === "edit" && aiCanvasMode === "production";
+  const showingFoundation = stageMode === "edit" && !aiWorkspaceConcept?.src && !showingProductionMap;
   const detectedHeaderCapabilities = getStudioHeaderCapabilities({
     mode: studioMode,
     workspace: workflowStep.key,
@@ -1495,6 +1513,7 @@ export default function UniformStudioPage() {
   });
   const headerCapabilities = {
     ...detectedHeaderCapabilities,
+    viewport: workflowStep.key === "design" && stageMode === "edit",
     aiDesigner: workflowStep.key === "design",
     saveProgress: workflowStep.key !== "design" && detectedHeaderCapabilities.saveProgress,
     openEditableStudio: false,
@@ -1502,26 +1521,6 @@ export default function UniformStudioPage() {
     settings: workflowStep.key === "design",
     download: false,
   };
-  useEffect(() => {
-    if (!showingAIConcept) {
-      setAiConceptViewportWidth(null);
-      return undefined;
-    }
-    const viewport = aiConceptViewportRef.current;
-    if (!viewport) return undefined;
-    const syncBannerWidth = () => {
-      const nextWidth = Math.round(viewport.getBoundingClientRect().width);
-      if (nextWidth > 0) setAiConceptViewportWidth((current) => current === nextWidth ? current : nextWidth);
-    };
-    syncBannerWidth();
-    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(syncBannerWidth) : null;
-    observer?.observe(viewport);
-    window.addEventListener("resize", syncBannerWidth);
-    return () => {
-      observer?.disconnect();
-      window.removeEventListener("resize", syncBannerWidth);
-    };
-  }, [showingAIConcept, aiWorkspaceConcept?.src]);
   useEffect(() => {
     setZoom(1);
     setAiConceptPan({ x: 0, y: 0 });
@@ -2031,7 +2030,7 @@ export default function UniformStudioPage() {
 
   if (submitted) {
     return (
-      <div className="mt-16 flex min-h-[calc(100dvh-4rem)] items-center justify-center px-4 md:mt-20 md:min-h-[calc(100dvh-5rem)]">
+      <div className="mt-16 flex min-h-[100dvh] items-center justify-center px-4 ">
         <div className="text-center max-w-lg">
           {previewImg && (
             <img
@@ -2068,7 +2067,8 @@ export default function UniformStudioPage() {
     })).filter(({ template }) => Boolean(template));
 
     return (
-      <div data-testid="uniform-entry-page" className="mt-16 min-h-[calc(100dvh-4rem)] bg-[linear-gradient(145deg,#f8f3e9_0%,#fffdf8_48%,#eef8f1_100%)] text-foreground-950 md:mt-20 md:min-h-[calc(100dvh-5rem)]">
+      <div data-testid="uniform-entry-page" className="min-h-[100dvh] bg-[linear-gradient(145deg,#f8f3e9_0%,#fffdf8_48%,#eef8f1_100%)] pt-16 text-foreground-950 md:pt-20">
+        <Header showQuickNavigation={false} />
         <main className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
           <section className="mb-4 flex justify-end">
             <ol className="grid grid-cols-3 overflow-hidden rounded-xl border border-background-300/80 bg-background-50/80 shadow-[0_8px_24px_rgba(69,48,30,.05)] backdrop-blur-sm">
@@ -2098,7 +2098,7 @@ export default function UniformStudioPage() {
                 <p className="font-label text-[9px] font-bold uppercase tracking-[0.2em] text-primary-700">
                   Connect767 Design Studio
                 </p>
-                <span className="block font-heading text-base font-semibold leading-snug">Custom Uniforms &amp; Clothing</span>
+                <span className="block font-heading text-base font-semibold leading-snug">Custom Uniforms</span>
               </div>
             </div>
             <button
@@ -2112,11 +2112,11 @@ export default function UniformStudioPage() {
                   <span key={sport.slug} className="relative flex min-h-0 min-w-0 items-center justify-center overflow-hidden border border-white/[0.04] bg-[radial-gradient(circle_at_center,rgba(255,255,255,.08),transparent_70%)] p-4 sm:p-5">
                     <img
                       data-testid="studio-cover-category"
-                      src={template.image}
+                      src={sport.slug === "other" ? template.image : uniformSampleFor(sport.slug).src}
                       alt=""
                       loading="lazy"
                       decoding="async"
-                      className="h-auto w-auto max-h-full max-w-full select-none object-contain opacity-45 grayscale contrast-125 mix-blend-luminosity drop-shadow-[-2px_-2px_2px_rgba(255,255,255,.15)] drop-shadow-[4px_5px_5px_rgba(0,0,0,.46)] transition duration-300 group-hover:opacity-60 group-hover:scale-[1.02]"
+                      className="h-auto w-auto max-h-full max-w-full select-none object-contain opacity-30 grayscale invert contrast-125 mix-blend-screen drop-shadow-[-2px_-2px_2px_rgba(255,255,255,.15)] drop-shadow-[4px_5px_5px_rgba(0,0,0,.46)] transition duration-300 group-hover:opacity-60 group-hover:scale-[1.02]"
                     />
                     <span
                       data-testid="studio-cover-category-label"
@@ -2141,7 +2141,7 @@ export default function UniformStudioPage() {
   }
 
   const uniformSetupPanel = <UniformSetupPanel
-    aiOnly
+    aiOnly={!manualEditingAllowed}
     designProps={{ sport: activeSport, collar, setCollar, sleeve, setSleeve, colors: stageColors, setColors: updateGarmentColors, onHoverZone: setHoverZone, twoTone, setTwoTone }}
     optionsProps={{ sport: activeSport, fitType, setFitType, kitType, setKitType, extraTeamShirts, setExtraTeamShirts, logoApplication, setLogoApplication, insideCollarMessage, setInsideCollarMessage, insideCollarText, setInsideCollarText, insideCollarAttachment, setInsideCollarAttachment, showFitAlert: true, highlightMissing: designValidationAttempted }}
   />;
@@ -2285,7 +2285,7 @@ export default function UniformStudioPage() {
           onClick={() => switchAICanvasMode("concept")}
           className={`${headerTileClass} min-w-[104px] cursor-pointer border-accent-400/55 bg-accent-500 text-white hover:bg-accent-600`}
         >
-          AI 3D Preview
+          AI preview
         </button>}
         {headerCapabilities.discardAI && (
           <button
@@ -2312,8 +2312,8 @@ export default function UniformStudioPage() {
             <button type="button" aria-label="Zoom out" title="Zoom out" onClick={() => setClampedZoom((value) => value - 0.1)} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-subtract-line text-xs" /></button>
             <span className="w-11 text-center font-label text-[10px] tabular-nums text-background-50/70">{Math.round(zoom * 100)}%</span>
             <button type="button" aria-label="Zoom in" title="Zoom in" onClick={() => setClampedZoom((value) => value + 0.1)} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-add-line text-xs" /></button>
-            {showingAIConcept && <button type="button" aria-label="Reset design view" title="Reset view" onClick={resetAIConceptView} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-focus-3-line text-xs" /></button>}
-            {showingProductionMap && <button type="button" aria-label="Fit production map" title="Reset zoom and pan" onClick={() => productionViewportRef.current?.reset()} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-focus-3-line text-xs" /></button>}
+            {showingAIConcept && <button type="button" aria-label="Reset design view" title="Reset view" onTouchEnd={resetAIConceptView} onClick={resetAIConceptView} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-focus-3-line text-xs" /></button>}
+            {(showingProductionMap || showingFoundation) && <button type="button" aria-label="Fit production map" title="Reset zoom and pan" onTouchEnd={() => productionViewportRef.current?.reset()} onClick={() => productionViewportRef.current?.reset()} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-background-50/60 hover:bg-white/10 hover:text-background-50"><i className="ri-focus-3-line text-xs" /></button>}
           </div>
         )}
       </div>
@@ -2325,8 +2325,8 @@ export default function UniformStudioPage() {
   const showStudioHeaderTitle = !["AI Uniform", "Classic Crew"].includes(studioHeaderTitle);
 
   return (
-    <div data-testid="uniform-studio-workspace" className="mt-16 flex h-[calc(100dvh-4rem)] flex-col overflow-hidden bg-[#10110f] text-background-50 md:mt-20 md:h-[calc(100dvh-5rem)]">
-      <header className="relative z-40 flex min-h-14 flex-shrink-0 items-center justify-between gap-3 border-b border-white/[0.07] bg-[#0c0d0b]/95 px-3 py-2.5 pt-[max(.625rem,env(safe-area-inset-top))] sm:px-4 md:px-5">
+    <div ref={shellRef} data-testid="uniform-studio-workspace" data-mobile-panel={mobilePanel} data-keyboard-open={keyboardOpen} className="uniform-studio-shell flex flex-col overflow-hidden bg-[#10110f] text-background-50">
+      <header className="studio-header relative z-40 flex min-h-14 flex-shrink-0 items-center justify-between gap-3 border-b border-white/[0.07] bg-[#0c0d0b]/95 px-3 py-2.5 pt-[max(.625rem,env(safe-area-inset-top))] sm:px-4 md:px-5">
         <button
           type="button"
           onClick={handleExit}
@@ -2335,15 +2335,16 @@ export default function UniformStudioPage() {
           <i className="ri-arrow-left-line" />
           Back
         </button>
-        <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
+        <div className="studio-mobile-brand"><strong>Connect767 Design Studio</strong><span aria-live="polite">{sports.find((sport) => sport.slug === activeSport)?.label} · {draftSaveStatus === "error" ? "Not saved — check storage" : draftSaveStatus === "saved" ? "Draft saved on device" : "Design workspace"}</span></div>
+        <div className="studio-desktop-title flex min-w-0 flex-1 items-center justify-center gap-2">
           {showStudioHeaderTitle && (
             <span className="truncate text-sm font-semibold text-background-50/85">{studioHeaderTitle}</span>
           )}
           <span className="hidden shrink-0 items-center gap-1.5 rounded-full border border-primary-500/20 bg-primary-950/35 px-2.5 py-1 text-[10px] font-semibold text-primary-200/90 xl:inline-flex">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary-400" /> Auto-saved
+            <span className="h-1.5 w-1.5 rounded-full bg-primary-400" /> {draftSaveStatus === "error" ? "Not saved — check storage" : draftSaveStatus === "saved" ? "Auto-saved on device" : "Draft"}
           </span>
         </div>
-        <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
+        <div className="studio-header-actions flex min-w-0 items-center gap-2 overflow-x-auto">
           {headerCapabilities.aiDesigner && (
             <button
               type="button"
@@ -2373,7 +2374,7 @@ export default function UniformStudioPage() {
               <span className="lg:hidden">Refine</span>
             </button>
           )}
-          {renderCanvasControls()}
+
           {headerCapabilities.saveProgress && <button
             type="button"
             onClick={saveProgress}
@@ -2441,7 +2442,7 @@ export default function UniformStudioPage() {
             title="AI Studio Settings"
             aria-haspopup="dialog"
             aria-expanded={studioSettingsOpen}
-            className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-background-50/75 transition hover:border-primary-500/45 hover:bg-primary-950/45 hover:text-primary-100"
+            className="studio-settings-trigger inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-background-50/75 transition hover:border-primary-500/45 hover:bg-primary-950/45 hover:text-primary-100"
           >
               <i className="ri-settings-3-line text-base" aria-hidden="true" />
           </button>}
@@ -2450,7 +2451,7 @@ export default function UniformStudioPage() {
 
       <nav
         aria-label="Uniform order progress"
-        className="relative z-30 flex-shrink-0 border-b border-white/[0.06] bg-[#12130f] px-3 py-1.5 sm:px-5"
+        className="studio-workflow relative z-30 flex-shrink-0 border-b border-white/[0.06] bg-[#12130f] px-3 py-1.5 sm:px-5"
       >
         <div className="mx-auto flex max-w-[1040px] items-center justify-start gap-2 overflow-x-auto lg:justify-center">
           {studioWorkflow.map((step, index) => {
@@ -2608,9 +2609,10 @@ export default function UniformStudioPage() {
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col bg-[radial-gradient(circle_at_48%_42%,rgba(36,45,36,0.32),transparent_38%),linear-gradient(135deg,#10110f_0%,#151610_52%,#10110f_100%)] md:flex-row">
+      <div className={`studio-main ${workflowStep.key !== "design" ? "is-order" : ""} flex min-h-0 flex-1 flex-col bg-[radial-gradient(circle_at_48%_42%,rgba(36,45,36,0.32),transparent_38%),linear-gradient(135deg,#10110f_0%,#151610_52%,#10110f_100%)] md:flex-row`}>
                   {workflowStep.key === "design" && (
-                    <aside aria-labelledby="uniform-order-setup-title" className="flex max-h-[45dvh] min-h-0 w-full min-w-0 max-w-none flex-shrink-0 flex-col border-b border-background-300 bg-[#f8f7f2] text-foreground-950 shadow-[0_18px_44px_rgba(0,0,0,.2)] md:max-h-none md:w-[360px] md:min-w-[340px] md:max-w-[380px] md:border-b-0 md:border-r md:shadow-[18px_0_44px_rgba(0,0,0,.2)] xl:w-[380px]">
+                    <aside aria-labelledby="uniform-order-setup-title" className="studio-order-setup flex max-h-[45dvh] min-h-0 w-full min-w-0 max-w-none flex-shrink-0 flex-col border-b border-background-300 bg-[#f8f7f2] text-foreground-950 shadow-[0_18px_44px_rgba(0,0,0,.2)] md:max-h-none md:w-[360px] md:min-w-[340px] md:max-w-[380px] md:border-b-0 md:border-r md:shadow-[18px_0_44px_rgba(0,0,0,.2)] xl:w-[380px]">
+                      <div className="studio-sheet-heading"><strong>Uniform &amp; order setup</strong><button type="button" aria-label="Close uniform setup" onClick={() => setMobilePanel("")}><i className="ri-close-line" /></button></div>
                       <header className="flex flex-shrink-0 items-center gap-2.5 border-b border-background-200 bg-white px-3 py-2">
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-700 text-sm text-white"><i className="ri-shirt-line" /></span>
                         <span className="min-w-0"><h2 id="uniform-order-setup-title" aria-label="Uniform &amp; order setup" className="font-heading text-[15px] font-semibold leading-tight">Uniform &amp; Order Setup</h2><p className="truncate text-[8px] text-foreground-500">Required category and fit, followed by production options</p></span>
@@ -2630,7 +2632,17 @@ export default function UniformStudioPage() {
                     </aside>
                   )}
                   {/* Canvas */}
-                  <div className={`flex min-w-0 flex-1 flex-col items-center overflow-hidden ${(activeTool === "ai" || workflowStep.key === "category") ? "gap-0 px-0 py-0" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
+                  <div data-testid="studio-canvas" className={`studio-canvas flex min-h-0 min-w-0 flex-1 flex-col items-center overflow-hidden ${(activeTool === "ai" || workflowStep.key === "category") ? "gap-0 px-0 py-0" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
+                    {workflowStep.key === "design" && <div className="studio-canvas-toolbar">
+                      {showingAIConcept || showingFoundation ? <span className="studio-view-label text-xs text-white/70">{showingFoundation ? "AI-generated example · front & back" : "AI preview · all views"}</span> : <div className="studio-view-selector" aria-label="Garment views">{["front", "side", "back"].map((side) => <button key={side} type="button" aria-label={`View ${side}`} aria-pressed={view === side} onClick={() => { setView(side); productionViewportRef.current?.reset(); }}>{side[0].toUpperCase() + side.slice(1)}</button>)}</div>}
+                      {renderCanvasControls()}
+                    </div>}
+                    {canUseManualEditing(studioMode) && !manualEditingAllowed && <p role="status" className="w-full bg-amber-50 px-3 py-2 text-center text-xs text-amber-950">{designSecurityContext ? "Saved production preview · sign in to edit." : "Edit access not verified · open AI to check your account."}</p>}
+                    {manualEditingAllowed && <div className="studio-edit-tools">
+                      <select aria-label="Editable garment tools" value={activeTool} onChange={(event) => { setActiveTool(event.target.value); setMobilePanel(event.target.value === "design" ? "setup" : "tools"); }} className="min-w-0 flex-1 bg-white px-3 py-2 text-xs text-foreground-950">{tools.filter((tool) => studioWorkflow[0].tools.includes(tool.key) && garmentCapabilities.canUse(tool.key)).map((tool) => <option key={tool.key} value={tool.key}>{tool.label}</option>)}</select>
+                      <button type="button" aria-label="Undo garment edit" disabled={!designHistory.canUndo} onClick={designHistory.undo}><i className="ri-arrow-go-back-line" /></button>
+                      <button type="button" aria-label="Redo garment edit" disabled={!designHistory.canRedo} onClick={designHistory.redo}><i className="ri-arrow-go-forward-line" /></button>
+                    </div>}
                     {strictAIPreview && conversionError && (
                       <p role="alert" className="relative z-20 w-full max-w-[1536px] flex-shrink-0 self-center rounded-lg border border-red-300/25 bg-red-950/30 px-3 py-1.5 text-[8px] leading-relaxed text-red-100">
                         {conversionError}
@@ -2653,7 +2665,7 @@ export default function UniformStudioPage() {
                       <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden">
                         <div
                           ref={aiConceptViewportRef}
-                          className="relative inline-flex max-h-full max-w-full cursor-grab overflow-hidden rounded-2xl border border-white/10 bg-[#f5f0e7] shadow-[0_26px_70px_rgba(0,0,0,.34)] outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-primary-400"
+                          className="studio-ai-viewport relative inline-flex max-h-full max-w-full cursor-grab overflow-hidden rounded-2xl border border-white/10 bg-[#f5f0e7] shadow-[0_26px_70px_rgba(0,0,0,.34)] outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-primary-400"
                           role="group"
                           tabIndex={0}
                           aria-label="Interactive AI uniform concept. Drag to pan, use the mouse wheel or toolbar to zoom, and use arrow keys to move the design."
@@ -2677,8 +2689,17 @@ export default function UniformStudioPage() {
                           onContextMenu={(event) => event.preventDefault()}
                           onPointerDown={(event) => {
                             if (event.button !== 0) return;
-                            event.preventDefault();
+                            // touch-action handles mobile gestures; canceling
+                            // touch pointerdown can swallow the next toolbar tap.
+                            if (event.pointerType !== "touch") event.preventDefault();
                             event.currentTarget.setPointerCapture(event.pointerId);
+                            aiPointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+                            if (aiPointersRef.current.size === 2) {
+                              const [a, b] = [...aiPointersRef.current.values()];
+                              aiPinchRef.current = { distance: Math.hypot(a.x - b.x, a.y - b.y), zoom };
+                              aiConceptDragRef.current = null;
+                              return;
+                            }
                             aiConceptDragRef.current = {
                               pointerId: event.pointerId,
                               startX: event.clientX,
@@ -2688,6 +2709,12 @@ export default function UniformStudioPage() {
                             };
                           }}
                           onPointerMove={(event) => {
+                            if (aiPointersRef.current.has(event.pointerId)) aiPointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+                            if (aiPinchRef.current && aiPointersRef.current.size === 2) {
+                              const [a, b] = [...aiPointersRef.current.values()];
+                              if (aiPinchRef.current.distance) setClampedZoom(aiPinchRef.current.zoom * Math.hypot(a.x - b.x, a.y - b.y) / aiPinchRef.current.distance);
+                              return;
+                            }
                             const drag = aiConceptDragRef.current;
                             if (!drag || drag.pointerId !== event.pointerId) return;
                             setAiConceptPan({
@@ -2696,13 +2723,15 @@ export default function UniformStudioPage() {
                             });
                           }}
                           onPointerUp={(event) => {
+                            aiPointersRef.current.delete(event.pointerId);
+                            if (aiPointersRef.current.size < 2) aiPinchRef.current = null;
                             if (aiConceptDragRef.current?.pointerId !== event.pointerId) return;
                             aiConceptDragRef.current = null;
                             if (event.currentTarget.hasPointerCapture(event.pointerId)) {
                               event.currentTarget.releasePointerCapture(event.pointerId);
                             }
                           }}
-                          onPointerCancel={() => { aiConceptDragRef.current = null; }}
+                          onPointerCancel={() => { aiConceptDragRef.current = null; aiPointersRef.current.clear(); aiPinchRef.current = null; }}
                           style={{ touchAction: "none", backgroundColor: aiConceptBackground }}
                         >
                           <div className="pointer-events-none absolute left-3 top-3 z-20 rounded-full border border-white/20 bg-foreground-950/75 px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-white/90 backdrop-blur">
@@ -2721,42 +2750,35 @@ export default function UniformStudioPage() {
                             </div>
                           ) : (
                             <img
+                              key={previewImageAttempt}
                               src={aiWorkspaceConcept.src}
                               alt={`${aiUniformPlan?.name || aiWorkspaceConcept?.name || "AI generated"} complete front, side and back uniform concept`}
                               draggable="false"
-                              className="relative z-10 block max-h-full max-w-full select-none object-contain will-change-transform"
-                              onLoad={(event) => setAiConceptBackground(sampleImageEdgeColor(event.currentTarget))}
+                              className="studio-canvas-image relative z-10 block max-h-full max-w-full select-none object-contain will-change-transform"
+                              onLoad={(event) => { setPreviewImageFailed(false); setAiConceptBackground(sampleImageEdgeColor(event.currentTarget)); }}
+                              onError={() => setPreviewImageFailed(true)}
                               style={{
                                 transform: `translate3d(${aiConceptPan.x}px, ${aiConceptPan.y}px, 0) scale(${zoom})`,
                                 transformOrigin: "center",
                               }}
                             />
                           )}
-                          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-foreground-950/75 px-4 py-2 text-center text-[10px] text-white/80 backdrop-blur">
-                            {aiComparisonPlan ? "Comparing previous and current AI previews" : "Drag to pan · scroll to zoom · double-click to fit"}
+                          {previewImageFailed && <div role="alert" className="absolute inset-x-4 top-16 z-30 rounded-xl bg-white p-4 text-center text-sm text-foreground-950" onPointerDown={(event) => event.stopPropagation()}><p>The saved preview could not be loaded.</p><button type="button" className="mt-2 rounded-lg bg-primary-700 px-4 py-2 font-bold text-white" onClick={() => { setPreviewImageFailed(false); setPreviewImageAttempt((value) => value + 1); }}>Retry preview</button></div>}
+                          <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-foreground-950/75 px-4 py-2 text-center text-[10px] text-white/80 backdrop-blur">
+                            {aiComparisonPlan ? "Comparing previous and current AI previews" : compact ? "Drag to pan · pinch to zoom · use Fit to reset" : "Drag to pan · scroll to zoom · double-click to fit"}
                           </div>
                         </div>
                       </div>
-                    ) : stageMode === "edit" && !aiWorkspaceConcept?.src ? (
-                      <div className="flex min-h-0 w-full flex-1 items-stretch justify-center">
-                        <div
-                          className="relative flex h-full w-full max-w-none flex-col items-center justify-center overflow-hidden text-center"
-                          style={{ backgroundColor: normalizeStudioBackground(studioBackground) }}
-                        >
-                          <div
-                            data-testid="ai-workspace-logo-frame"
-                            className="absolute inset-x-0 top-0 bottom-14"
-                          >
-                            <EmbossedAIWorkspaceBackdrop studioBackground={studioBackground} />
-                          </div>
-                          <div
-                            data-testid="ai-workspace-empty-caption"
-                            className={`absolute inset-x-0 bottom-0 z-10 flex h-14 items-center justify-center gap-2 border-t px-4 ${isDarkStudioBackground(studioBackground) ? "border-white/10 text-white/88" : "border-background-300/70 text-foreground-800"}`}
-                          >
-                            <i className="ri-sparkling-2-line text-sm text-primary-700" aria-hidden="true" />
-                            <h2 className="font-heading text-sm font-medium leading-none sm:text-base">Your Design Will Appear Here</h2>
-                          </div>
+                    ) : showingFoundation ? (
+                      <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden" style={{ backgroundColor: normalizeStudioBackground(studioBackground) }}>
+                        <div className="relative flex min-h-0 flex-1">
+                          <ProductionViewport ref={productionViewportRef} zoom={zoom} onZoomChange={setClampedZoom} panMode contentClassName="studio-foundation-content">
+                            <div className="studio-foundation" data-testid="uniform-foundation" aria-label="AI-generated uniform example">
+                              <img src={uniformSampleFor(activeSport).src} alt={uniformSampleFor(activeSport).alt} className="h-full w-full object-contain" draggable={false} />
+                            </div>
+                          </ProductionViewport>
                         </div>
+                        <div data-testid="ai-workspace-empty-caption" className="shrink-0 px-3 py-2 text-center text-[11px] text-foreground-700"><h2 className="font-semibold">Your Design Will Appear Here</h2><p>AI-generated example · open AI to create your uniform.</p></div>
                       </div>
                     ) : stageMode === "edit" ? (
                       <div className="relative z-0 flex min-h-0 w-full flex-1 flex-col items-center justify-start gap-2 overflow-hidden pt-1">
@@ -2764,7 +2786,7 @@ export default function UniformStudioPage() {
                           ref={productionViewportRef}
                           zoom={zoom}
                           onZoomChange={setClampedZoom}
-                          panMode={productionPanMode}
+                          panMode={productionPanMode || !manualEditingAllowed}
                           placingArtwork={Boolean(pendingLayer)}
                           contentClassName={activeTool === "ai" ? "max-w-[min(100%,1280px)]" : "max-w-[800px]"}
                         >
@@ -2785,8 +2807,14 @@ export default function UniformStudioPage() {
                             showZoneOutlines={activeTool === "zones" && showZoneOutlines}
                             correctionMode={activeTool === "zones" && correctionMode}
                             onSelectZone={(zoneId, side) => {
+                              if (!manualEditingAllowed || pendingLayer) return;
                               setSelectedZoneId(zoneId);
                               setView(side);
+                              if (garmentCapabilities.canUse("zones")) {
+                                setSelectedLayerId(null);
+                                setActiveTool("zones");
+                                if (compact) setMobilePanel("tools");
+                              }
                             }}
                             onMoveZonePoint={moveZonePoint}
                             layers={stageLayers.filter((layer) => layer.source !== "ai-uniform-pattern")}
@@ -2858,7 +2886,8 @@ export default function UniformStudioPage() {
                   </div>
 
               {/* Docked fields panel */}
-              <aside className={`hidden w-full flex-shrink-0 flex-col overflow-hidden border-l border-black/10 bg-[#f7f5ef] md:flex ${(activeTool === "ai" || workflowStep.key === "category") ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px]" : "max-w-[420px]"}`} aria-label={(activeTool === "ai" || workflowStep.key === "category") ? "AI prompt chat" : undefined}>
+              <aside className={`studio-fields-panel ${workflowStep.key !== "design" ? "is-order" : ""} hidden w-full flex-shrink-0 flex-col overflow-hidden border-l border-black/10 bg-[#f7f5ef] md:flex ${(activeTool === "ai" || workflowStep.key === "category") ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px]" : "max-w-[420px]"}`} aria-label={(activeTool === "ai" || workflowStep.key === "category") ? "AI prompt chat" : undefined}>
+                <div className="studio-sheet-heading"><strong>{activeTool === "ai" ? "AI designer" : activeToolConfig?.label}</strong><button type="button" aria-label="Minimize design panel" onClick={() => setMobilePanel("")}><i className="ri-arrow-down-s-line" /></button></div>
                 {activeTool !== "ai" && workflowStep.key !== "category" && <div className={`flex-shrink-0 border-b border-black/[0.07] bg-[#f7f5ef]/95 backdrop-blur-xl ${activeTool === "design" ? "px-4 py-3" : "px-5 py-4"}`}>
                   <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary-700">Step {workflowStep.step} · {workflowStep.label}</p>
                   <div className="mt-1 flex items-center justify-between gap-3">
@@ -2904,9 +2933,9 @@ export default function UniformStudioPage() {
                   />
                 )}
                 {activeTool === "text" && <TextPanel onAdd={armTextPlacement} armed={pendingLayer?.type === "text"} />}
-                {(activeTool === "ai" || workflowStep.key === "category") && (
+                <div className="min-h-0 flex-1 flex-col" style={{ display: activeTool === "ai" ? "flex" : "none" }}>
                   <AIArtworkPanel
-                    key={`desktop-${designPromptSessionKey}`}
+                    key={designPromptSessionKey}
                     sport={sports.find((item) => item.slug === activeSport)?.label || "Team sport"}
                     templateName={template?.name}
                     templateDescription={template?.description}
@@ -2934,12 +2963,12 @@ export default function UniformStudioPage() {
                     onDownloadDesign={handleDownload}
                     onOpenBackgroundRemoval={() => setActiveTool("remove-bg")}
                     onSecurityContextChange={setDesignSecurityContext}
-                    onCompleteOrder={() => openWorkflowStep(1)}
+                    onCompleteOrder={continueWorkflow}
                     hasExistingArtwork={layers.some(
                       (layer) => ["text", "logo", "clipart"].includes(layer.type) && !layer.source?.startsWith("ai-uniform"),
                     )}
                   />
-                )}
+                </div>
                 {activeTool === "logo" && <LogoPanel onUpload={armLogoPlacement} armed={pendingLayer?.type === "logo"} />}
                 {activeTool === "remove-bg" && <BackgroundRemovalPanel onPlace={manualEditingAllowed ? armBackgroundRemovedArtwork : undefined} />}
                 {activeTool === "skins" && (
@@ -3025,165 +3054,7 @@ export default function UniformStudioPage() {
               </aside>
       </div>
 
-      {/* Mobile: the fields panel docks to the bottom instead of the side */}
-      <div className={`md:hidden flex-shrink-0 overflow-y-auto overscroll-contain border-t border-background-200/60 bg-background-50 ${(activeTool === "ai" || workflowStep.key === "category") ? "max-h-[72dvh] p-0" : "max-h-[42dvh] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"}`} aria-label={(activeTool === "ai" || workflowStep.key === "category") ? "AI prompt chat" : undefined}>
-        {manualEditingAllowed && <SelectedItemPanel
-          layer={selectedLayer}
-          placement={stageMode === "3d" && selectedLayerId ? placements3d[selectedLayerId] : null}
-          onTextChange={(id, text) => updateLayer(id, { text })}
-          onLayoutChange={updateTextLayout}
-          onColorChange={(id, color) => updateLayer(id, { color })}
-          onFontChange={(id, fontFamily) => updateLayer(id, { fontFamily })}
-          onStyleChange={updateLayer}
-          onGradientChange={(id, patch) => updateLayer(id, patch)}
-          onScaleChange={stageMode === "3d" ? setLayerScale : setLayerSize2d}
-          onRotateChange={stageMode === "3d" ? rotateLayer : rotateLayer2d}
-          onDuplicate={duplicateLayer}
-          onDelete={removeLayer}
-        />}
-
-        {activeTool === "zones" && (
-          <ZoneEditorPanel
-            view={view}
-            onViewChange={setView}
-            zoneModel={zoneModel}
-            selectedZoneId={selectedZoneId}
-            onSelectZone={(zoneId, side) => { setSelectedZoneId(zoneId); setView(side); }}
-            zoneStyles={zoneStyles}
-            onUpdateZoneStyle={updateZoneStyle}
-            showOutlines={showZoneOutlines}
-            onToggleOutlines={() => setShowZoneOutlines((value) => !value)}
-            correctionMode={correctionMode}
-            onToggleCorrection={() => { setCorrectionMode((value) => !value); setShowZoneOutlines(true); }}
-            onUndo={undoZoneCorrection}
-            canUndo={zoneHistory.length > 0}
-            onResetZone={resetZone}
-            onResetAll={resetAllZones}
-            sockColor={stageColors.socks}
-            onSockColorChange={(color) => updateGarmentColors((current) => ({ ...current, socks: color }))}
-          />
-        )}
-        {activeTool === "text" && <TextPanel onAdd={armTextPlacement} armed={pendingLayer?.type === "text"} />}
-        {(activeTool === "ai" || workflowStep.key === "category") && (
-          <AIArtworkPanel
-            key={`mobile-${designPromptSessionKey}`}
-            sport={sports.find((item) => item.slug === activeSport)?.label || "Team sport"}
-            templateName={template?.name}
-            templateDescription={template?.description}
-            templateImage={template?.image}
-            colors={colors}
-            collar={collar}
-            sleeve={sleeve}
-            collarOptions={sportConfig.collarOptions}
-            sleeveOptions={sportConfig.sleeveOptions}
-            currentPatternKey={currentAiPatternKey}
-            uniformPlan={aiUniformPlan}
-            onUniformPlanChange={handleAIUniformPlanChange}
-            onReferenceChange={(reference) => setHasUploadedReference(Boolean(reference))}
-            onModeChange={setAiDesignerMode}
-            onPlace={placeAIArtwork}
-            onApplyUniform={applyAIUniformDesign}
-            onUndoUniform={undoAIUniformDesign}
-            canUndoUniform={Boolean(aiUndoSnapshot)}
-            onGeneratingChange={handleAIGeneratingChange}
-            aiVersions={aiVersions}
-            onRestoreAIVersion={restoreAIVersion}
-            onCompareVersions={setAiComparisonPlan}
-            comparisonActive={Boolean(aiComparisonPlan)}
-            onSaveDesign={saveProgress}
-            onDownloadDesign={handleDownload}
-            onOpenBackgroundRemoval={() => setActiveTool("remove-bg")}
-            onSecurityContextChange={setDesignSecurityContext}
-            onCompleteOrder={() => openWorkflowStep(1)}
-            hasExistingArtwork={layers.some(
-              (layer) => ["text", "logo", "clipart"].includes(layer.type) && !layer.source?.startsWith("ai-uniform"),
-            )}
-          />
-        )}
-        {activeTool === "logo" && <LogoPanel onUpload={armLogoPlacement} armed={pendingLayer?.type === "logo"} />}
-        {activeTool === "remove-bg" && <BackgroundRemovalPanel onPlace={manualEditingAllowed ? armBackgroundRemovedArtwork : undefined} />}
-        {activeTool === "skins" && (
-          <SkinsPanel
-            colorA={colors.body}
-            colorB={colors.shirtStrip}
-            onAdd={armSkinPlacement}
-            onUpload={armPatternUpload}
-          />
-        )}
-        {activeTool === "layers" && (
-          <LayersPanel
-            layers={layers}
-            view={view}
-            selectedId={selectedLayerId}
-            onSelect={selectLayer}
-            onRemove={removeLayer}
-            onReorder={reorderLayer}
-            onApplyColourway={applyColourway}
-          />
-        )}
-        {activeTool === "roster" && (
-          <RosterTool
-            activeSport={activeSport}
-            minimumKits={minimumKits}
-            fitType={fitType}
-            mixedSleeves={sleeve === "Mixed"}
-            setRoster={setRoster}
-            bottomLabel={sportConfig.bottomLabel}
-            hasSocks={sportConfig.hasSocks}
-            sleeveOptions={sportConfig.sleeveOptions}
-            rosterEntry={rosterEntry}
-            setRosterEntry={setRosterEntry}
-            roster={roster}
-            addToRoster={addToRoster}
-            importRosterCsv={importRosterCsv}
-            removeFromRoster={removeFromRoster}
-            socksQuantity={socksQuantity}
-            setSocksQuantity={setSockQuantityOverride}
-            requiredSocksQuantity={requiredSocksQuantity}
-            socksQuantityValid={socksQuantityValid}
-            validationAttempted={rosterValidationAttempted}
-            fanJerseyAdded={fanJerseyAdded}
-            setFanJerseyAdded={setFanJerseyAdded}
-            supporterJerseys={supporterJerseys}
-            setSupporterJerseys={setSupporterJerseys}
-          />
-        )}
-        {activeTool === "review" && (
-          <ReviewOrderTool
-            template={template}
-            activeSport={activeSport}
-            collar={collar}
-            sleeve={sleeve}
-            kitType={kitType}
-            logoApplication={logoApplication}
-            layers={layers}
-            roster={roster}
-            contact={contact}
-            setContact={setContact}
-            shipping={shipping}
-            setShipping={setShipping}
-            orderPayload={buildUniformPayload(null)}
-            capturePreview={capturePreview}
-            unitPrice={unitPrice}
-            fanJerseyAdded={fanJerseyAdded}
-            supporterJerseys={supporterJerseys}
-            onRequestQuote={handleRequestQuote}
-            submitting={submittingQuote}
-            error={quoteError}
-            onEditStep={(tool) => setActiveTool(tool)}
-            onView3d={ENABLE_3D ? () => setStageMode("3d") : undefined}
-            savedOrderDesigns={orderDesigns}
-            editingOrderDesignId={editingOrderDesignId}
-            combineOrderDesigns={combinedOrderDesigns}
-            onSaveOrderDesign={saveCurrentOrderDesign}
-            onAddAnotherDesign={startAnotherOrderDesign}
-            onEditOrderDesign={editSavedOrderDesign}
-            onRemoveOrderDesign={removeSavedOrderDesign}
-          />
-        )}
-      </div>
-
-      <div className={`flex flex-shrink-0 items-center gap-3 border-t border-white/[0.07] bg-[#0c0d0b]/95 px-4 py-2.5 pb-[max(.625rem,env(safe-area-inset-bottom))] sm:px-6 ${workflowStep.key === "design" ? "justify-center" : "justify-between"}`}>
+      {workflowStep.key !== "design" && <div className={`studio-order-footer flex flex-shrink-0 items-center gap-3 border-t border-white/[0.07] bg-[#0c0d0b]/95 px-4 py-2.5 pb-[max(.625rem,env(safe-area-inset-bottom))] sm:px-6 ${workflowStep.key === "design" ? "justify-center" : "justify-between"}`}>
         {workflowStep.key !== "design" && <button
           type="button"
           onClick={backWorkflow}
@@ -3213,7 +3084,15 @@ export default function UniformStudioPage() {
             <i className="ri-shield-check-line text-primary-400" /> Secure order request
           </span>
         )}
-      </div>
+      </div>}
+      {compact && workflowStep.key === "design" && <MobileStudioNavigation panel={mobilePanel} onPanelChange={(panel) => { setProjectMenuOpen(false); setActiveTool("ai"); setMobilePanel(panel); }} onPreview={() => { setMobilePanel(""); setProjectMenuOpen(false); }} onProject={() => { setProjectMenuOpen((value) => !value); setMobilePanel(""); }} onOrder={continueWorkflow} />}
+      {compact && projectMenuOpen && <div className="studio-project-menu" role="region" aria-label="Project actions">
+        <button type="button" onClick={() => setProjectMenuOpen(false)} aria-label="Close project actions">Close <i className="ri-close-line ml-auto" /></button>
+        <button type="button" onClick={saveProgress} disabled={!designSecurityContext?.authenticated}>Save progress on this device</button>
+        <p role="status">{manualSaveStatus === "saved" ? "Progress saved on this device" : manualSaveStatus === "error" ? "Could not save. Check browser storage and retry." : designSecurityContext?.authenticated ? "Your account keeps AI prompt history in sync." : "Sign in to save or order a design."}</p>
+        {!designSecurityContext?.authenticated && <a href={`/auth/login?redirect=${encodeURIComponent("/uniforms?mode=scratch&sport=" + activeSport)}`}>Sign in</a>}
+        <button type="button" onClick={() => { setProjectMenuOpen(false); setStudioSettingsOpen(true); }}>Studio settings</button>
+      </div>}
     </div>
   );
 }
@@ -3700,7 +3579,7 @@ function RosterTool({
   );
 }
 
-function ReviewOrderTool({
+export function ReviewOrderTool({
   template,
   activeSport,
   collar,
@@ -3772,6 +3651,7 @@ function ReviewOrderTool({
   const [startingCard, setStartingCard] = useState(false);
   const [placingLocalOrder, setPlacingLocalOrder] = useState(false);
   const [savingDesign, setSavingDesign] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const shippingContact = {
     name: `${shipping.firstName || ""} ${shipping.lastName || ""}`.trim(),
     email: shipping.email || "",
@@ -3820,6 +3700,7 @@ function ReviewOrderTool({
   };
 
   const completeOrderPayload = async () => {
+    if (!termsAccepted) throw new Error("Agree to the custom-order terms before placing or paying for this order.");
     const current = {
       ...orderPayload,
       fanJerseyAdded,
@@ -3832,6 +3713,8 @@ function ReviewOrderTool({
       ...current,
       designs: combineOrderDesigns?.(current) || [current],
       grandTotal: combinedGrandTotal,
+      customOrderTermsAccepted: true,
+      customOrderTermsVersion: UNIFORM_ORDER_TERMS_VERSION,
     };
   };
 
@@ -3879,7 +3762,7 @@ function ReviewOrderTool({
   };
 
   const startCardPayment = async () => {
-    if (!totals || !canCheckout) return;
+    if (!totals || !canCheckout || !termsAccepted) return;
     setStartingCard(true);
     setCheckoutError(null);
     try {
@@ -3892,7 +3775,7 @@ function ReviewOrderTool({
   };
 
   const placeLocalDominicaOrder = async () => {
-    if (!totals || !canCheckout || shipping.country !== "DM") return;
+    if (!totals || !canCheckout || !termsAccepted || shipping.country !== "DM") return;
     setPlacingLocalOrder(true);
     setCheckoutError(null);
     try {
@@ -4225,26 +4108,30 @@ function ReviewOrderTool({
                 </div>
               )}
             </div>
+            <UniformOrderAgreement accepted={termsAccepted} onChange={setTermsAccepted} />
             {config?.stripeEnabled && !cardSession && (
-              <Button type="button" variant="primary" className="w-full" disabled={!isLiveApi || startingCard} onClick={startCardPayment} icon="ri-bank-card-line">
+              <Button type="button" variant="primary" className="w-full" disabled={!isLiveApi || startingCard || !canCheckout || !termsAccepted} onClick={startCardPayment} icon="ri-bank-card-line">
                 {startingCard ? "Opening secure payment…" : `Pay $${totals.total.toFixed(2)} by card`}
               </Button>
             )}
             {cardSession && config?.stripePublishableKey && (
               <Elements stripe={getUniformStripe(config.stripePublishableKey)} options={{ clientSecret: cardSession.clientSecret }}>
-                <UniformCardPaymentForm session={cardSession} onError={setCheckoutError} />
+                <UniformCardPaymentForm session={cardSession} onError={setCheckoutError} termsAccepted={termsAccepted} />
               </Elements>
             )}
             {config?.stripeEnabled && config?.paypalEnabled && <div className="my-3 flex items-center gap-2 text-[10px] text-foreground-400"><span className="h-px flex-1 bg-background-200" />or<span className="h-px flex-1 bg-background-200" /></div>}
             {config?.paypalEnabled && (
               <PaypalButton
                 clientId={config.paypalClientId}
-                disabled={!isLiveApi || !canCheckout}
+                disabled={!isLiveApi || !canCheckout || !termsAccepted}
                 createOrder={async () => {
                   const result = await createUniformPaypalOrder(await completeOrderPayload(), checkoutContact.email, shipping);
                   return { orderId: result.orderId, paypalOrderId: result.paypalOrderId, accessToken: result.accessToken };
                 }}
-                captureOrder={captureUniformPaypalOrder}
+                captureOrder={(...args) => {
+                  if (!termsAccepted) throw new Error("Agree to the custom-order terms before paying.");
+                  return captureUniformPaypalOrder(...args);
+                }}
                 onSuccess={(id) => window.location.assign(`/checkout/thank-you?order=${id}`)}
                 onError={setCheckoutError}
               />
@@ -4257,7 +4144,7 @@ function ReviewOrderTool({
                   type="button"
                   variant="secondary"
                   className="w-full border-primary-500 bg-primary-50 text-primary-800 hover:bg-primary-100"
-                  disabled={placingLocalOrder || !canCheckout}
+                  disabled={placingLocalOrder || !canCheckout || !termsAccepted}
                   onClick={placeLocalDominicaOrder}
                   icon="ri-map-pin-2-line"
                 >
@@ -4285,14 +4172,14 @@ function ReviewOrderTool({
   );
 }
 
-function UniformCardPaymentForm({ session, onError }) {
+function UniformCardPaymentForm({ session, onError, termsAccepted }) {
   const stripe = useStripe();
   const elements = useElements();
   const [paying, setPaying] = useState(false);
 
   const submit = async (event) => {
     event.preventDefault();
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || !termsAccepted) return;
     setPaying(true);
     onError(null);
     const result = await stripe.confirmPayment({ elements, redirect: "if_required" });
@@ -4315,7 +4202,7 @@ function UniformCardPaymentForm({ session, onError }) {
   return (
     <form onSubmit={submit} className="space-y-3">
       <PaymentElement />
-      <Button type="submit" variant="primary" className="w-full" disabled={!stripe || paying} icon="ri-lock-line">
+      <Button type="submit" variant="primary" className="w-full" disabled={!stripe || paying || !termsAccepted} icon="ri-lock-line">
         {paying ? "Processing…" : `Pay $${session.total.toFixed(2)} securely`}
       </Button>
     </form>

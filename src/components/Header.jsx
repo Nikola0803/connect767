@@ -43,7 +43,7 @@ const navItems = [
   { label: "Blog", href: "/blog" },
 ];
 
-export default function Header() {
+export default function Header({ showQuickNavigation = true }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const {
@@ -178,7 +178,7 @@ export default function Header() {
           </Link>
         )}
 
-        <nav className="hidden md:flex items-center gap-1 ml-10">
+        <nav aria-label="Main navigation" className="hidden md:flex items-center gap-1 ml-10">
           {navItems.map((item) => (
             <NavLink
               key={item.href}
@@ -323,7 +323,7 @@ export default function Header() {
       {/* Mobile menu panel */}
       {mobileOpen && (
         <div className="md:hidden border-t border-background-200/70 bg-background-50 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain">
-          <nav className="flex flex-col p-4 pb-[max(1rem,env(safe-area-inset-bottom))] gap-1">
+          <nav aria-label="Mobile menu" className="flex flex-col p-4 pb-[max(1rem,env(safe-area-inset-bottom))] gap-1">
             {navItems.map((item) => (
               <NavLink
                 key={item.href}
@@ -424,7 +424,7 @@ export default function Header() {
         </div>
       )}
 
-      {!mobileOpen && (
+      {showQuickNavigation && !mobileOpen && (
         <nav
           aria-label="Mobile quick navigation"
           className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-background-200/80 bg-background-50/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(44,37,25,0.08)] backdrop-blur-md md:hidden"

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { detectGarmentCapabilities, firstSupportedTool } from "./garmentCapabilities";
+import { cloneZoneModel } from "./uniformZoneModel";
 
 const tracedZones = {
   front: [{ id: "front-body", path: "M0 0 L1 1" }],
@@ -7,6 +8,13 @@ const tracedZones = {
 };
 
 describe("garment capability detection", () => {
+  it("recognizes the studio's actual verified command-based garment masks", () => {
+    const model = cloneZoneModel();
+    expect(detectGarmentCapabilities({ sport: "soccer", zoneModel: model }).canUse("zones")).toBe(true);
+    model.front[0].commands[0].x = NaN;
+    expect(detectGarmentCapabilities({ sport: "soccer", zoneModel: model }).canUse("zones")).toBe(false);
+    expect(detectGarmentCapabilities({ sport: "soccer", zoneModel: cloneZoneModel(), canvasMode: "concept", hasConceptImage: true }).canUse("zones")).toBe(false);
+  });
   it("keeps a concept image preview-only", () => {
     const result = detectGarmentCapabilities({
       sport: "soccer",

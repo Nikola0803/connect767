@@ -80,7 +80,7 @@ const JerseyStage = forwardRef(function JerseyStage(
   };
 
   return (
-    <div ref={stageRef} className="w-full py-2">
+    <div ref={stageRef} className="jersey-stage w-full py-2" data-active-view={view}>
       {/* Front, side and back stay visible together. Each orientation remains its own
           editing surface so artwork coordinates and drag bounds never leak
           from one face of the garment onto the other. */}
@@ -89,7 +89,7 @@ const JerseyStage = forwardRef(function JerseyStage(
           const sideRef = side === "front" ? frontStageRef : side === "side" ? sideStageRef : backStageRef;
           const active = view === side;
           return (
-            <div key={side} className="min-w-0">
+            <div key={side} className="jersey-orientation min-w-0" data-active={active || (side === "side" && view.startsWith("sleeve-"))}>
               <button
                 type="button"
                 onClick={() => {

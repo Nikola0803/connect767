@@ -79,6 +79,10 @@ export default function TermsPage() {
             </div>
           </section>
 
+          <section id="custom-uniforms" className="scroll-mt-28 rounded-2xl border border-primary-200 bg-primary-50/60 p-6 md:p-8">
+            <h2 className="font-heading text-2xl font-medium text-foreground-950 mb-3">Custom Uniform Orders</h2>
+            <p className="text-sm leading-relaxed text-foreground-700">Custom uniforms are made to order and are non-refundable. Review your design, sizes and quantities before paying. You must agree to these terms before placing or paying for a custom uniform order.</p>
+          </section>
           {sections.map((section) => (
             <section key={section.title}>
               <h2 className="font-heading text-xl font-medium text-foreground-950 mb-3">{section.title}</h2>
