@@ -66,6 +66,17 @@ const steps = [
 
 const priceChoices = ["$", "$$", "$$$"];
 const hasValidRequiredYears = (value) => /^\d+$/.test(String(value)) && Number(value) <= 80;
+
+export function missingBusinessRequiredFieldIds(form) {
+  return [
+    !String(form.businessName || "").trim() && "businessName",
+    !findIndustry(form.category) && "category",
+    !form.priceTier && "priceTier",
+    !hasValidRequiredYears(form.yearsExperience) && "yearsExperience",
+    !String(form.description || "").trim() && "description",
+    !String(form.location || "").trim() && "location",
+  ].filter(Boolean);
+}
 const hasValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
 
 export function savedSellProductsSelection(publicListing, ownedListings = []) {
@@ -310,6 +321,7 @@ export default function AddListingPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [requiredAttentionStep, setRequiredAttentionStep] = useState(null);
   const [coverPhotoError, setCoverPhotoError] = useState("");
   const [listingId, setListingId] = useState(null);
   const [savedTier, setSavedTier] = useState(null);
@@ -619,8 +631,38 @@ export default function AddListingPage() {
     return true;
   };
 
-  const goNext = () => setStep((s) => Math.min(5, s + 1));
+  const missingRequiredFieldIds = () => {
+    if (step === 2) {
+      return missingBusinessRequiredFieldIds(form);
+    }
+    if (step === 3) {
+      return [
+        !hasValidEmail(form.email) && "contactEmail",
+        coverPhotoError && "coverPhoto",
+      ].filter(Boolean);
+    }
+    return [];
+  };
+
+  const goNext = () => {
+    if (!canContinue()) {
+      const missingFields = missingRequiredFieldIds();
+      setRequiredAttentionStep(step);
+      setSubmitError("Complete the highlighted required fields before continuing.");
+      window.requestAnimationFrame(() => {
+        const firstMissing = document.getElementById(missingFields[0]);
+        firstMissing?.focus?.();
+        firstMissing?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      });
+      return;
+    }
+    setRequiredAttentionStep(null);
+    setSubmitError(null);
+    setStep((s) => Math.min(5, s + 1));
+  };
   const goBack = () => setStep((s) => Math.max(isEditing ? 2 : 1, s - 1));
+  const showBusinessRequiredErrors = requiredAttentionStep === 2;
+  const industryIsMissing = !findIndustry(form.category);
 
   if (isEditing && loadingExisting) {
     return <Spinner className="pt-16 md:pt-20 min-h-[60vh]" />;
@@ -800,18 +842,38 @@ export default function AddListingPage() {
                 This is what shows up on your profile card and in search results.
               </p>
               <div className="space-y-5">
-                <FormField label="Listing Name" htmlFor="businessName" required>
+                <FormField
+                  label="Listing Name"
+                  htmlFor="businessName"
+                  required
+                  error={showBusinessRequiredErrors && !form.businessName.trim() ? "Enter a listing name." : ""}
+                >
                   <Input
                     id="businessName"
                     placeholder="e.g. Cocoa Palm Bistro"
                     value={form.businessName}
                     onChange={update("businessName")}
+                    error={showBusinessRequiredErrors && !form.businessName.trim()}
+                    aria-invalid={showBusinessRequiredErrors && !form.businessName.trim()}
                     required
                   />
                 </FormField>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <FormField label="Industry" htmlFor="category" required>
-                    <Select id="category" value={form.category} onChange={update("category")} required>
+                  <FormField
+                    label="Industry"
+                    htmlFor="category"
+                    required
+                    error={showBusinessRequiredErrors && industryIsMissing ? "Select an industry to save it to your profile." : ""}
+                  >
+                    <Select
+                      id="category"
+                      value={form.category}
+                      onChange={update("category")}
+                      error={showBusinessRequiredErrors && industryIsMissing}
+                      aria-invalid={showBusinessRequiredErrors && industryIsMissing}
+                      className={showBusinessRequiredErrors && industryIsMissing ? "ring-4 ring-red-100 animate-pulse" : ""}
+                      required
+                    >
                       <option value="">Select your industry</option>
                       {categoryTaxonomy.map((cat) => (
                         <optgroup key={cat.slug} label={cat.label}>
@@ -824,8 +886,17 @@ export default function AddListingPage() {
                       ))}
                     </Select>
                   </FormField>
-                  <FormField label="Price tier" required hint="$ = Budget · $$ = Moderate · $$$ = Premium">
-                    <div className="flex gap-2">
+                  <FormField
+                    label="Price tier"
+                    required
+                    hint="$ = Budget · $$ = Moderate · $$$ = Premium"
+                    error={showBusinessRequiredErrors && !form.priceTier ? "Choose a price tier." : ""}
+                  >
+                    <div
+                      id="priceTier"
+                      tabIndex={showBusinessRequiredErrors && !form.priceTier ? -1 : undefined}
+                      className={`flex gap-2 rounded-xl ${showBusinessRequiredErrors && !form.priceTier ? "ring-4 ring-red-100" : ""}`}
+                    >
                       {priceChoices.map((p) => (
                         <button
                           key={p}
@@ -875,6 +946,7 @@ export default function AddListingPage() {
                     htmlFor="yearsExperience"
                     hint="Enter the current total once. It will increase automatically each calendar year."
                     required
+                    error={showBusinessRequiredErrors && !hasValidRequiredYears(form.yearsExperience) ? "Enter a whole number from 0 to 80." : ""}
                   >
                     <Input
                       id="yearsExperience"
@@ -884,6 +956,8 @@ export default function AddListingPage() {
                       placeholder="12"
                       value={form.yearsExperience}
                       onChange={update("yearsExperience")}
+                      error={showBusinessRequiredErrors && !hasValidRequiredYears(form.yearsExperience)}
+                      aria-invalid={showBusinessRequiredErrors && !hasValidRequiredYears(form.yearsExperience)}
                       required
                     />
                   </FormField>
@@ -893,6 +967,7 @@ export default function AddListingPage() {
                   htmlFor="description"
                   required
                   hint="Drag the bottom-right corner to make this box bigger"
+                  error={showBusinessRequiredErrors && !form.description.trim() ? "Describe the products or services offered." : ""}
                 >
                   <Textarea
                     id="description"
@@ -900,6 +975,8 @@ export default function AddListingPage() {
                     placeholder="Describe goods or services offered"
                     value={form.description}
                     onChange={update("description")}
+                    error={showBusinessRequiredErrors && !form.description.trim()}
+                    aria-invalid={showBusinessRequiredErrors && !form.description.trim()}
                     required
                   />
                 </FormField>
@@ -919,12 +996,19 @@ export default function AddListingPage() {
                     onChange={update("amenities")}
                   />
                 </FormField>
-                <FormField label="Location" htmlFor="location" required>
+                <FormField
+                  label="Location"
+                  htmlFor="location"
+                  required
+                  error={showBusinessRequiredErrors && !form.location.trim() ? "Enter a location." : ""}
+                >
                   <Input
                     id="location"
                     placeholder="e.g. Roseau, Dominica"
                     value={form.location}
                     onChange={update("location")}
+                    error={showBusinessRequiredErrors && !form.location.trim()}
+                    aria-invalid={showBusinessRequiredErrors && !form.location.trim()}
                     required
                   />
                 </FormField>
@@ -1637,9 +1721,10 @@ export default function AddListingPage() {
               <Button
                 type="button"
                 variant="primary"
-                disabled={!canContinue()}
                 onClick={goNext}
                 icon="ri-arrow-right-line"
+                title={!canContinue() ? "Complete the highlighted required fields to continue" : undefined}
+                className={!canContinue() ? "hover:ring-4 hover:ring-red-100" : ""}
               >
                 Continue
               </Button>
