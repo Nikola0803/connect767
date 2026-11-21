@@ -19,10 +19,10 @@ export default function HomePage() {
         <HowItWorks />
       </div>
       <div className="[content-visibility:auto] [contain-intrinsic-size:850px]">
-        <ShopTeaser />
+        <Pricing />
       </div>
       <div className="[content-visibility:auto] [contain-intrinsic-size:850px]">
-        <Pricing />
+        <ShopTeaser />
       </div>
       <div className="[content-visibility:auto] [contain-intrinsic-size:750px]">
         <Blog />
