@@ -36,7 +36,10 @@ export default function CollarAttachment({ attachment, onChange }) {
   };
   return <div className="mt-2 space-y-1.5">
     <label className="block text-xs font-semibold text-foreground-800">
-      Attach collar logo or artwork <span className="text-red-600" aria-hidden="true">*</span>
+      <span className="flex items-center gap-1.5">
+        <i className="ri-attachment-2 text-sm text-primary-700" aria-hidden="true" />
+        <span>Attach collar logo or artwork <span className="text-red-600" aria-hidden="true">*</span></span>
+      </span>
       <input aria-label="Attach collar logo or artwork" type="file" accept="image/png,image/jpeg,image/webp,application/pdf" onChange={chooseFile} className="mt-1.5 block w-full min-w-0 text-[11px] text-foreground-700 file:mr-2 file:cursor-pointer file:rounded-md file:border file:border-background-300 file:bg-background-50 file:px-2.5 file:py-1.5 file:text-foreground-800" />
     </label>
     <p className="text-[10px] leading-tight text-foreground-500">PNG, JPG, WebP or PDF · up to 2 MB.</p>
