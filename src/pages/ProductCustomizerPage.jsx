@@ -288,7 +288,7 @@ export default function ProductCustomizerPage() {
           </div>
 
           {/* Center: Canvas */}
-          <div className="order-1 md:order-2 w-full md:flex-1 min-h-[500px] md:min-h-0 flex flex-col items-center justify-center gap-3 sm:gap-4 p-3 sm:p-5 md:p-6">
+          <div className="order-1 min-h-[55dvh] w-full flex flex-col items-center justify-center gap-3 p-3 sm:min-h-[500px] sm:gap-4 sm:p-5 md:order-2 md:min-h-0 md:flex-1 md:p-6">
             {product.placements.length > 1 && (
               <div className="flex items-center gap-1.5">
                 {product.placements.map((p) => (

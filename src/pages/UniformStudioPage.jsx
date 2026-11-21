@@ -3317,8 +3317,8 @@ function RosterTool({
       )}
 
       {showSizeGuide && (
-        <div className="mb-4 rounded-xl border border-background-200/70 overflow-hidden">
-          <table className="w-full text-xs font-label">
+        <div className="mb-4 overflow-x-auto rounded-xl border border-background-200/70">
+          <table className="w-full min-w-[30rem] text-xs font-label">
             <thead>
               <tr className="bg-background-100/70 text-foreground-500">
                 <th className="text-left px-3 py-2 font-semibold">Size</th>

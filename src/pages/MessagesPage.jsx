@@ -186,8 +186,8 @@ export default function MessagesPage() {
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-6 md:py-8">
         {error && <div className="mb-4 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-800 flex items-start gap-2"><i className="ri-error-warning-line mt-0.5" /> {error}</div>}
 
-        <div className="grid min-h-[620px] overflow-hidden rounded-2xl border border-background-200/80 bg-background-50 shadow-sm lg:grid-cols-[360px_1fr]">
-          <aside className={`border-r border-background-200/70 ${activeThread || composingNew ? "hidden lg:block" : "block"}`}>
+        <div className="grid min-h-[calc(100dvh-13rem)] overflow-hidden rounded-2xl border border-background-200/80 bg-background-50 shadow-sm lg:min-h-[620px] lg:grid-cols-[360px_1fr]">
+          <aside className={`border-background-200/70 lg:border-r ${activeThread || composingNew ? "hidden lg:block" : "block"}`}>
             <div className="flex h-16 items-center justify-between border-b border-background-200/70 px-5">
               <h2 className="font-heading text-lg font-medium text-foreground-950">Conversations</h2>
               <button type="button" onClick={loadThreads} className="h-9 w-9 rounded-full text-foreground-500 hover:bg-background-100 hover:text-primary-700" aria-label="Refresh conversations"><i className="ri-refresh-line" /></button>
@@ -197,7 +197,7 @@ export default function MessagesPage() {
             ) : threads.length === 0 ? (
               <div className="px-6 py-16 text-center"><div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary-50 text-primary-700"><i className="ri-chat-new-line text-xl" /></div><h3 className="font-heading text-lg text-foreground-950">No conversations yet</h3><p className="mt-2 text-sm leading-relaxed text-foreground-600">Open a directory profile and select Message to contact its owner.</p></div>
             ) : (
-              <div className="divide-y divide-background-100 overflow-y-auto max-h-[620px]">
+              <div className="max-h-[calc(100dvh-17rem)] divide-y divide-background-100 overflow-y-auto lg:max-h-[620px]">
                 {threads.map((thread) => (
                   <button key={thread.id} type="button" onClick={() => openThread(thread.id)} className={`w-full px-5 py-4 text-left transition-colors hover:bg-background-100/70 ${String(activeThread?.id) === String(thread.id) ? "bg-primary-50/70" : ""}`}>
                     <div className="flex items-start gap-3">
@@ -242,7 +242,7 @@ export default function MessagesPage() {
                     <textarea ref={draftRef} value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); submit(event); } }} maxLength={4000} rows={1} placeholder={composingNew ? `Message ${listingTitle}` : "Write a message…"} className="max-h-32 min-h-10 flex-1 resize-none border-0 bg-transparent py-2 text-sm text-foreground-900 outline-none placeholder:text-foreground-400" />
                     <button type="submit" disabled={(!draft.trim() && !attachments.length) || sending} className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary-600 text-background-50 hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Send message"><i className={sending ? "ri-loader-4-line animate-spin" : "ri-send-plane-2-fill"} /></button>
                   </div>
-                  <div className="mt-2 flex items-center justify-between px-1 text-[10px] text-foreground-400"><span>Enter to send · Attach up to 5 files, 10 MB each</span><span>{draft.length}/4000</span></div>
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-1 text-[10px] text-foreground-400"><span>Enter to send · Attach up to 5 files, 10 MB each</span><span className="ml-auto">{draft.length}/4000</span></div>
                 </form>
               </>
             ) : (
