@@ -5,7 +5,8 @@ import CollarAttachment from "./CollarAttachment";
 describe("collar attachments", () => {
   it("reads an attachment with its filename and data and allows removal", async () => {
     const onChange = vi.fn();
-    const { rerender } = render(<CollarAttachment attachment={null} onChange={onChange} />);
+    const { container, rerender } = render(<CollarAttachment attachment={null} onChange={onChange} />);
+    expect(container.querySelector(".ri-attachment-2")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Attach collar logo or artwork"), { target: { files: [new File(["%PDF-1.4 collar logo"], "collar.pdf", { type: "application/pdf" })] } });
     await waitFor(() => expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ name: "collar.pdf", type: "application/pdf", src: expect.stringMatching(/^data:application\/pdf;base64,/) })));
     rerender(<CollarAttachment attachment={onChange.mock.calls[0][0]} onChange={onChange} />);
