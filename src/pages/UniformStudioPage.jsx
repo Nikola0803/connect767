@@ -2731,15 +2731,22 @@ export default function UniformStudioPage() {
                       </div>
                     ) : stageMode === "edit" && !aiWorkspaceConcept?.src ? (
                       <div className="flex min-h-0 w-full flex-1 items-stretch justify-center">
-                        <div className="relative flex h-full w-full max-w-none flex-col items-center justify-center overflow-hidden bg-[#11140f] px-6 py-6 text-center sm:px-10 lg:px-14">
-                          <EmbossedAIWorkspaceBackdrop studioBackground={studioBackground} />
+                        <div
+                          className="relative flex h-full w-full max-w-none flex-col items-center justify-center overflow-hidden text-center"
+                          style={{ backgroundColor: normalizeStudioBackground(studioBackground) }}
+                        >
                           <div
-                            className={`relative z-10 flex max-w-[min(90%,34rem)] items-center gap-4 rounded-2xl border px-5 py-4 text-left shadow-[0_18px_55px_rgba(21,24,20,.14)] backdrop-blur-md sm:px-6 sm:py-5 ${isDarkStudioBackground(studioBackground) ? "border-white/15 bg-black/30" : "border-white/75 bg-white/58"}`}
+                            data-testid="ai-workspace-logo-frame"
+                            className="absolute inset-x-0 top-0 bottom-14"
                           >
-                            <span className={`flex h-11 w-11 flex-none items-center justify-center rounded-xl border text-xl shadow-sm ${isDarkStudioBackground(studioBackground) ? "border-white/15 bg-white/10 text-white/90" : "border-primary-200/70 bg-primary-50/85 text-primary-800"}`} aria-hidden="true">
-                              <i className="ri-sparkling-2-line" />
-                            </span>
-                            <h2 className={`font-heading text-xl font-medium leading-tight sm:text-2xl ${isDarkStudioBackground(studioBackground) ? "text-white/95" : "text-foreground-950"}`}>Your Design Will Appear Here</h2>
+                            <EmbossedAIWorkspaceBackdrop studioBackground={studioBackground} />
+                          </div>
+                          <div
+                            data-testid="ai-workspace-empty-caption"
+                            className={`absolute inset-x-0 bottom-0 z-10 flex h-14 items-center justify-center gap-2 border-t px-4 ${isDarkStudioBackground(studioBackground) ? "border-white/10 text-white/88" : "border-background-300/70 text-foreground-800"}`}
+                          >
+                            <i className="ri-sparkling-2-line text-sm text-primary-700" aria-hidden="true" />
+                            <h2 className="font-heading text-sm font-medium leading-none sm:text-base">Your Design Will Appear Here</h2>
                           </div>
                         </div>
                       </div>
