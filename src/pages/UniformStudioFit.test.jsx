@@ -45,6 +45,8 @@ describe("required uniform fit selection", () => {
     render(<MemoryRouter initialEntries={["/uniforms"]}><UniformStudioPage /></MemoryRouter>);
 
     const entry = screen.getByRole("button", { name: "Enter Design Studio" });
+    expect(screen.getByTestId("uniform-entry-page")).toHaveClass("mt-16", "md:mt-20");
+    expect(screen.queryByRole("link", { name: "Back to site" })).not.toBeInTheDocument();
     expect(entry).toBeVisible();
     const categoryImages = screen.getAllByTestId("studio-cover-category");
     expect(categoryImages).toHaveLength(6);
@@ -65,6 +67,7 @@ describe("required uniform fit selection", () => {
     expect(logo).toHaveAttribute("src", "/connect767-ai-logo-transparent.png");
     expect(logo).toHaveAccessibleName("Connect767 AI");
     expect(logo).not.toHaveClass("grayscale", "opacity-30", "mix-blend-multiply");
+    expect(logo).toHaveClass("translate-y-1.5");
     expect(brandTitle.compareDocumentPosition(logo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByTestId("studio-entry-brand")).not.toContainElement(logo);
     expect(entry).toContainElement(logo);
@@ -88,6 +91,12 @@ describe("required uniform fit selection", () => {
 
   it("places the embossed Connect767 AI logo inside the design workspace", () => {
     openStudio("ai");
+    expect(screen.getByTestId("uniform-studio-workspace")).toHaveClass(
+      "mt-16",
+      "h-[calc(100dvh-4rem)]",
+      "md:mt-20",
+      "md:h-[calc(100dvh-5rem)]",
+    );
     const watermark = screen.getByTestId("ai-workspace-watermark");
     expect(watermark).toHaveAttribute(
       "data-logo-src",

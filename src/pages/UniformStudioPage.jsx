@@ -1896,7 +1896,7 @@ export default function UniformStudioPage() {
 
   if (submitted) {
     return (
-      <div className="h-[100dvh] flex items-center justify-center px-4">
+      <div className="mt-16 flex min-h-[calc(100dvh-4rem)] items-center justify-center px-4 md:mt-20 md:min-h-[calc(100dvh-5rem)]">
         <div className="text-center max-w-lg">
           {previewImg && (
             <img
@@ -1933,17 +1933,7 @@ export default function UniformStudioPage() {
     })).filter(({ template }) => Boolean(template));
 
     return (
-      <div className="min-h-[100dvh] bg-[linear-gradient(145deg,#f8f3e9_0%,#fffdf8_48%,#eef8f1_100%)] text-foreground-950">
-        <header className="border-b border-background-200/60 bg-background-50/80 backdrop-blur-md">
-          <div className="mx-auto grid max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-3 md:px-8">
-            <Button to="/" variant="ghost" size="sm" icon="ri-arrow-left-line" iconPosition="left">
-              Back to site
-            </Button>
-            <span aria-hidden="true" />
-            <span aria-hidden="true" />
-          </div>
-        </header>
-
+      <div data-testid="uniform-entry-page" className="mt-16 min-h-[calc(100dvh-4rem)] bg-[linear-gradient(145deg,#f8f3e9_0%,#fffdf8_48%,#eef8f1_100%)] text-foreground-950 md:mt-20 md:min-h-[calc(100dvh-5rem)]">
         <main className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
           <section className="mb-4 flex justify-end">
             <ol className="grid grid-cols-3 overflow-hidden rounded-xl border border-background-300/80 bg-background-50/80 shadow-[0_8px_24px_rgba(69,48,30,.05)] backdrop-blur-sm">
@@ -2000,9 +1990,9 @@ export default function UniformStudioPage() {
                   data-testid="studio-entry-ai-logo"
                   src="/connect767-ai-logo-transparent.png"
                   alt="Connect767 AI"
-                  className="h-12 w-12 object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,.35)] sm:h-14 sm:w-14"
+                  className="h-12 w-12 translate-y-1.5 object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,.35)] sm:h-14 sm:w-14"
                 />
-                <strong className="mt-2 font-heading text-3xl font-semibold sm:text-4xl">Enter Design Studio</strong>
+                <strong className="mt-0 font-heading text-3xl font-semibold sm:text-4xl">Enter Design Studio</strong>
                 <span className="mt-2 text-xs text-white/70 sm:text-sm">Choose your category and fit inside.</span>
                 <span className="mt-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-500 text-lg shadow-[0_10px_24px_rgba(0,0,0,.25)] transition group-hover:translate-x-1 group-hover:bg-primary-400"><i className="ri-arrow-right-line" /></span>
               </span>
@@ -2193,9 +2183,9 @@ export default function UniformStudioPage() {
     );
   };
 
-  // ---------- The studio itself: one full viewport, nothing else ----------
+  // ---------- The studio itself: fills the viewport beneath site navigation ----------
   return (
-    <div className="h-[100dvh] flex flex-col overflow-hidden bg-[#10110f] text-background-50">
+    <div data-testid="uniform-studio-workspace" className="mt-16 flex h-[calc(100dvh-4rem)] flex-col overflow-hidden bg-[#10110f] text-background-50 md:mt-20 md:h-[calc(100dvh-5rem)]">
       <header className="relative z-40 flex min-h-14 flex-shrink-0 items-center justify-between gap-3 border-b border-white/[0.07] bg-[#0c0d0b]/95 px-3 py-2.5 pt-[max(.625rem,env(safe-area-inset-top))] sm:px-4 md:px-5">
         <button
           type="button"

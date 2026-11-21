@@ -1,8 +1,8 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-// Routes that own the entire viewport — the studio is a full-screen tool,
-// so the site header/footer/cart chrome would only be distraction there.
-const CHROMELESS_ROUTES = ["/uniforms", "/shop/customize"];
+// Routes that own the entire viewport. The uniform studio keeps the standard
+// site header and footer so customers can navigate away at every step.
+const CHROMELESS_ROUTES = ["/shop/customize"];
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { CartProvider } from "./hooks/useCart";
