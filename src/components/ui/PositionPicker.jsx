@@ -18,7 +18,7 @@ import {
  * already know from every social profile editor.
  *
  * The preview frame matches the real aspect ratio of the destination (round
- * for a logo, 4:3 for a cover), so what's framed here is what gets published
+ * for a logo, 16:9 for a cover), so what's framed here is what gets published
  * — the old picker gave no preview at all.
  */
 export default function PositionPicker({
@@ -28,7 +28,7 @@ export default function PositionPicker({
   onZoomChange,
   label,
   src,
-  shape = "cover", // 'cover' (4:3) | 'logo' (circle)
+  shape = "cover", // 'cover' (16:9) | 'logo' (circle)
   fit = "cover",
   onFitChange,
 }) {
@@ -115,17 +115,32 @@ export default function PositionPicker({
 
   const chooseReposition = () => onFitChange("cover");
 
-  return (
-    <div className="mt-3">
-      {label && <p className="text-[11px] font-label text-foreground-500 mb-1.5">{label}</p>}
+  const frameSize = isLogo
+    ? "w-24 h-24 rounded-full"
+    : "w-full max-w-[12rem] aspect-[16/9] rounded-xl";
 
-      <div className="flex items-start gap-4">
+  return (
+    <div className="mt-3 rounded-xl border border-background-200/80 bg-background-50/70 p-3 sm:p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        {label && (
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-foreground-600">
+            {label}
+          </p>
+        )}
+        {src && (
+          <span className="text-[10px] font-label text-foreground-400">
+            Drag the preview to adjust
+          </span>
+        )}
+      </div>
+
+      <div className={`grid items-start gap-4 ${isLogo ? "grid-cols-[6rem_minmax(0,1fr)]" : "sm:grid-cols-[12rem_minmax(0,1fr)]"}`}>
         <div
           ref={frameRef}
           onMouseDown={isContained ? undefined : beginDrag}
           onTouchStart={isContained ? undefined : beginDrag}
           className={`relative overflow-hidden bg-background-100 border-2 flex-shrink-0 select-none ${
-            isLogo ? "w-24 h-24 rounded-full" : "w-40 aspect-[4/3] rounded-lg"
+            frameSize
           } ${
             src && !isContained
               ? dragging
@@ -150,14 +165,6 @@ export default function PositionPicker({
                 className={`w-full h-full pointer-events-none ${isContained ? "object-contain" : "object-cover"}`}
                 style={imageCropStyle(position, zoom, isContained ? "contain" : "cover")}
               />
-              {!isContained && !dragging && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-foreground-950/70 text-background-50 text-[10px] font-semibold shadow-sm">
-                    <i className="ri-drag-move-2-line text-sm" />
-                    Drag to reposition
-                  </span>
-                </div>
-              )}
               {/* Only while dragging — a permanent grid would read as part of
                   the picture rather than a tool. */}
               {dragging && (
@@ -176,62 +183,65 @@ export default function PositionPicker({
           )}
         </div>
 
-        <div className="flex-1 min-w-0 pt-0.5">
+        <div className="min-w-0">
           {canChooseFit && (
-            <div className="grid grid-cols-3 gap-2 mb-3" aria-label="Cover photo display">
-              <button
-                type="button"
-                onClick={chooseSmart}
-                className={`inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-2 text-[10px] font-semibold transition-colors cursor-pointer ${
-                  isSmart
-                    ? "border-primary-500 bg-primary-50 text-primary-800"
-                    : "border-background-300 text-foreground-600 hover:border-primary-300"
-                }`}
-              >
-                <i className="ri-magic-line text-sm" />
-                Smart
-              </button>
-              <button
-                type="button"
-                onClick={chooseFit}
-                className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-2.5 py-2 text-[11px] font-semibold transition-colors cursor-pointer ${
-                  fit === "contain"
-                    ? "border-primary-500 bg-primary-50 text-primary-800"
-                    : "border-background-300 text-foreground-600 hover:border-primary-300"
-                }`}
-              >
-                <i className="ri-aspect-ratio-line text-sm" />
-                Fit full image
-              </button>
-              <button
-                type="button"
-                onClick={chooseReposition}
-                className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-2.5 py-2 text-[11px] font-semibold transition-colors cursor-pointer ${
-                  fit === "cover"
-                    ? "border-primary-500 bg-primary-50 text-primary-800"
-                    : "border-background-300 text-foreground-600 hover:border-primary-300"
-                }`}
-              >
-                <i className="ri-drag-move-2-line text-sm" />
-                Reposition
-              </button>
+            <div className="mb-3">
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground-500">
+                Display
+              </p>
+              <div className="grid grid-cols-3 rounded-lg border border-background-200 bg-background-100 p-1" aria-label="Cover photo display">
+                <button
+                  type="button"
+                  onClick={chooseSmart}
+                  className={`rounded-md px-2 py-1.5 text-[10px] font-semibold transition-colors cursor-pointer ${
+                    isSmart
+                      ? "bg-background-50 text-primary-800 shadow-sm"
+                      : "text-foreground-500 hover:text-foreground-800"
+                  }`}
+                >
+                  Smart
+                </button>
+                <button
+                  type="button"
+                  aria-label="Fit full image"
+                  onClick={chooseFit}
+                  className={`rounded-md px-2 py-1.5 text-[10px] font-semibold transition-colors cursor-pointer ${
+                    fit === "contain"
+                      ? "bg-background-50 text-primary-800 shadow-sm"
+                      : "text-foreground-500 hover:text-foreground-800"
+                  }`}
+                >
+                  Full image
+                </button>
+                <button
+                  type="button"
+                  onClick={chooseReposition}
+                  className={`rounded-md px-2 py-1.5 text-[10px] font-semibold transition-colors cursor-pointer ${
+                    fit === "cover"
+                      ? "bg-background-50 text-primary-800 shadow-sm"
+                      : "text-foreground-500 hover:text-foreground-800"
+                  }`}
+                >
+                  Reposition
+                </button>
+              </div>
             </div>
           )}
-          <p className="text-[11px] font-label text-foreground-500 mb-2">
+          <p className="mb-3 text-[11px] leading-relaxed font-label text-foreground-500">
             {src
               ? isSmart
                 ? effectiveFit === "cover"
                   ? "Smart mode fills this frame and keeps your focal point."
                   : "Smart mode keeps this tall or extra-wide artwork complete."
                 : isContained
-                  ? "The entire photo will be visible. Choose Reposition to crop and move it."
-                  : "Drag the image freely inside the frame."
+                  ? "The entire photo is visible. Choose Reposition to crop and move it."
+                  : "Drag directly on the preview, then fine-tune the zoom."
               : "Upload an image to position it."}
           </p>
 
-          <div className={`flex items-center justify-between mb-1 ${isContained ? "opacity-45" : ""}`}>
-            <span className="text-[11px] font-label text-foreground-500">Zoom</span>
-            <span className="text-[11px] font-label text-foreground-500">
+          <div className={`mb-1.5 flex items-center justify-between ${isContained ? "opacity-45" : ""}`}>
+            <span className="text-[11px] font-semibold text-foreground-600">Zoom</span>
+            <span className="rounded-full bg-background-100 px-2 py-0.5 text-[10px] font-semibold text-foreground-500">
               {Math.round(z * 100)}%
             </span>
           </div>
@@ -246,17 +256,19 @@ export default function PositionPicker({
             className="w-full cursor-pointer accent-primary-500 disabled:opacity-40"
           />
 
-          <button
-            type="button"
-            disabled={!src}
-            onClick={() => {
-              onPositionChange(formatPosition(50, 50));
-              onZoomChange(1);
-            }}
-            className="mt-2 text-[11px] font-semibold text-primary-700 hover:text-primary-800 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Reset to centre
-          </button>
+          <div className="mt-2.5 flex justify-end">
+            <button
+              type="button"
+              disabled={!src}
+              onClick={() => {
+                onPositionChange(formatPosition(50, 50));
+                onZoomChange(1);
+              }}
+              className="rounded-md px-2 py-1 text-[11px] font-semibold text-primary-700 hover:bg-primary-50 hover:text-primary-800 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Reset position
+            </button>
+          </div>
         </div>
       </div>
     </div>
