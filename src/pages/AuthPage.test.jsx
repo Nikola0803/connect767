@@ -36,4 +36,18 @@ describe("AuthPage minimalist authentication layout", () => {
     const tabs = screen.getByRole("button", { name: "Register" }).parentElement;
     expect(within(tabs).getByRole("button", { name: "Register" })).toHaveClass("bg-primary-600", "text-white");
   });
+
+  it("keeps a safe studio return path while switching between sign in and registration", () => {
+    renderAuth("/auth/login?redirect=%2Funiforms%3Fsport%3Dsoccer");
+
+    expect(screen.getByRole("link", { name: "Create an account" })).toHaveAttribute(
+      "href",
+      "/auth/register?redirect=%2Funiforms%3Fsport%3Dsoccer",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Register" }));
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute(
+      "href",
+      "/auth/login?redirect=%2Funiforms%3Fsport%3Dsoccer",
+    );
+  });
 });

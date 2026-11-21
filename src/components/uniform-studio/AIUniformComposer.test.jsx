@@ -96,6 +96,20 @@ describe("AIUniformComposer", () => {
     expect(screen.getByText(/Enter creates a fast preview/i)).toBeVisible();
   });
 
+  it("routes account actions through the real auth pages and preserves the studio return path", () => {
+    window.history.replaceState({}, "", "/uniforms?sport=soccer&step=design");
+    renderComposer({ accountRequired: true });
+
+    expect(screen.getByRole("link", { name: "Sign In" })).toHaveAttribute(
+      "href",
+      "/auth/login?redirect=%2Funiforms%3Fsport%3Dsoccer%26step%3Ddesign",
+    );
+    expect(screen.getByRole("link", { name: "Create Account" })).toHaveAttribute(
+      "href",
+      "/auth/register?redirect=%2Funiforms%3Fsport%3Dsoccer%26step%3Ddesign",
+    );
+  });
+
   it("routes background-removal prompts to the transparent-file utility without redesigning", () => {
     const props = renderComposer({ prompt: "remove background make transparent" });
     fireEvent.keyDown(screen.getByLabelText("Message Connect767 AI"), { key: "Enter" });

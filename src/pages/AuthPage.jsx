@@ -12,6 +12,18 @@ import {
   requireListingOnboarding,
 } from "../lib/listingOnboarding";
 
+function requestedRedirect(location) {
+  const value = new URLSearchParams(location.search).get("redirect") || "";
+  return value.startsWith("/") && !value.startsWith("//") && !value.startsWith("/auth/")
+    ? value
+    : "";
+}
+
+function authPath(mode, location) {
+  const redirect = requestedRedirect(location);
+  return redirect ? `/auth/${mode}?redirect=${encodeURIComponent(redirect)}` : `/auth/${mode}`;
+}
+
 export default function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -19,7 +31,7 @@ export default function AuthPage() {
 
   const switchTab = (next) => {
     setTab(next);
-    navigate(`/auth/${next}`, { replace: true });
+    navigate(authPath(next, location), { replace: true, state: location.state });
   };
 
   return (
@@ -80,6 +92,11 @@ function LoginForm() {
     setSubmitting(true);
     try {
       await login(form);
+      const redirect = requestedRedirect(location);
+      if (redirect) {
+        navigate(redirect, { replace: true });
+        return;
+      }
       let needsFirstListing = listingOnboardingRequired();
       if (!needsFirstListing && isLiveApi) {
         try {
@@ -156,7 +173,7 @@ function LoginForm() {
 
       <p className="text-center font-label text-xs text-foreground-500">
         New to Connect767?{" "}
-        <Link to="/auth/register" className="font-semibold text-primary-700 hover:text-primary-800">Create an account</Link>
+        <Link to={authPath("register", location)} className="font-semibold text-primary-700 hover:text-primary-800">Create an account</Link>
       </p>
     </form>
   );
@@ -164,6 +181,7 @@ function LoginForm() {
 
 function RegisterForm() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -197,6 +215,11 @@ function RegisterForm() {
       // Every registration is a business account — Connect767 doesn't have a
       // separate shopper/customer account type. Shop checkout stays guest.
       await register({ ...form, accountType: "business" });
+      const redirect = requestedRedirect(location);
+      if (redirect) {
+        navigate(redirect, { replace: true });
+        return;
+      }
       requireListingOnboarding();
       navigate("/listings/submit?onboarding=1&tier=free", { replace: true });
     } catch (err) {
@@ -299,7 +322,7 @@ function RegisterForm() {
 
       <p className="text-center font-label text-xs text-foreground-500">
         Already have an account?{" "}
-        <Link to="/auth/login" className="font-semibold text-primary-700 hover:text-primary-800">Sign in</Link>
+        <Link to={authPath("login", location)} className="font-semibold text-primary-700 hover:text-primary-800">Sign in</Link>
       </p>
     </form>
   );

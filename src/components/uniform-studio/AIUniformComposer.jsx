@@ -4,6 +4,14 @@ import { createPortal } from "react-dom";
 const AI_LOGO_SRC = "/connect767-ai-logo-transparent.png?v=20261117";
 const AI_COMMAND_LOGO_SRC = "/connect767-ai-command-logo.png?v=20261117";
 
+const authHref = (mode) => {
+  const fallback = "/uniforms";
+  if (typeof window === "undefined") return `/auth/${mode}?redirect=${encodeURIComponent(fallback)}`;
+  const currentPath = `${window.location.pathname || fallback}${window.location.search || ""}${window.location.hash || ""}`;
+  const returnPath = currentPath.startsWith("/auth/") ? fallback : currentPath;
+  return `/auth/${mode}?redirect=${encodeURIComponent(returnPath)}`;
+};
+
 const MODE_COPY = {
   uniform: {
     label: "Full uniform",
@@ -362,7 +370,7 @@ export default function AIUniformComposer({
 
       <div role="region" aria-label="AI command prompt" className={`relative min-w-0 flex-shrink-0 border-t px-2 py-2 pb-[max(.5rem,env(safe-area-inset-bottom))] sm:px-3 sm:py-3 sm:pb-[max(.75rem,env(safe-area-inset-bottom))] ${dark ? "border-white/10 bg-[#11140f]" : "border-background-200 bg-[#f8f7f2]"}`}>
         {error && <div role="alert" className="mb-2 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[10px] text-red-700"><span>{error}</span><button type="button" onClick={onRetry} className="shrink-0 cursor-pointer font-bold underline">Retry</button></div>}
-        {accountRequired && <div role="alert" className="mb-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[10px] text-amber-950"><strong className="block">Account Required</strong><span>Sign in or create an account before starting, saving or ordering a design.</span><div className="mt-2 flex gap-2"><a href="/register" className="rounded-lg bg-primary-700 px-2.5 py-1.5 font-bold text-white">Create Account</a><a href="/login" className="rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 font-bold">Sign In</a></div></div>}
+        {accountRequired && <div role="alert" className="mb-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[10px] text-amber-950"><strong className="block">Account Required</strong><span>Sign in or create an account before starting, saving or ordering a design.</span><div className="mt-2 flex gap-2"><a href={authHref("register")} className="rounded-lg bg-primary-700 px-2.5 py-1.5 font-bold text-white">Create Account</a><a href={authHref("login")} className="rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 font-bold">Sign In</a></div></div>}
         {(uniformPlan || artworkPreview) && !downloadUnlocked && (
           <div role="status" className="mb-2 flex items-center justify-between gap-3 rounded-xl border border-background-300 bg-white px-3 py-2 text-[10px] text-background-800">
             <span><i className="ri-lock-line mr-1 text-primary-700" />Complete your order to unlock high-resolution downloads and production-ready design files.</span>
