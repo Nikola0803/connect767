@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { toCanvas } from "html-to-image";
 import ProductDraggableLayer from "../ProductDraggableLayer";
 
 // Fixed capture resolution — independent of screen size so the 3D texture
@@ -28,9 +27,10 @@ export default function DesignCapture({ layers, placements, onTextureUpdate }) {
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
-      viewsWithLayers.forEach((p) => {
+      viewsWithLayers.forEach(async (p) => {
         const node = stageRefs.current[p.key];
         if (!node) return;
+        const { toCanvas } = await import("html-to-image");
         toCanvas(node, { pixelRatio: 1, skipFonts: true, width: CAPTURE_W, height: CAPTURE_H })
           .then((canvas) => onTextureUpdate(p.key, canvas))
           .catch(() => {

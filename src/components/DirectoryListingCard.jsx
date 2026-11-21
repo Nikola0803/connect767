@@ -209,7 +209,7 @@ export default function DirectoryListingCard({
 
   if (view === "list") {
     return (
-      <article className={`group relative isolate rounded-[1.5rem] border border-background-200/90 bg-background-50 shadow-[0_10px_34px_rgba(37,30,20,0.07)] transition-all duration-300 before:absolute before:inset-x-6 before:top-0 before:z-20 before:h-[3px] before:rounded-b-full before:bg-gradient-to-r before:from-primary-500 before:via-primary-300 before:to-accent-400 hover:-translate-y-1.5 hover:border-primary-200 hover:shadow-[0_24px_60px_rgba(31,112,78,0.16)] ${className}`}>
+      <article className={`content-auto-card group relative isolate rounded-[1.5rem] border border-background-200/90 bg-background-50 shadow-[0_10px_34px_rgba(37,30,20,0.07)] transition-all duration-300 before:absolute before:inset-x-6 before:top-0 before:z-20 before:h-[3px] before:rounded-b-full before:bg-gradient-to-r before:from-primary-500 before:via-primary-300 before:to-accent-400 hover:-translate-y-1.5 hover:border-primary-200 hover:shadow-[0_24px_60px_rgba(31,112,78,0.16)] ${className}`}>
         <Link
           to={`/listings/${listing.slug}`}
           className="flex flex-col cursor-pointer sm:flex-row"
@@ -240,7 +240,7 @@ export default function DirectoryListingCard({
   }
 
   return (
-    <article className={`group relative isolate flex flex-col rounded-[1.5rem] border border-background-200/90 bg-background-50 shadow-[0_10px_34px_rgba(37,30,20,0.07)] transition-all duration-300 before:absolute before:inset-x-6 before:top-0 before:z-20 before:h-[3px] before:rounded-b-full before:bg-gradient-to-r before:from-primary-500 before:via-primary-300 before:to-accent-400 hover:-translate-y-1.5 hover:border-primary-200 hover:shadow-[0_24px_60px_rgba(31,112,78,0.16)] ${className}`}>
+    <article className={`content-auto-card group relative isolate flex flex-col rounded-[1.5rem] border border-background-200/90 bg-background-50 shadow-[0_10px_34px_rgba(37,30,20,0.07)] transition-all duration-300 before:absolute before:inset-x-6 before:top-0 before:z-20 before:h-[3px] before:rounded-b-full before:bg-gradient-to-r before:from-primary-500 before:via-primary-300 before:to-accent-400 hover:-translate-y-1.5 hover:border-primary-200 hover:shadow-[0_24px_60px_rgba(31,112,78,0.16)] ${className}`}>
       <Link to={`/listings/${listing.slug}`} className="flex h-full flex-col cursor-pointer">
         <Cover listing={listing} />
         <div className="flex min-w-0 flex-1 flex-col p-4 pt-4.5">
