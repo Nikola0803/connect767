@@ -60,9 +60,10 @@ describe("required uniform fit selection", () => {
     expect(logo).toHaveAttribute("src", "/connect767-ai-logo-transparent.png");
     expect(logo).toHaveAccessibleName("Connect767 AI");
     expect(logo).not.toHaveClass("grayscale", "opacity-30", "mix-blend-multiply");
-    expect(logo.compareDocumentPosition(brandTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByTestId("studio-entry-brand")).toContainElement(logo);
-    expect(entry).not.toContainElement(logo);
+    expect(brandTitle.compareDocumentPosition(logo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByTestId("studio-entry-brand")).not.toContainElement(logo);
+    expect(entry).toContainElement(logo);
+    expect(screen.queryByText("Connect767 AI", { selector: "span" })).not.toBeInTheDocument();
     expect(screen.queryByText("One design studio")).not.toBeInTheDocument();
     expect(screen.queryByText("Every category. One workspace.")).not.toBeInTheDocument();
     expect(screen.queryByText("Enter once, then choose the required category and fit inside the studio.")).not.toBeInTheDocument();
