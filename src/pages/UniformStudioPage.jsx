@@ -220,7 +220,7 @@ const tools = [
   },
   {
     key: "ai",
-    label: "AI Designer",
+    label: "Designer",
     icon: "ri-sparkling-2-fill",
     hint: "Describe the complete kit and apply an editable AI design plan, or generate transparent artwork for placement.",
   },
@@ -2349,8 +2349,7 @@ export default function UniformStudioPage() {
                 <img src={`${import.meta.env.BASE_URL}connect767-ai-logo-transparent.png?v=20261117`} alt="" className="h-full w-full object-contain brightness-0 invert" />
                 <i className="ri-sparkling-2-fill absolute -right-0.5 -top-0.5 text-[8px] leading-none text-white" />
               </span>
-              <span className="hidden sm:inline">AI Designer</span>
-              <span className="sm:hidden">AI</span>
+              <span>Designer</span>
             </button>
           )}
           {headerCapabilities.refineAI && (
