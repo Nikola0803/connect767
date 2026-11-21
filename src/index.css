@@ -81,6 +81,7 @@ html {
 
 body, #root {
   min-height: 100%;
+  min-width: 0;
 }
 
 html, body {
@@ -100,6 +101,27 @@ img, picture, video, canvas, svg {
 
 img, video, canvas {
   display: block;
+  height: auto;
+}
+
+/* Keep nested flex/grid children and long user content from widening the
+   viewport. Individual horizontal scrollers can still opt into overflow. */
+main, section, article, aside, nav, form,
+main > *, section > *, article > *, aside > *, nav > *, form > * {
+  min-width: 0;
+}
+
+p, li, dd, blockquote, figcaption {
+  overflow-wrap: anywhere;
+}
+
+input, select, textarea {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+iframe {
+  max-width: 100%;
 }
 
 button, a, input, select, textarea {
@@ -164,6 +186,32 @@ h1, h2, h3, h4, h5, h6 {
   input, select, textarea {
     /* Prevent Safari from zooming the page when a form control receives focus. */
     font-size: 16px;
+  }
+
+  /* Native date/number controls can otherwise retain an intrinsic desktop
+     width and push compact forms beyond the screen edge. */
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="month"],
+  input[type="time"],
+  input[type="number"] {
+    min-width: 0;
+    width: 100%;
+  }
+
+  /* Comfortable tap targets without changing the visual size of inline text
+     links. Icon buttons throughout the app already carry aria-labels. */
+  button,
+  [role="button"],
+  a[aria-label] {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@media (pointer: coarse) {
+  button:not([class*="h-"]):not([class*="py-"]),
+  [role="button"]:not([class*="h-"]):not([class*="py-"]) {
+    min-height: 44px;
   }
 }
 

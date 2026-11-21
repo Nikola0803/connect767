@@ -196,7 +196,7 @@ export default function StorefrontCustomizer({ listings, products, initialListin
                 key={previewRevision}
                 title="Full storefront preview"
                 src={`/listings/${listing.slug}/shop?designPreview=1&previewKey=${encodeURIComponent(previewKey)}&revision=${previewRevision}`}
-                className="h-[820px] w-full bg-background-50"
+                className="h-[70dvh] min-h-96 w-full bg-background-50 sm:h-[820px]"
               />
             </div>
           )}
