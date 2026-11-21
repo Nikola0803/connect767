@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import {
@@ -34,6 +34,7 @@ import BookingRateEditor from "../components/booking/BookingRateEditor";
 import { hasCompletePayoutDetails } from "../lib/payoutSettings";
 import { Spinner, ErrorState } from "../components/ui/States";
 import { isLiveApi } from "../lib/config";
+import { trackMarketingEventOnce } from "../lib/marketingAnalytics";
 import { imageCropStyle } from "../lib/imagePosition";
 import {
   coverPhotoDimensionError,
@@ -320,6 +321,13 @@ export default function AddListingPage() {
   // never sets this and goes straight to `submitted`.
   const [pendingPayment, setPendingPayment] = useState(null); // { listingId } | null
   const [justPaid, setJustPaid] = useState(false);
+  const listingStarted = useRef(false);
+
+  const noteListingStarted = () => {
+    if (isEditing || listingStarted.current) return;
+    listingStarted.current = true;
+    trackMarketingEventOnce("listing_started", "listing_form");
+  };
 
   useEffect(() => {
     if (!isOnboarding || isEditing || submitted) return;
@@ -527,8 +535,10 @@ export default function AddListingPage() {
     return { deferred: false };
   };
 
-  const update = (field) => (e) =>
+  const update = (field) => (e) => {
+    noteListingStarted();
     setForm((f) => ({ ...f, [field]: e.target.value }));
+  };
 
   const handleCoverPhotoChange = async (event) => {
     const file = event.target.files?.[0];
@@ -753,7 +763,10 @@ export default function AddListingPage() {
               </p>
               <ListingTierCards
                 selectedTier={form.tier}
-                onSelect={(tier) => setForm((f) => ({ ...f, tier }))}
+                onSelect={(tier) => {
+                  noteListingStarted();
+                  setForm((f) => ({ ...f, tier }));
+                }}
                 scale={0.7}
                 className="mx-auto max-w-4xl"
               />

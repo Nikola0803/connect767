@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 import DemoModeNotice from "../components/DemoModeNotice";
@@ -11,6 +11,7 @@ import {
   listingOnboardingRequired,
   requireListingOnboarding,
 } from "../lib/listingOnboarding";
+import { trackMarketingEventOnce } from "../lib/marketingAnalytics";
 
 function requestedRedirect(location) {
   const value = new URLSearchParams(location.search).get("redirect") || "";
@@ -192,6 +193,13 @@ function RegisterForm() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const registrationStarted = useRef(false);
+
+  const noteRegistrationStarted = () => {
+    if (registrationStarted.current) return;
+    registrationStarted.current = true;
+    trackMarketingEventOnce("registration_started", "registration_form");
+  };
 
   const update = (field) => (e) =>
     setForm((f) => ({
@@ -230,7 +238,7 @@ function RegisterForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} onFocus={noteRegistrationStarted} className="space-y-4">
       {error && (
         <div className="px-4 py-3 rounded-lg bg-accent-50 border border-accent-200 text-sm text-accent-700 flex items-start gap-2">
           <i className="ri-error-warning-line mt-0.5" />

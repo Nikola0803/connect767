@@ -9,6 +9,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import ScrollToTop from "./components/ScrollToTop";
 import RouteSeo from "./components/RouteSeo";
 import ListingOnboardingGate from "./components/ListingOnboardingGate";
+import MarketingAnalytics from "./components/MarketingAnalytics";
 
 const initialHomePageModule = window.location.pathname === "/" ? import("./pages/HomePage") : null;
 const HomePage = lazy(() => initialHomePageModule || import("./pages/HomePage"));
@@ -89,6 +90,7 @@ function App() {
         <SavedListingsProvider>
           <ScrollToTop />
           <RouteSeo />
+          <MarketingAnalytics />
           <Chrome>
             <RouteBoundary>
               <Suspense fallback={<RouteLoading />}>
