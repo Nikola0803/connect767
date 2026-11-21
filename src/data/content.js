@@ -82,5 +82,4 @@ export const partners = ["Printful", "USPS", "UPS", "FedEx", "Amazon", "Meta", "
 
 export const heroImage = "/uploads/hero.webp";
 
-export const uniformImage =
-  "https://readdy.ai/api/search-image?query=Editorial%203D%20render%20of%20a%20full%20soccer%20uniform%20floating%20mid-air%2C%20emerald%20green%20and%20cream%20jersey%20with%20number%2010%2C%20matching%20shorts%20and%20socks%2C%20soft%20studio%20lighting%2C%20warm%20terracotta%20backdrop%2C%20minimalist%20product%20photography%2C%20cinematic%20composition%2C%20highly%20detailed%20fabric%20textures&width=1200&height=1200&seq=connect767-uniform-studio-hero&orientation=squarish";
+export const uniformImage = "/uploads/uniform-studio-green-white-ai-emboss.png";
