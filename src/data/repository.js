@@ -13,6 +13,7 @@ import { hydrateMatchedListings, matchListingsLocally } from "../lib/matching";
 import { normalizeBookingType, normalizeRentalRateUnit } from "../lib/bookingTypes";
 import { hasPaidBookingRate } from "../lib/payoutSettings";
 import { normalizeBookingRateRules } from "../lib/bookingRates";
+import { refreshCurrentUser } from "../lib/authClient";
 import { allIndustries } from "./industries";
 import { createListingSearchText } from "../lib/listingSearch";
 import { AI_DESIGNER_FEE, uniformAiDesignerFee, uniformShippingRate } from "../lib/uniformShipping";
@@ -724,6 +725,7 @@ export async function submitListing(form) {
 
   const created = await customClient.post("/listings", payload);
   await saveBookingSettings(created?.id, form);
+  await refreshCurrentUser().catch(() => null);
   return created;
 }
 
@@ -929,6 +931,7 @@ export async function updateListing(id, form) {
 
   const updated = await customClient.post(`/listings/${id}`, payload);
   await saveBookingSettings(id, form);
+  await refreshCurrentUser().catch(() => null);
   return updated;
 }
 

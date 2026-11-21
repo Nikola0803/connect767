@@ -91,6 +91,49 @@ describe("PositionPicker cover controls", () => {
     expect(onPositionChange).toHaveBeenCalled();
   });
 
+  it("moves a square cover image vertically from the reposition handle", () => {
+    const onPositionChange = vi.fn();
+    render(
+      <PositionPicker
+        src="https://example.com/square-logo.jpg"
+        shape="cover"
+        position="center"
+        zoom={1}
+        fit="cover"
+        onPositionChange={onPositionChange}
+        onZoomChange={vi.fn()}
+        onFitChange={vi.fn()}
+      />,
+    );
+
+    const image = screen.getByAltText("Position preview");
+    Object.defineProperties(image, {
+      naturalWidth: { value: 1000 },
+      naturalHeight: { value: 1000 },
+    });
+    fireEvent.load(image);
+    image.parentElement.getBoundingClientRect = () => ({
+      width: 400,
+      height: 225,
+      left: 0,
+      top: 0,
+      right: 400,
+      bottom: 225,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+
+    fireEvent.mouseDown(screen.getByRole("button", { name: "Reposition photo" }), {
+      clientX: 100,
+      clientY: 100,
+    });
+    fireEvent.mouseMove(window, { clientX: 100, clientY: 140 });
+    fireEvent.mouseUp(window);
+
+    expect(onPositionChange).toHaveBeenLastCalledWith("50% 31%");
+  });
+
   it("shows the same working reposition and zoom toolbar on profile photos", () => {
     const onPositionChange = vi.fn();
     const onZoomChange = vi.fn();

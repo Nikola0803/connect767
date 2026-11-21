@@ -64,4 +64,10 @@ describe("listing form industry taxonomy", () => {
     );
     expect(resolveListingIndustrySlug({ categorySlug: "services" })).toBe("");
   });
+
+  it("recovers an existing industry from the owner API's legacy category labels", () => {
+    expect(
+      resolveListingIndustrySlug({ category: "Services, Accounting & Bookkeeping" }),
+    ).toBe("accounting-and-bookkeeping");
+  });
 });

@@ -6,6 +6,7 @@ import {
   formatPosition,
   imageCropStyle,
   resolveSmartImageFit,
+  coverDragTravel,
 } from "../../lib/imagePosition";
 
 /**
@@ -46,7 +47,8 @@ export default function PositionPicker({
     // Exact-ratio images have no movable overflow at 1x. Give the image a
     // small amount of travel as soon as repositioning starts so dragging is
     // visibly responsive instead of appearing broken.
-    if (z <= ZOOM_MIN) onZoomChange(1.1);
+    const dragZoom = z <= ZOOM_MIN ? 1.1 : z;
+    if (z <= ZOOM_MIN) onZoomChange(dragZoom);
     const point = e.touches?.[0] ?? e;
     dragRef.current = {
       startX: point.clientX,
@@ -54,6 +56,8 @@ export default function PositionPicker({
       originX: pct.x,
       originY: pct.y,
       rect: frameRef.current?.getBoundingClientRect(),
+      naturalRatio,
+      zoom: dragZoom,
     };
     setDragging(true);
   };
@@ -62,23 +66,29 @@ export default function PositionPicker({
     (e) => {
       const d = dragRef.current;
       if (!d?.rect) return;
+      if (e.cancelable) e.preventDefault();
       const point = e.touches?.[0] ?? e;
 
       // object-position moves the image OPPOSITE to the percentage, so the
       // delta is inverted — otherwise dragging left would push the picture
       // right and feel broken.
       //
-      // Divided by (zoom - 1) worth of overflow: at 1x there's nothing to
-      // pan, and the further you're zoomed the less the image needs to move
-      // per pixel of cursor travel for the same visual shift.
-      const travelX = Math.max(1, d.rect.width * Math.max(0.25, z - 1));
-      const travelY = Math.max(1, d.rect.height * Math.max(0.25, z - 1));
+      // Each axis has different movable overflow depending on the source
+      // image ratio. Normalize against that real travel so a portrait/square
+      // image can move vertically inside a wide cover just as reliably as a
+      // banner can move horizontally.
+      const travel = coverDragTravel(
+        d.rect.width,
+        d.rect.height,
+        d.naturalRatio,
+        d.zoom,
+      );
 
-      const nextX = d.originX - ((point.clientX - d.startX) / travelX) * 100;
-      const nextY = d.originY - ((point.clientY - d.startY) / travelY) * 100;
+      const nextX = d.originX - ((point.clientX - d.startX) / travel.x) * 100;
+      const nextY = d.originY - ((point.clientY - d.startY) / travel.y) * 100;
       onPositionChange(formatPosition(nextX, nextY));
     },
-    [onPositionChange, z],
+    [onPositionChange],
   );
 
   useEffect(() => {

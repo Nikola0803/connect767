@@ -99,6 +99,14 @@ export function savedBookingSelection(publicListing, ownedListings = []) {
     : Boolean(publicListing?.bookingEnabled);
 }
 
+export function savedIndustrySelection(publicListing, ownedListings = []) {
+  const ownedListing = ownedListings.find(
+    (listing) =>
+      Number(listing.id) === Number(publicListing?.id) || listing.slug === publicListing?.slug
+  );
+  return resolveListingIndustrySlug(ownedListing) || resolveListingIndustrySlug(publicListing);
+}
+
 const initialForm = {
   tier: "classified",
   businessName: "",
@@ -366,13 +374,14 @@ export default function AddListingPage() {
         setListingId(data.id);
         const savedSellProducts = savedSellProductsSelection(data, ownedListings || []);
         const savedBookingEnabled = savedBookingSelection(data, ownedListings || []);
+        const savedIndustry = savedIndustrySelection(data, ownedListings || []);
         const existingTier = data.badge === "Classified" ? "classified" : "free";
         setSavedTier(existingTier);
         setForm((f) => ({
           ...f,
           tier: existingTier,
           businessName: data.title || "",
-          category: resolveListingIndustrySlug(data),
+          category: savedIndustry,
           priceTier: data.price || "",
           description: data.description || "",
           tags: (data.tags || []).join(", "),

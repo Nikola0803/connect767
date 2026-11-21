@@ -276,8 +276,28 @@ export function findIndustry(slug) {
  * because they are not valid options in the Industry selector.
  */
 export function resolveListingIndustrySlug(listing = {}) {
-  const candidates = [listing.industrySlug, listing.categorySlug];
-  return candidates.find((slug) => findIndustry(slug)) || "";
+  const candidates = [
+    listing.industrySlug,
+    listing.industry?.slug,
+    listing.categorySlug,
+    listing.categoryPath,
+  ];
+  const savedSlug = candidates.find((slug) => findIndustry(slug));
+  if (savedSlug) return savedSlug;
+
+  // Older owner-list responses exposed only a comma-separated category-name
+  // string (for example "Services, Consulting Services"), not the saved
+  // industry slug. Recover the child industry by its canonical label so Edit
+  // Profile remains populated even before the upgraded CMS response reaches
+  // an existing installation.
+  const labels = [
+    listing.industryLabel,
+    listing.industry?.name,
+    ...(typeof listing.category === "string" ? listing.category.split(",") : []),
+  ]
+    .map((label) => String(label || "").trim().toLowerCase())
+    .filter(Boolean);
+  return allIndustries.find((industry) => labels.includes(industry.label.toLowerCase()))?.slug || "";
 }
 
 export function findCategory(slug) {

@@ -40,6 +40,14 @@ describe("token/user storage round-trip", () => {
     expect(handler).toHaveBeenCalledTimes(1);
     window.removeEventListener("c767-auth-changed", handler);
   });
+
+  it("dispatches a c767-auth-changed event when the cached user changes", () => {
+    const handler = vi.fn();
+    window.addEventListener("c767-auth-changed", handler);
+    setStoredUser({ id: 1, profilePhoto: "https://example.com/avatar.jpg" });
+    expect(handler).toHaveBeenCalledTimes(1);
+    window.removeEventListener("c767-auth-changed", handler);
+  });
 });
 
 describe("wpClient/customClient request building", () => {

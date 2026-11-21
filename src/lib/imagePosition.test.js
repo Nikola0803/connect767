@@ -5,9 +5,24 @@ import {
   imageCropStyle,
   normalizeImageFit,
   resolveSmartImageFit,
+  coverDragTravel,
   ZOOM_MIN,
   ZOOM_MAX,
 } from "./imagePosition";
+
+describe("coverDragTravel", () => {
+  it("preserves the larger vertical travel of a square image in a wide cover", () => {
+    const travel = coverDragTravel(400, 225, 1, 1.1);
+    expect(travel.x).toBeCloseTo(40);
+    expect(travel.y).toBeCloseTo(215);
+  });
+
+  it("preserves the larger horizontal travel of an extra-wide image", () => {
+    const travel = coverDragTravel(400, 225, 3, 1);
+    expect(travel.x).toBeCloseTo(275);
+    expect(travel.y).toBe(1);
+  });
+});
 
 describe("normalizeImageFit", () => {
   it("accepts the three supported fit modes", () => {

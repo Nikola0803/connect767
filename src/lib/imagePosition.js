@@ -92,6 +92,36 @@ export function clampZoom(value) {
 }
 
 /**
+ * Pixel travel available on each axis after object-fit: cover and zoom are
+ * applied. Dragging should be normalized against the real overflow, not the
+ * frame size: a square logo in a wide cover has substantial vertical travel
+ * but very little horizontal travel, while a banner has the inverse.
+ */
+export function coverDragTravel(frameWidth, frameHeight, naturalRatio, zoom = 1) {
+  const width = Math.max(0, Number(frameWidth) || 0);
+  const height = Math.max(0, Number(frameHeight) || 0);
+  const ratio = Number(naturalRatio);
+  const z = clampZoom(zoom);
+  if (!width || !height) return { x: 1, y: 1 };
+
+  if (!Number.isFinite(ratio) || ratio <= 0) {
+    const fallback = Math.max(0.1, z - 1);
+    return {
+      x: Math.max(1, width * fallback),
+      y: Math.max(1, height * fallback),
+    };
+  }
+
+  const frameRatio = width / height;
+  const renderedWidth = ratio >= frameRatio ? height * ratio : width;
+  const renderedHeight = ratio >= frameRatio ? height : width / ratio;
+  return {
+    x: Math.max(1, renderedWidth * z - width),
+    y: Math.max(1, renderedHeight * z - height),
+  };
+}
+
+/**
  * Combined inline style for an <img> using object-fit: cover, rendered
  * inside a SEPARATE overflow-hidden wrapper (not on the img's own
  * border-radius) — putting both the shape/clip and the zoom transform on

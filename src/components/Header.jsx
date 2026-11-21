@@ -4,6 +4,36 @@ import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../hooks/useCart";
 import BrandLogo from "./BrandLogo";
 import { getUnreadMessageCount } from "../data/repository";
+import { imageCropStyle } from "../lib/imagePosition";
+
+export function AccountAvatar({
+  email,
+  src,
+  position = "center",
+  zoom = 1,
+  className = "w-7 h-7",
+}) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [src]);
+  const initial = (email || "?")[0]?.toUpperCase();
+
+  return (
+    <div
+      className={`${className} relative flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-500 text-xs font-bold text-background-50`}
+    >
+      <span aria-hidden="true">{initial}</span>
+      {src && !failed && (
+        <img
+          src={src}
+          alt="Profile photo"
+          onError={() => setFailed(true)}
+          className="absolute inset-0 h-full w-full object-cover"
+          style={imageCropStyle(position, zoom)}
+        />
+      )}
+    </div>
+  );
+}
 
 const navItems = [
   { label: "Directory", href: "/listings" },
@@ -16,7 +46,14 @@ const navItems = [
 export default function Header() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, email, logout } = useAuth();
+  const {
+    isAuthenticated,
+    email,
+    profilePhoto,
+    profilePhotoPosition,
+    profilePhotoZoom,
+    logout,
+  } = useAuth();
   const { count: cartCount, setIsOpen: setCartOpen } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
@@ -211,9 +248,12 @@ export default function Header() {
                 type="button"
                 className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md cursor-pointer whitespace-nowrap ${signInClass}`}
               >
-                <div className="w-7 h-7 flex items-center justify-center rounded-full bg-primary-500 text-background-50 text-xs font-bold">
-                  {(email || "?")[0]?.toUpperCase()}
-                </div>
+                <AccountAvatar
+                  email={email}
+                  src={profilePhoto}
+                  position={profilePhotoPosition}
+                  zoom={profilePhotoZoom}
+                />
                 <span className="hidden md:inline">{email}</span>
                 <i className="ri-arrow-down-s-line" />
               </button>
@@ -325,9 +365,13 @@ export default function Header() {
             {isAuthenticated ? (
               <>
                 <div className="flex items-center gap-3 px-4 py-3">
-                  <div className="w-8 h-8 flex items-center justify-center rounded-full bg-primary-500 text-background-50 text-xs font-bold">
-                    {(email || "?")[0]?.toUpperCase()}
-                  </div>
+                  <AccountAvatar
+                    email={email}
+                    src={profilePhoto}
+                    position={profilePhotoPosition}
+                    zoom={profilePhotoZoom}
+                    className="h-8 w-8"
+                  />
                   <span className="text-sm text-foreground-700 truncate">{email}</span>
                 </div>
                 <Link
