@@ -50,9 +50,9 @@ export default function ShopTeaser() {
     );
 
   return (
-    <section className="w-full bg-background-100 px-4 py-10 text-foreground-950 md:px-8 md:py-14 lg:px-12">
+    <section className="w-full bg-background-100 px-4 py-8 text-foreground-950 md:px-8 md:py-10 lg:px-12">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-8 flex flex-col justify-between gap-4 md:mb-10 md:flex-row md:items-end">
+        <div className="mb-6 flex flex-col justify-between gap-4 md:mb-8 md:flex-row md:items-end">
           <div>
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-800">
               <i className="ri-store-3-line" />

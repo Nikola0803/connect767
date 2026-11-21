@@ -68,9 +68,9 @@ export default function Featured() {
   };
 
   return (
-    <section className="w-full bg-background-100/50 px-4 py-10 md:px-8 md:py-14 lg:px-12">
+    <section className="w-full bg-background-100/50 px-4 py-8 md:px-8 md:py-10 lg:px-12">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10">
+        <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-100 text-accent-900 text-xs font-medium mb-4">
               <i className="ri-sparkling-2-line" />
@@ -173,7 +173,7 @@ export default function Featured() {
           </>
         )}
 
-        <div className="mt-10 flex justify-center">
+        <div className="mt-8 flex justify-center">
           <Link
             className="inline-flex items-center gap-2 px-6 py-3 rounded-md border border-background-300 bg-background-50 text-sm font-semibold text-foreground-950 hover:bg-background-200/60 cursor-pointer whitespace-nowrap"
             to="/listings"

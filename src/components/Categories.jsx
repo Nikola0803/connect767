@@ -7,9 +7,9 @@ export default function Categories() {
   const { data: categories, loading, error, reload } = useAsync(() => getHomeCategories(), []);
 
   return (
-    <section className="w-full bg-background-50 px-4 py-10 md:px-8 md:py-14 lg:px-12">
+    <section className="w-full bg-background-50 px-4 py-8 md:px-8 md:py-10 lg:px-12">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10 md:mb-14">
+        <div className="mb-8 flex flex-col gap-6 md:mb-10 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-100 text-secondary-900 text-xs font-medium mb-4">
               <i className="ri-shapes-line" />
