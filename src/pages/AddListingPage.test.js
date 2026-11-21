@@ -1,5 +1,35 @@
 import { describe, expect, it } from "vitest";
-import { savedBookingSelection, savedSellProductsSelection } from "./AddListingPage";
+import {
+  missingBusinessRequiredFieldIds,
+  savedBookingSelection,
+  savedSellProductsSelection,
+} from "./AddListingPage";
+
+describe("missingBusinessRequiredFieldIds", () => {
+  it("flags Industry and every other mandatory business field", () => {
+    expect(missingBusinessRequiredFieldIds({})).toEqual([
+      "businessName",
+      "category",
+      "priceTier",
+      "yearsExperience",
+      "description",
+      "location",
+    ]);
+  });
+
+  it("accepts a canonical saved industry slug", () => {
+    expect(
+      missingBusinessRequiredFieldIds({
+        businessName: "Island Accounting",
+        category: "accounting-and-bookkeeping",
+        priceTier: "$$",
+        yearsExperience: "7",
+        description: "Accounting services",
+        location: "Roseau, Dominica",
+      }),
+    ).toEqual([]);
+  });
+});
 
 describe("savedSellProductsSelection", () => {
   it("prefers the authenticated owner's saved storefront choice", () => {

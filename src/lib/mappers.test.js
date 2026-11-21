@@ -509,6 +509,20 @@ describe("mapListingCpt", () => {
     expect(mapped.industryLabel).toBe("Nursing & Caregiving");
   });
 
+  it("keeps the saved industry when a custom profile response exposes it at the top level", () => {
+    const mapped = mapListingCpt({
+      id: 12,
+      slug: "island-accountant",
+      title: "Island Accountant",
+      industrySlug: "accounting-and-bookkeeping",
+      acf: {},
+    });
+
+    expect(mapped.parentCategorySlug).toBe("services");
+    expect(mapped.industrySlug).toBe("accounting-and-bookkeeping");
+    expect(mapped.industryLabel).toBe("Accounting & Bookkeeping");
+  });
+
   it("keeps the parent category distinct from a stale industry category label", () => {
     const mapped = mapListingDetail({
       id: 11,

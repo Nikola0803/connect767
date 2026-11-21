@@ -341,11 +341,13 @@ export function mapListingCpt(wp) {
     allCatTerms.find((t) => t.parent) ||
     allCatTerms.find((t) => !findCategory(t.slug)) ||
     null;
-  const industry = findIndustry(industryTerm?.slug) || findIndustry(acf.category_slug);
+  const persistedIndustrySlug =
+    acf.category_slug || wp.industrySlug || wp.industry_slug || wp.category_slug || "";
+  const industry = findIndustry(industryTerm?.slug) || findIndustry(persistedIndustrySlug);
   const parentCategorySlug =
     industry?.categorySlug ||
     findCategory(allCatTerms.find((t) => !t.parent)?.slug)?.slug ||
-    findCategory(acf.category_slug)?.slug ||
+    findCategory(persistedIndustrySlug)?.slug ||
     "";
   const parentCategory = findCategory(parentCategorySlug);
   const categoryTerm =
