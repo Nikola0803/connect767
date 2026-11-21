@@ -2,9 +2,9 @@ import { steps } from "../data/content";
 
 export default function HowItWorks() {
   return (
-    <section className="hidden w-full bg-background-50 px-4 py-10 md:block md:px-8 md:py-14 lg:px-12">
+    <section className="hidden w-full bg-background-50 px-4 py-8 md:block md:px-8 md:py-10 lg:px-12">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mb-14">
+        <div className="mb-8 grid grid-cols-1 gap-10 lg:grid-cols-12">
           <div className="lg:col-span-5">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-100 text-primary-800 text-xs font-medium mb-4">
               <i className="ri-compass-3-line" />
@@ -20,7 +20,7 @@ export default function HowItWorks() {
           </p>
         </div>
 
-        <div className="mb-16 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {steps.map((step) => (
             <div
               key={step.title}

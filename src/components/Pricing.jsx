@@ -2,9 +2,9 @@ import ListingTierCards from "./ListingTierCards";
 
 export default function Pricing() {
   return (
-    <section className="w-full bg-background-50 px-4 py-10 md:px-8 md:py-14 lg:px-12">
+    <section className="w-full bg-background-50 px-4 py-8 md:px-8 md:py-10 lg:px-12">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center max-w-3xl mx-auto mb-12">
+        <div className="mx-auto mb-8 max-w-3xl text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-100 text-secondary-900 text-xs font-medium mb-4">
             <i className="ri-price-tag-3-line" />
             Free &amp; Classified
