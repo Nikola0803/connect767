@@ -2324,7 +2324,7 @@ export default function UniformStudioPage() {
         aria-label="Uniform order progress"
         className="relative z-30 flex-shrink-0 border-b border-white/[0.06] bg-[#12130f] px-3 py-1.5 sm:px-5"
       >
-        <div className="mx-auto flex max-w-[1500px] items-center gap-1 overflow-x-auto">
+        <div className="mx-auto flex max-w-[1040px] items-center justify-start gap-2 overflow-x-auto lg:justify-center">
           {studioWorkflow.map((step, index) => {
             const active = index === workflowIndex;
             const complete = index < workflowIndex;
@@ -2333,13 +2333,13 @@ export default function UniformStudioPage() {
               ? `${categoryDetails[activeSport]?.title || "Category"} · ${hasSelectedFit ? fitType : "Fit required"}`
               : step.description;
             return (
-              <div key={step.key} className="flex min-w-0 flex-1 items-center gap-1">
+              <div key={step.key} className="flex shrink-0 items-center gap-2">
                 <button
                   type="button"
                   aria-current={active ? "step" : undefined}
                   disabled={locked}
                   onClick={() => openWorkflowStep(index)}
-                  className={`group flex min-w-[142px] flex-1 items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition ${
+                  className={`group flex min-h-[68px] w-[240px] shrink-0 items-center gap-3 rounded-xl border px-4 py-2.5 text-left transition sm:w-[270px] lg:w-[300px] ${
                     active
                       ? "cursor-pointer border-primary-400/45 bg-primary-700 text-white shadow-[0_8px_22px_rgba(0,116,73,0.2)]"
                       : complete
@@ -2349,7 +2349,7 @@ export default function UniformStudioPage() {
                           : "cursor-pointer border-white/[0.07] bg-white/[0.025] text-background-50/55 hover:border-white/[0.14] hover:bg-white/[0.06] hover:text-background-50/80"
                   }`}
                 >
-                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold ${
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-bold ${
                     active
                       ? "border-white/20 bg-white/15"
                       : complete
@@ -2359,11 +2359,11 @@ export default function UniformStudioPage() {
                     {complete ? <i className="ri-check-line" /> : locked ? <i className="ri-lock-line" /> : step.step}
                   </span>
                   <span className="min-w-0">
-                    <span className="flex items-center gap-1.5 whitespace-nowrap text-[10px] font-bold capitalize">
-                      <i className={`${step.icon} text-[11px] opacity-70`} />
+                    <span className="flex items-center gap-2 whitespace-nowrap text-sm font-bold capitalize">
+                      <i className={`${step.icon} text-base opacity-70`} />
                       {step.label}
                     </span>
-                    <span className={`hidden whitespace-nowrap text-[8px] xl:block ${active ? "text-white/65" : "text-current opacity-55"}`}>
+                    <span className={`mt-0.5 hidden whitespace-nowrap text-[10px] sm:block ${active ? "text-white/70" : "text-current opacity-55"}`}>
                       {stepDescription}
                     </span>
                   </span>
@@ -2371,7 +2371,7 @@ export default function UniformStudioPage() {
                 {index < studioWorkflow.length - 1 && (
                   <span
                     aria-hidden="true"
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs transition ${
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm transition ${
                       complete
                         ? "border-primary-500/35 bg-primary-950/50 text-primary-300"
                         : "border-white/[0.07] bg-white/[0.025] text-background-50/30"
