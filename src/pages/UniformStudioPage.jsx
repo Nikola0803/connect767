@@ -1962,19 +1962,11 @@ export default function UniformStudioPage() {
           </section>
 
           <section className="rounded-[24px] border border-background-300/70 bg-background-50/90 p-3 shadow-[0_18px_48px_rgba(69,48,30,0.06)] backdrop-blur-sm sm:p-4">
-            <div data-testid="studio-entry-brand" className="flex items-center justify-center gap-3 pb-3 sm:pb-4">
-              <img
-                data-testid="studio-entry-ai-logo"
-                src="/connect767-ai-logo-transparent.png"
-                alt="Connect767 AI"
-                className="h-10 w-10 shrink-0 object-contain sm:h-11 sm:w-11"
-              />
-              <div className="text-center">
-                <p className="font-label text-[9px] font-bold uppercase tracking-[0.2em] text-primary-700">
-                  Connect767 Design Studio
-                </p>
-                <span className="font-heading text-base font-semibold">Custom Uniforms &amp; Clothing</span>
-              </div>
+            <div data-testid="studio-entry-brand" className="pb-3 text-center sm:pb-4">
+              <p className="font-label text-[9px] font-bold uppercase tracking-[0.2em] text-primary-700">
+                Connect767 Design Studio
+              </p>
+              <span className="font-heading text-base font-semibold">Custom Uniforms &amp; Clothing</span>
             </div>
             <button
               type="button"
@@ -2004,7 +1996,12 @@ export default function UniformStudioPage() {
               </span>
               <span className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,18,11,.12),rgba(4,18,11,.68))]" aria-hidden="true" />
               <span className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white">
-                <span className="font-label text-[9px] font-bold uppercase tracking-[0.2em] text-primary-200">Connect767 AI</span>
+                <img
+                  data-testid="studio-entry-ai-logo"
+                  src="/connect767-ai-logo-transparent.png"
+                  alt="Connect767 AI"
+                  className="h-12 w-12 object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,.35)] sm:h-14 sm:w-14"
+                />
                 <strong className="mt-2 font-heading text-3xl font-semibold sm:text-4xl">Enter Design Studio</strong>
                 <span className="mt-2 text-xs text-white/70 sm:text-sm">Choose your category and fit inside.</span>
                 <span className="mt-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-500 text-lg shadow-[0_10px_24px_rgba(0,0,0,.25)] transition group-hover:translate-x-1 group-hover:bg-primary-400"><i className="ri-arrow-right-line" /></span>
