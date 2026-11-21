@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-const CHROMELESS_ROUTES = ["/uniforms", "/shop/customize", "/design-studio"];
+const CHROMELESS_ROUTES = ["/shop/customize", "/design-studio"];
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { CartProvider } from "./hooks/useCart";
