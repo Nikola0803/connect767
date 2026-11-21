@@ -47,7 +47,7 @@ function BookingSignal({ listing }) {
     ? `${price} / ${normalizeRentalRateUnit(listing.bookingRentalRateUnit, listing.bookingType)}`
     : `${price} · ${listing.bookingDurationMinutes || 30} min`;
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-[10px] font-semibold text-primary-800 shadow-[0_6px_18px_rgba(31,112,78,0.08)] whitespace-nowrap">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-2.5 py-1 text-[10px] font-semibold text-primary-800 shadow-[0_6px_18px_rgba(31,112,78,0.08)] whitespace-nowrap">
       <i className="ri-calendar-check-line text-xs" />
       Book · {detail}
     </span>
@@ -92,7 +92,7 @@ function ListingIdentity({ listing, compact = false, alignGridRows = false }) {
               {category}
             </p>
           </div>
-          <h3 className={`${compact ? "text-xl" : "text-[1.22rem]"} ${alignGridRows ? "min-h-[3.05rem]" : ""} mt-1.5 flex items-start gap-1.5 font-heading font-semibold leading-tight tracking-[-0.02em] text-foreground-950 transition-colors group-hover:text-primary-700`}>
+          <h3 className={`${compact ? "text-xl" : "text-[1.22rem]"} ${alignGridRows ? "min-h-[2.75rem]" : ""} mt-1 flex items-start gap-1.5 font-heading font-semibold leading-tight tracking-[-0.02em] text-foreground-950 transition-colors group-hover:text-primary-700`}>
             <span className="line-clamp-2">{listing.title}</span>
             {listing.verified && (
               <i
@@ -108,7 +108,7 @@ function ListingIdentity({ listing, compact = false, alignGridRows = false }) {
           {listing.price}
         </span>
       </div>
-      <div className="mt-2.5 flex items-center gap-1.5 text-xs text-foreground-600">
+      <div className="mt-2 flex items-center gap-1.5 text-xs text-foreground-600">
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-50 text-primary-700">
           <i className="ri-map-pin-2-line text-sm" />
         </span>
@@ -123,17 +123,17 @@ function ListingHighlights({ listing }) {
     ? String(listing.yearsExperience)
     : "Not provided";
   return (
-    <div data-testid="listing-highlights" className="mt-3 grid min-h-[4.35rem] grid-cols-[0.7fr_1.3fr] items-stretch gap-2">
-      <div className="flex min-w-0 flex-col justify-between rounded-xl border border-background-200 bg-background-100/75 px-3 py-2.5">
-        <span className="block text-[9px] font-semibold uppercase tracking-[0.08em] text-foreground-500">Yrs. Exp.</span>
-        <span className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-foreground-800 truncate" title={experience}>
+    <div data-testid="listing-highlights" className="mt-2 grid min-h-[3.45rem] grid-cols-[0.7fr_1.3fr] items-stretch gap-1.5">
+      <div className="flex min-w-0 flex-col justify-between rounded-lg border border-background-200 bg-background-100/75 px-2.5 py-2">
+        <span className="block text-[8px] font-semibold uppercase tracking-[0.08em] text-foreground-500">Yrs. Exp.</span>
+        <span className="mt-0.5 flex items-center gap-1.5 truncate text-[10.5px] font-semibold leading-tight text-foreground-800" title={experience}>
           <i className="ri-briefcase-line text-primary-700 flex-shrink-0" />
           {experience}
         </span>
       </div>
-      <div className="flex min-w-0 flex-col justify-between rounded-xl border border-background-200 bg-background-100/75 px-3 py-2.5">
-        <span className="block text-[9px] font-semibold uppercase tracking-[0.1em] text-foreground-500">Industry</span>
-        <span className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-foreground-800 truncate" title={industryLabel(listing)}>
+      <div className="flex min-w-0 flex-col justify-between rounded-lg border border-background-200 bg-background-100/75 px-2.5 py-2">
+        <span className="block text-[8px] font-semibold uppercase tracking-[0.1em] text-foreground-500">Industry</span>
+        <span className="mt-0.5 flex items-center gap-1.5 truncate text-[10.5px] font-semibold leading-tight text-foreground-800" title={industryLabel(listing)}>
           <i className="ri-building-line text-primary-700 flex-shrink-0" />
           {industryLabel(listing)}
         </span>
@@ -243,21 +243,21 @@ export default function DirectoryListingCard({
     <article className={`content-auto-card group relative isolate flex flex-col rounded-[1.5rem] border border-background-200/90 bg-background-50 shadow-[0_10px_34px_rgba(37,30,20,0.07)] transition-all duration-300 before:absolute before:inset-x-6 before:top-0 before:z-20 before:h-[3px] before:rounded-b-full before:bg-gradient-to-r before:from-primary-500 before:via-primary-300 before:to-accent-400 hover:-translate-y-1.5 hover:border-primary-200 hover:shadow-[0_24px_60px_rgba(31,112,78,0.16)] ${className}`}>
       <Link to={`/listings/${listing.slug}`} className="flex h-full flex-col cursor-pointer">
         <Cover listing={listing} />
-        <div className="flex min-w-0 flex-1 flex-col p-4 pt-4.5">
+        <div className="flex min-w-0 flex-1 flex-col p-3.5">
           <ListingIdentity listing={listing} alignGridRows />
           <p
             data-testid="listing-description-row"
-            className="mt-3 h-9 line-clamp-2 text-xs leading-relaxed text-foreground-600"
+            className="mt-2 h-8 line-clamp-2 text-xs leading-snug text-foreground-600"
           >
             {description || "\u00a0"}
           </p>
           <ListingHighlights listing={listing} />
-          <div data-testid="listing-booking-row" className="mt-3 flex min-h-8 items-start">
+          <div data-testid="listing-booking-row" className="mt-2 flex min-h-7 items-start">
             {listing.bookingEnabled && <BookingSignal listing={listing} />}
           </div>
-          <div className="mt-3 flex items-center justify-between gap-3 border-t border-background-200/70 pt-4">
+          <div className="mt-2 flex items-center justify-between gap-3 border-t border-background-200/70 pt-3">
             <RatingSignal listing={listing} />
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-700 px-3.5 py-2 text-xs font-semibold text-background-50 shadow-[0_8px_20px_rgba(31,112,78,0.2)] transition-colors group-hover:bg-primary-800 whitespace-nowrap">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-700 px-3 py-1.5 text-xs font-semibold text-background-50 shadow-[0_8px_20px_rgba(31,112,78,0.2)] transition-colors group-hover:bg-primary-800 whitespace-nowrap">
               Profile <i className="ri-arrow-right-line" />
             </span>
           </div>
