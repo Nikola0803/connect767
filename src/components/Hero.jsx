@@ -38,7 +38,7 @@ export default function Hero() {
           alt="Local town street at golden hour"
           fetchPriority="high"
           decoding="async"
-          className="w-full h-full object-cover object-top"
+          className="absolute inset-0 !h-full !w-full object-cover object-top"
           src={heroImage}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-foreground-950/60 via-foreground-950/35 to-foreground-950/70" />
