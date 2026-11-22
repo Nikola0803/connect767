@@ -358,6 +358,7 @@ export default function UniformStudioPage() {
   const [view, setView] = useState("front");
   const { shellRef, compact, keyboardOpen } = useStudioViewport();
   const [mobilePanel, setMobilePanel] = useState("");
+  const [aiToolbarTarget, setAiToolbarTarget] = useState(null);
   useEffect(() => {
     if (!mobilePanel && document.activeElement?.closest?.(".studio-fields-panel, .studio-order-setup")) document.activeElement.blur?.();
   }, [mobilePanel]);
@@ -2044,11 +2045,12 @@ export default function UniformStudioPage() {
       <header className="studio-header relative z-40 flex min-h-14 flex-shrink-0 items-center justify-between gap-3 border-b border-white/[0.07] bg-[#0c0d0b]/95 px-3 py-2.5 pt-[max(.625rem,env(safe-area-inset-top))] sm:px-4 md:px-5">
         <button
           type="button"
+          aria-label="Back"
           onClick={handleExit}
           className="inline-flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-background-50/60 transition hover:bg-white/[0.06] hover:text-background-50"
         >
           <i className="ri-arrow-left-line" />
-          Back
+          <span className="studio-back-label">Back</span>
         </button>
         <div className="studio-mobile-brand"><strong>Connect767 Design Studio</strong><span aria-live="polite">{sports.find((sport) => sport.slug === activeSport)?.label} · {draftSaveStatus === "error" ? "Not saved — check storage" : draftSaveStatus === "saved" ? "Draft saved on device" : "Design workspace"}</span></div>
         <div className="studio-desktop-title flex min-w-0 flex-1 items-center justify-center gap-2">
@@ -2059,7 +2061,11 @@ export default function UniformStudioPage() {
             <span className="h-1.5 w-1.5 rounded-full bg-primary-400" /> {draftSaveStatus === "error" ? "Not saved — check storage" : draftSaveStatus === "saved" ? "Auto-saved on device" : "Draft"}
           </span>
         </div>
-        <div className="studio-header-actions flex min-w-0 items-center gap-2 overflow-x-auto">
+        <div className="studio-header-actions flex min-w-0 items-center gap-2 overflow-visible">
+          {workflowStep.key === "design" && <>
+            <div className="studio-view-actions">{renderCanvasControls()}</div>
+            <div ref={setAiToolbarTarget} className="studio-ai-tools-target" aria-label="AI prompt tools" />
+          </>}
           {headerCapabilities.aiDesigner && (
             <button
               type="button"
@@ -2282,10 +2288,6 @@ export default function UniformStudioPage() {
                   )}
                   {/* Canvas */}
                   <div data-testid="studio-canvas" className={`studio-canvas flex min-h-0 min-w-0 flex-1 flex-col items-center overflow-hidden ${(activeTool === "ai" || workflowStep.key === "category") ? "gap-0 px-0 py-0" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
-                    {workflowStep.key === "design" && <div className="studio-canvas-toolbar">
-                      {showingAIConcept || showingFoundation ? <span className="studio-view-label text-xs text-white/70">{showingFoundation ? "AI example" : "AI preview"} · front, side &amp; back</span> : <div className="studio-view-selector" aria-label="Garment views">{["front", "side", "back"].map((side) => <button key={side} type="button" aria-label={`View ${side}`} aria-pressed={view === side} onClick={() => { setView(side); productionViewportRef.current?.reset(); }}>{side[0].toUpperCase() + side.slice(1)}</button>)}</div>}
-                      {renderCanvasControls()}
-                    </div>}
                     {showingAIConcept ? (
                       <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden">
                         <div
@@ -2423,6 +2425,8 @@ export default function UniformStudioPage() {
                 <div className="min-h-0 flex-1 flex-col" style={{ display: activeTool === "ai" ? "flex" : "none" }}>
                   <AIArtworkPanel
                     allowFileActions={false}
+                    toolbarTarget={aiToolbarTarget}
+                    onOpenTools={openAIDesigner}
                     key={designPromptSessionKey}
                     sport={sports.find((item) => item.slug === activeSport)?.label || "Team sport"}
                     templateName={template?.name}
@@ -3330,7 +3334,7 @@ export function ReviewOrderTool({
             })}
           </div>
         )}
-        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="studio-order-design-actions mt-3 grid gap-2">
           <Button type="button" variant="secondary" disabled={savingDesign || !minimumKitsMet} onClick={() => saveDesignToOrder(false)} icon="ri-save-3-line">
             {savingDesign ? "Saving…" : editingOrderDesignId ? "Update Saved Design" : "Save Design"}
           </Button>

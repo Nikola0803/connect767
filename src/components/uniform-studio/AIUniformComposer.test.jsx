@@ -77,8 +77,8 @@ describe("AIUniformComposer", () => {
     expect(screen.getByRole("link", { name: "Sign In" })).toHaveAttribute("href", expect.stringContaining("redirect="));
   });
   it("allows a confirmed exhausted allowance to be refreshed without generating", () => {
-    const props = renderComposer({ canSend: false, aiQuota: { authenticated: true, limit: 10, remaining: 0 }, onRetrySetup: vi.fn() });
-    expect(screen.getByText("0 of 10 remaining")).toBeVisible();
+    const props = renderComposer({ canSend: false, aiQuota: { authenticated: true, limit: 5, remaining: 0 }, onRetrySetup: vi.fn() });
+    expect(screen.getByText("0 of 5 remaining")).toBeVisible();
     expect(screen.getByRole("button", { name: "Send message" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Refresh allowance" }));
     expect(props.onRetrySetup).toHaveBeenCalledOnce();

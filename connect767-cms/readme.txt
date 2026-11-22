@@ -86,6 +86,11 @@ regular posts.
 
 == Changelog ==
 
+= 2.3.2 =
+
+* Sets the daily registered-user AI allowance to five prompts.
+* Migrates existing allowance settings without resetting usage or changing other studio settings.
+
 = 2.0.15 =
 
 * Added category-specific uniform prices, minimum quantities, and product descriptions.

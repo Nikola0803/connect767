@@ -18,10 +18,13 @@ class C767_Design_Studio_Security
     const OPTION_KEY = 'c767_design_security_settings';
     const DB_VERSION = '1.1.0';
     const TOKEN_TTL = 2592000; // 30 days.
+    const REGISTERED_DAILY_PROMPTS = 5;
+    const QUOTA_POLICY_VERSION = '2026-11-21-five-prompts';
 
     public static function init()
     {
         if (get_option('c767_design_security_db_version') !== self::DB_VERSION) self::install();
+        self::migrate_quota_policy();
         add_action('rest_api_init', [__CLASS__, 'register_routes']);
         add_action('admin_menu', [__CLASS__, 'admin_menu']);
         add_action('admin_post_c767_save_design_security', [__CLASS__, 'save_settings']);
@@ -31,6 +34,19 @@ class C767_Design_Studio_Security
         add_action('woocommerce_order_status_refunded', [__CLASS__, 'revoke_for_order']);
         add_action('woocommerce_order_status_cancelled', [__CLASS__, 'revoke_for_order']);
         add_action('woocommerce_order_status_failed', [__CLASS__, 'revoke_for_order']);
+    }
+
+    public static function migrate_quota_policy()
+    {
+        $key = 'c767_design_security_quota_policy';
+        if (get_option($key) === self::QUOTA_POLICY_VERSION) return;
+        $saved = get_option(self::OPTION_KEY, []);
+        if (is_array($saved) && !empty($saved)) {
+            $saved['registered_daily_limit'] = self::REGISTERED_DAILY_PROMPTS;
+            update_option(self::OPTION_KEY, $saved, false);
+        }
+        // Keep today's usage ledger intact; upgrading never grants a fresh allowance.
+        update_option($key, self::QUOTA_POLICY_VERSION, false);
     }
 
     public static function install()
@@ -367,7 +383,7 @@ class C767_Design_Studio_Security
             }
             if ($quota['remaining'] < $cost) {
                 return new WP_Error('c767_ai_limit_reached', $identity['user_id']
-                    ? 'Your daily AI design allowance has been used. Please return after the UTC reset or add more credits.'
+                    ? "Your {$quota['limit']} daily AI prompts have been used. Please return after the daily reset."
                     : 'Your free AI design previews have been used. Create a free Connect767 account to continue designing.',
                     ['status' => 429, 'remaining' => 0, 'limit' => $quota['limit'], 'requiresAccount' => !$identity['user_id']]);
             }
@@ -568,7 +584,7 @@ class C767_Design_Studio_Security
         foreach (['generation','refinement','variation','artwork'] as $operation) $costs[$operation] = max(1, absint($_POST['cost_' . $operation] ?? 1));
         update_option(self::OPTION_KEY, [
             'guest_limit' => max(1, absint($_POST['guest_limit'] ?? 3)),
-            'registered_daily_limit' => max(1, absint($_POST['registered_daily_limit'] ?? 10)),
+            'registered_daily_limit' => max(1, absint($_POST['registered_daily_limit'] ?? self::REGISTERED_DAILY_PROMPTS)),
             'daily_reset_hour_utc' => max(0, min(23, absint($_POST['daily_reset_hour_utc'] ?? 0))),
             'burst_limit' => max(1, min(100, absint($_POST['burst_limit'] ?? 6))),
             'reservation_timeout_minutes' => max(5, min(120, absint($_POST['reservation_timeout_minutes'] ?? 15))),
@@ -595,7 +611,7 @@ class C767_Design_Studio_Security
         <input type="hidden" name="action" value="c767_save_design_security"><?php wp_nonce_field('c767_save_design_security'); ?>
         <table class="form-table"><tbody>
         <tr><th>Guest AI requests</th><td><input type="number" min="1" name="guest_limit" value="<?php echo esc_attr($s['guest_limit']); ?>"></td></tr>
-        <tr><th>Registered requests per UTC day</th><td><input type="number" min="1" name="registered_daily_limit" value="<?php echo esc_attr($s['registered_daily_limit']); ?>"></td></tr>
+        <tr><th>Daily AI prompts per account</th><td><input type="number" min="1" name="registered_daily_limit" value="<?php echo esc_attr($s['registered_daily_limit']); ?>"></td></tr>
         <tr><th>Daily reset hour (UTC)</th><td><input type="number" min="0" max="23" name="daily_reset_hour_utc" value="<?php echo esc_attr($s['daily_reset_hour_utc']); ?>">:00 UTC</td></tr>
         <tr><th>Abuse threshold</th><td><input type="number" min="1" max="100" name="burst_limit" value="<?php echo esc_attr($s['burst_limit']); ?>"> requests per 10 minutes</td></tr>
         <tr><th>Reservation timeout</th><td><input type="number" min="5" max="120" name="reservation_timeout_minutes" value="<?php echo esc_attr($s['reservation_timeout_minutes']); ?>"> minutes</td></tr>
@@ -612,7 +628,7 @@ class C767_Design_Studio_Security
     private static function defaults()
     {
         return [
-            'guest_limit' => 3, 'registered_daily_limit' => 10, 'daily_reset_hour_utc' => 0,
+            'guest_limit' => 3, 'registered_daily_limit' => self::REGISTERED_DAILY_PROMPTS, 'daily_reset_hour_utc' => 0,
             'burst_limit' => 6, 'reservation_timeout_minutes' => 15, 'preview_max_width' => 1200,
             'watermark_text' => 'Connect767 Design Preview', 'watermark_opacity' => 18,
             'maximum_download_attempts' => 10, 'supported_export_types' => ['png','pdf','production'],
