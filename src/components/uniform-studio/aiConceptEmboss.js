@@ -76,12 +76,10 @@ export async function embossConnect767ConceptBackground(dataUrl, { backgroundCol
     for (let y = 0; y < canvas.height; y += 1) {
       for (let x = 0; x < canvas.width; x += 1) {
         const index = (y * canvas.width + x) * 4;
-        const distance = Math.hypot(
-          pixels[index] - background[0],
-          pixels[index + 1] - background[1],
-          pixels[index + 2] - background[2],
-        );
-        if (distance > 28) continue;
+        const redDelta = pixels[index] - background[0];
+        const greenDelta = pixels[index + 1] - background[1];
+        const blueDelta = pixels[index + 2] - background[2];
+        if ((redDelta * redDelta) + (greenDelta * greenDelta) + (blueDelta * blueDelta) > 28 * 28) continue;
         if (backdrop) {
           pixels[index] = backdrop[0];
           pixels[index + 1] = backdrop[1];

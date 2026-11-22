@@ -630,7 +630,7 @@ export function OptionsPanel({
       </div>
       </>}
       {showProduction && <>
-      {section === "all" && <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400 mb-3 pt-2 border-t border-background-200/70">Production Extras</h3>}
+      {section === "all" && <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400 mb-3 pt-2 border-t border-background-200/70">Uniform options</h3>}
       <div className="mb-1.5">
         <p className="mb-1 text-[10px] leading-snug text-foreground-600">
           All prints and logos are sublimated and included.
@@ -701,7 +701,7 @@ export function UniformSetupPanel({ designProps, optionsProps, aiOnly = false })
         <span className="flex min-w-0 items-center gap-2">
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/15"><i className="ri-settings-4-line text-sm" aria-hidden="true" /></span>
           <span>
-            <h3 id="production-extras-title" aria-label="Production extras" className="text-xs font-extrabold leading-tight">Production Extras</h3>
+            <h3 id="production-extras-title" aria-label="Uniform options" className="text-xs font-extrabold leading-tight">Uniform options</h3>
             <span className="block text-[8px] font-medium leading-tight text-white/75">Logo finish and inside-collar customization</span>
           </span>
         </span>
@@ -1075,6 +1075,7 @@ export function AIArtworkPanel({
   canUndoUniform = false,
   hasExistingArtwork = false,
   composerVariant = "unified",
+  allowFileActions = true,
   onGeneratingChange,
   aiVersions = [],
   onRestoreAIVersion,
@@ -1702,6 +1703,7 @@ export function AIArtworkPanel({
           <div ref={setPromptToolbarTarget} className="w-full" aria-label="AI prompt tools" />
         </div>
         <AIUniformComposer
+        allowFileActions={allowFileActions}
         sport={sport}
         mode={mode}
         onModeChange={changeMode}

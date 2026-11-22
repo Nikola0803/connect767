@@ -79,6 +79,17 @@ describe("AI design generation endpoint", () => {
     expect(prompt).toContain("Do not recolour the background");
   });
 
+  it.each(["Soccer", "Basketball", "Netball", "Cricket", "Goal Keeper", "Other"])("keeps the same mandatory sock rule in every %s preview and refinement", (sport) => {
+    for (const referenceImage of [undefined, "data:image/png;base64,reference"]) {
+      const prompt = buildPrompt(normalizeBrief({ ...validBrief, sport, generationMode: "uniform", referenceImage }));
+      expect(prompt).toContain("exactly three separate horizontal stripes only at the top near the knee");
+      expect(prompt).toContain("same single solid stripe colour, consistent on both socks and in every view");
+      expect(prompt).toContain("one uninterrupted solid base colour from cuff to toe");
+      expect(prompt).toContain("cuff, heel or toe");
+      expect(prompt).toContain("take priority over conflicting styling requests");
+    }
+  });
+
   it("reports connection health without exposing the key", async () => {
     const res = response();
     await handler(request("GET"), res);

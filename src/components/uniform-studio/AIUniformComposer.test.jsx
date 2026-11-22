@@ -367,4 +367,26 @@ describe("AIUniformComposer", () => {
     expect(screen.queryByText("Design Controls")).not.toBeInTheDocument();
     toolbarTarget.remove();
   });
+
+  it("shows generated artwork without offering manual placement in the AI-only studio", () => {
+    renderComposer({ artworkPreview: { src: "data:image/png;base64,artwork" }, onPlaceArtwork: undefined });
+    expect(screen.getByRole("img", { name: "Generated transparent uniform artwork" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Place on uniform/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove artwork preview" })).toBeEnabled();
+  });
+
+  it("keeps AI commands available without project or file actions", () => {
+    const toolbarTarget = document.createElement("div");
+    document.body.appendChild(toolbarTarget);
+    renderComposer({ toolbarTarget, allowFileActions: false, uniformPlan: { name: "AI kit" }, downloadUnlocked: false });
+    fireEvent.click(within(toolbarTarget).getByRole("button", { name: "AI tools" }));
+    const menu = within(screen.getByRole("menu", { name: "AI prompt tools menu" }));
+    for (const name of ["History", "Reference", "Refine with AI", "Remove background / Make transparent", "Settings"]) expect(menu.getByRole("menuitem", { name })).toBeEnabled();
+    for (const name of ["Save design", "Download design", "Download prompts", "Unlock after payment"]) expect(menu.queryByRole("menuitem", { name })).not.toBeInTheDocument();
+    expect(screen.getByText("Your AI design is ready. Continue to complete your uniform order.")).toBeInTheDocument();
+    expect(screen.queryByText(/production-ready design files/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Close AI tools" }));
+    expect(screen.queryByRole("menu", { name: "AI prompt tools menu" })).not.toBeInTheDocument();
+    toolbarTarget.remove();
+  });
 });

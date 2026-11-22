@@ -147,7 +147,6 @@ export default function Header({ showQuickNavigation = true }) {
     { label: "Directory", href: "/listings", icon: "ri-map-pin-2-line" },
     { label: "Shop", href: "/shop", icon: "ri-shopping-bag-3-line" },
     { label: "Community Feed", href: "/community", icon: "ri-group-line" },
-    { label: "Saved", href: "/saved", icon: "ri-heart-line" },
     {
       label: isAuthenticated ? "Dashboard" : "Account",
       href: isAuthenticated ? "/dashboard" : "/auth/login",
@@ -156,6 +155,7 @@ export default function Header({ showQuickNavigation = true }) {
   ];
 
   return (
+    <>
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${wrapClass}`}
     >
@@ -172,13 +172,13 @@ export default function Header({ showQuickNavigation = true }) {
             to="/"
             aria-label="Go to home page"
             title="Home"
-            className={`ml-1 grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-colors md:hidden ${iconBtnText} ${transparent ? "hover:bg-background-50/10" : "hover:bg-primary-50 hover:text-primary-700"}`}
+            className={`ml-1 grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-colors xl:hidden ${iconBtnText} ${transparent ? "hover:bg-background-50/10" : "hover:bg-primary-50 hover:text-primary-700"}`}
           >
             <i className="ri-home-5-line text-xl" aria-hidden="true" />
           </Link>
         )}
 
-        <nav aria-label="Main navigation" className="hidden md:flex items-center gap-1 ml-10">
+        <nav aria-label="Main navigation" className="hidden xl:flex items-center gap-1 ml-10">
           {navItems.map((item) => (
             <NavLink
               key={item.href}
@@ -254,7 +254,7 @@ export default function Header({ showQuickNavigation = true }) {
                   position={profilePhotoPosition}
                   zoom={profilePhotoZoom}
                 />
-                <span className="hidden md:inline">{email}</span>
+                <span className="hidden xl:inline">{email}</span>
                 <i className="ri-arrow-down-s-line" />
               </button>
               <div className="absolute right-0 top-full pt-2 hidden group-hover:block">
@@ -313,7 +313,7 @@ export default function Header({ showQuickNavigation = true }) {
             aria-expanded={mobileOpen}
             type="button"
             onClick={() => setMobileOpen((v) => !v)}
-            className={`md:hidden w-10 h-10 flex items-center justify-center rounded-md cursor-pointer ${iconBtnText} hover:bg-background-50/10`}
+            className={`xl:hidden w-10 h-10 flex items-center justify-center rounded-md cursor-pointer ${iconBtnText} hover:bg-background-50/10`}
           >
             <i className={`text-xl ${mobileOpen ? "ri-close-line" : "ri-menu-line"}`} />
           </button>
@@ -322,7 +322,7 @@ export default function Header({ showQuickNavigation = true }) {
 
       {/* Mobile menu panel */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-background-200/70 bg-background-50 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain">
+        <div className="xl:hidden border-t border-background-200/70 bg-background-50 max-h-[calc(100dvh-4rem)] md:max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain">
           <nav aria-label="Mobile menu" className="flex flex-col p-4 pb-[max(1rem,env(safe-area-inset-bottom))] gap-1">
             {navItems.map((item) => (
               <NavLink
@@ -424,10 +424,11 @@ export default function Header({ showQuickNavigation = true }) {
         </div>
       )}
 
+    </header>
       {showQuickNavigation && !mobileOpen && (
         <nav
           aria-label="Mobile quick navigation"
-          className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-background-200/80 bg-background-50/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(44,37,25,0.08)] backdrop-blur-md md:hidden"
+          className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-background-200/80 bg-background-50/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(44,37,25,0.08)] backdrop-blur-md xl:hidden"
         >
           {mobileNavItems.map((item) => {
             const active = item.href === "/"
@@ -438,19 +439,19 @@ export default function Header({ showQuickNavigation = true }) {
                 key={item.href}
                 to={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-semibold transition-colors ${
+                className={`grid min-h-14 grid-rows-[20px_28px] place-items-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-semibold transition-colors ${
                   active
                     ? "text-primary-700"
                     : "text-foreground-600 hover:bg-primary-50 hover:text-primary-700"
                 }`}
               >
-                <i className={`${item.icon} text-lg`} aria-hidden="true" />
-                <span>{item.label}</span>
+                <i className={`${item.icon} text-lg leading-5`} aria-hidden="true" />
+                <span className="text-center leading-3">{item.label}</span>
               </Link>
             );
           })}
         </nav>
       )}
-    </header>
+    </>
   );
 }

@@ -81,7 +81,7 @@ function Chrome({ children }) {
   }
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-background-50 pb-14 md:pb-0">
+    <div className="min-h-screen w-full overflow-x-hidden bg-background-50 pb-[calc(4.5rem+env(safe-area-inset-bottom))] xl:pb-0">
       <Header />
       <main>{children}</main>
       <Footer />

@@ -8,7 +8,7 @@ const isEditingTarget = (target, includeZones = true) => Boolean(target?.closest
 /** View transforms stay outside JerseyStage so artwork coordinates and full
  * design exports are independent of how closely the customer is inspecting it. */
 const ProductionViewport = forwardRef(function ProductionViewport({
-  children, zoom, onZoomChange, panMode = false, placingArtwork = false, contentClassName = "",
+  children, zoom, onZoomChange, panMode = false, placingArtwork = false, contentClassName = "", label = "Production map viewport",
 }, ref) {
   const viewportRef = useRef(null);
   const contentRef = useRef(null);
@@ -71,7 +71,7 @@ const ProductionViewport = forwardRef(function ProductionViewport({
   return <div
     ref={viewportRef}
     role="group"
-    aria-label="Production map viewport"
+    aria-label={label}
     tabIndex={0}
     className="relative z-0 flex min-h-0 w-full flex-1 items-start justify-center overflow-hidden rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
     style={{ touchAction: "none", cursor: dragging ? "grabbing" : panMode ? "grab" : undefined }}
