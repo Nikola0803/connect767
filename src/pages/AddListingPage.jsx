@@ -757,14 +757,8 @@ export default function AddListingPage() {
     // have no academic qualification to give, and demanding one would either
     // block them or invite junk data.
     if (step === 1) {
-      const businessIsComplete =
-        form.tier &&
-        form.businessName.trim() &&
-        form.category &&
-        form.priceTier &&
-        form.description.trim() &&
-        hasValidRequiredYears(form.yearsExperience) &&
-        form.location.trim();
+      const planIsSelected = form.tier === "free" || form.tier === "classified";
+      const listingInformationIsComplete = missingBusinessRequiredFieldIds(form).length === 0;
       const accountIsComplete =
         isEditing ||
         auth.isAuthenticated ||
@@ -774,7 +768,7 @@ export default function AddListingPage() {
           account.password.length >= 8 &&
           account.password === account.confirmPassword &&
           account.agree);
-      return businessIsComplete && accountIsComplete;
+      return planIsSelected && listingInformationIsComplete && accountIsComplete;
     }
     if (step === 2)
       return hasValidEmail(form.email) && !coverPhotoError && hasCompletePayoutDetails(form);
