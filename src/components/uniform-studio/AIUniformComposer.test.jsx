@@ -229,7 +229,7 @@ describe("AIUniformComposer", () => {
     expect(props.onStop).toHaveBeenCalledTimes(1);
 
     expect(screen.queryByRole("button", { name: "AI design settings" })).not.toBeInTheDocument();
-    fireEvent.click(within(toolbarTarget).getByRole("button", { name: "AI tools" }));
+    fireEvent.click(within(toolbarTarget).getByRole("button", { name: "Tools" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Settings" }));
     expect(screen.getByText("Design Controls")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("e.g. Riverside FC")).toBeInTheDocument();
@@ -246,7 +246,7 @@ describe("AIUniformComposer", () => {
     const toolbarTarget = document.createElement("div");
     document.body.appendChild(toolbarTarget);
     const props = renderComposer({ promptHistory: [entry], toolbarTarget });
-    fireEvent.click(within(toolbarTarget).getByRole("button", { name: "AI tools" }));
+    fireEvent.click(within(toolbarTarget).getByRole("button", { name: "Tools" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "History" }));
     fireEvent.click(within(screen.getByLabelText("AI design conversation history")).getByText("Make the shorts black"));
     expect(props.onReusePrompt).toHaveBeenCalledWith(entry);
@@ -286,7 +286,7 @@ describe("AIUniformComposer", () => {
     const props = renderComposer({ toolbarTarget, uniformPlan: current, versions: [original, current] });
     const toolbar = within(toolbarTarget);
 
-    expect(toolbar.getByRole("button", { name: "AI tools" })).toBeInTheDocument();
+    expect(toolbar.getByRole("button", { name: "Tools" })).toBeInTheDocument();
     expect(toolbar.queryByRole("button", { name: "New design" })).not.toBeInTheDocument();
     expect(toolbar.queryByRole("button", { name: "History" })).not.toBeInTheDocument();
     expect(toolbar.queryByRole("button", { name: "Reference" })).not.toBeInTheDocument();
@@ -295,7 +295,7 @@ describe("AIUniformComposer", () => {
     expect(toolbar.queryByRole("button", { name: "Save design" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Refine with AI" })).not.toBeInTheDocument();
 
-    fireEvent.click(toolbar.getByRole("button", { name: "AI tools" }));
+    fireEvent.click(toolbar.getByRole("button", { name: "Tools" }));
     const toolsMenu = screen.getByRole("menu", { name: "AI prompt tools menu" });
     expect(within(toolsMenu).getByRole("menuitem", { name: "History" })).toBeInTheDocument();
     expect(within(toolsMenu).getByRole("menuitem", { name: "Reference" })).toBeInTheDocument();
@@ -309,16 +309,16 @@ describe("AIUniformComposer", () => {
 
     fireEvent.click(within(toolsMenu).getByRole("menuitem", { name: "Save design" }));
     expect(props.onSaveDesign).toHaveBeenCalledTimes(1);
-    fireEvent.click(toolbar.getByRole("button", { name: "AI tools" }));
+    fireEvent.click(toolbar.getByRole("button", { name: "Tools" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Remove background / Make transparent" }));
     expect(props.onOpenBackgroundRemoval).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(toolbar.getByRole("button", { name: "AI tools" }));
+    fireEvent.click(toolbar.getByRole("button", { name: "Tools" }));
     expect(screen.getByRole("menu", { name: "AI prompt tools menu" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("menuitem", { name: "Refine with AI" }));
     expect(screen.getByRole("textbox", { name: "Message Connect767 AI" })).toHaveFocus();
 
-    fireEvent.click(toolbar.getByRole("button", { name: "AI tools" }));
+    fireEvent.click(toolbar.getByRole("button", { name: "Tools" }));
     expect(screen.getByRole("menu", { name: "AI prompt tools menu" })).toBeInTheDocument();
     fireEvent.pointerDown(document.body);
     expect(screen.queryByRole("menu", { name: "AI prompt tools menu" })).not.toBeInTheDocument();
@@ -334,16 +334,16 @@ describe("AIUniformComposer", () => {
     const props = renderComposer({ toolbarTarget, uniformPlan: current, versions: [original, current] });
     const toolbar = within(toolbarTarget);
 
-    fireEvent.click(toolbar.getByRole("button", { name: "AI tools" }));
+    fireEvent.click(toolbar.getByRole("button", { name: "Tools" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Compare versions" }));
     expect(props.onCompareVersions).toHaveBeenCalledWith(original);
-    fireEvent.click(toolbar.getByRole("button", { name: "AI tools" }));
+    fireEvent.click(toolbar.getByRole("button", { name: "Tools" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Previous version" }));
     expect(props.onRestoreVersion).toHaveBeenCalledWith(original);
-    fireEvent.click(toolbar.getByRole("button", { name: "AI tools" }));
+    fireEvent.click(toolbar.getByRole("button", { name: "Tools" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Restore original" }));
     expect(props.onRestoreVersion).toHaveBeenLastCalledWith(original);
-    fireEvent.click(toolbar.getByRole("button", { name: "AI tools" }));
+    fireEvent.click(toolbar.getByRole("button", { name: "Tools" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "New variation" }));
     expect(props.onGenerateVariation).toHaveBeenCalledTimes(1);
     toolbarTarget.remove();
@@ -365,11 +365,11 @@ describe("AIUniformComposer", () => {
     });
     const toolbar = within(toolbarTarget);
 
-    fireEvent.click(toolbar.getByRole("button", { name: "AI tools" }));
+    fireEvent.click(toolbar.getByRole("button", { name: "Tools" }));
     fireEvent.click(screen.getByRole("menuitem", { name: /clear current design/i }));
     expect(props.onClearCurrentDesign).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(toolbar.getByRole("button", { name: "AI tools" }));
+    fireEvent.click(toolbar.getByRole("button", { name: "Tools" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "History" }));
     fireEvent.click(within(screen.getByLabelText("AI design conversation history")).getByRole("button", { name: "Clear" }));
     expect(props.onClearHistory).toHaveBeenCalledTimes(1);
@@ -382,7 +382,7 @@ describe("AIUniformComposer", () => {
     renderComposer({ toolbarTarget });
     const message = screen.getByLabelText("Message Connect767 AI");
 
-    fireEvent.click(within(toolbarTarget).getByRole("button", { name: "AI tools" }));
+    fireEvent.click(within(toolbarTarget).getByRole("button", { name: "Tools" }));
     expect(screen.getByRole("menu", { name: "AI prompt tools menu" })).toBeInTheDocument();
     fireEvent.pointerDown(message);
     expect(screen.queryByRole("menu", { name: "AI prompt tools menu" })).not.toBeInTheDocument();
@@ -392,7 +392,7 @@ describe("AIUniformComposer", () => {
     fireEvent.pointerDown(message);
     expect(screen.queryByRole("menu", { name: "AI composer tools" })).not.toBeInTheDocument();
 
-    fireEvent.click(within(toolbarTarget).getByRole("button", { name: "AI tools" }));
+    fireEvent.click(within(toolbarTarget).getByRole("button", { name: "Tools" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Settings" }));
     expect(screen.getByText("Design Controls")).toBeInTheDocument();
     fireEvent.pointerDown(message);
@@ -411,13 +411,13 @@ describe("AIUniformComposer", () => {
     const toolbarTarget = document.createElement("div");
     document.body.appendChild(toolbarTarget);
     renderComposer({ toolbarTarget, allowFileActions: false, uniformPlan: { name: "AI kit" }, downloadUnlocked: false });
-    fireEvent.click(within(toolbarTarget).getByRole("button", { name: "AI tools" }));
+    fireEvent.click(within(toolbarTarget).getByRole("button", { name: "Tools" }));
     const menu = within(screen.getByRole("menu", { name: "AI prompt tools menu" }));
     for (const name of ["History", "Reference", "Refine with AI", "Remove background / Make transparent", "Settings"]) expect(menu.getByRole("menuitem", { name })).toBeEnabled();
     for (const name of ["Save design", "Download design", "Download prompts", "Unlock after payment"]) expect(menu.queryByRole("menuitem", { name })).not.toBeInTheDocument();
     expect(screen.queryByText(/design files are ready/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/production-ready design files/)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Close AI tools" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close Tools" }));
     expect(screen.queryByRole("menu", { name: "AI prompt tools menu" })).not.toBeInTheDocument();
     toolbarTarget.remove();
   });
