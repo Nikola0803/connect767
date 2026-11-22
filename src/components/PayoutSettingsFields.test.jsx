@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import PayoutSettingsFields from "./PayoutSettingsFields";
-import { hasCompletePayoutDetails } from "../lib/payoutSettings";
+import { hasCompletePayoutDetails, missingPayoutFieldIds } from "../lib/payoutSettings";
 
 const paidForm = {
   bookingEnabled: true,
@@ -29,6 +29,51 @@ describe("PayoutSettingsFields", () => {
         bookingPayoutDigitalAccount: "payments@example.com",
       }),
     ).toBe(true);
+  });
+
+  it("requires payout details when storefront products are enabled", () => {
+    const storefrontForm = {
+      ...paidForm,
+      bookingEnabled: false,
+      bookingPrice: "0",
+      sellProducts: true,
+    };
+
+    expect(hasCompletePayoutDetails(storefrontForm)).toBe(false);
+    expect(missingPayoutFieldIds(storefrontForm)).toEqual(["bookingPayoutMethod"]);
+  });
+
+  it("highlights a missing payout method after validation", () => {
+    render(
+      <PayoutSettingsFields
+        form={{ ...paidForm, sellProducts: true }}
+        onChange={() => {}}
+        forceVisible
+        context="combined"
+        showRequiredErrors
+      />,
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/highlighted banking or digital payment information/i);
+    expect(screen.getByRole("radio", { name: /bank account/i })).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("radio", { name: /digital payment/i })).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("highlights every missing required bank field", () => {
+    render(
+      <PayoutSettingsFields
+        form={{ ...paidForm, bookingPayoutMethod: "bank", bookingPayoutBankCountry: "" }}
+        onChange={() => {}}
+        showRequiredErrors
+      />,
+    );
+
+    expect(screen.getByLabelText(/account holder name/i)).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText(/bank name/i)).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText(/bank country/i)).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText(/account number \/ iban/i)).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText(/routing \/ transit number/i)).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText(/swift \/ bic/i)).toHaveAttribute("aria-invalid", "true");
   });
 
   it("shows bank and digital payout choices", () => {
