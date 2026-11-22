@@ -562,6 +562,72 @@ export default function UniformStudioPage() {
   const [draftSaveStatus, setDraftSaveStatus] = useState("idle");
   const [designSecurityContext, setDesignSecurityContext] = useState(null);
   const [aiPanelToolbarTarget, setAiPanelToolbarTarget] = useState(null);
+  const [captureShieldActive, setCaptureShieldActive] = useState(false);
+  const captureShieldTimerRef = useRef(null);
+
+  useEffect(() => {
+    if (!aiWorkspaceConcept?.src) {
+      setCaptureShieldActive(false);
+      return undefined;
+    }
+
+    const showCaptureShield = (autoHide = false) => {
+      window.clearTimeout(captureShieldTimerRef.current);
+      setCaptureShieldActive(true);
+      if (autoHide) {
+        captureShieldTimerRef.current = window.setTimeout(() => setCaptureShieldActive(false), 1800);
+      }
+    };
+    const hideCaptureShield = () => {
+      window.clearTimeout(captureShieldTimerRef.current);
+      captureShieldTimerRef.current = window.setTimeout(() => setCaptureShieldActive(false), 250);
+    };
+    const handleKeyDown = (event) => {
+      const key = String(event.key || "").toLowerCase();
+      const captureShortcut = event.key === "PrintScreen"
+        || ((event.metaKey || event.ctrlKey) && event.shiftKey && ["s", "3", "4", "5"].includes(key));
+      const printShortcut = (event.metaKey || event.ctrlKey) && key === "p";
+      if (!captureShortcut && !printShortcut) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      showCaptureShield(true);
+    };
+    const handleVisibility = () => {
+      if (document.hidden) showCaptureShield();
+      else hideCaptureShield();
+    };
+    const handleWindowBlur = () => showCaptureShield();
+    const handleBeforePrint = () => showCaptureShield();
+    const blockProtectedAction = (event) => {
+      if (!event.target?.closest?.('[data-protected-design-preview="true"]')) return;
+      event.preventDefault();
+    };
+
+    document.addEventListener("keydown", handleKeyDown, true);
+    document.addEventListener("visibilitychange", handleVisibility);
+    document.addEventListener("contextmenu", blockProtectedAction, true);
+    document.addEventListener("copy", blockProtectedAction, true);
+    document.addEventListener("cut", blockProtectedAction, true);
+    document.addEventListener("dragstart", blockProtectedAction, true);
+    window.addEventListener("blur", handleWindowBlur);
+    window.addEventListener("focus", hideCaptureShield);
+    window.addEventListener("beforeprint", handleBeforePrint);
+    window.addEventListener("afterprint", hideCaptureShield);
+    return () => {
+      window.clearTimeout(captureShieldTimerRef.current);
+      document.removeEventListener("keydown", handleKeyDown, true);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      document.removeEventListener("contextmenu", blockProtectedAction, true);
+      document.removeEventListener("copy", blockProtectedAction, true);
+      document.removeEventListener("cut", blockProtectedAction, true);
+      document.removeEventListener("dragstart", blockProtectedAction, true);
+      window.removeEventListener("blur", handleWindowBlur);
+      window.removeEventListener("focus", hideCaptureShield);
+      window.removeEventListener("beforeprint", handleBeforePrint);
+      window.removeEventListener("afterprint", hideCaptureShield);
+    };
+  }, [aiWorkspaceConcept?.src]);
+
   useEffect(() => {
     const concept = aiWorkspaceConcept;
     if (!designSecurityContext?.authenticated || !concept?.projectFileId || concept.backgroundBranding !== "connect767-embossed-v1") return;
@@ -2256,6 +2322,8 @@ export default function UniformStudioPage() {
                         <div
                           ref={aiConceptViewportRef}
                           className="studio-ai-viewport relative inline-flex max-h-full max-w-full cursor-grab overflow-hidden rounded-2xl border border-white/10 bg-[#f5f0e7] shadow-[0_26px_70px_rgba(0,0,0,.34)] outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-primary-400"
+                          data-testid="protected-design-preview"
+                          data-protected-design-preview="true"
                           role="group"
                           tabIndex={0}
                           aria-label="Interactive AI uniform concept. Drag to pan, use the mouse wheel or toolbar to zoom, and use arrow keys to move the design."
@@ -2351,6 +2419,18 @@ export default function UniformStudioPage() {
                             />
                           )}
                           {previewImageFailed && <div role="alert" className="absolute inset-x-4 top-16 z-30 rounded-xl bg-white p-4 text-center text-sm text-foreground-950" onPointerDown={(event) => event.stopPropagation()}><p>The saved preview could not be loaded.</p><button type="button" className="mt-2 rounded-lg bg-primary-700 px-4 py-2 font-bold text-white" onClick={() => { setPreviewImageFailed(false); setPreviewImageAttempt((value) => value + 1); }}>Retry preview</button></div>}
+                          <div data-testid="protected-design-watermark" aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 overflow-hidden">
+                            {["12%", "48%", "84%"].map((top) => (
+                              <span key={top} className="absolute left-1/2 -translate-x-1/2 -rotate-[18deg] whitespace-nowrap text-[clamp(11px,1.5vw,22px)] font-black uppercase tracking-[0.32em] text-foreground-950/[0.12]" style={{ top }}>
+                                Connect767 Protected Preview
+                              </span>
+                            ))}
+                          </div>
+                          {captureShieldActive && (
+                            <div data-testid="capture-shield" role="status" className="absolute inset-0 z-50 grid place-items-center bg-foreground-950/95 p-6 text-center text-white backdrop-blur-2xl">
+                              <span><i className="ri-shield-keyhole-line text-4xl text-primary-300" aria-hidden="true" /><strong className="mt-3 block font-heading text-xl">Protected Design Preview</strong><span className="mt-2 block max-w-sm text-xs leading-relaxed text-white/65">Screen capture, copying and printing are disabled for unpaid design previews.</span></span>
+                            </div>
+                          )}
                           <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-foreground-950/75 px-4 py-2 text-center text-[10px] text-white/80 backdrop-blur">
                             {aiComparisonPlan ? "Comparing previous and current AI previews" : compact ? "Drag to pan · pinch to zoom · use Fit to reset" : "Drag to pan · scroll to zoom · double-click to fit"}
                           </div>
