@@ -150,7 +150,7 @@ function Cover({ listing, listView = false }) {
   const imageAlt = `${listing.title} — ${industryLabel(listing)}`;
   return (
     <div className={`relative aspect-[16/9] flex-shrink-0 overflow-hidden rounded-[1.15rem] ${listView ? "m-2 sm:w-64" : "m-2 mb-0"}`}>
-      <div className="h-full w-full overflow-hidden bg-background-100">
+      <div className="h-full w-full aspect-[16/9] overflow-hidden bg-background-100">
         {listing.image && showFullImage ? (
           <div className="relative h-full w-full overflow-hidden bg-background-100">
             <img

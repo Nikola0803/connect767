@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 const baseFieldClass =
-  "w-full px-4 py-2.5 text-sm rounded-lg border border-background-300 bg-background-50 text-foreground-950 placeholder-foreground-400 focus:outline-none focus:border-primary-400 font-label transition-colors disabled:opacity-60 disabled:cursor-not-allowed";
+  "min-w-0 w-full px-3.5 py-2.5 text-sm rounded-lg border border-background-300 bg-background-50 text-foreground-950 placeholder-foreground-400 focus:outline-none focus:border-primary-400 font-label transition-colors disabled:opacity-60 disabled:cursor-not-allowed sm:px-4";
 
 export function RequiredIndicator({ className = "" }) {
   return (
@@ -25,7 +25,7 @@ export function FormField({ label, htmlFor, hint, error, required, children }) {
         </label>
       )}
       {children}
-      {hint && !error && <p className="mt-1.5 text-xs text-foreground-500 font-label">{hint}</p>}
+      {hint && !error && <p className="mt-1.5 hidden text-xs text-foreground-500 font-label sm:block">{hint}</p>}
       {error && <p className="mt-1.5 text-xs font-semibold text-red-700 font-label">{error}</p>}
     </div>
   );
