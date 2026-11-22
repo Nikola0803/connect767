@@ -208,15 +208,13 @@ describe("required uniform fit selection", () => {
     for (const button of screen.getAllByRole("button", { name: /Continue to Team roster/ })) expect(button).toBeEnabled();
     fireEvent.click(setup.getByRole("button", { name: /Continue to Team roster/ }));
     expect(setup.getByRole("group", { name: "Fit type (required)" })).toHaveAttribute("data-validation-highlight", "true");
-    for (const button of screen.getAllByRole("button", { name: /^Designer$/ })) expect(button).toBeEnabled();
+    expect(screen.queryByRole("button", { name: /^Designer$/ })).not.toBeInTheDocument();
   });
 
   it("keeps Step 2 AI-only and hides the legacy manual design tools", () => {
     const progress = openStudio("ai");
     const header = within(screen.getByRole("button", { name: "Back" }).closest("header"));
-    const designerButton = header.getByRole("button", { name: /^Designer$/ });
-    expect(designerButton).toBeEnabled();
-    expect(designerButton.querySelector('img[src*="connect767-ai-logo-transparent.png"]')).toBeInTheDocument();
+    expect(header.queryByRole("button", { name: /^Designer$/ })).not.toBeInTheDocument();
     expect(header.getByRole("button", { name: "Zoom out" })).toBeVisible();
     fireEvent.click(progress.getByRole("button", { name: /Design/ }));
     expect(header.getByRole("button", { name: "Zoom out" })).toBeVisible();
