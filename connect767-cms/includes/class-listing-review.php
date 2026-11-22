@@ -12,6 +12,11 @@ if (!defined('ABSPATH')) {
 
 class C767_Listing_Review
 {
+    private static function can_approve_listings()
+    {
+        return current_user_can('edit_others_posts') || current_user_can('publish_posts');
+    }
+
     public static function init()
     {
         add_action('admin_menu', [__CLASS__, 'add_menu']);
@@ -34,7 +39,7 @@ class C767_Listing_Review
             !$post
             || $post->post_type !== 'listing'
             || $post->post_status !== 'pending'
-            || !current_user_can('publish_posts')
+            || !self::can_approve_listings()
             || !current_user_can('edit_post', $post->ID)
         ) {
             return $actions;
@@ -63,7 +68,7 @@ class C767_Listing_Review
         if (
             !$post
             || $post->post_type !== 'listing'
-            || !current_user_can('publish_posts')
+            || !self::can_approve_listings()
             || !current_user_can('edit_post', $post_id)
         ) {
             wp_die(esc_html__('You are not allowed to approve this listing.', 'connect767-cms'));
@@ -95,7 +100,7 @@ class C767_Listing_Review
 
     public static function add_bulk_approve_action($actions)
     {
-        if (current_user_can('publish_posts')) {
+        if (self::can_approve_listings()) {
             $actions['c767_approve_listings'] = esc_html__('Approve', 'connect767-cms');
         }
 
@@ -104,7 +109,7 @@ class C767_Listing_Review
 
     public static function handle_bulk_approve($redirect_url, $action, $post_ids)
     {
-        if ($action !== 'c767_approve_listings' || !current_user_can('publish_posts')) {
+        if ($action !== 'c767_approve_listings' || !self::can_approve_listings()) {
             return $redirect_url;
         }
 
