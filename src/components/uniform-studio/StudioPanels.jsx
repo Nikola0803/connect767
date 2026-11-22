@@ -694,9 +694,9 @@ export function OptionsPanel({
 }
 
 export function UniformSetupPanel({ designProps, optionsProps, aiOnly = false }) {
-  return <div className="flex shrink-0 flex-col gap-1.5">
+  return <div className="studio-uniform-setup flex min-h-fit flex-1 flex-col gap-2">
     <div className="shrink-0 rounded-xl border border-background-300 bg-background-50 p-2 shadow-sm"><OptionsPanel {...optionsProps} section="pricing" /></div>
-    <section aria-labelledby="production-extras-title" className="flex flex-col rounded-xl border-2 border-primary-500 bg-background-50 shadow-[0_10px_24px_rgba(0,116,73,.12)]">
+    <section aria-labelledby="production-extras-title" className="flex min-h-fit flex-1 flex-col rounded-xl border-2 border-primary-500 bg-background-50 shadow-[0_10px_24px_rgba(0,116,73,.12)]">
       <header className="flex items-center justify-between gap-2 bg-primary-700 px-2.5 py-1.5 text-white">
         <span className="flex min-w-0 items-center gap-2">
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/15"><i className="ri-settings-4-line text-sm" aria-hidden="true" /></span>
@@ -709,7 +709,7 @@ export function UniformSetupPanel({ designProps, optionsProps, aiOnly = false })
           {optionsProps.logoApplication === "Embroidery" ? "Embroidery" : "Sublimation"}{optionsProps.insideCollarMessage ? " + collar" : ""}
         </span>
       </header>
-      <div className="space-y-1.5 border-t border-primary-600/20 p-2 pb-3">
+      <div className="flex flex-1 flex-col justify-between gap-3 border-t border-primary-600/20 p-3">
         <DesignPanel {...designProps} hideGarmentColors={aiOnly} />
         <OptionsPanel {...optionsProps} section="production" />
       </div>
@@ -1076,6 +1076,8 @@ export function AIArtworkPanel({
   hasExistingArtwork = false,
   composerVariant = "unified",
   allowFileActions = true,
+  toolbarTarget: externalToolbarTarget,
+  onOpenTools,
   onGeneratingChange,
   aiVersions = [],
   onRestoreAIVersion,
@@ -1699,11 +1701,12 @@ export function AIArtworkPanel({
 
     return (
       <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
-        <div className="ai-panel-toolbar relative z-20 flex-shrink-0 overflow-visible border-b border-white/10 bg-[#11140f] px-2 py-2">
+        {!externalToolbarTarget && <div className="ai-panel-toolbar relative z-20 flex-shrink-0 overflow-visible border-b border-white/10 bg-[#11140f] px-2 py-2">
           <div ref={setPromptToolbarTarget} className="w-full" aria-label="AI prompt tools" />
-        </div>
+        </div>}
         <AIUniformComposer
         allowFileActions={allowFileActions}
+        onOpenTools={onOpenTools}
         sport={sport}
         mode={mode}
         onModeChange={changeMode}
@@ -1764,7 +1767,7 @@ export function AIArtworkPanel({
         onDownloadDesign={downloadSecuredDesign}
         onDownloadPrompts={downloadPromptHistory}
         onOpenBackgroundRemoval={onOpenBackgroundRemoval}
-        toolbarTarget={promptToolbarTarget}
+        toolbarTarget={externalToolbarTarget || promptToolbarTarget}
         aiQuota={securityContext}
         securityLoading={securityLoading}
         securityError={securityError}

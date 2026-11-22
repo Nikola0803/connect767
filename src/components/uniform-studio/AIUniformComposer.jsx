@@ -125,6 +125,7 @@ export default function AIUniformComposer({
   onDownloadDesign,
   onDownloadPrompts,
   onOpenBackgroundRemoval,
+  onOpenTools,
   toolbarTarget,
   aiQuota,
   securityLoading = false,
@@ -250,6 +251,7 @@ export default function AIUniformComposer({
         <button
           type="button"
           onClick={() => {
+            onOpenTools?.();
             setToolbarMenuOpen((value) => !value);
             setHistoryOpen(false);
             setToolsOpen(false);
@@ -261,7 +263,7 @@ export default function AIUniformComposer({
           aria-haspopup="menu"
           data-ai-popover-trigger
         >
-          <i className="ri-tools-line text-[10px]" /> AI tools <i className="ri-arrow-down-s-line" />
+          <i className="ri-tools-line text-[10px]" /><span>AI tools</span><i className="ri-arrow-down-s-line" />
         </button>
         {toolbarMenuOpen && (
           <div className="absolute left-0 top-[calc(100%+.4rem)] z-50 grid w-56 gap-1 rounded-xl border border-background-200 bg-white p-2 text-foreground-950 shadow-2xl" data-ai-popover role="menu" aria-label="AI prompt tools menu">
