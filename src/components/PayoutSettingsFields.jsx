@@ -3,12 +3,18 @@ import {
   DIGITAL_PAYOUT_PROVIDERS,
   DIGITAL_PAYOUT_PROVIDER_HELP,
   hasPaidBookingRate,
+  missingPayoutFieldIds,
 } from "../lib/payoutSettings";
 
-export default function PayoutSettingsFields({ form, onChange, forceVisible = false, context = "booking" }) {
+export default function PayoutSettingsFields({ form, onChange, forceVisible = false, context = "booking", showRequiredErrors = false }) {
   const paidBookings = forceVisible || hasPaidBookingRate(form);
   const providerHelp = DIGITAL_PAYOUT_PROVIDER_HELP[form.bookingPayoutDigitalProvider];
   const isStorefront = context === "storefront";
+  const isCombined = context === "combined";
+  const missingFields = new Set(showRequiredErrors ? missingPayoutFieldIds(form) : []);
+  const payoutIsMissing = missingFields.size > 0;
+  const methodIsMissing = missingFields.has("bookingPayoutMethod");
+  const fieldIsMissing = (field) => missingFields.has(field);
 
   if (!paidBookings) {
     return (
@@ -29,7 +35,10 @@ export default function PayoutSettingsFields({ form, onChange, forceVisible = fa
   }
 
   return (
-    <div className="sm:col-span-2 overflow-hidden rounded-xl border border-primary-200 bg-background-50">
+    <div
+      className={`sm:col-span-2 overflow-hidden rounded-xl border bg-background-50 transition-colors ${payoutIsMissing ? "border-red-400 ring-4 ring-red-100" : "border-primary-200"}`}
+      aria-describedby={payoutIsMissing ? "payoutDetailsError" : undefined}
+    >
       <div className="border-b border-primary-100 bg-primary-50/70 px-4 py-4 sm:px-5">
         <div className="flex items-start gap-3">
           <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-white shadow-sm">
@@ -37,11 +46,15 @@ export default function PayoutSettingsFields({ form, onChange, forceVisible = fa
           </span>
           <div>
             <p className="text-sm font-semibold text-foreground-950">
-              Where should we send your {isStorefront ? "storefront " : ""}payouts?
+              Where should we send your {isCombined ? "booking and storefront " : isStorefront ? "storefront " : ""}payouts?
             </p>
             <p className="mt-1 text-xs leading-5 text-foreground-600 font-label">
               Customers pay securely through Connect767. We retain the 10% platform fee and send the
-              {isStorefront ? " remaining product balance plus shipping" : " remaining balance"} to this private payout destination.
+              {isCombined
+                ? " remaining booking balance and product revenue plus shipping"
+                : isStorefront
+                  ? " remaining product balance plus shipping"
+                  : " remaining balance"} to this private payout destination.
             </p>
             {!isStorefront && form.bookingRateRules?.some((rule) => Number(rule.priceCents) > 0) && (
               <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-primary-800 ring-1 ring-primary-200">
@@ -53,7 +66,12 @@ export default function PayoutSettingsFields({ form, onChange, forceVisible = fa
       </div>
 
       <div className="space-y-5 p-4 sm:p-5">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {payoutIsMissing && (
+          <p id="payoutDetailsError" role="alert" className="rounded-lg border border-red-300 bg-red-50 px-3 py-2.5 text-xs font-semibold text-red-800">
+            Add the highlighted banking or digital payment information before continuing.
+          </p>
+        )}
+        <div id="bookingPayoutMethod" tabIndex={methodIsMissing ? -1 : undefined} className={`grid grid-cols-1 gap-3 rounded-xl sm:grid-cols-2 ${methodIsMissing ? "ring-4 ring-red-100" : ""}`}>
           {[
             {
               value: "bank",
@@ -71,7 +89,9 @@ export default function PayoutSettingsFields({ form, onChange, forceVisible = fa
             <label
               key={method.value}
               className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
-                form.bookingPayoutMethod === method.value
+                methodIsMissing
+                  ? "border-red-400 bg-red-50"
+                  : form.bookingPayoutMethod === method.value
                   ? "border-primary-500 bg-primary-50 ring-1 ring-primary-200"
                   : "border-background-300 hover:border-primary-300"
               }`}
@@ -83,6 +103,7 @@ export default function PayoutSettingsFields({ form, onChange, forceVisible = fa
                 checked={form.bookingPayoutMethod === method.value}
                 onChange={(event) => onChange("bookingPayoutMethod", event.target.value)}
                 className="mt-1"
+                aria-invalid={methodIsMissing || undefined}
               />
               <span className="flex min-w-0 gap-3">
                 <i className={`${method.icon} mt-0.5 text-lg text-primary-700`} />
@@ -97,33 +118,39 @@ export default function PayoutSettingsFields({ form, onChange, forceVisible = fa
 
         {form.bookingPayoutMethod === "bank" && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField label="Account holder name" htmlFor="bookingPayoutAccountName" required>
+            <FormField label="Account holder name" htmlFor="bookingPayoutAccountName" required error={fieldIsMissing("bookingPayoutAccountName") ? "Enter the account holder name." : ""}>
               <Input
                 id="bookingPayoutAccountName"
                 value={form.bookingPayoutAccountName}
                 onChange={(event) => onChange("bookingPayoutAccountName", event.target.value)}
                 autoComplete="name"
                 placeholder="Name on the account"
+                error={fieldIsMissing("bookingPayoutAccountName")}
+                aria-invalid={fieldIsMissing("bookingPayoutAccountName") || undefined}
               />
             </FormField>
-            <FormField label="Bank name" htmlFor="bookingPayoutBankName" required>
+            <FormField label="Bank name" htmlFor="bookingPayoutBankName" required error={fieldIsMissing("bookingPayoutBankName") ? "Enter the bank or financial institution." : ""}>
               <Input
                 id="bookingPayoutBankName"
                 value={form.bookingPayoutBankName}
                 onChange={(event) => onChange("bookingPayoutBankName", event.target.value)}
                 placeholder="Financial institution"
+                error={fieldIsMissing("bookingPayoutBankName")}
+                aria-invalid={fieldIsMissing("bookingPayoutBankName") || undefined}
               />
             </FormField>
-            <FormField label="Bank country" htmlFor="bookingPayoutBankCountry" required>
+            <FormField label="Bank country" htmlFor="bookingPayoutBankCountry" required error={fieldIsMissing("bookingPayoutBankCountry") ? "Enter the bank country." : ""}>
               <Input
                 id="bookingPayoutBankCountry"
                 value={form.bookingPayoutBankCountry}
                 onChange={(event) => onChange("bookingPayoutBankCountry", event.target.value)}
                 autoComplete="country-name"
                 placeholder="Dominica"
+                error={fieldIsMissing("bookingPayoutBankCountry")}
+                aria-invalid={fieldIsMissing("bookingPayoutBankCountry") || undefined}
               />
             </FormField>
-            <FormField label="Account number / IBAN" htmlFor="bookingPayoutAccountNumber" required>
+            <FormField label="Account number / IBAN" htmlFor="bookingPayoutAccountNumber" required error={fieldIsMissing("bookingPayoutAccountNumber") ? "Enter the account number or IBAN." : ""}>
               <Input
                 id="bookingPayoutAccountNumber"
                 type="password"
@@ -131,9 +158,11 @@ export default function PayoutSettingsFields({ form, onChange, forceVisible = fa
                 onChange={(event) => onChange("bookingPayoutAccountNumber", event.target.value)}
                 autoComplete="off"
                 placeholder="Account number or IBAN"
+                error={fieldIsMissing("bookingPayoutAccountNumber")}
+                aria-invalid={fieldIsMissing("bookingPayoutAccountNumber") || undefined}
               />
             </FormField>
-            <FormField label="Routing / transit number" htmlFor="bookingPayoutRoutingNumber" hint="Required when your bank uses one">
+            <FormField label="Routing / transit number" htmlFor="bookingPayoutRoutingNumber" hint="Required when your bank uses one" error={fieldIsMissing("bookingPayoutRoutingNumber") ? "Enter either a routing/transit number or SWIFT/BIC." : ""}>
               <Input
                 id="bookingPayoutRoutingNumber"
                 value={form.bookingPayoutRoutingNumber}
@@ -141,6 +170,8 @@ export default function PayoutSettingsFields({ form, onChange, forceVisible = fa
                 inputMode="numeric"
                 autoComplete="off"
                 placeholder="Routing or transit number"
+                error={fieldIsMissing("bookingPayoutRoutingNumber")}
+                aria-invalid={fieldIsMissing("bookingPayoutRoutingNumber") || undefined}
               />
             </FormField>
             <FormField label="SWIFT / BIC" htmlFor="bookingPayoutSwiftCode" hint="Use this for international transfers">
@@ -150,6 +181,8 @@ export default function PayoutSettingsFields({ form, onChange, forceVisible = fa
                 onChange={(event) => onChange("bookingPayoutSwiftCode", event.target.value.toUpperCase())}
                 autoComplete="off"
                 placeholder="e.g. FCIBDMDM"
+                error={fieldIsMissing("bookingPayoutSwiftCode")}
+                aria-invalid={fieldIsMissing("bookingPayoutSwiftCode") || undefined}
               />
             </FormField>
           </div>
@@ -157,11 +190,13 @@ export default function PayoutSettingsFields({ form, onChange, forceVisible = fa
 
         {form.bookingPayoutMethod === "digital" && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField label="Payment provider" htmlFor="bookingPayoutDigitalProvider" required>
+            <FormField label="Payment provider" htmlFor="bookingPayoutDigitalProvider" required error={fieldIsMissing("bookingPayoutDigitalProvider") ? "Choose a digital payment provider." : ""}>
               <Select
                 id="bookingPayoutDigitalProvider"
                 value={form.bookingPayoutDigitalProvider}
                 onChange={(event) => onChange("bookingPayoutDigitalProvider", event.target.value)}
+                error={fieldIsMissing("bookingPayoutDigitalProvider")}
+                aria-invalid={fieldIsMissing("bookingPayoutDigitalProvider") || undefined}
               >
                 <option value="">Choose a provider</option>
                 {DIGITAL_PAYOUT_PROVIDERS.map((provider) => (
@@ -174,6 +209,7 @@ export default function PayoutSettingsFields({ form, onChange, forceVisible = fa
               htmlFor="bookingPayoutDigitalAccount"
               required
               hint="Enter the exact destination registered with your provider"
+              error={fieldIsMissing("bookingPayoutDigitalAccount") ? "Enter the payout email, username, mobile number, or handle." : ""}
             >
               <Input
                 id="bookingPayoutDigitalAccount"
@@ -181,6 +217,8 @@ export default function PayoutSettingsFields({ form, onChange, forceVisible = fa
                 onChange={(event) => onChange("bookingPayoutDigitalAccount", event.target.value)}
                 autoComplete="off"
                 placeholder={providerHelp?.placeholder || "payments@business.com or @business"}
+                error={fieldIsMissing("bookingPayoutDigitalAccount")}
+                aria-invalid={fieldIsMissing("bookingPayoutDigitalAccount") || undefined}
               />
             </FormField>
             {(form.bookingPayoutDigitalProvider === "NBD MoBanking" ||

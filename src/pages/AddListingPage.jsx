@@ -31,7 +31,11 @@ import { FormField, Input, Select, Textarea } from "../components/ui/FormField";
 import PositionPicker from "../components/ui/PositionPicker";
 import PayoutSettingsFields from "../components/PayoutSettingsFields";
 import BookingRateEditor from "../components/booking/BookingRateEditor";
-import { hasCompletePayoutDetails } from "../lib/payoutSettings";
+import {
+  hasCompletePayoutDetails,
+  hasPaidBookingRate,
+  missingPayoutFieldIds,
+} from "../lib/payoutSettings";
 import { Spinner, ErrorState } from "../components/ui/States";
 import { isLiveApi } from "../lib/config";
 import { trackMarketingEventOnce } from "../lib/marketingAnalytics";
@@ -800,6 +804,7 @@ export default function AddListingPage() {
       return [
         !hasValidEmail(form.email) && "contactEmail",
         coverPhotoError && "coverPhoto",
+        ...missingPayoutFieldIds(form),
       ].filter(Boolean);
     }
     return [];
@@ -823,6 +828,7 @@ export default function AddListingPage() {
   };
   const goBack = () => setStep((s) => Math.max(1, s - 1));
   const showBusinessRequiredErrors = requiredAttentionStep === 1;
+  const showPayoutRequiredErrors = requiredAttentionStep === 2;
   const industryIsMissing = !findIndustry(form.category);
 
   if (isEditing && loadingExisting) {
@@ -1299,6 +1305,10 @@ export default function AddListingPage() {
                           editor will open automatically for photos, prices, inventory, shipping,
                           and local-pickup options.
                         </span>
+                        <span className="mt-2 flex items-start gap-1.5 text-xs font-semibold text-primary-800">
+                          <i className="ri-information-line mt-0.5" aria-hidden="true" />
+                          Payout information is required when accepting product payments online.
+                        </span>
                       </span>
                     </label>
                     {isEditing && listingId && (
@@ -1340,6 +1350,10 @@ export default function AddListingPage() {
                         <span className="block text-xs text-foreground-600 font-label mt-0.5">
                           Adds a secure booking form to your profile. Set a price for automatic
                           Stripe/PayPal confirmation, or leave it at $0 for owner approval.
+                        </span>
+                        <span className="mt-2 flex items-start gap-1.5 text-xs font-semibold text-primary-800">
+                          <i className="ri-information-line mt-0.5" aria-hidden="true" />
+                          Payout information is required when accepting booking payments online.
                         </span>
                       </span>
                     </label>
@@ -1491,10 +1505,17 @@ export default function AddListingPage() {
                         />
                       </FormField>
                     </div>}
-                    <PayoutSettingsFields
-                      form={form}
-                      onChange={(field, value) => setForm((current) => ({ ...current, [field]: value }))}
-                    />
+                    </div>
+                  )}
+                  {(form.bookingEnabled || form.sellProducts) && (
+                    <div className="mt-5">
+                      <PayoutSettingsFields
+                        form={form}
+                        onChange={(field, value) => setForm((current) => ({ ...current, [field]: value }))}
+                        forceVisible={form.sellProducts}
+                        context={form.sellProducts ? (form.bookingEnabled && hasPaidBookingRate(form) ? "combined" : "storefront") : "booking"}
+                        showRequiredErrors={showPayoutRequiredErrors}
+                      />
                     </div>
                   )}
                 </div>

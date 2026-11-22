@@ -25,22 +25,32 @@ export function hasPaidBookingRate(form) {
     (form.bookingRateRules || []).some((rule) => Number(rule.priceCents) > 0);
 }
 
-export function hasCompletePayoutDetails(form) {
-  const hasPaidRate = hasPaidBookingRate(form);
-  if (!form.bookingEnabled || !hasPaidRate) return true;
+export function payoutDetailsRequired(form) {
+  return Boolean(form.sellProducts || (form.bookingEnabled && hasPaidBookingRate(form)));
+}
+
+export function missingPayoutFieldIds(form) {
+  if (!payoutDetailsRequired(form)) return [];
   if (form.bookingPayoutMethod === "bank") {
-    return Boolean(
-      form.bookingPayoutAccountName?.trim() &&
-        form.bookingPayoutBankName?.trim() &&
-        form.bookingPayoutBankCountry?.trim() &&
-        form.bookingPayoutAccountNumber?.trim() &&
-        (form.bookingPayoutRoutingNumber?.trim() || form.bookingPayoutSwiftCode?.trim())
-    );
+    const routingIsMissing = !form.bookingPayoutRoutingNumber?.trim() && !form.bookingPayoutSwiftCode?.trim();
+    return [
+      !form.bookingPayoutAccountName?.trim() && "bookingPayoutAccountName",
+      !form.bookingPayoutBankName?.trim() && "bookingPayoutBankName",
+      !form.bookingPayoutBankCountry?.trim() && "bookingPayoutBankCountry",
+      !form.bookingPayoutAccountNumber?.trim() && "bookingPayoutAccountNumber",
+      routingIsMissing && "bookingPayoutRoutingNumber",
+      routingIsMissing && "bookingPayoutSwiftCode",
+    ].filter(Boolean);
   }
   if (form.bookingPayoutMethod === "digital") {
-    return Boolean(
-      form.bookingPayoutDigitalProvider?.trim() && form.bookingPayoutDigitalAccount?.trim()
-    );
+    return [
+      !form.bookingPayoutDigitalProvider?.trim() && "bookingPayoutDigitalProvider",
+      !form.bookingPayoutDigitalAccount?.trim() && "bookingPayoutDigitalAccount",
+    ].filter(Boolean);
   }
-  return false;
+  return ["bookingPayoutMethod"];
+}
+
+export function hasCompletePayoutDetails(form) {
+  return missingPayoutFieldIds(form).length === 0;
 }
