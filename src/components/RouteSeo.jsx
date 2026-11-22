@@ -12,8 +12,65 @@ const PRIMARY_NAVIGATION = [
   ["Custom Uniforms", "/uniforms"],
   ["Blog", "/blog"],
 ];
+const PRIVATE_ROUTE_META = {
+  "/auth/login": {
+    title: "Sign In | Connect767",
+    description: "Sign in to manage your Connect767 account, listings, bookings, products and messages.",
+    label: "Sign In",
+  },
+  "/auth/register": {
+    title: "Create Your Account & Listing | Connect767",
+    description: "Create your Connect767 account, choose a listing plan and add your business or professional profile.",
+    label: "Create Account & Listing",
+  },
+  "/auth/forgot-password": {
+    title: "Reset Your Password | Connect767",
+    description: "Request a secure password reset for your Connect767 account.",
+    label: "Reset Password",
+  },
+  "/auth/reset-password": {
+    title: "Choose a New Password | Connect767",
+    description: "Choose a new password for your Connect767 account.",
+    label: "New Password",
+  },
+  "/checkout": {
+    title: "Secure Checkout | Connect767",
+    description: "Review your Connect767 order and complete checkout securely.",
+    label: "Checkout",
+  },
+  "/checkout/thank-you": {
+    title: "Order Confirmation | Connect767",
+    description: "Review the confirmation details for your Connect767 order.",
+    label: "Order Confirmation",
+  },
+  "/dashboard": {
+    title: "Account Dashboard | Connect767",
+    description: "Manage your Connect767 listings, bookings, products and account details.",
+    label: "Dashboard",
+  },
+  "/messages": {
+    title: "Messages | Connect767",
+    description: "Read and manage messages connected to your Connect767 listings.",
+    label: "Messages",
+  },
+  "/saved": {
+    title: "Saved Listings | Connect767",
+    description: "Review the Connect767 directory listings you have saved.",
+    label: "Saved Listings",
+  },
+  "/shop/customize": {
+    title: "Customize Your Product | Connect767",
+    description: "Customize your selected Connect767 product before ordering.",
+    label: "Product Customizer",
+  },
+  "/design-studio": {
+    title: "AI Clothing Design Studio | Connect767",
+    description: "Create apparel concepts and transparent uniform artwork with the Connect767 AI Clothing Design Studio.",
+    label: "AI Clothing Design Studio",
+  },
+};
 const NOINDEX_PREFIXES = [
-  "/auth/",
+  "/auth",
   "/checkout",
   "/dashboard",
   "/messages",
@@ -24,11 +81,12 @@ const NOINDEX_PREFIXES = [
 
 function pageMeta(pathname) {
   if (seoPages[pathname]) return seoPages[pathname];
-  if (pathname === "/design-studio") {
+  if (PRIVATE_ROUTE_META[pathname]) return PRIVATE_ROUTE_META[pathname];
+  if (/^\/listings\/[^/]+\/edit$/.test(pathname)) {
     return {
-      title: "AI Clothing Design Studio | Connect767",
-      description: "Create apparel concepts and transparent uniform artwork with the Connect767 AI Clothing Design Studio.",
-      label: "AI Clothing Design Studio",
+      title: "Edit Your Listing | Connect767",
+      description: "Update your Connect767 directory listing information, media, bookings, products and payment settings.",
+      label: "Edit Listing",
     };
   }
   if (/^\/listings\/[^/]+$/.test(pathname)) {
