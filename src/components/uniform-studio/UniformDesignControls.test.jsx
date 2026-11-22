@@ -89,7 +89,7 @@ describe("uniform design controls", () => {
     render(<UniformSetupPanel designProps={{ sport: "soccer", collar: "Crew", setCollar: vi.fn(), sleeve: "Short", setSleeve: vi.fn(), colors: defaultZoneColors, setColors: vi.fn() }} optionsProps={{ fitType: "Men", setFitType: vi.fn(), kitType: "Full", setKitType: vi.fn(), logoApplication: "Sublimated", setLogoApplication: vi.fn(), insideCollarMessage: false, setInsideCollarMessage, insideCollarText: "", setInsideCollarText: vi.fn() }} />);
     expect(screen.getByRole("button", { name: /^Full Kit/ })).toBeVisible();
     expect(screen.getByLabelText("Shirt body color")).toBeInTheDocument();
-    const productionHeading = screen.getByRole("heading", { name: "Production extras" });
+    const productionHeading = screen.getByRole("heading", { name: "Uniform options" });
     expect(productionHeading).toBeVisible();
     expect(productionHeading.closest("details")).toBeNull();
     expect(productionHeading.closest("section")).not.toHaveClass("overflow-hidden");

@@ -13,10 +13,10 @@ it("preserves the selected sample during asynchronous branding, caches the resul
     if (source.includes("cricket")) reject(new Error("Image unavailable"));
   }));
   const { rerender } = render(<AIUniformSample sport="soccer" />);
-  expect(screen.getByRole("img")).toHaveAttribute("src", "/uploads/ai-uniform-samples/soccer.webp");
+  expect(screen.getByRole("img")).toHaveAttribute("src", "/uploads/ai-uniform-samples/soccer-views.webp");
   rerender(<AIUniformSample sport="basketball" />);
   await act(async () => soccerReady("data:image/png;base64,soccer"));
-  expect(screen.getByRole("img")).toHaveAttribute("src", "/uploads/ai-uniform-samples/basketball.webp");
+  expect(screen.getByRole("img")).toHaveAttribute("src", "/uploads/ai-uniform-samples/basketball-views.webp");
   await act(async () => basketballReady("data:image/png;base64,basketball"));
   expect(screen.getByRole("img")).toHaveAttribute("data-background-branding", "connect767-embossed-v1");
   expect(screen.getByRole("img")).toHaveAttribute("src", "data:image/png;base64,basketball");
@@ -26,10 +26,10 @@ it("preserves the selected sample during asynchronous branding, caches the resul
   expect(emboss).toHaveBeenCalledTimes(2);
   rerender(<AIUniformSample sport="cricket" />);
   await act(async () => {});
-  expect(screen.getByRole("img")).toHaveAttribute("src", "/uploads/ai-uniform-samples/cricket.webp");
+  expect(screen.getByRole("img")).toHaveAttribute("src", "/uploads/ai-uniform-samples/cricket-views.webp");
   expect(screen.getByRole("img")).not.toHaveAttribute("data-background-branding");
   rerender(<AIUniformSample sport="soccer" backgroundColor="#ffffff" />);
-  expect(emboss).toHaveBeenLastCalledWith("/uploads/ai-uniform-samples/soccer.webp", { backgroundColor: "#ffffff" });
+  expect(emboss).toHaveBeenLastCalledWith("/uploads/ai-uniform-samples/soccer-views.webp", { backgroundColor: "#ffffff" });
   await act(async () => soccerReady("data:image/png;base64,soccer-white-background"));
   expect(screen.getByRole("img")).toHaveAttribute("src", "data:image/png;base64,soccer-white-background");
 });

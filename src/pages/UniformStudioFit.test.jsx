@@ -27,10 +27,10 @@ function sportsFromButtons(panel) {
 describe("required uniform fit selection", () => {
   beforeEach(() => window.localStorage.clear());
 
-  it.each(["soccer", "basketball", "netball", "cricket", "goalkeeper"])("shows the distinct AI-generated %s example without production boundaries", (sport) => {
+  it.each(["soccer", "basketball", "netball", "cricket", "goalkeeper", "other"])("shows the distinct AI-generated %s example without production boundaries", (sport) => {
     render(<MemoryRouter initialEntries={[`/uniforms?sport=${sport}&mode=scratch`]}><UniformStudioPage /></MemoryRouter>);
-    const image = screen.getByRole("img", { name: `AI-generated ${sport} uniform example, front and back` });
-    expect(image).toHaveAttribute("src", `/uploads/ai-uniform-samples/${sport}.webp`);
+    const image = screen.getByRole("img", { name: `AI-generated ${sport} uniform example, front, side and back` });
+    expect(image).toHaveAttribute("src", `/uploads/ai-uniform-samples/${sport}-views.webp`);
     expect(screen.queryByLabelText("Garment views")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Editable garment tools")).not.toBeInTheDocument();
     expect(screen.getByTestId("uniform-foundation").querySelector("svg, [data-zone-id]")).toBeNull();
@@ -49,16 +49,21 @@ describe("required uniform fit selection", () => {
     expect(screen.queryByRole("combobox", { name: "Editable garment tools" })).not.toBeInTheDocument();
   });
 
-  it("restores manual tools only for a complete verified production plan", () => {
+  it.each(["design", "logo", "zones"])("restores legacy production projects as AI-only, including a direct %s link", (step) => {
+    const src = "data:image/png;base64,test-preview";
     const saved = {
-      aiWorkspaceConcept: { src: "data:image/png;base64,test-preview", backgroundBranding: "connect767-embossed-v1" },
-      aiUniformPlan: { name: "Editable kit", collar: "Crew", sleeve: "Short", colors: defaultZoneColors, productionElements: [] },
-      aiDesignApplied: true, layers: [], categoryConfirmed: true, fitType: "Men", fitTypeConfirmed: true,
+      aiUniformPlan: { name: "Saved kit", conceptImage: { src, backgroundBranding: "connect767-embossed-v1" }, collar: "Crew", sleeve: "Short", colors: defaultZoneColors, productionElements: [] },
+      aiDesignApplied: true, layers: [{ id: "saved-logo", type: "logo", src, view: "front", x: 50, y: 35, size: 20 }], categoryConfirmed: true, fitType: "Men", fitTypeConfirmed: true,
     };
     window.localStorage.setItem("c767:studio:soccer:blank-canvas", JSON.stringify(saved));
-    openStudio();
-    expect(screen.getByRole("combobox", { name: "Editable garment tools" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Undo garment edit" })).toBeDisabled();
+    openStudio(step);
+    expect(screen.getByTestId("studio-canvas").querySelector(".studio-canvas-image")).toHaveAttribute("src", src);
+    expect(screen.getByRole("textbox", { name: "Message Connect767 AI" })).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Editable garment tools" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Undo garment edit" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Garment views")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Production map|Open Production Mode|SVG/i })).not.toBeInTheDocument();
+    expect(JSON.parse(window.localStorage.getItem("c767:studio:soccer:blank-canvas")).layers).toHaveLength(1);
   });
 
   it("opens directly on the combined required Design step with the AI prompt chat", async () => {
@@ -152,7 +157,7 @@ describe("required uniform fit selection", () => {
     for (const category of ["Soccer", "Basketball", "Netball", "Cricket", "Goal Keeper"]) {
       fireEvent.click(categoryPanel.getByRole("button", { name: `${category} category` }));
       const slug = category === "Goal Keeper" ? "goalkeeper" : category.toLowerCase();
-      expect(screen.getByRole("img", { name: `AI-generated ${slug} uniform example, front and back` })).toHaveAttribute("src", `/uploads/ai-uniform-samples/${slug}.webp`);
+      expect(screen.getByRole("img", { name: `AI-generated ${slug} uniform example, front, side and back` })).toHaveAttribute("src", `/uploads/ai-uniform-samples/${slug}-views.webp`);
     }
   });
 
@@ -223,7 +228,7 @@ describe("required uniform fit selection", () => {
     expect(screen.queryByRole("button", { name: "Logo" })).not.toBeInTheDocument();
     const setup = within(screen.getByRole("complementary", { name: "Uniform & order setup" }));
     expect(setup.getByRole("heading", { name: "Uniform & order setup" })).toBeVisible();
-    const productionExtras = screen.getByRole("region", { name: "Production extras" });
+    const productionExtras = screen.getByRole("region", { name: "Uniform options" });
     expect(productionExtras).not.toHaveClass("flex-1");
     expect(productionExtras).not.toHaveClass("overflow-hidden");
     expect(setup.getByRole("button", { name: /^Full Kit/ })).toHaveTextContent("$35.00");
@@ -254,6 +259,8 @@ describe("required uniform fit selection", () => {
     expect(within(promptMenu).getByRole("menuitem", { name: "History" })).toBeVisible();
     expect(within(promptMenu).getByRole("menuitem", { name: "Reference" })).toBeVisible();
     expect(within(promptMenu).getByRole("menuitem", { name: "Refine with AI" })).toBeVisible();
+    expect(within(promptMenu).queryByRole("menuitem", { name: "Save design" })).not.toBeInTheDocument();
+    expect(within(promptMenu).queryByRole("menuitem", { name: /Download|Unlock after payment/ })).not.toBeInTheDocument();
     expect(screen.getAllByRole("region", { name: "AI command prompt" })[0]).toBeVisible();
     expect(screen.getAllByRole("textbox", { name: "Message Connect767 AI" })[0]).toBeVisible();
   });

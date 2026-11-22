@@ -1,6 +1,23 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { CartProvider } from "../hooks/useCart";
 import { describe, expect, it } from "vitest";
-import { AccountAvatar } from "./Header";
+import Header, { AccountAvatar } from "./Header";
+
+it("keeps five mobile destinations outside the blurred header and retains Saved in the menu", () => {
+  localStorage.clear();
+  render(<MemoryRouter initialEntries={["/listings"]}><CartProvider><Header /></CartProvider></MemoryRouter>);
+  const bar = screen.getByRole("navigation", { name: "Mobile quick navigation" });
+  expect(bar.closest("header")).toBeNull();
+  expect(within(bar).getAllByRole("link").map(link => link.textContent.trim())).toEqual(["Home", "Directory", "Shop", "Community Feed", "Account"]);
+  expect(within(bar).getByRole("link", { name: "Account" })).toHaveAttribute("href", "/auth/login");
+  fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
+  const menu = screen.getByRole("navigation", { name: "Mobile menu" });
+  for (const label of ["Directory", "Shop", "Community Feed", "Custom Uniforms", "Blog", "Saved"]) expect(within(menu).getByRole("link", { name: label })).toBeInTheDocument();
+  fireEvent.click(within(menu).getByRole("link", { name: "Shop", exact: true }));
+  expect(screen.queryByRole("navigation", { name: "Mobile menu" })).not.toBeInTheDocument();
+  expect(screen.getByRole("navigation", { name: "Mobile quick navigation" })).toBeInTheDocument();
+});
 
 describe("AccountAvatar", () => {
   it("shows the signed-in user's saved profile photo with its crop", () => {
