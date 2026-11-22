@@ -189,7 +189,8 @@ describe("required uniform fit selection", () => {
       fireEvent.click(categoryPanel.getByRole("button", { name: `${label} category` }));
       const studioHeader = within(screen.getByRole("button", { name: "Back" }).closest("header"));
       expect(studioHeader.queryByText(templateName)).not.toBeInTheDocument();
-      expect(studioHeader.getByText(label)).toBeInTheDocument();
+      expect(studioHeader.queryByText(label, { exact: true })).not.toBeInTheDocument();
+      expect(progress.getByRole("button", { name: /Design/ })).toHaveTextContent(`${label} · Fit required`);
     }
     const categoryElement = setup.getByRole("group", { name: "Uniform category (required)" });
     const fitElement = setup.getByRole("group", { name: "Fit type (required)" });
@@ -215,6 +216,9 @@ describe("required uniform fit selection", () => {
     const progress = openStudio("ai");
     const header = within(screen.getByRole("button", { name: "Back" }).closest("header"));
     expect(header.queryByRole("button", { name: /^Designer$/ })).not.toBeInTheDocument();
+    expect(header.getByRole("navigation", { name: "Uniform order progress" })).toBeVisible();
+    expect(header.getByRole("button", { name: "Account and sign in" })).toBeVisible();
+    expect(header.queryByText(/Auto-saved on device/)).not.toBeInTheDocument();
     expect(header.getByRole("button", { name: "Zoom out" })).toBeVisible();
     fireEvent.click(progress.getByRole("button", { name: /Design/ }));
     expect(header.getByRole("button", { name: "Zoom out" })).toBeVisible();
