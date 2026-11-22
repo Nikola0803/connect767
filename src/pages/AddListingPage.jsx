@@ -1024,7 +1024,7 @@ export default function AddListingPage() {
                 >
                   <Input
                     id="businessName"
-                    placeholder="e.g. Cocoa Palm Bistro"
+                    placeholder="e.g. Cocoa Palm Bistro or James Brown"
                     value={form.businessName}
                     onChange={update("businessName")}
                     error={showBusinessRequiredErrors && !form.businessName.trim()}
