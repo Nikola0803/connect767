@@ -24,12 +24,56 @@ function cornerBackground(data, width, height) {
   return [red / count, green / count, blue / count];
 }
 
+// Stock templates can have a different neutral backdrop in each view. Sample
+// each column, then recolour only matching pixels connected to the image edge.
+// This avoids the hard colour threshold seams and protects enclosed garment art.
+export function templateBackgroundMask({ data, width, height }) {
+  const candidates = new Uint8Array(width * height);
+  const background = new Uint8Array(width * height);
+  const queue = new Int32Array(width * height);
+  const patch = Math.max(1, Math.round(height * 0.015));
+  for (let x = 0; x < width; x++) {
+    const top = [0, 0, 0]; const bottom = [0, 0, 0];
+    for (let y = 0; y < patch; y++) for (let c = 0; c < 3; c++) {
+      top[c] += data[(y * width + x) * 4 + c] / patch;
+      bottom[c] += data[((height - 1 - y) * width + x) * 4 + c] / patch;
+    }
+    for (let y = 0; y < height; y++) {
+      const ratio = y / Math.max(1, height - 1);
+      const i = y * width + x;
+      let distance = 0;
+      for (let c = 0; c < 3; c++) distance += (data[i * 4 + c] - (top[c] + (bottom[c] - top[c]) * ratio)) ** 2;
+      candidates[i] = distance <= 28 * 28 ? 1 : 0;
+    }
+  }
+  let tail = 0;
+  const visit = (i) => {
+    if (candidates[i] && !background[i]) { background[i] = 1; queue[tail++] = i; }
+  };
+  for (let x = 0; x < width; x++) { visit(x); visit((height - 1) * width + x); }
+  for (let y = 0; y < height; y++) { visit(y * width); visit(y * width + width - 1); }
+  for (let head = 0; head < tail; head++) {
+    const i = queue[head]; const x = i % width;
+    if (x > 0) visit(i - 1);
+    if (x < width - 1) visit(i + 1);
+    if (i >= width) visit(i - width);
+    if (i < width * (height - 1)) visit(i + width);
+  }
+  return background;
+}
+
+export function embossedLogoPlacement(width, height, logoWidth, logoHeight) {
+  const scale = Math.min(width * 0.68 / logoWidth, height * 0.68 / logoHeight);
+  const w = logoWidth * scale; const h = logoHeight * scale;
+  return { x: (width - w) / 2, y: (height - h) / 2, width: w, height: h };
+}
+
 /**
  * Burns the Connect767 mark into only the flat background pixels. The garment
  * remains untouched, so the mark reads as part of the same backdrop and sits
  * visually behind the kit instead of on a separate canvas layer.
  */
-export async function embossConnect767ConceptBackground(dataUrl, { backgroundColor } = {}) {
+export async function embossConnect767ConceptBackground(dataUrl, { backgroundColor, normalizePanels = false } = {}) {
   if (!dataUrl || typeof document === "undefined" || typeof Image === "undefined") return dataUrl;
   if (typeof navigator !== "undefined" && /jsdom/i.test(navigator.userAgent || "")) return dataUrl;
 
@@ -43,6 +87,7 @@ export async function embossConnect767ConceptBackground(dataUrl, { backgroundCol
     context.drawImage(concept, 0, 0, canvas.width, canvas.height);
     const original = context.getImageData(0, 0, canvas.width, canvas.height);
     const background = cornerBackground(original.data, canvas.width, canvas.height);
+    const backgroundMask = normalizePanels ? templateBackgroundMask(original) : null;
     let backdrop = null;
     if (backgroundColor) {
       // Render the existing image on the same solid color as the studio.
@@ -59,12 +104,8 @@ export async function embossConnect767ConceptBackground(dataUrl, { backgroundCol
     maskCanvas.width = canvas.width; maskCanvas.height = canvas.height;
     const maskContext = maskCanvas.getContext("2d", { willReadFrequently: true });
     if (!maskContext) return dataUrl;
-    // Fill the full concept backdrop so the embossed mark remains prominent
-    // behind wide and tall garments alike. Independent dimensions preserve the
-    // complete mark instead of cropping it to the concept image's aspect ratio.
-    const insetX = canvas.width * 0.01;
-    const insetY = canvas.height * 0.01;
-    maskContext.drawImage(logo, insetX, insetY, canvas.width - (insetX * 2), canvas.height - (insetY * 2));
+    const placement = embossedLogoPlacement(canvas.width, canvas.height, logo.naturalWidth || logo.width, logo.naturalHeight || logo.height);
+    maskContext.drawImage(logo, placement.x, placement.y, placement.width, placement.height);
     const mask = maskContext.getImageData(0, 0, canvas.width, canvas.height).data;
     const pixels = original.data;
     const offset = Math.max(2, Math.round(Math.min(canvas.width, canvas.height) / 420));
@@ -79,7 +120,7 @@ export async function embossConnect767ConceptBackground(dataUrl, { backgroundCol
         const redDelta = pixels[index] - background[0];
         const greenDelta = pixels[index + 1] - background[1];
         const blueDelta = pixels[index + 2] - background[2];
-        if ((redDelta * redDelta) + (greenDelta * greenDelta) + (blueDelta * blueDelta) > 28 * 28) continue;
+        if (backgroundMask ? !backgroundMask[y * canvas.width + x] : (redDelta * redDelta) + (greenDelta * greenDelta) + (blueDelta * blueDelta) > 28 * 28) continue;
         if (backdrop) {
           pixels[index] = backdrop[0];
           pixels[index + 1] = backdrop[1];
@@ -89,7 +130,7 @@ export async function embossConnect767ConceptBackground(dataUrl, { backgroundCol
         const highlight = alphaAt(x + offset, y + offset);
         const shadow = alphaAt(x - offset, y - offset);
         if (centre === 0 && highlight === 0 && shadow === 0) continue;
-        const relief = ((highlight - shadow) * 26) - (centre * 2.5);
+        const relief = ((highlight - shadow) * 12) - (centre * 0.75);
         pixels[index] = Math.max(0, Math.min(255, pixels[index] + relief));
         pixels[index + 1] = Math.max(0, Math.min(255, pixels[index + 1] + relief));
         pixels[index + 2] = Math.max(0, Math.min(255, pixels[index + 2] + relief));

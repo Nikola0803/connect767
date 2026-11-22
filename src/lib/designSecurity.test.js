@@ -1,10 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { initializeDesignSecurity } from "./designSecurity";
+import { downloadProtectedDesign, initializeDesignSecurity, loadProtectedDesignPreview } from "./designSecurity";
 vi.mock("./config", () => ({ config: { customApiUrl: "https://studio.test/api" } }));
 const response = (payload, ok = true, status = 200) => ({ ok, status, json: async () => payload });
 beforeEach(() => { localStorage.clear(); vi.stubGlobal("fetch", vi.fn()); });
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 describe("studio usage initialization", () => {
+  it("requires sign-in for original downloads and saved preview recovery", async () => {
+    await expect(downloadProtectedDesign({ id: 4 })).rejects.toThrow("Sign in");
+    await expect(loadProtectedDesignPreview(4)).rejects.toThrow("Sign in");
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it("stops an unpaid download at the server gate without fetching image bytes", async () => {
+    localStorage.setItem("c767_auth_token", "signed-in-test");
+    fetch.mockResolvedValue(response({ message: "Complete payment to unlock design downloads." }, false, 403));
+    await expect(downloadProtectedDesign({ id: 4 })).rejects.toThrow("Complete payment");
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch.mock.calls[0][0]).toContain("/design-security/download-token");
+  });
   it("clears an expired account session so the studio can show sign-in actions", async () => {
     localStorage.setItem("c767_auth_token", "expired-test-token");
     localStorage.setItem("c767_auth_user", JSON.stringify({ id: 7 }));

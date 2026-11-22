@@ -187,12 +187,9 @@ describe("required uniform fit selection", () => {
     for (const [sport, templateName] of categoryTemplates) {
       const label = sport === "goalkeeper" ? "Goal Keeper" : sport === "other" ? "Clothing & Other" : `${sport[0].toUpperCase()}${sport.slice(1)}`;
       fireEvent.click(categoryPanel.getByRole("button", { name: `${label} category` }));
-      if (sport === "soccer") {
-        const studioHeader = within(screen.getByRole("button", { name: "Back" }).closest("header"));
-        expect(studioHeader.queryByText(templateName)).not.toBeInTheDocument();
-      } else {
-        expect(screen.getAllByText(templateName).length).toBeGreaterThan(0);
-      }
+      const studioHeader = within(screen.getByRole("button", { name: "Back" }).closest("header"));
+      expect(studioHeader.queryByText(templateName)).not.toBeInTheDocument();
+      expect(studioHeader.getByText(label)).toBeInTheDocument();
     }
     const categoryElement = setup.getByRole("group", { name: "Uniform category (required)" });
     const fitElement = setup.getByRole("group", { name: "Fit type (required)" });

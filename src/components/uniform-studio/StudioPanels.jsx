@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { basketballKitRule, basketballSocksRequested } from "../../../shared/uniformPromptRules.js";
 import { skinLibrary, skinGroups, skinDataUri, findSkin } from "../../data/skins";
 import {
   zoneColorPalette,
@@ -19,7 +20,6 @@ import {
 } from "./studioBackgrounds";
 import AIUniformComposer from "./AIUniformComposer";
 import CollarAttachment from "./CollarAttachment";
-import { embossConnect767ConceptBackground } from "./aiConceptEmboss";
 import { RequiredIndicator } from "../ui/FormField";
 import {
   aiSecurityHeaders,
@@ -235,7 +235,7 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
 
   return (
     <div>
-      <h3 className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.13em] text-foreground-400">
+      {sport !== "basketball" && <><h3 className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.13em] text-foreground-400">
         Collar &amp; Sleeves
       </h3>
       <div className="mb-1.5">
@@ -263,6 +263,7 @@ export function DesignPanel({ sport, collar, setCollar, sleeve, setSleeve, color
         </div>
       )}
 
+      </>}
       {!hideGarmentColors && <><h3 className="mb-1.5 border-t border-background-200/70 pt-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground-400">
         Garment Colors
       </h3>
@@ -825,7 +826,9 @@ export async function removeImageBackground(file, onProgress) {
   });
 }
 
-export function BackgroundRemovalPanel({ onPlace, processor = removeImageBackground }) {
+export function BackgroundRemovalPanel({ onPlace, processor = removeImageBackground, canDownload = false }) {
+  const { isAuthenticated } = useAuth();
+  const mayDownload = isAuthenticated && canDownload;
   const [sourceFile, setSourceFile] = useState(null);
   const [sourcePreview, setSourcePreview] = useState("");
   const [resultFile, setResultFile] = useState(null);
@@ -883,7 +886,7 @@ export function BackgroundRemovalPanel({ onPlace, processor = removeImageBackgro
   };
 
   const downloadTransparentFile = () => {
-    if (!resultFile) return;
+    if (!resultFile || !mayDownload) return;
     const url = URL.createObjectURL(resultFile);
     const link = document.createElement("a");
     link.href = url;
@@ -953,7 +956,8 @@ export function BackgroundRemovalPanel({ onPlace, processor = removeImageBackgro
           <button
             type="button"
             onClick={downloadTransparentFile}
-            className="flex-1 cursor-pointer rounded-lg bg-primary-600 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-primary-700"
+            disabled={!mayDownload}
+            className="flex-1 cursor-pointer rounded-lg bg-primary-600 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <i className="ri-download-2-line mr-1.5" aria-hidden="true" /> Download PNG
           </button>
@@ -968,7 +972,7 @@ export function BackgroundRemovalPanel({ onPlace, processor = removeImageBackgro
           </button>
         )}
       </div>
-      {resultFile && <p className="mt-3 text-[10px] leading-relaxed text-foreground-500">Download the transparent PNG{onPlace ? " or place it on an editable garment surface" : " for use in your AI design prompt"}.</p>}
+      {resultFile && <p className="mt-3 text-[10px] leading-relaxed text-foreground-500">{mayDownload ? "Download your transparent PNG." : "Sign in and complete payment to unlock image downloads."}</p>}
     </div>
   );
 }
@@ -1168,7 +1172,11 @@ export function AIArtworkPanel({
   const updateSecurityQuota = (payload) => {
     if (!payload || typeof payload.remaining !== "number") return;
     setSecurityContext((current) => {
-      const next = { ...current, remaining: payload.remaining, limit: payload.limit ?? current?.limit };
+      const next = {
+        ...current, remaining: payload.remaining, limit: payload.limit ?? current?.limit,
+        ...(typeof payload.downloadUnlocked === "boolean" ? { downloadUnlocked: payload.downloadUnlocked } : {}),
+        ...(Array.isArray(payload.projectFiles) ? { projectFiles: payload.projectFiles } : {}),
+      };
       onSecurityContextChange?.(next);
       return next;
     });
@@ -1185,12 +1193,16 @@ export function AIArtworkPanel({
 
   const securityErrorMessage = (responsePayload, fallback) => {
     if (responsePayload?.requiresAccount) {
-      return "Your free AI design previews have been used. Create a free Connect767 account to continue designing.";
+      return responsePayload.error || responsePayload.message || "Sign in or create an account before using AI design tools.";
     }
     return responsePayload?.error || responsePayload?.message || fallback;
   };
 
   const downloadSecuredDesign = async () => {
+    if (!isAuthenticated || securityContext?.authenticated !== true) {
+      setError("Sign in to download your purchased design.");
+      return;
+    }
     if (!securityContext?.downloadUnlocked) {
       onCompleteOrder?.();
       return;
@@ -1199,6 +1211,8 @@ export function AIArtworkPanel({
       await downloadProtectedDesign(securityContext.projectFiles?.[0]);
     } catch (downloadError) {
       setError(downloadError.message || "The protected design could not be downloaded.");
+    } finally {
+      await refreshSecurityQuota();
     }
   };
 
@@ -1299,7 +1313,7 @@ export function AIArtworkPanel({
 
   const generateArtwork = async (requestedTier = renderTier, promptOverride = "") => {
     const artworkBrief = String(promptOverride || brief).trim();
-    if (!artworkBrief || !securityContext?.projectId || Number(securityContext.remaining) <= 0 || connection !== "connected") return;
+    if (!isAuthenticated || securityContext?.authenticated !== true || !artworkBrief || !securityContext?.projectId || Number(securityContext.remaining) <= 0 || connection !== "connected") return;
     const requestId = newAIRequestId();
     const effectiveBrandName = brandName.trim() || "Team artwork";
     setGenerating(true);
@@ -1360,10 +1374,12 @@ export function AIArtworkPanel({
     const promptKind = refinement ? "Refinement" : uniformPlan ? "Variation" : "Initial";
     const effectiveBrandName = brandName.trim() || uniformPlan?.name || "Team uniform";
     const effectiveBrief = String(promptOverride || brief).trim() || uniformPlan?.summary || "Preserve the current uniform direction.";
-    if (!effectiveBrandName || (!effectiveBrief && !refinement) || !securityContext?.projectId || Number(securityContext.remaining) <= 0 || connection !== "connected") return;
+    if (!isAuthenticated || securityContext?.authenticated !== true || !effectiveBrandName || (!effectiveBrief && !refinement) || !securityContext?.projectId || Number(securityContext.remaining) <= 0 || connection !== "connected") return;
     const requestId = newAIRequestId();
     const securityHeaders = aiSecurityHeaders(securityContext, requestId);
     const aiOperation = refinement ? "refinement" : uniformPlan ? "variation" : "generation";
+    const userPrompt = refinement || String(promptOverride || brief).trim();
+    const includeSocks = basketballSocksRequested(userPrompt, uniformPlan?.includeSocks === true);
     const existingConcept = refinement ? uniformPlan?.conceptImage?.src || "" : "";
     const currentDesign = uniformPlan || { collar, sleeve, colors, pattern: { key: currentPatternKey } };
     setGenerating(true);
@@ -1388,6 +1404,8 @@ export function AIArtworkPanel({
           sport,
           style,
           brandName: effectiveBrandName,
+          userPrompt,
+          includeSocks,
           brief: refinement
             ? `Revision request: ${refinement}\nPreserve every part of the current concept that is not explicitly changed. Original direction: ${effectiveBrief}`
             : [templateDirection, effectiveBrief].filter(Boolean).join(" "),
@@ -1427,6 +1445,8 @@ export function AIArtworkPanel({
           primaryColor: plan.colors.body,
           secondaryColor: plan.colors.shirtStrip,
           generationMode: "uniform",
+          userPrompt,
+          includeSocks,
           renderTier: requestedTier,
           sport,
           notes: [
@@ -1434,7 +1454,8 @@ export function AIArtworkPanel({
             refinement ? `Revise the supplied existing uniform image: ${refinement}` : brief.trim(),
             `Design plan: ${plan.summary}`,
             `Collar: ${plan.collar}. Sleeves: ${plan.sleeve}.`,
-            `Exact zone colors: body ${plan.colors.body}, sleeves ${plan.colors.sleeve}, collar ${plan.colors.collar}, shorts ${plan.colors.shorts}, socks ${plan.colors.socks}, shirt trim ${plan.colors.shirtStrip}, sleeve trim ${plan.colors.sleeveStrip}, shorts trim ${plan.colors.shortsStrip}.`,
+            `Exact zone colors: body ${plan.colors.body}, sleeves ${plan.colors.sleeve}, collar ${plan.colors.collar}, shorts ${plan.colors.shorts}, ${sport === "Basketball" && !includeSocks ? "" : `socks ${plan.colors.socks}, `}shirt trim ${plan.colors.shirtStrip}, sleeve trim ${plan.colors.sleeveStrip}, shorts trim ${plan.colors.shortsStrip}.`,
+            sport === "Basketball" ? basketballKitRule(includeSocks) : "",
             sport === "soccer"
               ? "Soccer socks must remain one uninterrupted solid base colour from cuff to toe and must have exactly three separate horizontal stripes confined to the top near the knee, with visible base-colour gaps between stripes. All three stripes must use the same single solid stripe colour. Do not create a contrasting solid-colour cuff or place logos, text, numbers, patterns, gradients or other artwork on socks."
               : "Keep any socks production-friendly and free of logos, text or other artwork.",
@@ -1494,17 +1515,16 @@ export function AIArtworkPanel({
         });
       }
       const rawConceptSrc = `data:${conceptData.mimeType || "image/png"};base64,${conceptData.b64}`;
-      const brandedConceptSrc = await embossConnect767ConceptBackground(rawConceptSrc);
       onUniformPlanChange?.({
         ...plan,
         productionElements,
         conceptImage: {
-          src: brandedConceptSrc,
+          src: rawConceptSrc,
           name: `${plan.name} full uniform concept`,
           size: conceptData.size,
           quality: conceptData.quality,
           renderTier: conceptData.renderTier,
-          backgroundBranding: "connect767-embossed-v1",
+          backgroundBranding: "connect767-generated-background-v1",
           projectFileId: conceptData.projectFileId,
           previewOnly: conceptData.previewOnly !== false,
           watermarked: Boolean(conceptData.watermarked),

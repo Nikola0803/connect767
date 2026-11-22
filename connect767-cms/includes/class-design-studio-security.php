@@ -210,6 +210,9 @@ class C767_Design_Studio_Security
         register_rest_route(self::NAMESPACE_, '/design-security/download-token', [
             'methods' => 'POST', 'callback' => [__CLASS__, 'download_token'], 'permission_callback' => '__return_true',
         ]);
+        register_rest_route(self::NAMESPACE_, '/design-security/preview', [
+            'methods' => 'GET', 'callback' => [__CLASS__, 'preview'], 'permission_callback' => '__return_true',
+        ]);
         register_rest_route(self::NAMESPACE_, '/design-security/download', [
             'methods' => 'GET', 'callback' => [__CLASS__, 'download'], 'permission_callback' => '__return_true',
         ]);
@@ -465,6 +468,21 @@ class C767_Design_Studio_Security
             'b64' => base64_encode($preview['bytes']), 'mimeType' => $preview['mimeType'],
             'watermarked' => true, 'previewOnly' => true,
         ]);
+    }
+
+    public static function preview(WP_REST_Request $request)
+    {
+        global $wpdb;
+        $user = C767_REST_Auth::user_from_request($request);
+        if (is_wp_error($user)) return $user;
+        $file = $wpdb->get_row($wpdb->prepare('SELECT * FROM ' . self::table('design_files') . ' WHERE id=%d', absint($request->get_param('fileId'))), ARRAY_A);
+        $owner = $file ? $wpdb->get_var($wpdb->prepare('SELECT owner_user_id FROM ' . self::table('design_projects') . ' WHERE id=%d', (int) $file['project_id'])) : 0;
+        if (!$file || (int) $owner !== (int) $user->ID) return new WP_Error('c767_preview_unavailable', 'This preview is not available for your account.', ['status' => 403]);
+        $bytes = self::read_private_source($file);
+        if (is_wp_error($bytes)) return $bytes;
+        $preview = self::watermarked_preview($bytes, $file['mime_type']);
+        if (is_wp_error($preview)) return $preview;
+        return rest_ensure_response(['b64' => base64_encode($preview['bytes']), 'mimeType' => $preview['mimeType'], 'watermarked' => true, 'previewOnly' => true]);
     }
 
     public static function download_token(WP_REST_Request $request)
@@ -760,9 +778,7 @@ class C767_Design_Studio_Security
             if (!is_wp_error($user)) return ['type' => 'user', 'user_id' => (int) $user->ID, 'session_key' => '', 'token' => ''];
             return $user;
         }
-        $proxy = new WP_REST_Request();
-        $proxy->set_header('x-c767-guest-token', (string) $request->get_header('x-c767-guest-token'));
-        return self::identity($proxy, false);
+        return new WP_Error('c767_account_required', 'Sign in or create an account before using AI design tools.', ['status' => 401, 'requiresAccount' => true]);
     }
 
     private static function create_guest_identity()
@@ -839,11 +855,27 @@ class C767_Design_Studio_Security
         return max(0, (int) $wpdb->get_var($wpdb->prepare('SELECT credit_cost FROM ' . self::table('ai_usage') . ' WHERE request_id=%s', $request_id)));
     }
 
-    private static function has_entitlement($user_id, $project_id, $file_type)
+    private static function paid_entitlements($user_id, $project_id)
     {
         global $wpdb;
-        $rows = $wpdb->get_results($wpdb->prepare('SELECT file_types FROM ' . self::table('design_entitlements') . ' WHERE user_id=%d AND project_id=%d AND status=\'active\'', $user_id, $project_id), ARRAY_A);
-        foreach ($rows as $row) if (in_array($file_type, (array) json_decode($row['file_types'], true), true)) return true;
+        if (!$user_id || !function_exists('wc_get_order')) return [];
+        $rows = $wpdb->get_results($wpdb->prepare('SELECT file_types,order_id FROM ' . self::table('design_entitlements') . ' WHERE user_id=%d AND project_id=%d AND status=\'active\'', $user_id, $project_id), ARRAY_A);
+        return array_values(array_filter($rows, static function ($row) use ($user_id) {
+            $order = wc_get_order((int) $row['order_id']);
+            return $order && $order->is_paid() && (int) $order->get_customer_id() === (int) $user_id && $order->get_meta('_c767_uniform_order');
+        }));
+    }
+
+    private static function has_entitlement($user_id, $project_id, $file_type)
+    {
+        $rows = self::paid_entitlements($user_id, $project_id);
+        foreach ($rows as $row) {
+            $types = (array) json_decode($row['file_types'], true);
+            if (in_array($file_type, $types, true)) return true;
+            // PNG image access also covers the original JPEG/WebP encoding;
+            // no original is returned until the same paid-order check passes.
+            if (in_array($file_type, ['jpg', 'jpeg', 'webp'], true) && in_array('png', $types, true)) return true;
+        }
         return false;
     }
 
@@ -852,10 +884,7 @@ class C767_Design_Studio_Security
         global $wpdb;
         $unlocked = false;
         if (!empty($identity['user_id'])) {
-            $unlocked = (bool) $wpdb->get_var($wpdb->prepare(
-                'SELECT COUNT(*) FROM ' . self::table('design_entitlements') . ' WHERE user_id=%d AND project_id=%d AND status=\'active\'',
-                (int) $identity['user_id'], (int) $project['id']
-            ));
+            $unlocked = !empty(self::paid_entitlements((int) $identity['user_id'], (int) $project['id']));
         }
         $files = $wpdb->get_results($wpdb->prepare(
             'SELECT id, file_type, original_name, mime_type, byte_size, created_at FROM ' . self::table('design_files') . ' WHERE project_id=%d ORDER BY id DESC',

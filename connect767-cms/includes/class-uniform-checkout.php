@@ -412,6 +412,10 @@ class C767_Uniform_Checkout
 
     private static function prepare_design_payload(array $payload, $index)
     {
+        if (sanitize_key((string) ($payload['sport'] ?? '')) === 'basketball') {
+            if (($payload['collar'] ?? '') === 'Polo') $payload['collar'] = 'V-Neck';
+            $payload['sleeve'] = 'Sleeveless';
+        }
         $payload['aiPromptHistory'] = self::sanitize_prompt_history($payload['aiPromptHistory'] ?? []);
         $roster = (array) ($payload['roster'] ?? []);
         $unit_count = 0;
@@ -548,10 +552,11 @@ class C767_Uniform_Checkout
         $price = self::category_base_price($payload['sport'] ?? 'soccer');
         $sleeve = sanitize_text_field((string) ($payload['sleeve'] ?? ''));
         $collar = sanitize_text_field((string) ($payload['collar'] ?? ''));
-        if ($sleeve === 'Long') {
+        $basketball = sanitize_key((string) ($payload['sport'] ?? '')) === 'basketball';
+        if (!$basketball && $sleeve === 'Long') {
             $price += 2.00;
         }
-        if ($collar === 'Polo') {
+        if (!$basketball && $collar === 'Polo') {
             $price += 2.00;
         }
         if (rest_sanitize_boolean($payload['insideCollarMessage'] ?? false)) {

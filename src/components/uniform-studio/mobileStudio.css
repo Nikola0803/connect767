@@ -1,4 +1,4 @@
-.uniform-studio-shell { position:relative; height:var(--studio-viewport-height,100dvh); margin-top:0; min-height:0; }
+.uniform-studio-shell { position:relative; width:100%; max-width:1920px; height:var(--studio-viewport-height,100dvh); margin-top:0; margin-inline:auto; min-height:0; }
 .studio-main, .studio-canvas { min-height:0; }
 .studio-order-setup [class~="text-[8px]"], .studio-order-setup [class~="text-[9px]"], .studio-order-setup [class~="text-[10px]"] { font-size:11px; }
 .studio-order-setup [class~="text-[11px]"], .studio-order-setup [class~="text-xs"] { font-size:13px; }

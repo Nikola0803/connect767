@@ -8,6 +8,8 @@ function renderComposer(overrides = {}) {
     mode: "uniform",
     onModeChange: vi.fn(),
     connection: "connected",
+    aiQuota: { authenticated: true, remaining: 5, limit: 5, downloadUnlocked: true },
+    downloadUnlocked: true,
     brandName: "Riverside FC",
     onBrandNameChange: vi.fn(),
     prompt: "Create a modern green kit",
@@ -55,6 +57,27 @@ function renderComposer(overrides = {}) {
 }
 
 describe("AIUniformComposer", () => {
+  it("does not expose completed-file notices or downloads before verified payment", () => {
+    const props = renderComposer({ allowFileActions: false, uniformPlan: { name: "Test kit" }, aiQuota: { authenticated: true, remaining: 5, downloadUnlocked: false }, downloadUnlocked: false });
+    expect(screen.queryByText(/files are ready to download/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Download files" })).not.toBeInTheDocument();
+    expect(props.onDownloadDesign).not.toHaveBeenCalled();
+  });
+
+  it("offers high-quality downloads only after verified account and payment", () => {
+    const props = renderComposer({ allowFileActions: false, uniformPlan: { name: "Paid kit" } });
+    expect(screen.getByText("Your high-quality design files are ready to download.")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Download files" }));
+    expect(props.onDownloadDesign).toHaveBeenCalledOnce();
+  });
+
+  it("does not trust a cached paid flag when the customer is signed out", () => {
+    const props = renderComposer({ uniformPlan: { name: "Saved kit" }, accountRequired: true, downloadUnlocked: true, aiQuota: { authenticated: false, remaining: 5, downloadUnlocked: true } });
+    expect(screen.queryByRole("button", { name: "Download files" })).not.toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "Message Connect767 AI" }), { key: "Enter" });
+    expect(props.onSend).not.toHaveBeenCalled();
+    expect(props.onDownloadDesign).not.toHaveBeenCalled();
+  });
   it("sends from the touch-accessible button without a hardware Enter key", () => {
     const props = renderComposer();
     fireEvent.click(screen.getByRole("button", { name: "Send message" }));
@@ -72,7 +95,7 @@ describe("AIUniformComposer", () => {
 
   it("keeps guests locked despite a positive backend allowance", () => {
     renderComposer({ accountRequired: true, aiQuota: { authenticated: false, limit: 3, remaining: 3 } });
-    expect(screen.getByText("3 of 3 remaining")).toBeVisible();
+    expect(screen.queryByText("3 of 3 remaining")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Send message" })).toBeDisabled();
     expect(screen.getByRole("link", { name: "Sign In" })).toHaveAttribute("href", expect.stringContaining("redirect="));
   });
@@ -174,7 +197,7 @@ describe("AIUniformComposer", () => {
   });
 
   it("offers a high-quality final proof after a fast preview", () => {
-    const props = renderComposer({ uniformPlan: { name: "Riverside FC" }, renderTier: "preview" });
+    const props = renderComposer({ uniformPlan: { name: "Riverside FC" }, renderTier: "preview", downloadUnlocked: false });
     fireEvent.click(screen.getByRole("button", { name: "Final proof" }));
     expect(props.onGenerateProof).toHaveBeenCalledTimes(1);
   });
@@ -392,7 +415,7 @@ describe("AIUniformComposer", () => {
     const menu = within(screen.getByRole("menu", { name: "AI prompt tools menu" }));
     for (const name of ["History", "Reference", "Refine with AI", "Remove background / Make transparent", "Settings"]) expect(menu.getByRole("menuitem", { name })).toBeEnabled();
     for (const name of ["Save design", "Download design", "Download prompts", "Unlock after payment"]) expect(menu.queryByRole("menuitem", { name })).not.toBeInTheDocument();
-    expect(screen.getByText("Your AI design is ready. Continue to complete your uniform order.")).toBeInTheDocument();
+    expect(screen.queryByText(/design files are ready/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/production-ready design files/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Close AI tools" }));
     expect(screen.queryByRole("menu", { name: "AI prompt tools menu" })).not.toBeInTheDocument();

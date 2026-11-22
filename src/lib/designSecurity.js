@@ -128,6 +128,11 @@ export async function refreshDesignSecurity(projectId = "") {
   return securityRequest(`/design-security/status${query}`);
 }
 
+export async function loadProtectedDesignPreview(fileId) {
+  if (!getStoredToken()) throw new Error("Sign in to view your saved design.");
+  return securityRequest(`/design-security/preview?fileId=${encodeURIComponent(fileId)}`);
+}
+
 export async function loadDesignHistory(projectId) {
   if (!projectId || !getStoredToken() || !config.customApiUrl) return null;
   return securityRequest(`/design-security/history?projectId=${encodeURIComponent(projectId)}`);
