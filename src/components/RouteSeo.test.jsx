@@ -65,6 +65,34 @@ describe("RouteSeo", () => {
     expect(robots()).toBe("index, follow, max-image-preview:large");
   });
 
+  it("uses the correct title for the combined account and listing signup route", async () => {
+    renderRoute("/auth/register");
+    await waitFor(() =>
+      expect(document.title).toBe("Create Your Account & Listing | Connect767"),
+    );
+    expect(description()).toContain("choose a listing plan");
+    expect(robots()).toBe("noindex, nofollow");
+  });
+
+  it.each([
+    ["/auth/login", "Sign In | Connect767"],
+    ["/auth/forgot-password", "Reset Your Password | Connect767"],
+    ["/auth/reset-password", "Choose a New Password | Connect767"],
+    ["/checkout", "Secure Checkout | Connect767"],
+    ["/checkout/thank-you", "Order Confirmation | Connect767"],
+    ["/dashboard", "Account Dashboard | Connect767"],
+    ["/messages", "Messages | Connect767"],
+    ["/saved", "Saved Listings | Connect767"],
+    ["/shop/customize", "Customize Your Product | Connect767"],
+    ["/design-studio", "AI Clothing Design Studio | Connect767"],
+    ["/listings/example/edit", "Edit Your Listing | Connect767"],
+  ])("assigns valid private route %s a real page title", async (path, title) => {
+    renderRoute(path);
+    await waitFor(() => expect(document.title).toBe(title));
+    expect(document.title).not.toContain("Page Not Found");
+    expect(robots()).toBe("noindex, nofollow");
+  });
+
   it("keeps private messaging and profile editing out of search results", async () => {
     const messages = renderRoute("/messages");
     await waitFor(() => expect(robots()).toBe("noindex, nofollow"));
