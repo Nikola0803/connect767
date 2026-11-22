@@ -64,7 +64,7 @@ import {
 } from "../lib/listingOnboarding";
 
 const steps = [
-  { n: 1, label: "Account, Plan & Business" },
+  { n: 1, label: "Account & Listing Info" },
   { n: 2, label: "Contact & Media" },
   { n: 3, label: "Review" },
   { n: 4, label: "Preview" },
@@ -1930,7 +1930,14 @@ export default function AddListingPage() {
             </div>
           )}
 
-          <div className="mt-10 flex items-center justify-between">
+          <div
+            id="listing-wizard-actions"
+            className={`mt-10 flex items-center justify-between ${
+              step === 4
+                ? "-mx-4 px-4 md:-mx-8 md:px-8 lg:-mx-12 lg:grid lg:grid-cols-3 lg:gap-x-8 lg:px-12"
+                : ""
+            }`}
+          >
             <Button
               type="button"
               variant="outline"
@@ -1959,6 +1966,7 @@ export default function AddListingPage() {
                 onClick={handleSubmit}
                 disabled={submitting}
                 icon="ri-check-line"
+                className="lg:col-start-2 lg:justify-self-end"
               >
                 {submitting
                   ? "Saving…"
