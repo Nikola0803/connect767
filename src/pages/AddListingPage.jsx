@@ -1609,7 +1609,7 @@ export default function AddListingPage() {
                   </FormField>
                   <FormField
                     label="Cover photo"
-                    hint="Recommended exact fit: 1600 × 900 px or 1500 × 844 px (16:9), max 2 MB. Use Reposition for a full-bleed cover or Full image to avoid cropping."
+                    hint="Recommended exact fit: 1600 × 900 px (16:9 landscape), max 2 MB. Use Reposition for a full-bleed cover or Full image to avoid cropping."
                   >
                     {!form.photoPreview ? (
                       <div className="relative w-full group">
