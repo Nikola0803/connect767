@@ -206,6 +206,32 @@ export async function downloadProtectedDesign(file) {
   URL.revokeObjectURL(url);
 }
 
+export async function downloadProductionPackage(projectId) {
+  if (!projectId) throw new Error("No protected design project is available.");
+  const authorization = getStoredToken();
+  if (!authorization) throw new Error("Sign in to download your purchased production package.");
+  const ticket = await securityRequest("/design-security/production-package-token", {
+    method: "POST",
+    body: { projectId },
+  });
+  const response = await fetch(ticket.url, { headers: { Authorization: `Bearer ${authorization}` } });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.message || "The production package could not be downloaded.");
+  }
+  const blob = await response.blob();
+  const contentDisposition = response.headers.get("Content-Disposition") || "";
+  const filename = contentDisposition.match(/filename="?([^";]+)"?/i)?.[1] || "connect767-production-package.zip";
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
 export function clearGuestDesignSecurity() {
   persist(GUEST_TOKEN_KEY, "");
 }

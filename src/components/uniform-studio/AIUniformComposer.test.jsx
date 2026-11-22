@@ -302,7 +302,7 @@ describe("AIUniformComposer", () => {
     expect(within(toolsMenu).queryByRole("menuitem", { name: "Create artwork" })).not.toBeInTheDocument();
     expect(within(toolsMenu).getByRole("menuitem", { name: "Remove background / Make transparent" })).toBeInTheDocument();
     expect(within(toolsMenu).getByRole("menuitem", { name: "Save design" })).toBeInTheDocument();
-    expect(within(toolsMenu).getByRole("menuitem", { name: "Download design" })).toBeInTheDocument();
+    expect(within(toolsMenu).getByRole("menuitem", { name: "Download production package" })).toBeInTheDocument();
     expect(within(toolsMenu).getByRole("menuitem", { name: "Download prompts" })).toBeDisabled();
     expect(within(toolsMenu).getByRole("menuitem", { name: "Settings" })).toBeInTheDocument();
     expect(within(toolsMenu).getByRole("menuitem", { name: "Previous version" })).toBeInTheDocument();
