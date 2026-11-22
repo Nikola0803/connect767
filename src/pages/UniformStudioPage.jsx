@@ -853,7 +853,7 @@ export default function UniformStudioPage() {
       setDraftSaveStatus("saved");
     } catch {
       setDraftSaveStatus("error");
-      // Keep work in memory and show the storage warning in the header.
+      // Keep work in memory if device storage cannot accept the draft.
     }
   }, [storageKey, hydratedStorageKey, layers, placements3d, colors, studioBackground, collar, sleeve, zoneModel, zoneStyles, twoTone,
     fitType, hasSelectedFit, categoryConfirmed, kitType, extraTeamShirts, logoApplication, insideCollarMessage, insideCollarText, insideCollarAttachment, fanJerseyAdded, supporterJerseys, roster, socksQuantity, contact, shipping,
@@ -2038,11 +2038,10 @@ export default function UniformStudioPage() {
   };
 
   // ---------- The studio itself: fills the viewport beneath site navigation ----------
-  const studioHeaderTitle = categoryDetails[activeSport]?.title || sports.find((sport) => sport.slug === activeSport)?.label || "Uniform";
 
   return (
-    <div ref={shellRef} data-testid="uniform-studio-workspace" data-mobile-panel={mobilePanel} data-keyboard-open={keyboardOpen} className="uniform-studio-shell flex flex-col overflow-hidden bg-[#10110f] text-background-50">
-      <header className="studio-header relative z-40 flex min-h-14 flex-shrink-0 items-center justify-between gap-3 border-b border-white/[0.07] bg-[#0c0d0b]/95 px-3 py-2.5 pt-[max(.625rem,env(safe-area-inset-top))] sm:px-4 md:px-5">
+    <div ref={shellRef} data-testid="uniform-studio-workspace" data-mobile-panel={mobilePanel} data-keyboard-open={keyboardOpen} data-draft-save-status={draftSaveStatus} className="uniform-studio-shell flex flex-col overflow-hidden bg-[#10110f] text-background-50">
+      <header className="studio-header relative z-40 flex-shrink-0 items-center border-b border-white/[0.06] bg-[#12130f] px-3 py-1.5 pt-[max(.375rem,env(safe-area-inset-top))] sm:px-5">
         <button
           type="button"
           aria-label="Back"
@@ -2052,13 +2051,71 @@ export default function UniformStudioPage() {
           <i className="ri-arrow-left-line" />
           <span className="studio-back-label">Back</span>
         </button>
-        <div className="studio-mobile-brand"><strong>Connect767 Design Studio</strong><span aria-live="polite">{studioHeaderTitle} · {draftSaveStatus === "error" ? "Not saved — check storage" : draftSaveStatus === "saved" ? "Draft saved on device" : "Design workspace"}</span></div>
-        <div className="studio-desktop-title flex min-w-0 flex-1 items-center justify-center gap-2">
-          <span className="truncate text-sm font-semibold text-background-50/85">{studioHeaderTitle}</span>
-          <span className="hidden shrink-0 items-center gap-1.5 rounded-full border border-primary-500/20 bg-primary-950/35 px-2.5 py-1 text-[10px] font-semibold text-primary-200/90 xl:inline-flex">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary-400" /> {draftSaveStatus === "error" ? "Not saved — check storage" : draftSaveStatus === "saved" ? "Auto-saved on device" : "Draft"}
-          </span>
-        </div>
+        <nav
+          aria-label="Uniform order progress"
+          className="studio-workflow min-w-0"
+        >
+          <div className="studio-workflow-steps mx-auto flex items-center gap-2">
+            {studioWorkflow.map((step, index) => {
+              const active = index === workflowIndex;
+              const complete = index < workflowIndex;
+              const locked = (step.key !== "design" && !canContinueDesign) || (step.key === "review" && !rosterReadyForReview);
+              const stepDescription = step.key === "design" && categoryConfirmed
+                ? `${categoryDetails[activeSport]?.title || "Category"} · ${hasSelectedFit ? fitType : "Fit required"}`
+                : step.description;
+              return (
+                <div key={step.key} className="flex shrink-0 items-center gap-2">
+                  <button
+                    type="button"
+                    aria-current={active ? "step" : undefined}
+                    disabled={locked}
+                    onClick={() => openWorkflowStep(index)}
+                    className={`group flex min-h-[68px] w-[240px] shrink-0 items-center gap-3 rounded-xl border px-4 py-2.5 text-left transition sm:w-[270px] lg:w-[300px] ${
+                      active
+                        ? "cursor-pointer border-primary-400/45 bg-primary-700 text-white shadow-[0_8px_22px_rgba(0,116,73,0.2)]"
+                        : complete
+                          ? "cursor-pointer border-primary-700/35 bg-primary-950/35 text-primary-100 hover:bg-primary-950/55"
+                          : locked
+                            ? "cursor-not-allowed border-white/[0.04] bg-white/[0.02] text-background-50/25"
+                            : "cursor-pointer border-white/[0.07] bg-white/[0.025] text-background-50/55 hover:border-white/[0.14] hover:bg-white/[0.06] hover:text-background-50/80"
+                    }`}
+                  >
+                    <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-bold ${
+                      active
+                        ? "border-white/20 bg-white/15"
+                        : complete
+                          ? "border-primary-500/35 bg-primary-700 text-white"
+                          : "border-white/[0.08] bg-white/[0.05]"
+                    }`}>
+                      {complete ? <i className="ri-check-line" /> : locked ? <i className="ri-lock-line" /> : step.step}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-2 whitespace-nowrap text-sm font-bold capitalize">
+                        <i className={`${step.icon} text-base opacity-70`} />
+                        {step.label}
+                      </span>
+                      <span className={`mt-0.5 hidden whitespace-nowrap text-[10px] sm:block ${active ? "text-white/70" : "text-current opacity-55"}`}>
+                        {stepDescription}
+                      </span>
+                    </span>
+                  </button>
+                  {index < studioWorkflow.length - 1 && (
+                    <span
+                      aria-hidden="true"
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm transition ${
+                        complete
+                          ? "border-primary-500/35 bg-primary-950/50 text-primary-300"
+                          : "border-white/[0.07] bg-white/[0.025] text-background-50/30"
+                      }`}
+                    >
+                      <i className="ri-arrow-right-line" />
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </nav>
         <div className="studio-header-actions flex min-w-0 items-center gap-2 overflow-visible">
           <StudioAccountMenu verified={designSecurityContext?.authenticated === true} />
           {workflowStep.key === "design" && <>
@@ -2077,16 +2134,6 @@ export default function UniformStudioPage() {
             </button>
           )}
 
-          {headerCapabilities.fullscreen && (
-            <button
-              type="button"
-              onClick={() => aiConceptViewportRef.current?.requestFullscreen?.()}
-              className={`${headerTileClass} cursor-pointer border-white/10 bg-white/5 text-background-50/70 hover:bg-white/10 hover:text-background-50`}
-            >
-              <i className="ri-fullscreen-line" />
-              <span className="hidden sm:inline">Fullscreen</span>
-            </button>
-          )}
           {headerCapabilities.settings && <button
             type="button"
             onClick={() => setStudioSettingsOpen(true)}
@@ -2100,72 +2147,6 @@ export default function UniformStudioPage() {
           </button>}
         </div>
       </header>
-
-      <nav
-        aria-label="Uniform order progress"
-        className="studio-workflow relative z-30 flex-shrink-0 border-b border-white/[0.06] bg-[#12130f] px-3 py-1.5 sm:px-5"
-      >
-        <div className="mx-auto flex max-w-[1040px] items-center justify-start gap-2 overflow-x-auto lg:justify-center">
-          {studioWorkflow.map((step, index) => {
-            const active = index === workflowIndex;
-            const complete = index < workflowIndex;
-            const locked = (step.key !== "design" && !canContinueDesign) || (step.key === "review" && !rosterReadyForReview);
-            const stepDescription = step.key === "design" && categoryConfirmed
-              ? `${categoryDetails[activeSport]?.title || "Category"} · ${hasSelectedFit ? fitType : "Fit required"}`
-              : step.description;
-            return (
-              <div key={step.key} className="flex shrink-0 items-center gap-2">
-                <button
-                  type="button"
-                  aria-current={active ? "step" : undefined}
-                  disabled={locked}
-                  onClick={() => openWorkflowStep(index)}
-                  className={`group flex min-h-[68px] w-[240px] shrink-0 items-center gap-3 rounded-xl border px-4 py-2.5 text-left transition sm:w-[270px] lg:w-[300px] ${
-                    active
-                      ? "cursor-pointer border-primary-400/45 bg-primary-700 text-white shadow-[0_8px_22px_rgba(0,116,73,0.2)]"
-                      : complete
-                        ? "cursor-pointer border-primary-700/35 bg-primary-950/35 text-primary-100 hover:bg-primary-950/55"
-                        : locked
-                          ? "cursor-not-allowed border-white/[0.04] bg-white/[0.02] text-background-50/25"
-                          : "cursor-pointer border-white/[0.07] bg-white/[0.025] text-background-50/55 hover:border-white/[0.14] hover:bg-white/[0.06] hover:text-background-50/80"
-                  }`}
-                >
-                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-bold ${
-                    active
-                      ? "border-white/20 bg-white/15"
-                      : complete
-                        ? "border-primary-500/35 bg-primary-700 text-white"
-                        : "border-white/[0.08] bg-white/[0.05]"
-                  }`}>
-                    {complete ? <i className="ri-check-line" /> : locked ? <i className="ri-lock-line" /> : step.step}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="flex items-center gap-2 whitespace-nowrap text-sm font-bold capitalize">
-                      <i className={`${step.icon} text-base opacity-70`} />
-                      {step.label}
-                    </span>
-                    <span className={`mt-0.5 hidden whitespace-nowrap text-[10px] sm:block ${active ? "text-white/70" : "text-current opacity-55"}`}>
-                      {stepDescription}
-                    </span>
-                  </span>
-                </button>
-                {index < studioWorkflow.length - 1 && (
-                  <span
-                    aria-hidden="true"
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm transition ${
-                      complete
-                        ? "border-primary-500/35 bg-primary-950/50 text-primary-300"
-                        : "border-white/[0.07] bg-white/[0.025] text-background-50/30"
-                    }`}
-                  >
-                    <i className="ri-arrow-right-line" />
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </nav>
 
       {studioSettingsOpen && (
         <div
