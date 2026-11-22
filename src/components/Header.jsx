@@ -167,17 +167,6 @@ export default function Header({ showQuickNavigation = true }) {
         >
           <BrandLogo compactOnNarrow markFilter={logoMarkFilter} />
         </Link>
-        {pathname !== "/" && (
-          <Link
-            to="/"
-            aria-label="Go to home page"
-            title="Home"
-            className={`ml-1 grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-colors xl:hidden ${iconBtnText} ${transparent ? "hover:bg-background-50/10" : "hover:bg-primary-50 hover:text-primary-700"}`}
-          >
-            <i className="ri-home-5-line text-xl" aria-hidden="true" />
-          </Link>
-        )}
-
         <nav aria-label="Main navigation" className="hidden xl:flex items-center gap-1 ml-10">
           {navItems.map((item) => (
             <NavLink

@@ -158,7 +158,7 @@ function CompactTierCard({ planKey, selected, onSelect }) {
 
   return (
     <article
-      className={`relative overflow-hidden rounded-2xl border bg-white/90 p-5 text-left text-foreground-950 transition-all duration-200 ${
+      className={`relative overflow-hidden rounded-xl border bg-white/90 p-4 text-left text-foreground-950 transition-all duration-200 sm:rounded-2xl sm:p-5 ${
         isClassified ? "border-accent-300" : "border-background-300"
       } ${selected ? "-translate-y-0.5 border-primary-500 shadow-[0_12px_28px_rgba(23,84,55,0.14)] ring-2 ring-primary-200" : "hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md"}`}
     >
@@ -171,10 +171,10 @@ function CompactTierCard({ planKey, selected, onSelect }) {
         <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-900">
           {plan.eyebrow}
         </span>
-        <span className="mt-2 flex items-end justify-between gap-3">
+        <span className="mt-1.5 flex items-end justify-between gap-3 sm:mt-2">
           <span>
-            <span className="block font-heading text-xl font-semibold text-primary-950">{plan.title}</span>
-            <span className="mt-1 block text-xs text-foreground-600">{plan.description}</span>
+            <span className="block font-heading text-lg font-semibold text-primary-950 sm:text-xl">{plan.title}</span>
+            <span className="mt-1 hidden text-xs text-foreground-600 sm:block">{plan.description}</span>
           </span>
           <span className="shrink-0 text-right">
             <span className="block font-heading text-2xl text-primary-950">{plan.price}</span>

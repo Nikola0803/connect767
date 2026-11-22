@@ -320,9 +320,29 @@ function buildPreviewData(form) {
 }
 
 function StepIndicator({ current }) {
+  const currentStep = steps.find((step) => step.n === current) || steps[0];
+
   return (
-    <nav aria-label="Listing registration progress" className="mt-4 overflow-x-auto pb-1">
-      <ol className="flex min-w-max items-center rounded-2xl border border-background-200/80 bg-background-50/80 p-2 shadow-sm">
+    <nav aria-label="Listing registration progress" className="mt-3 sm:mt-4">
+      <div className="rounded-xl border border-background-200/80 bg-background-50/90 p-3 shadow-sm lg:hidden">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary-700">
+            Step {current} of {steps.length}
+          </span>
+          <span className="truncate text-xs font-semibold text-foreground-900">
+            {currentStep.label}
+          </span>
+        </div>
+        <div className="mt-2 grid grid-cols-4 gap-1.5" aria-hidden="true">
+          {steps.map((step) => (
+            <span
+              key={step.n}
+              className={`h-1.5 rounded-full ${step.n <= current ? "bg-primary-700" : "bg-background-300"}`}
+            />
+          ))}
+        </div>
+      </div>
+      <ol className="hidden items-center rounded-2xl border border-background-200/80 bg-background-50/80 p-2 shadow-sm lg:flex">
         {steps.map((step, i) => {
           const isCurrent = step.n === current;
           const isComplete = step.n < current;
@@ -380,19 +400,19 @@ function OwnerAccountPanel({ account, onChange, signInHref, showRequiredErrors =
   const confirmationIsInvalid = showRequiredErrors && (!account.confirmPassword || account.password !== account.confirmPassword);
 
   return (
-    <section className="mt-8 rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-background-50 p-5 shadow-[0_14px_38px_rgba(23,84,55,0.08)] md:p-6">
-      <div className="mb-5 flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-700 text-background-50">
+    <section className="mt-5 rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-background-50 p-4 shadow-[0_14px_38px_rgba(23,84,55,0.08)] sm:mt-8 sm:p-5 md:p-6">
+      <div className="mb-4 flex items-start gap-3 sm:mb-5">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-700 text-background-50 sm:h-10 sm:w-10">
           <i className="ri-user-add-line text-lg" />
         </span>
         <div>
-          <h2 className="font-heading text-xl font-semibold text-primary-950">Create your account</h2>
-          <p className="mt-1 text-xs leading-relaxed text-foreground-600">
+          <h2 className="font-heading text-lg font-semibold text-primary-950 sm:text-xl">Create your account</h2>
+          <p className="mt-1 hidden text-xs leading-relaxed text-foreground-600 sm:block">
             This account will own the listing and let you update it after submission.
           </p>
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
         <FormField label="Account name" htmlFor="accountName" required error={nameIsMissing ? "Enter an account name." : ""}>
           <Input id="accountName" placeholder="Personal or business name" value={account.name} onChange={onChange("name")} error={nameIsMissing} aria-invalid={nameIsMissing || undefined} required />
         </FormField>
@@ -968,7 +988,7 @@ export default function AddListingPage() {
           </button>
         </div>
       )}
-      <div className="w-full px-4 md:px-8 lg:px-12 py-6 border-b border-background-200/70 bg-background-50">
+      <div className="w-full border-b border-background-200/70 bg-background-50 px-3 py-4 sm:px-4 sm:py-6 md:px-8 lg:px-12">
         <div className="max-w-4xl mx-auto">
           {isOnboarding && (
             <div className="mb-5 rounded-2xl border border-primary-200 bg-primary-50/80 px-4 py-4 sm:px-5">
@@ -1005,7 +1025,7 @@ export default function AddListingPage() {
         </div>
       </div>
 
-      <div className="w-full px-4 md:px-8 lg:px-12 py-10">
+      <div className="w-full px-3 py-5 sm:px-4 sm:py-10 md:px-8 lg:px-12">
         {/* Step 4 (Preview) renders the real ListingProfile component, which
             expects the same max-w-7xl grid it gets on the live /listings/:slug
             page. Keeping this wrapper at the wizard's narrower max-w-3xl for
@@ -1016,25 +1036,25 @@ export default function AddListingPage() {
             the narrower column that suits a form. */}
         <div className={step === 4 ? "max-w-7xl mx-auto" : step === 1 ? "max-w-4xl mx-auto" : "max-w-3xl mx-auto"}>
           {step === 1 && (
-            <section className="mb-6 rounded-3xl border border-background-200/80 bg-background-50/80 p-6 shadow-[0_18px_50px_rgba(49,77,62,0.07)] md:p-8">
-              <h1 className="font-heading text-3xl md:text-4xl font-light text-foreground-950 mb-3">
+            <section className="mb-4 rounded-2xl border border-background-200/80 bg-background-50/80 p-4 shadow-[0_18px_50px_rgba(49,77,62,0.07)] sm:mb-6 sm:rounded-3xl sm:p-6 md:p-8">
+              <h1 className="mb-2 font-heading text-2xl font-light leading-tight text-foreground-950 sm:mb-3 sm:text-3xl md:text-4xl">
                 {!isEditing && !auth.isAuthenticated && !accountCreated
                   ? "Create your account"
                   : "Choose your plan"}{" "}
                 <span className="text-accent-500 italic">& add your listing information</span>
               </h1>
-              <p className="text-sm text-foreground-600 font-label mb-10">
+              <p className="mb-6 hidden text-xs text-foreground-600 font-label sm:mb-10 sm:block sm:text-sm">
                 Complete your account, select a plan, and add the information customers will see.
               </p>
               <div id="listingTier" tabIndex="-1" className="flex flex-wrap items-center gap-3 scroll-mt-28">
-                <h2 className="font-heading text-2xl font-light text-foreground-950">
+                <h2 className="font-heading text-xl font-light text-foreground-950 sm:text-2xl">
                   Choose your <span className="text-accent-500 italic">listing plan</span>
                 </h2>
                 <span className="rounded-full bg-accent-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-accent-700">
                   Required
                 </span>
               </div>
-              <p className="mb-5 mt-2 text-sm text-foreground-600 font-label">
+              <p className="mb-4 mt-2 hidden text-xs text-foreground-600 font-label sm:mb-5 sm:block sm:text-sm">
                 Select Free Listing or Classified to continue. Expand either plan to compare every feature.
               </p>
               <div className={`rounded-2xl transition-all ${planIsMissing ? "border-2 border-red-500 bg-red-50/40 p-3 ring-4 ring-red-200 shadow-[0_0_0_7px_rgba(254,202,202,0.45),0_16px_36px_rgba(220,38,38,0.14)]" : ""}`}>
@@ -1045,7 +1065,7 @@ export default function AddListingPage() {
                     noteListingStarted();
                     setForm((f) => ({ ...f, tier }));
                   }}
-                  className="w-full gap-4"
+                  className="w-full gap-3 sm:gap-4"
                 />
               </div>
               {planIsMissing && (
@@ -1060,14 +1080,14 @@ export default function AddListingPage() {
           )}
 
           {step === 1 && (
-            <section className="rounded-3xl border border-background-200/80 bg-background-50/80 p-6 shadow-[0_18px_50px_rgba(49,77,62,0.07)] md:p-8">
-              <h2 className="font-heading text-2xl md:text-3xl font-light text-foreground-950 mb-3">
+            <section className="rounded-2xl border border-background-200/80 bg-background-50/80 p-4 shadow-[0_18px_50px_rgba(49,77,62,0.07)] sm:rounded-3xl sm:p-6 md:p-8">
+              <h2 className="mb-2 font-heading text-xl font-light text-foreground-950 sm:mb-3 sm:text-2xl md:text-3xl">
                 Listing <span className="text-accent-500 italic">Information</span>
               </h2>
-              <p className="text-sm text-foreground-600 font-label mb-10">
+              <p className="mb-6 hidden text-xs text-foreground-600 font-label sm:mb-10 sm:block sm:text-sm">
                 This is what shows up on your profile card and in search results.
               </p>
-              <div className="space-y-5">
+              <div className="space-y-4 sm:space-y-5">
                 <FormField
                   label="Listing Name"
                   htmlFor="businessName"
@@ -1244,15 +1264,15 @@ export default function AddListingPage() {
           )}
 
           {step === 2 && (
-            <div>
-              <h1 className="font-heading text-3xl md:text-4xl font-light text-foreground-950 mb-3">
+            <section className="rounded-2xl border border-background-200/80 bg-background-50/80 p-4 shadow-[0_18px_50px_rgba(49,77,62,0.07)] sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
+              <h1 className="mb-2 font-heading text-2xl font-light text-foreground-950 sm:mb-3 sm:text-3xl md:text-4xl">
                 Contact <span className="text-accent-500 italic">& media</span>
               </h1>
-              <p className="text-sm text-foreground-600 font-label mb-10">
+              <p className="mb-6 hidden text-xs text-foreground-600 font-label sm:mb-10 sm:block sm:text-sm">
                 How customers reach you, plus a photo to bring your profile to life.
               </p>
-              <div className="space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="space-y-4 sm:space-y-5">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
                   <FormField label="Phone" htmlFor="phone">
                     <Input
                       id="phone"
@@ -1282,7 +1302,7 @@ export default function AddListingPage() {
                     onChange={update("website")}
                   />
                 </FormField>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
                   <FormField label="Instagram" htmlFor="instagram">
                     <Input
                       id="instagram"
@@ -1300,7 +1320,7 @@ export default function AddListingPage() {
                     />
                   </FormField>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
                   <FormField label="YouTube" htmlFor="youtube">
                     <Input
                       id="youtube"
@@ -1346,7 +1366,7 @@ export default function AddListingPage() {
                         <span className="block text-sm font-semibold text-foreground-900">
                           Sell products from this listing
                         </span>
-                        <span className="block text-xs text-foreground-600 font-label mt-0.5">
+                        <span className="mt-0.5 hidden text-xs text-foreground-600 font-label sm:block">
                           Available to every listing. When you submit this listing, the product
                           editor will open automatically for photos, prices, inventory, shipping,
                           and local-pickup options.
@@ -1393,7 +1413,7 @@ export default function AddListingPage() {
                         <span className="block text-sm font-semibold text-foreground-900">
                           Accept bookings and appointments
                         </span>
-                        <span className="block text-xs text-foreground-600 font-label mt-0.5">
+                        <span className="mt-0.5 hidden text-xs text-foreground-600 font-label sm:block">
                           Adds a secure booking form to your profile. Set a price for automatic
                           Stripe/PayPal confirmation, or leave it at $0 for owner approval.
                         </span>
@@ -1760,18 +1780,18 @@ export default function AddListingPage() {
                   </div>
                 </FormField>
               </div>
-            </div>
+            </section>
           )}
 
           {step === 3 && (
             <div>
-              <h1 className="font-heading text-3xl md:text-4xl font-light text-foreground-950 mb-3">
+              <h1 className="mb-2 font-heading text-2xl font-light text-foreground-950 sm:mb-3 sm:text-3xl md:text-4xl">
                 Review <span className="text-accent-500 italic">your listing</span>
               </h1>
-              <p className="text-sm text-foreground-600 font-label mb-10">
+              <p className="mb-6 hidden text-xs text-foreground-600 font-label sm:mb-10 sm:block sm:text-sm">
                 Double-check everything looks right before opening the final profile preview.
               </p>
-              <div className="rounded-2xl border border-background-200/70 bg-background-100/40 p-6 space-y-5">
+              <div className="space-y-4 rounded-2xl border border-background-200/70 bg-background-100/40 p-4 sm:space-y-5 sm:p-6">
                 {/* Tier is changeable right here at the end. Previously it was
                     locked in at step 1, so anyone who reconsidered after
                     seeing their finished listing had to abandon the form and
@@ -1909,10 +1929,10 @@ export default function AddListingPage() {
 
           {step === 4 && (
             <div>
-              <h1 className="font-heading text-3xl md:text-4xl font-light text-foreground-950 mb-3">
+              <h1 className="mb-2 font-heading text-2xl font-light text-foreground-950 sm:mb-3 sm:text-3xl md:text-4xl">
                 Preview <span className="text-accent-500 italic">your listing</span>
               </h1>
-              <p className="text-sm text-foreground-600 font-label mb-6">
+              <p className="mb-5 hidden text-xs text-foreground-600 font-label sm:mb-6 sm:block sm:text-sm">
                 This is the actual listing page layout — exactly how your profile will look once
                 it's approved, not a mockup.
               </p>
@@ -1952,7 +1972,7 @@ export default function AddListingPage() {
 
           <div
             id="listing-wizard-actions"
-            className={`mt-10 flex items-center justify-between ${
+            className={`mt-6 flex items-center justify-between sm:mt-10 ${
               step === 4
                 ? "-mx-4 px-4 md:-mx-8 md:px-8 lg:-mx-12 lg:grid lg:grid-cols-3 lg:gap-x-8 lg:px-12"
                 : ""
