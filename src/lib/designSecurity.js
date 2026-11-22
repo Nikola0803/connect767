@@ -1,5 +1,5 @@
 import { config } from "./config";
-import { getStoredToken, getStoredUser } from "./apiClient";
+import { clearInvalidSession, getStoredToken, getStoredUser } from "./apiClient";
 
 const GUEST_TOKEN_KEY = "c767_design_guest_token";
 const initializationPromises = new Map();
@@ -39,6 +39,7 @@ async function securityRequest(path, { method = "GET", body, guestToken = stored
       return {};
     });
     if (!response.ok) {
+      clearInvalidSession(response.status, payload, token);
       const error = new Error(payload.message || "The design security service is unavailable.");
       error.status = response.status;
       error.payload = payload;

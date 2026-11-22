@@ -33,7 +33,7 @@
   .studio-header .studio-mobile-brand { display:flex; flex:1; flex-direction:column; min-width:0; }
   .studio-mobile-brand strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
   .studio-mobile-brand span { font-size:10px; color:#a9d7c3; }
-  .studio-desktop-title, .studio-header .studio-header-actions > :not(.studio-settings-trigger):not(.studio-view-actions):not(.studio-ai-tools-target), .studio-header .studio-header-actions > .studio-settings-trigger span { display:none; }
+  .studio-desktop-title, .studio-header .studio-header-actions > :not(.studio-settings-trigger):not(.studio-view-actions):not(.studio-account-trigger), .studio-header .studio-header-actions > .studio-settings-trigger span { display:none; }
   .uniform-studio-shell .studio-workflow { padding:4px 8px; }
   .studio-workflow > div { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; overflow:visible; }
   .studio-workflow > div > div { min-width:0; display:block; }
@@ -47,9 +47,7 @@
   .studio-view-actions { min-height:40px; gap:4px; }
   .studio-header-actions { flex-shrink:0; gap:4px; }
   .studio-header .studio-settings-trigger { height:40px; width:40px; }
-  .studio-ai-tools-target [data-ai-popover-trigger] { width:40px; height:40px; min-width:40px; padding:0; justify-content:center; }
-  .studio-ai-tools-target [data-ai-popover-trigger] span, .studio-ai-tools-target [data-ai-popover-trigger] > i:last-child { display:none; }
-  .studio-ai-tools-target [data-ai-popover-trigger] > i:first-child { font-size:16px; }
+  .studio-account-trigger > button { height:40px; min-width:40px; }
   .studio-view-actions [aria-label="Discard AI design"] { display:none; }
   .studio-view-actions > div:last-child { gap:3px; }
   .studio-view-actions button { min-height:40px; min-width:40px; }

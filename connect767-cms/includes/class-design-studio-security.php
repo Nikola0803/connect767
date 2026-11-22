@@ -16,7 +16,7 @@ class C767_Design_Studio_Security
 {
     const NAMESPACE_ = 'connect767/v1';
     const OPTION_KEY = 'c767_design_security_settings';
-    const DB_VERSION = '1.1.0';
+    const DB_VERSION = '1.2.0';
     const TOKEN_TTL = 2592000; // 30 days.
     const REGISTERED_DAILY_PROMPTS = 5;
     const QUOTA_POLICY_VERSION = '2026-11-21-five-prompts';
@@ -115,6 +115,7 @@ class C767_Design_Studio_Security
             mime_type varchar(100) NOT NULL,
             byte_size bigint(20) unsigned NOT NULL DEFAULT 0,
             sha256 varchar(64) NOT NULL,
+            source_data longblob NULL,
             created_at datetime NOT NULL,
             PRIMARY KEY  (id),
             KEY project_id (project_id),
@@ -442,22 +443,23 @@ class C767_Design_Studio_Security
         if (!$info || !in_array($info['mime'], ['image/png','image/jpeg','image/webp'], true)) {
             return new WP_Error('c767_file_type', 'Only generated PNG, JPEG or WebP files are accepted.', ['status' => 400]);
         }
-        $dir = self::ensure_private_directory();
-        if (is_wp_error($dir)) return $dir;
+        $preview = self::watermarked_preview($bytes, $info['mime']);
+        if (is_wp_error($preview)) return $preview;
         $extension = $info['mime'] === 'image/jpeg' ? 'jpg' : ($info['mime'] === 'image/webp' ? 'webp' : 'png');
         $storage_name = wp_generate_password(40, false, false) . '.' . $extension;
-        if (file_put_contents(trailingslashit($dir) . $storage_name, $bytes, LOCK_EX) === false) {
-            return new WP_Error('c767_file_store', 'The generated file could not be secured.', ['status' => 500]);
-        }
-        $wpdb->insert(self::table('design_files'), [
+        $source = self::write_private_source($storage_name, $bytes);
+        $saved = $wpdb->insert(self::table('design_files'), [
             'project_id' => (int) $usage['project_id'], 'request_id' => $request_id,
             'file_type' => sanitize_key((string) $request->get_param('fileType')) ?: 'png',
             'storage_name' => $storage_name, 'original_name' => sanitize_file_name((string) $request->get_param('originalName')),
             'mime_type' => $info['mime'], 'byte_size' => strlen($bytes), 'sha256' => hash('sha256', $bytes),
+            'source_data' => $source,
             'created_at' => gmdate('Y-m-d H:i:s'),
-        ], ['%d','%s','%s','%s','%s','%s','%d','%s','%s']);
-        $preview = self::watermarked_preview($bytes, $info['mime']);
-        if (is_wp_error($preview)) return $preview;
+        ], ['%d','%s','%s','%s','%s','%s','%d','%s','%s','%s']);
+        if ($saved === false) {
+            if ($source === null) @unlink(trailingslashit(self::private_directory()) . $storage_name);
+            return new WP_Error('c767_file_store', 'The generated file could not be securely saved. Please retry.', ['status' => 500]);
+        }
         return rest_ensure_response([
             'fileId' => (int) $wpdb->insert_id,
             'b64' => base64_encode($preview['bytes']), 'mimeType' => $preview['mimeType'],
@@ -500,12 +502,8 @@ class C767_Design_Studio_Security
         if (!$file || !self::has_entitlement($user->ID, (int) $file['project_id'], $file['file_type'])) {
             return new WP_Error('c767_download_locked', 'This design file is not available for your account.', ['status' => 403]);
         }
-        $path = trailingslashit(self::private_directory()) . basename($file['storage_name']);
-        $real_dir = realpath(self::private_directory());
-        $real_path = realpath($path);
-        if (!$real_dir || !$real_path || strpos($real_path, $real_dir . DIRECTORY_SEPARATOR) !== 0 || !is_file($real_path)) {
-            return new WP_Error('c767_download_missing', 'The design file is unavailable.', ['status' => 404]);
-        }
+        $bytes = self::read_private_source($file);
+        if (is_wp_error($bytes)) return $bytes;
         $wpdb->insert(self::table('design_downloads'), [
             'file_id' => (int) $file['id'], 'project_id' => (int) $file['project_id'], 'user_id' => $user->ID,
             'ip_hash' => self::request_hash('ip'), 'downloaded_at' => gmdate('Y-m-d H:i:s'),
@@ -513,9 +511,9 @@ class C767_Design_Studio_Security
         nocache_headers();
         header('X-Robots-Tag: noindex, nofollow, noarchive', true);
         header('Content-Type: ' . $file['mime_type']);
-        header('Content-Disposition: attachment; filename="' . sanitize_file_name($file['original_name'] ?: 'connect767-design.' . pathinfo($real_path, PATHINFO_EXTENSION)) . '"');
-        header('Content-Length: ' . filesize($real_path));
-        readfile($real_path);
+        header('Content-Disposition: attachment; filename="' . sanitize_file_name($file['original_name'] ?: 'connect767-design.' . pathinfo($file['storage_name'], PATHINFO_EXTENSION)) . '"');
+        header('Content-Length: ' . strlen($bytes));
+        echo $bytes;
         exit;
     }
 
@@ -572,7 +570,7 @@ class C767_Design_Studio_Security
 
     public static function admin_menu()
     {
-        add_submenu_page('connect767', 'Design Studio Security', 'Design Studio Security', 'manage_options', 'connect767-design-security', [__CLASS__, 'render_settings']);
+        add_submenu_page('connect767-cms', 'Design Studio Security', 'Design Studio Security', 'manage_options', 'connect767-design-security', [__CLASS__, 'render_settings']);
     }
 
     public static function save_settings()
@@ -877,10 +875,41 @@ class C767_Design_Studio_Security
     {
         $dir = self::private_directory();
         if (!is_dir($dir) && !wp_mkdir_p($dir)) return new WP_Error('c767_private_storage', 'Private design storage is not writable.', ['status' => 500]);
+        if (!is_writable($dir)) return new WP_Error('c767_private_storage', 'Private design storage is not writable.', ['status' => 500]);
         @file_put_contents(trailingslashit($dir) . 'index.php', "<?php\nhttp_response_code(404);\nexit;\n", LOCK_EX);
         @file_put_contents(trailingslashit($dir) . '.htaccess', "Deny from all\n", LOCK_EX);
         @file_put_contents(trailingslashit($dir) . 'web.config', '<?xml version="1.0"?><configuration><system.webServer><authorization><deny users="*" /></authorization></system.webServer></configuration>', LOCK_EX);
         return $dir;
+    }
+
+    private static function write_private_source($storage_name, $bytes)
+    {
+        $dir = self::ensure_private_directory();
+        if (!is_wp_error($dir)) {
+            $path = trailingslashit($dir) . basename($storage_name);
+            if (@file_put_contents($path, $bytes, LOCK_EX) === strlen($bytes)) return null;
+            @unlink($path);
+        }
+        // Managed hosts may forbid writes outside WordPress. Keep originals in
+        // the private database row instead of falling back to public uploads.
+        return $bytes;
+    }
+
+    private static function read_private_source($file)
+    {
+        $bytes = $file['source_data'] ?? null;
+        if ($bytes === null) {
+            $real_dir = realpath(self::private_directory());
+            $real_path = realpath(trailingslashit(self::private_directory()) . basename($file['storage_name']));
+            if (!$real_dir || !$real_path || strpos($real_path, $real_dir . DIRECTORY_SEPARATOR) !== 0 || !is_file($real_path)) {
+                return new WP_Error('c767_download_missing', 'The design file is unavailable.', ['status' => 404]);
+            }
+            $bytes = @file_get_contents($real_path);
+        }
+        if (!is_string($bytes) || !hash_equals($file['sha256'], hash('sha256', $bytes))) {
+            return new WP_Error('c767_download_integrity', 'The saved design file could not be verified.', ['status' => 500]);
+        }
+        return $bytes;
     }
 
     private static function watermarked_preview($bytes, $mime)
@@ -900,7 +929,7 @@ class C767_Design_Studio_Security
         $color = imagecolorallocatealpha($target, 40, 55, 47, max(45, 127 - (int) round($opacity * 1.27)));
         $label = (string) self::settings()['watermark_text'];
         for ($y = 40; $y < imagesy($target); $y += 130) {
-            for ($x = ($y / 130) % 2 ? 20 : 100; $x < imagesx($target); $x += 360) imagestring($target, 3, (int) $x, (int) $y, $label, $color);
+            for ($x = ((int) floor($y / 130)) % 2 ? 20 : 100; $x < imagesx($target); $x += 360) imagestring($target, 3, (int) $x, (int) $y, $label, $color);
         }
         ob_start(); imagepng($target, null, 7); $preview = ob_get_clean();
         imagedestroy($source); imagedestroy($target);

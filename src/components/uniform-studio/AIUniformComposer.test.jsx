@@ -76,6 +76,15 @@ describe("AIUniformComposer", () => {
     expect(screen.getByRole("button", { name: "Send message" })).toBeDisabled();
     expect(screen.getByRole("link", { name: "Sign In" })).toHaveAttribute("href", expect.stringContaining("redirect="));
   });
+
+  it("keeps the mandatory account warning and both account actions visible when setup fails", () => {
+    renderComposer({ accountRequired: true, securityError: "Session expired", error: "Previous request failed" });
+    expect(screen.getByText("Account required")).toBeVisible();
+    expect(screen.getByText("Sign in or create an account before generating, saving or ordering a design.")).toBeVisible();
+    expect(screen.getByRole("link", { name: "Sign In" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Create Account" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Send message" })).toBeDisabled();
+  });
   it("allows a confirmed exhausted allowance to be refreshed without generating", () => {
     const props = renderComposer({ canSend: false, aiQuota: { authenticated: true, limit: 5, remaining: 0 }, onRetrySetup: vi.fn() });
     expect(screen.getByText("0 of 5 remaining")).toBeVisible();

@@ -28,6 +28,24 @@ const validBrief = {
 };
 
 describe("AI design generation endpoint", () => {
+  it("returns an actionable storage error and refunds a failed image save", async () => {
+    process.env.C767_AI_SERVICE_SECRET = "shared-test-secret";
+    const fetchMock = vi.fn(async (url) => {
+      if (String(url).includes("/ai/reserve")) return { ok: true, status: 200, json: async () => ({ allowed: true, remaining: 4, limit: 5 }) };
+      if (String(url).includes("api.openai.com")) return { ok: true, status: 200, json: async () => ({ data: [{ b64_json: "private-original" }] }) };
+      if (String(url).includes("/files/store")) return { ok: false, status: 500, json: async () => ({ code: "c767_file_store", message: "The generated file could not be securely saved. Please retry." }) };
+      if (String(url).includes("/ai/settle")) return { ok: true, status: 200, json: async () => ({ status: "failed" }) };
+      throw new Error("Unexpected endpoint");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const res = response();
+    await handler(request("POST", validBrief), res);
+    expect(res.statusCode).toBe(500);
+    expect(res.payload.error).toBe("The generated file could not be securely saved. Please retry.");
+    expect(JSON.stringify(res.payload)).not.toContain("private-original");
+    const settlement = fetchMock.mock.calls.find(([url]) => String(url).includes("/ai/settle"));
+    expect(JSON.parse(settlement[1].body).successful).toBe(false);
+  });
   beforeEach(() => {
     resetRateLimitsForTests();
     process.env.OPENAI_API_KEY = "test-only-key";

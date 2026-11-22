@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from "../../hooks/useAuth";
 import { skinLibrary, skinGroups, skinDataUri, findSkin } from "../../data/skins";
 import {
   zoneColorPalette,
@@ -27,6 +28,7 @@ import {
   initializeDesignSecurity,
   loadDesignHistory,
   newAIRequestId,
+  refreshDesignSecurity,
   downloadProtectedDesign,
   saveDesignHistoryEntry,
   startDesignConversation,
@@ -1103,6 +1105,7 @@ export function AIArtworkPanel({
   const [archivedPrompts, setArchivedPrompts] = useState([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [promptToolbarTarget, setPromptToolbarTarget] = useState(null);
+  const { isAuthenticated } = useAuth();
   const [error, setError] = useState("");
   const [renderTier, setRenderTier] = useState("preview");
   const [securityContext, setSecurityContext] = useState(null);
@@ -1142,7 +1145,7 @@ export function AIArtworkPanel({
         setSecurityError(securityError.name === "AbortError" ? "The usage check timed out. Please retry." : securityError.message || "AI usage is unavailable. Please retry.");
       });
     return () => { active = false; };
-  }, [sport, templateName, onSecurityContextChange, setupAttempt]);
+  }, [sport, templateName, onSecurityContextChange, setupAttempt, isAuthenticated]);
 
   useEffect(() => {
     let active = true;
@@ -1169,6 +1172,15 @@ export function AIArtworkPanel({
       onSecurityContextChange?.(next);
       return next;
     });
+  };
+
+  const refreshSecurityQuota = async () => {
+    if (!securityContext?.projectId) return;
+    try {
+      updateSecurityQuota(await refreshDesignSecurity(securityContext.projectId));
+    } catch {
+      // Retain the last verified allowance if the status service is unavailable.
+    }
   };
 
   const securityErrorMessage = (responsePayload, fallback) => {
@@ -1336,6 +1348,7 @@ export function AIArtworkPanel({
     } catch (generationError) {
       if (generationError.name !== "AbortError") setError(generationError.message || "AI generation failed.");
     } finally {
+      await refreshSecurityQuota();
       setGenerating(false);
       setGenerationPhase("");
       generationControllerRef.current = null;
@@ -1509,6 +1522,7 @@ export function AIArtworkPanel({
     } catch (generationError) {
       if (generationError.name !== "AbortError") setError(generationError.message || "AI uniform design failed.");
     } finally {
+      await refreshSecurityQuota();
       setGenerating(false);
       setGenerationPhase("");
       generationControllerRef.current = null;
@@ -1772,7 +1786,7 @@ export function AIArtworkPanel({
         securityLoading={securityLoading}
         securityError={securityError}
         onRetrySetup={() => setSetupAttempt((value) => value + 1)}
-        accountRequired={Boolean(securityContext?.accountRequired)}
+        accountRequired={!isAuthenticated || securityContext?.authenticated !== true || Boolean(securityContext?.accountRequired)}
         downloadUnlocked={Boolean(securityContext?.downloadUnlocked)}
         onCompleteOrder={onCompleteOrder}
         />
