@@ -216,6 +216,12 @@ class C767_Design_Studio_Security
         register_rest_route(self::NAMESPACE_, '/design-security/download', [
             'methods' => 'GET', 'callback' => [__CLASS__, 'download'], 'permission_callback' => '__return_true',
         ]);
+        register_rest_route(self::NAMESPACE_, '/design-security/production-package-token', [
+            'methods' => 'POST', 'callback' => [__CLASS__, 'production_package_token'], 'permission_callback' => '__return_true',
+        ]);
+        register_rest_route(self::NAMESPACE_, '/design-security/production-package', [
+            'methods' => 'GET', 'callback' => [__CLASS__, 'production_package'], 'permission_callback' => '__return_true',
+        ]);
         register_rest_route(self::NAMESPACE_, '/design-security/history', [
             'methods' => ['GET', 'POST', 'DELETE'], 'callback' => [__CLASS__, 'history'],
             'permission_callback' => '__return_true',
@@ -532,6 +538,179 @@ class C767_Design_Studio_Security
         header('Content-Disposition: attachment; filename="' . sanitize_file_name($file['original_name'] ?: 'connect767-design.' . pathinfo($file['storage_name'], PATHINFO_EXTENSION)) . '"');
         header('Content-Length: ' . strlen($bytes));
         echo $bytes;
+        exit;
+    }
+
+    /**
+     * Issue a short-lived ticket for a complete paid production package.
+     * The project entitlement remains the source of truth; no browser-provided
+     * file list or order data is trusted when the archive is assembled.
+     */
+    public static function production_package_token(WP_REST_Request $request)
+    {
+        global $wpdb;
+        $user = C767_REST_Auth::user_from_request($request);
+        if (is_wp_error($user)) return $user;
+        $project = self::owned_project((string) $request->get_param('projectId'), [
+            'type' => 'user', 'user_id' => (int) $user->ID, 'session_key' => '',
+        ]);
+        if (is_wp_error($project)) return $project;
+        $entitlement = self::paid_project_entitlement((int) $user->ID, (int) $project['id']);
+        if (!$entitlement) {
+            return new WP_Error('c767_download_locked', 'Complete payment to unlock the production package.', ['status' => 403]);
+        }
+        $attempts = (int) $wpdb->get_var($wpdb->prepare(
+            'SELECT COUNT(*) FROM ' . self::table('design_downloads') . ' WHERE user_id=%d AND project_id=%d AND file_id=0',
+            $user->ID, (int) $project['id']
+        ));
+        if ($attempts >= (int) self::settings()['maximum_download_attempts']) {
+            return new WP_Error('c767_download_limit', 'The production-package download limit has been reached.', ['status' => 429]);
+        }
+        $payload = [
+            'pid' => (int) $project['id'], 'uid' => (int) $user->ID,
+            'oid' => (int) $entitlement['order_id'], 'exp' => time() + 300,
+            'nonce' => wp_generate_password(16, false, false),
+        ];
+        $token = self::sign_payload($payload);
+        return rest_ensure_response([
+            'url' => rest_url(self::NAMESPACE_ . '/design-security/production-package?token=' . rawurlencode($token)),
+            'expiresIn' => 300,
+        ]);
+    }
+
+    /** Stream a ZIP containing every secured source plus paid-order production data. */
+    public static function production_package(WP_REST_Request $request)
+    {
+        global $wpdb;
+        $user = C767_REST_Auth::user_from_request($request);
+        if (is_wp_error($user)) return $user;
+        $payload = self::verify_payload((string) $request->get_param('token'));
+        if (is_wp_error($payload) || (int) ($payload['uid'] ?? 0) !== (int) $user->ID) {
+            return new WP_Error('c767_download_token', 'This production-package link is invalid or expired.', ['status' => 403]);
+        }
+        $project_id = absint($payload['pid'] ?? 0);
+        $project = $wpdb->get_row($wpdb->prepare(
+            'SELECT * FROM ' . self::table('design_projects') . ' WHERE id=%d AND owner_user_id=%d',
+            $project_id, $user->ID
+        ), ARRAY_A);
+        $entitlement = self::paid_project_entitlement((int) $user->ID, $project_id, absint($payload['oid'] ?? 0));
+        if (!$project || !$entitlement) {
+            return new WP_Error('c767_download_locked', 'This production package is not available for your account.', ['status' => 403]);
+        }
+        if (!class_exists('ZipArchive')) {
+            return new WP_Error('c767_package_engine', 'The server ZIP extension is unavailable.', ['status' => 500]);
+        }
+        $order = function_exists('wc_get_order') ? wc_get_order((int) $entitlement['order_id']) : null;
+        if (!$order || !$order->is_paid() || (int) $order->get_customer_id() !== (int) $user->ID) {
+            return new WP_Error('c767_download_locked', 'The paid order for this production package could not be verified.', ['status' => 403]);
+        }
+        $files = $wpdb->get_results($wpdb->prepare(
+            'SELECT * FROM ' . self::table('design_files') . ' WHERE project_id=%d ORDER BY id ASC',
+            $project_id
+        ), ARRAY_A);
+        if (!$files) return new WP_Error('c767_download_missing', 'No secured design files are available for this project.', ['status' => 404]);
+
+        $dir = self::ensure_private_directory();
+        if (is_wp_error($dir)) return $dir;
+        $temp = wp_tempnam('connect767-production-package.zip', $dir);
+        if (!$temp) return new WP_Error('c767_package_failed', 'The production package could not be prepared.', ['status' => 500]);
+        $zip = new ZipArchive();
+        if ($zip->open($temp, ZipArchive::OVERWRITE) !== true) {
+            @unlink($temp);
+            return new WP_Error('c767_package_failed', 'The production package could not be prepared.', ['status' => 500]);
+        }
+
+        $design = self::order_design_for_project($order, (string) $project['public_id']);
+        $manifest_files = [];
+        $used_names = [];
+        foreach ($files as $file) {
+            $path = trailingslashit(self::private_directory()) . basename($file['storage_name']);
+            if (!is_file($path)) continue;
+            $original = sanitize_file_name($file['original_name'] ?: ('connect767-design-' . $file['id'] . '.' . pathinfo($path, PATHINFO_EXTENSION)));
+            $folder = stripos($original, 'artwork') !== false ? 'artwork/' : (stripos($original, 'reference') !== false ? 'references/' : 'renders/');
+            $archive_name = self::unique_archive_name($folder . $original, $used_names);
+            $zip->addFile($path, $archive_name);
+            $manifest_files[] = [
+                'name' => $archive_name, 'type' => $file['file_type'], 'mimeType' => $file['mime_type'],
+                'bytes' => (int) $file['byte_size'], 'sha256' => $file['sha256'], 'createdAt' => $file['created_at'],
+            ];
+        }
+
+        $design_index = max(1, (int) ($design['_designIndex'] ?? 1));
+        $collar = $order->get_meta('_c767_uniform_collar_attachment_' . $design_index);
+        if (is_array($collar) && !empty($collar['src'])) {
+            $attachment = self::data_url_file((string) $collar['src']);
+            if ($attachment) {
+                $name = self::unique_archive_name('customer-uploads/' . sanitize_file_name((string) ($collar['name'] ?? 'collar-artwork')) . '.' . $attachment['extension'], $used_names);
+                $zip->addFromString($name, $attachment['bytes']);
+                $manifest_files[] = ['name' => $name, 'type' => 'customer-upload', 'mimeType' => $attachment['mimeType'], 'bytes' => strlen($attachment['bytes']), 'sha256' => hash('sha256', $attachment['bytes'])];
+            }
+        }
+
+        // Preserve customer-supplied raster logos/artwork as separate files and
+        // retain non-raster pattern instructions as structured production data.
+        $pattern_specs = [];
+        foreach ((array) ($design['layers'] ?? []) as $layer_index => $layer) {
+            $layer = (array) $layer;
+            $source = sanitize_key((string) ($layer['source'] ?? ''));
+            if (strpos($source, 'pattern') !== false) {
+                $pattern_specs[] = [
+                    'name' => sanitize_text_field((string) ($layer['name'] ?? ('Pattern ' . ($layer_index + 1)))),
+                    'source' => $source, 'key' => sanitize_key((string) ($layer['skinKey'] ?? '')),
+                    'view' => sanitize_key((string) ($layer['view'] ?? 'front')),
+                ];
+            }
+            $asset = self::data_url_file((string) ($layer['src'] ?? ''));
+            if ($asset) {
+                $base = sanitize_file_name((string) ($layer['name'] ?? ('design-asset-' . ($layer_index + 1)))) ?: ('design-asset-' . ($layer_index + 1));
+                $base = preg_replace('/\.(png|jpe?g|webp|pdf)$/i', '', $base);
+                $folder = strpos($source, 'pattern') !== false ? 'patterns/' : 'customer-uploads/';
+                $name = self::unique_archive_name($folder . $base . '.' . $asset['extension'], $used_names);
+                $zip->addFromString($name, $asset['bytes']);
+                $manifest_files[] = ['name' => $name, 'type' => strpos($source, 'pattern') !== false ? 'pattern-asset' : 'customer-artwork', 'mimeType' => $asset['mimeType'], 'bytes' => strlen($asset['bytes']), 'sha256' => hash('sha256', $asset['bytes'])];
+                $design['layers'][$layer_index]['packageAsset'] = $name;
+            }
+            if (isset($design['layers'][$layer_index]['src']) && strpos((string) $design['layers'][$layer_index]['src'], 'data:') === 0) {
+                unset($design['layers'][$layer_index]['src']);
+            }
+        }
+        if ($pattern_specs) {
+            $zip->addFromString('patterns/pattern-specification.json', wp_json_encode($pattern_specs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            $manifest_files[] = ['name' => 'patterns/pattern-specification.json', 'type' => 'pattern-specification', 'mimeType' => 'application/json'];
+        }
+
+        unset($design['_designIndex']);
+        $prompts = (array) ($design['aiPromptHistory'] ?? []);
+        $manifest = [
+            'packageVersion' => 1, 'generatedAt' => gmdate('c'), 'orderNumber' => $order->get_order_number(),
+            'projectId' => $project['public_id'], 'sport' => $project['sport'], 'title' => $project['title'],
+            'files' => $manifest_files,
+            'notes' => [
+                'AI concept renders are customer-approved visual references, not manufacturing cut files.',
+                'Transparent artwork is included separately only when it was generated or uploaded for this project.',
+                'Custom design uniforms are non-refundable.',
+            ],
+        ];
+        $zip->addFromString('manifest.json', wp_json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        $zip->addFromString('design-data.json', wp_json_encode($design, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        $zip->addFromString('prompts.txt', self::prompt_transcript($prompts));
+        $spec_lines = self::production_spec_lines($design, $order, $project, $manifest_files);
+        $zip->addFromString('production-specification.pdf', self::simple_pdf($spec_lines));
+        $zip->addFromString('README.txt', self::package_readme($manifest));
+        $zip->close();
+
+        $wpdb->insert(self::table('design_downloads'), [
+            'file_id' => 0, 'project_id' => $project_id, 'user_id' => $user->ID,
+            'ip_hash' => self::request_hash('ip'), 'downloaded_at' => gmdate('Y-m-d H:i:s'),
+        ], ['%d','%d','%d','%s','%s']);
+        $filename = sanitize_file_name('connect767-production-package-' . $order->get_order_number() . '-' . $project['public_id'] . '.zip');
+        nocache_headers();
+        header('X-Robots-Tag: noindex, nofollow, noarchive', true);
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . filesize($temp));
+        readfile($temp);
+        @unlink($temp);
         exit;
     }
 
@@ -853,6 +1032,203 @@ class C767_Design_Studio_Security
     {
         global $wpdb;
         return max(0, (int) $wpdb->get_var($wpdb->prepare('SELECT credit_cost FROM ' . self::table('ai_usage') . ' WHERE request_id=%s', $request_id)));
+    }
+
+    private static function paid_project_entitlement($user_id, $project_id, $order_id = 0)
+    {
+        global $wpdb;
+        $sql = 'SELECT * FROM ' . self::table('design_entitlements') . ' WHERE user_id=%d AND project_id=%d AND status=\'active\'';
+        $args = [(int) $user_id, (int) $project_id];
+        if ($order_id) {
+            $sql .= ' AND order_id=%d';
+            $args[] = (int) $order_id;
+        }
+        $sql .= ' ORDER BY id DESC LIMIT 1';
+        return $wpdb->get_row($wpdb->prepare($sql, $args), ARRAY_A);
+    }
+
+    private static function order_design_for_project($order, $public_id)
+    {
+        $designs = json_decode((string) $order->get_meta('_c767_uniform_designs'), true);
+        if (!is_array($designs) || empty($designs)) {
+            $legacy = json_decode((string) $order->get_meta('_c767_uniform_design'), true);
+            $designs = is_array($legacy) ? [$legacy] : [];
+        }
+        foreach ($designs as $index => $design) {
+            if ((string) ($design['projectId'] ?? '') === (string) $public_id) {
+                $design['_designIndex'] = $index + 1;
+                return $design;
+            }
+        }
+        $fallback = (array) ($designs[0] ?? []);
+        $fallback['_designIndex'] = 1;
+        return $fallback;
+    }
+
+    private static function unique_archive_name($name, array &$used)
+    {
+        $name = ltrim(str_replace('\\', '/', (string) $name), '/');
+        $directory = dirname($name);
+        $directory = $directory === '.' ? '' : trim($directory, '/') . '/';
+        $base = sanitize_file_name(basename($name)) ?: 'file';
+        $candidate = $directory . $base;
+        $counter = 2;
+        while (isset($used[strtolower($candidate)])) {
+            $extension = pathinfo($base, PATHINFO_EXTENSION);
+            $stem = pathinfo($base, PATHINFO_FILENAME);
+            $candidate = $directory . $stem . '-' . $counter . ($extension ? '.' . $extension : '');
+            $counter++;
+        }
+        $used[strtolower($candidate)] = true;
+        return $candidate;
+    }
+
+    private static function data_url_file($source)
+    {
+        if (!preg_match('#^data:(image/png|image/jpeg|image/webp|application/pdf);base64,([A-Za-z0-9+/=]+)$#D', $source, $matches)) return null;
+        $bytes = base64_decode($matches[2], true);
+        if ($bytes === false || strlen($bytes) > 20 * 1024 * 1024) return null;
+        $extensions = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp', 'application/pdf' => 'pdf'];
+        return ['bytes' => $bytes, 'mimeType' => $matches[1], 'extension' => $extensions[$matches[1]]];
+    }
+
+    private static function prompt_transcript(array $prompts)
+    {
+        if (!$prompts) return "No saved AI prompt history was attached to this paid order.\n";
+        $blocks = [];
+        foreach ($prompts as $index => $entry) {
+            $entry = (array) $entry;
+            $blocks[] = implode("\n", [
+                'Prompt ' . ($index + 1) . ' — ' . ((string) ($entry['kind'] ?? 'AI design')),
+                'Created: ' . ((string) ($entry['createdAt'] ?? 'Not recorded')),
+                'Mode: ' . ((string) ($entry['mode'] ?? 'uniform')),
+                'Style: ' . ((string) ($entry['style'] ?? 'Not recorded')),
+                '', 'Customer prompt:', (string) ($entry['prompt'] ?? ''),
+                '', 'AI response:', (string) ($entry['response'] ?? ''),
+            ]);
+        }
+        return "Connect767 Design Studio — Paid Project Prompt History\n\n" . implode("\n\n----------------------------------------\n\n", $blocks) . "\n";
+    }
+
+    private static function production_spec_lines(array $design, $order, array $project, array $files)
+    {
+        $colors = [];
+        foreach ((array) ($design['colors'] ?? []) as $key => $value) {
+            if (is_scalar($value) && (string) $value !== '') $colors[] = ucwords(str_replace(['-', '_'], ' ', (string) $key)) . ': ' . (string) $value;
+        }
+        $roster = (array) ($design['roster'] ?? []);
+        $quantity = 0;
+        foreach ($roster as $row) {
+            $row = (array) $row;
+            $quantity += max(1, (int) ($row['quantity'] ?? 1));
+        }
+        $lines = [
+            'CONNECT767 PRODUCTION SPECIFICATION',
+            'Order: ' . $order->get_order_number(),
+            'Project: ' . ((string) ($project['title'] ?: $project['public_id'])),
+            'Sport category: ' . ucwords(str_replace('-', ' ', (string) ($design['sport'] ?? $project['sport']))),
+            'Template: ' . ((string) ($design['template'] ?? 'Custom design')),
+            'Fit: ' . ((string) ($design['fitType'] ?? 'Not recorded')),
+            'Kit: ' . ((string) ($design['kitType'] ?? 'Full')),
+            'Collar: ' . ((string) ($design['collar'] ?? 'AI-designed / not recorded')),
+            'Sleeve: ' . ((string) ($design['sleeve'] ?? 'AI-designed / not recorded')),
+            'Roster quantity: ' . $quantity,
+            'Sock quantity: ' . ((int) ($design['socksQuantity'] ?? 0)),
+            'Logo application: ' . ((string) ($design['logoApplication'] ?? 'Sublimation')),
+            'Inside-collar message: ' . (!empty($design['insideCollarMessage']) ? ((string) ($design['insideCollarText'] ?? 'Artwork supplied')) : 'No'),
+            '', 'COLOURS',
+        ];
+        $lines = array_merge($lines, $colors ?: ['See approved render and design-data.json.']);
+        $lines[] = '';
+        $lines[] = 'PRODUCTION ASSETS';
+        foreach ($files as $file) $lines[] = '- ' . $file['name'];
+        if (sanitize_key((string) ($design['sport'] ?? $project['sport'])) === 'soccer') {
+            $lines = array_merge($lines, [
+                '', 'SOCK PRODUCTION RULE',
+                'One uninterrupted solid base colour from cuff to toe.',
+                'Exactly three separate horizontal stripes near the knee.',
+                'All three stripes use the same single solid stripe colour with base-colour gaps.',
+                'No contrasting cuff, logo, text, number, gradient or decorative sock artwork.',
+            ]);
+        }
+        return array_merge($lines, [
+            '', 'IMPORTANT',
+            'The approved AI render is a visual production reference, not a manufacturing cut file.',
+            'Confirm measurements, colour matching and artwork placement during production proofing.',
+            'Custom design uniforms are non-refundable.',
+        ]);
+    }
+
+    private static function package_readme(array $manifest)
+    {
+        return implode("\n", [
+            'CONNECT767 PAID DESIGN PRODUCTION PACKAGE',
+            '',
+            'Order: ' . $manifest['orderNumber'],
+            'Project: ' . $manifest['projectId'],
+            '',
+            'renders/ — all secured high-resolution AI concept images for this project',
+            'artwork/ — separately generated transparent artwork, when available',
+            'customer-uploads/ — paid-order artwork attachments, when supplied',
+            'production-specification.pdf — concise production requirements',
+            'design-data.json — structured order and design selections',
+            'prompts.txt — saved AI prompt and response history',
+            'manifest.json — file inventory and SHA-256 checksums',
+            '',
+            'Separate logo, pattern, SVG or cut files appear only when they were actually generated or uploaded.',
+            'AI concept renders are visual references and must be confirmed during production proofing.',
+            'Custom design uniforms are non-refundable.',
+            '',
+        ]);
+    }
+
+    /** Create a dependency-free, text-only PDF suitable for a production summary. */
+    private static function simple_pdf(array $source_lines)
+    {
+        $lines = [];
+        foreach ($source_lines as $line) {
+            $line = preg_replace('/[^\x20-\x7E]/', '', (string) $line);
+            $wrapped = wordwrap($line, 92, "\n", true);
+            foreach (explode("\n", $wrapped) as $part) $lines[] = $part;
+        }
+        $pages = array_chunk($lines, 48);
+        $objects = [];
+        $page_ids = [];
+        $next_id = 4;
+        foreach ($pages as $unused) {
+            $page_ids[] = $next_id;
+            $next_id += 2;
+        }
+        $objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
+        $objects[2] = '<< /Type /Pages /Kids [' . implode(' ', array_map(function ($id) { return $id . ' 0 R'; }, $page_ids)) . '] /Count ' . count($page_ids) . ' >>';
+        $objects[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
+        foreach ($pages as $index => $page_lines) {
+            $page_id = $page_ids[$index];
+            $content_id = $page_id + 1;
+            $commands = ["BT", "/F1 10 Tf", "13 TL", "50 755 Td"];
+            foreach ($page_lines as $line_index => $line) {
+                if ($line_index) $commands[] = 'T*';
+                $escaped = str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $line);
+                $commands[] = '(' . $escaped . ') Tj';
+            }
+            $commands[] = 'ET';
+            $stream = implode("\n", $commands);
+            $objects[$page_id] = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents ' . $content_id . ' 0 R >>';
+            $objects[$content_id] = '<< /Length ' . strlen($stream) . ">>\nstream\n" . $stream . "\nendstream";
+        }
+        ksort($objects);
+        $pdf = "%PDF-1.4\n";
+        $offsets = [0];
+        foreach ($objects as $id => $body) {
+            $offsets[$id] = strlen($pdf);
+            $pdf .= $id . " 0 obj\n" . $body . "\nendobj\n";
+        }
+        $xref = strlen($pdf);
+        $count = max(array_keys($objects)) + 1;
+        $pdf .= "xref\n0 " . $count . "\n0000000000 65535 f \n";
+        for ($id = 1; $id < $count; $id++) $pdf .= sprintf('%010d 00000 n ', $offsets[$id] ?? 0) . "\n";
+        $pdf .= "trailer\n<< /Size " . $count . " /Root 1 0 R >>\nstartxref\n" . $xref . "\n%%EOF";
+        return $pdf;
     }
 
     private static function paid_entitlements($user_id, $project_id)

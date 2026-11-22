@@ -29,7 +29,7 @@ import {
   loadDesignHistory,
   newAIRequestId,
   refreshDesignSecurity,
-  downloadProtectedDesign,
+  downloadProductionPackage,
   saveDesignHistoryEntry,
   startDesignConversation,
 } from "../../lib/designSecurity";
@@ -1208,9 +1208,9 @@ export function AIArtworkPanel({
       return;
     }
     try {
-      await downloadProtectedDesign(securityContext.projectFiles?.[0]);
+      await downloadProductionPackage(securityContext.projectId);
     } catch (downloadError) {
-      setError(downloadError.message || "The protected design could not be downloaded.");
+      setError(downloadError.message || "The production package could not be downloaded.");
     } finally {
       await refreshSecurityQuota();
     }
