@@ -1384,7 +1384,6 @@ export default function UniformStudioPage() {
   const headerCapabilities = {
     ...detectedHeaderCapabilities,
     viewport: workflowStep.key === "design" && stageMode === "edit",
-    aiDesigner: workflowStep.key === "design",
     saveProgress: false,
     openEditableStudio: false,
     svgExport: false,
@@ -2065,23 +2064,6 @@ export default function UniformStudioPage() {
           {workflowStep.key === "design" && <>
             <div className="studio-view-actions">{renderCanvasControls()}</div>
           </>}
-          {headerCapabilities.aiDesigner && (
-            <button
-              type="button"
-              onClick={openAIDesigner}
-              className={`${headerTileClass} cursor-pointer font-bold disabled:cursor-not-allowed disabled:opacity-45 ${
-                activeTool === "ai"
-                  ? "border-accent-400 bg-accent-500 text-white shadow-[0_8px_20px_rgba(239,84,53,0.22)]"
-                  : "border-accent-400/40 bg-accent-950/30 text-accent-200 hover:border-accent-300 hover:bg-accent-950/55"
-              }`}
-            >
-              <span className="relative block h-5 w-5 shrink-0" aria-hidden="true">
-                <img src={`${import.meta.env.BASE_URL}connect767-ai-logo-transparent.png?v=20261117`} alt="" className="h-full w-full object-contain brightness-0 invert" />
-                <i className="ri-sparkling-2-fill absolute -right-0.5 -top-0.5 text-[8px] leading-none text-white" />
-              </span>
-              <span>Designer</span>
-            </button>
-          )}
           {headerCapabilities.refineAI && (
             <button
               type="button"
