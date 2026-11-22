@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import ShareMenu from "./ShareMenu";
 
@@ -152,6 +153,8 @@ function FullTierCard({ planKey, selected, onSelect }) {
 function CompactTierCard({ planKey, selected, onSelect }) {
   const plan = listingTierPlans[planKey];
   const isClassified = planKey === "classified";
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const detailsId = `listing-plan-${planKey}-details`;
 
   return (
     <article
@@ -191,20 +194,29 @@ function CompactTierCard({ planKey, selected, onSelect }) {
           <path d="m3 8 3 3 7-7" />
         </svg>
       </span>
-      <details className="group mt-3 border-t border-background-200 pt-3">
-        <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-semibold text-primary-800">
+      <div className="mt-3 border-t border-background-200 pt-3">
+        <button
+          type="button"
+          onClick={() => setDetailsOpen((open) => !open)}
+          aria-expanded={detailsOpen}
+          aria-controls={detailsId}
+          aria-label={`View ${plan.title} plan details`}
+          className="flex w-full cursor-pointer items-center justify-between text-xs font-semibold text-primary-800"
+        >
           View plan details
-          <i className="ri-arrow-down-s-line text-base transition-transform group-open:rotate-180" />
-        </summary>
-        <ul className="mt-3 space-y-2">
-          {plan.features.map(([icon, label]) => (
-            <li key={label} className="flex items-center gap-2 text-[11px] text-foreground-700">
-              <i className={`${icon} text-sm text-primary-800`} aria-hidden="true" />
-              <span>{label}</span>
-            </li>
-          ))}
-        </ul>
-      </details>
+          <i className={`ri-arrow-down-s-line text-base transition-transform ${detailsOpen ? "rotate-180" : ""}`} aria-hidden="true" />
+        </button>
+        {detailsOpen && (
+          <ul id={detailsId} className="mt-3 space-y-2">
+            {plan.features.map(([icon, label]) => (
+              <li key={label} className="flex items-center gap-2 text-[11px] text-foreground-700">
+                <i className={`${icon} text-sm text-primary-800`} aria-hidden="true" />
+                <span>{label}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </article>
   );
 }

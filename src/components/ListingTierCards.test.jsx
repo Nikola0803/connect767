@@ -51,4 +51,24 @@ describe("ListingTierCards", () => {
 
     expect(container.firstChild).toHaveAttribute("data-visual-scale", "0.7");
   });
+
+  it("expands the feature details for both signup plans independently", () => {
+    render(
+      <MemoryRouter>
+        <ListingTierCards compact selectedTier="free" onSelect={vi.fn()} />
+      </MemoryRouter>,
+    );
+
+    const freeDetails = screen.getByRole("button", { name: "View Free Listing plan details" });
+    const classifiedDetails = screen.getByRole("button", { name: "View Classified plan details" });
+
+    fireEvent.click(freeDetails);
+    expect(freeDetails).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("1 listing")).toBeVisible();
+
+    fireEvent.click(classifiedDetails);
+    expect(classifiedDetails).toHaveAttribute("aria-expanded", "true");
+    expect(freeDetails).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Up to 15 listings")).toBeVisible();
+  });
 });
