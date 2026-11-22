@@ -399,6 +399,29 @@ class C767_Marketing_Growth
         return compact('sources', 'listings', 'categories', 'campaigns', 'funnel', 'trends');
     }
 
+    /**
+     * Return the privacy-minimized evidence used by the strategy assistant.
+     * This deliberately excludes visitor/session hashes and all personal data.
+     */
+    public static function strategy_snapshot($days = 30)
+    {
+        $days = absint($days);
+        if (!in_array($days, [7, 30, 90], true)) {
+            $days = 30;
+        }
+        $end = current_time('timestamp', true);
+        $range = [
+            'days' => $days,
+            'start' => gmdate('Y-m-d H:i:s', $end - ($days * DAY_IN_SECONDS)),
+            'end' => gmdate('Y-m-d H:i:s', $end),
+        ];
+        return [
+            'period_days' => $days,
+            'metrics' => self::internal_metrics($range),
+            'performance' => self::table_rows($range),
+        ];
+    }
+
     private static function metric_card($label, $value, $note)
     {
         echo '<div class="c767-growth-card"><span class="c767-growth-label">' . esc_html($label) . '</span><strong>' . esc_html($value) . '</strong><small>' . esc_html($note) . '</small></div>';
@@ -473,6 +496,7 @@ class C767_Marketing_Growth
         $metrics = self::internal_metrics($range);
         $rows = self::table_rows($range);
         $export_url = wp_nonce_url(admin_url('admin-post.php?action=c767_marketing_export&days=' . $range['days']), 'c767_marketing_export');
+        $site_kit_active = defined('GOOGLESITEKIT_VERSION') || class_exists('Google\\Site_Kit\\Plugin');
         ?>
         <div class="wrap c767-growth">
             <div class="c767-growth-heading">
@@ -498,8 +522,8 @@ class C767_Marketing_Growth
             </div>
             <div class="c767-growth-integrations">
                 <div><strong>First-party analytics</strong><span class="c767-status is-live">Active</span><p>Privacy-minimized page, source, registration, and listing funnel events.</p></div>
-                <div><strong>Google Analytics 4</strong><span class="c767-status">Not connected</span><p>External analytics remain blank until an administrator authorizes GA4.</p></div>
-                <div><strong>Google Search Console</strong><span class="c767-status">Not connected</span><p>Search metrics remain blank until an administrator authorizes Search Console.</p></div>
+                <div><strong>Google Analytics 4</strong><span class="c767-status <?php echo $site_kit_active ? 'is-live' : ''; ?>"><?php echo esc_html($site_kit_active ? 'Site Kit active' : 'Not connected'); ?></span><p><?php echo esc_html($site_kit_active ? 'Authorized Google metrics remain in Site Kit while this dashboard uses first-party evidence.' : 'External analytics remain blank until an administrator authorizes GA4.'); ?></p></div>
+                <div><strong>Google Search Console</strong><span class="c767-status <?php echo $site_kit_active ? 'is-live' : ''; ?>"><?php echo esc_html($site_kit_active ? 'Site Kit active' : 'Not connected'); ?></span><p><?php echo esc_html($site_kit_active ? 'Search Console can take up to 48 hours to populate after authorization.' : 'Search metrics remain blank until an administrator authorizes Search Console.'); ?></p></div>
             </div>
             <div class="c767-growth-tables">
                 <?php self::render_funnel($rows['funnel']); ?>
@@ -509,6 +533,7 @@ class C767_Marketing_Growth
                 <?php self::render_table('Most visited categories', $rows['categories'], 'Category performance appears after listing profile views are recorded.'); ?>
                 <?php self::render_table('Campaign performance', $rows['campaigns'], 'No UTM-tagged campaign visits have been recorded in this period.'); ?>
             </div>
+            <?php do_action('c767_marketing_growth_after_dashboard', $range, $metrics, $rows); ?>
             <p class="description">Completed profile definition: published listing with at least 7 of 8 core elements (name, description, category, location, email, phone/website, logo, cover). Listing conversion: business accounts owning at least one listing divided by all business accounts.</p>
         </div>
         <style>

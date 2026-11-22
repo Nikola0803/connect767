@@ -19,7 +19,7 @@ The repository cannot reveal which plugins or Google properties are active on th
 ## Delivery plan
 
 1. **Phase 1 — analytics foundation:** administrator dashboard, first-party visitor/source measurement, registration and listing funnels, profile completion, category/listing performance, Community Feed engagement, UTM campaign reporting, exports, retention, and access controls.
-2. **Phase 2 — SEO and content recommendations:** review-only suggestions for pages and listings, duplicate/missing data checks, structured-data validation, and administrator approval workflow.
+2. **Phase 2 — AI strategy and recommendations:** evidence-based strategy drafts, objective/audience targeting, saved history, transparent evidence, effort and success measures, and administrator approval. SEO/content-specific audits remain the next Phase 2 increment.
 3. **Phase 3 — social content and calendar:** branded drafts and an approval calendar; platform publishing only through authorized official APIs.
 4. **Phase 4 — registration campaigns:** audience/category landing content, UTM templates, funnel comparison, and approved campaign drafts.
 5. **Phase 5 — consent-based email:** welcome/profile reminders, unsubscribe and suppression handling, and an authorized provider adapter.
@@ -50,3 +50,32 @@ Analytics events are allow-listed and rate-limited. Data is retained for 395 day
 8. Verify the 7/30/90-day filters and CSV export.
 
 GA4 and Search Console remain visibly **Not connected** until their production authorization is completed. Their absence never causes invented numbers to appear.
+
+## AI Marketing Strategy
+
+Connect767 CMS 2.4.0 adds the strategy workspace directly below the Growth
+Center dashboard. Administrators choose an objective, audience, and optional
+geographic focus. Each saved draft contains:
+
+- the aggregate 7/30/90-day evidence snapshot used to create it;
+- an explanation and actual evidence for every recommended action;
+- expected benefit, effort, and a measurable success criterion;
+- draft, approved, and archived states;
+- guardrails that prevent the plan from implying automatic publishing,
+  outreach, or advertising spend.
+
+The rules-based evidence engine always works and does not invent missing data.
+For AI-enhanced drafts, define the server-side secret in `wp-config.php` or the
+hosting environment (never in frontend JavaScript or the WordPress database):
+
+```php
+define('C767_OPENAI_API_KEY', 'server-secret');
+// Optional. Defaults to gpt-4.1-mini.
+define('C767_OPENAI_TEXT_MODEL', 'gpt-4.1-mini');
+```
+
+Only aggregate counts and the administrator's strategy context are sent to the
+AI provider. Visitor hashes, session hashes, user details, listing contacts,
+and credentials are excluded. If the provider is unavailable, the system saves
+a clearly labelled data-driven baseline instead of failing or fabricating a
+response. Generated plans remain drafts until an administrator approves them.
