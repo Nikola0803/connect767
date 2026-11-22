@@ -6,6 +6,16 @@ import ApprovedUniformGraphic from "./ApprovedUniformGraphic";
 import { DesignPanel, LayersPanel, OptionsPanel, StudioBackgroundPanel, UniformSetupPanel } from "./StudioPanels";
 
 describe("uniform design controls", () => {
+  it("hides collar and sleeve upgrades only for Basketball", () => {
+    const props = { collar: "Crew", sleeve: "Sleeveless", colors: defaultZoneColors, hideGarmentColors: true };
+    const { rerender } = render(<DesignPanel {...props} sport="basketball" />);
+    expect(screen.queryByRole("group", { name: "Collar options" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Sleeve options" })).not.toBeInTheDocument();
+    for (const sport of ["soccer", "cricket", "netball", "goalkeeper", "other"]) {
+      rerender(<DesignPanel {...props} sport={sport} />);
+      expect(screen.getByRole("button", { name: /Polo Style Collar/ })).toBeVisible();
+    }
+  });
   it("offers twenty-eight quick colourways, including white-shirt presets, and applies the selected palette", () => {
     const onApplyColourway = vi.fn();
     render(

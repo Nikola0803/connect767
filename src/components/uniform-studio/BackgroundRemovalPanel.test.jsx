@@ -15,6 +15,8 @@ describe("BackgroundRemovalPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Remove background" }));
 
     await screen.findByAltText("Transparent result");
+    expect(screen.getByRole("button", { name: "Download PNG" })).toBeDisabled();
+    expect(screen.getByText("Sign in and complete payment to unlock image downloads.")).toBeVisible();
     expect(processor).toHaveBeenCalledWith(photo, expect.any(Function));
     fireEvent.click(screen.getByRole("button", { name: "Place on uniform" }));
     expect(onPlace).toHaveBeenCalledTimes(1);

@@ -7,7 +7,7 @@ import handler, {
 } from "./generate-uniform-design.js";
 
 function request(method = "POST", body = {}) {
-  return { method, body, headers: { "x-forwarded-for": "203.0.113.25" }, socket: {} };
+  return { method, body, headers: { "x-forwarded-for": "203.0.113.25", authorization: "Bearer signed-in-test" }, socket: {} };
 }
 
 function response() {
@@ -59,6 +59,22 @@ const upstreamPlan = {
 };
 
 describe("AI full-uniform design endpoint", () => {
+  it("constrains Basketball to sleeveless jerseys without Polo or unsolicited socks", () => {
+    const input = normalizeUniformRequest({ ...validRequest, sport: "Basketball", current: { ...validRequest.current, collar: "Polo", sleeve: "Long" }, userPrompt: "Green basketball kit" });
+    expect(input.collarOptions).not.toContain("Polo");
+    expect(input.sleeveOptions).toEqual(["Sleeveless"]);
+    expect(input.current.sleeve).toBe("Sleeveless");
+    expect(buildUniformPrompt(input)).toContain("Do not generate socks");
+    expect(normalizeUniformPlan(upstreamPlan, input).includeSocks).toBe(false);
+  });
+  it("rejects an anonymous prompt before reserving usage or contacting AI", async () => {
+    const upstream = vi.fn(); vi.stubGlobal("fetch", upstream);
+    const req = request("POST", validRequest); delete req.headers.authorization;
+    const res = response(); await handler(req, res);
+    expect(res.statusCode).toBe(401);
+    expect(res.payload.requiresAccount).toBe(true);
+    expect(upstream).not.toHaveBeenCalled();
+  });
   beforeEach(() => {
     resetUniformRateLimitsForTests();
     process.env.OPENAI_API_KEY = "test-only-key";

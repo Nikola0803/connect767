@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import handler, { buildPrompt, normalizeBrief, resetRateLimitsForTests } from "./generate-design.js";
 
 function request(method = "POST", body = {}) {
-  return { method, body, headers: { "x-forwarded-for": "203.0.113.10" }, socket: {} };
+  return { method, body, headers: { "x-forwarded-for": "203.0.113.10", authorization: "Bearer signed-in-test" }, socket: {} };
 }
 
 function response() {
@@ -28,6 +28,22 @@ const validBrief = {
 };
 
 describe("AI design generation endpoint", () => {
+  it("omits Basketball socks by default despite sock references in a generated palette", () => {
+    const input = normalizeBrief({ ...validBrief, sport: "Basketball", generationMode: "uniform", notes: "Palette includes socks #064C35", userPrompt: "Create a green kit" });
+    expect(buildPrompt(input)).toContain("Do not generate socks, shoes or other legwear in any view");
+    const requested = normalizeBrief({ ...validBrief, sport: "Basketball", generationMode: "uniform", userPrompt: "Add matching socks" });
+    expect(buildPrompt(requested)).toContain("The customer explicitly requested socks");
+  });
+  it("rejects anonymous and guest-token requests before contacting any service", async () => {
+    const upstream = vi.fn(); vi.stubGlobal("fetch", upstream);
+    const req = request("POST", validBrief);
+    delete req.headers.authorization;
+    req.headers["x-c767-guest-token"] = "previously-issued-guest-session";
+    const res = response(); await handler(req, res);
+    expect(res.statusCode).toBe(401);
+    expect(res.payload.requiresAccount).toBe(true);
+    expect(upstream).not.toHaveBeenCalled();
+  });
   it("returns an actionable storage error and refunds a failed image save", async () => {
     process.env.C767_AI_SERVICE_SECRET = "shared-test-secret";
     const fetchMock = vi.fn(async (url) => {

@@ -38,6 +38,12 @@ async function callSecurity(req, path, body) {
 }
 
 export async function reserveAIRequest(req, { requestId, operation, projectId }) {
+  if (!/^Bearer\s+\S+$/i.test(header(req, "authorization"))) {
+    throw Object.assign(new Error("Sign in or create an account before using AI design tools."), {
+      status: 401,
+      payload: { data: { requiresAccount: true } },
+    });
+  }
   return callSecurity(req, "ai/reserve", { requestId, operation, projectId });
 }
 

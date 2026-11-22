@@ -14,6 +14,7 @@ function wp_parse_args($value, $defaults) { return array_merge($defaults, $value
 function sanitize_text_field($value) { return (string) $value; }
 function sanitize_file_name($value) { return basename($value); }
 function sanitize_key($value) { return strtolower($value); }
+function absint($value) { return abs((int) $value); }
 function is_wp_error($value) { return $value instanceof WP_Error; }
 function rest_ensure_response($value) { return $value; }
 class WP_Error {
@@ -22,13 +23,20 @@ class WP_Error {
 }
 class WP_REST_Request {
     private $params;
-    public function __construct($params) { $this->params = $params; }
+    private $headers = [];
+    public function __construct($params = []) { $this->params = $params; }
     public function get_param($key) { return $this->params[$key] ?? null; }
+    public function set_header($key, $value) { $this->headers[$key] = $value; }
+    public function get_header($key) { return $this->headers[$key] ?? ''; }
+}
+class C767_REST_Auth {
+    public static function user_from_request($request) { return $request->get_header('authorization') === 'Bearer member' ? (object) ['ID' => 7] : new WP_Error('c767_bad_token', 'Sign in required.', ['status' => 401]); }
 }
 class StorageDatabase {
-    public $prefix = 'wp_', $insert_id = 0, $files = [], $fail = false;
+    public $prefix = 'wp_', $insert_id = 0, $files = [], $fail = false, $owner = 7;
     public function prepare($sql, ...$args) { return ['sql' => $sql, 'args' => $args]; }
-    public function get_row($query, $format) { return ['project_id' => 9, 'status' => 'reserved']; }
+    public function get_row($query, $format) { return strpos($query['sql'], 'design_files') !== false ? ($this->files[$query['args'][0]] ?? null) : ['project_id' => 9, 'status' => 'reserved']; }
+    public function get_var($query) { return $this->owner; }
     public function insert($table, $row, $formats) {
         if ($this->fail) return false;
         $this->files[++$this->insert_id] = $row; return 1;
@@ -53,6 +61,14 @@ try {
     verify_storage($read->invoke(null, $saved) === $bytes, 'Database-backed download did not recover the exact original');
     verify_storage($result['watermarked'] && $result['previewOnly'] && base64_decode($result['b64']) !== $bytes, 'The public result must only contain a watermarked preview');
     verify_storage(!array_key_exists('source_data', $result) && !array_key_exists('storage_name', $result), 'Private storage details leaked into the result');
+    $preview_request = new WP_REST_Request(['fileId' => $result['fileId']]);
+    verify_storage(is_wp_error(C767_Design_Studio_Security::preview($preview_request)), 'Anonymous preview access was allowed');
+    $preview_request->set_header('authorization', 'Bearer member');
+    $restored = C767_Design_Studio_Security::preview($preview_request);
+    verify_storage(!is_wp_error($restored) && $restored['watermarked'] && $restored['previewOnly'] && base64_decode($restored['b64']) !== $bytes, 'Preview recovery exposed an original or removed its watermark');
+    $wpdb->owner = 8;
+    verify_storage(is_wp_error(C767_Design_Studio_Security::preview($preview_request)), 'Another customer could read the preview');
+    $wpdb->owner = 7;
     $damaged = $saved; $damaged['source_data'] .= 'corrupt';
     verify_storage(is_wp_error($read->invoke(null, $damaged)), 'Corrupt database source passed integrity validation');
     $wpdb->fail = true;

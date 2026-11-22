@@ -18,7 +18,7 @@ it("preserves the selected sample during asynchronous branding, caches the resul
   await act(async () => soccerReady("data:image/png;base64,soccer"));
   expect(screen.getByRole("img")).toHaveAttribute("src", "/uploads/ai-uniform-samples/basketball-views.webp");
   await act(async () => basketballReady("data:image/png;base64,basketball"));
-  expect(screen.getByRole("img")).toHaveAttribute("data-background-branding", "connect767-embossed-v1");
+  expect(screen.getByRole("img")).toHaveAttribute("data-background-branding", "connect767-embossed-v2");
   expect(screen.getByRole("img")).toHaveAttribute("src", "data:image/png;base64,basketball");
   rerender(<AIUniformSample sport="soccer" />);
   await act(async () => {});
@@ -29,7 +29,7 @@ it("preserves the selected sample during asynchronous branding, caches the resul
   expect(screen.getByRole("img")).toHaveAttribute("src", "/uploads/ai-uniform-samples/cricket-views.webp");
   expect(screen.getByRole("img")).not.toHaveAttribute("data-background-branding");
   rerender(<AIUniformSample sport="soccer" backgroundColor="#ffffff" />);
-  expect(emboss).toHaveBeenLastCalledWith("/uploads/ai-uniform-samples/soccer-views.webp", { backgroundColor: "#ffffff" });
+  expect(emboss).toHaveBeenLastCalledWith("/uploads/ai-uniform-samples/soccer-views.webp", { backgroundColor: "#ffffff", normalizePanels: true });
   await act(async () => soccerReady("data:image/png;base64,soccer-white-background"));
   expect(screen.getByRole("img")).toHaveAttribute("src", "data:image/png;base64,soccer-white-background");
 });

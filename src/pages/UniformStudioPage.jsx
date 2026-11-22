@@ -64,7 +64,6 @@ import {
   sampleImageEdgeColor,
 } from "../components/uniform-studio/aiPreviewBackground";
 import { skinDataUri } from "../data/skins";
-import { embossConnect767ConceptBackground } from "../components/uniform-studio/aiConceptEmboss";
 import Button from "../components/ui/Button";
 import {
   isRestrictedSoccerSockPlacement,
@@ -76,6 +75,7 @@ import PaypalButton from "../components/PaypalButton";
 import { isLiveApi } from "../lib/config";
 import { UNIFORM_SHIPPING_COUNTRIES, uniformShippingRate } from "../lib/uniformShipping";
 import { uniformAddressRegions, validateUniformShippingAddress } from "../lib/uniformAddress";
+import { loadProtectedDesignPreview } from "../lib/designSecurity";
 import {
   createUniformOrderDesign,
   designOrderUnitCount,
@@ -355,7 +355,14 @@ export default function UniformStudioPage() {
   const [collar, setCollar] = useState("Crew");
   const [sleeve, setSleeve] = useState("Short");
   const [colors, setColors] = useState(defaultZoneColors);
-  const [studioBackground, setStudioBackground] = useState(DEFAULT_STUDIO_BACKGROUND);
+  const [studioBackground, setStudioBackground] = useState(() => {
+    try { return normalizeStudioBackground(window.localStorage.getItem("c767:studio:background")); }
+    catch { return DEFAULT_STUDIO_BACKGROUND; }
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem("c767:studio:background", normalizeStudioBackground(studioBackground)); }
+    catch { /* Keep the selected background in memory when storage is unavailable. */ }
+  }, [studioBackground]);
   const [view, setView] = useState("front");
   const { shellRef, compact, keyboardOpen } = useStudioViewport();
   const [mobilePanel, setMobilePanel] = useState("");
@@ -431,27 +438,6 @@ export default function UniformStudioPage() {
   });
   // Shown when leaving the studio with unsaved work — see confirmExit below.
   const [exitPrompt, setExitPrompt] = useState(false);
-
-  // Upgrade saved concepts created before deterministic background embossing.
-  // The logo is composited into the image itself, never behind its opaque box.
-  useEffect(() => {
-    const source = aiWorkspaceConcept?.src;
-    if (!source || aiWorkspaceConcept?.backgroundBranding === "connect767-embossed-v1") return undefined;
-    let active = true;
-    embossConnect767ConceptBackground(source).then((brandedSource) => {
-      if (!active || !brandedSource || brandedSource === source) return;
-      const conceptImage = {
-        ...aiWorkspaceConcept,
-        src: brandedSource,
-        backgroundBranding: "connect767-embossed-v1",
-      };
-      setAiWorkspaceConcept(conceptImage);
-      setAiUniformPlan((current) => current?.conceptImage?.src === source
-        ? { ...current, conceptImage }
-        : current);
-    });
-    return () => { active = false; };
-  }, [aiWorkspaceConcept]);
 
   useEffect(() => {
     if (!studioSettingsOpen) return undefined;
@@ -575,6 +561,18 @@ export default function UniformStudioPage() {
   const [placementError, setPlacementError] = useState("");
   const [draftSaveStatus, setDraftSaveStatus] = useState("idle");
   const [designSecurityContext, setDesignSecurityContext] = useState(null);
+  useEffect(() => {
+    const concept = aiWorkspaceConcept;
+    if (!designSecurityContext?.authenticated || !concept?.projectFileId || concept.backgroundBranding !== "connect767-embossed-v1") return;
+    let active = true;
+    loadProtectedDesignPreview(concept.projectFileId).then((preview) => {
+      if (!active || !preview?.b64 || preview.watermarked !== true) return;
+      const clean = { ...concept, src: `data:${preview.mimeType || "image/png"};base64,${preview.b64}`, backgroundBranding: "connect767-generated-background-v1", watermarked: true, previewOnly: true };
+      setAiWorkspaceConcept((current) => current?.src === concept.src ? clean : current);
+      setAiUniformPlan((current) => current?.conceptImage?.src === concept.src ? { ...current, conceptImage: clean } : current);
+    }).catch(() => { /* Keep the saved preview when recovery is unavailable. */ });
+    return () => { active = false; };
+  }, [aiWorkspaceConcept, designSecurityContext?.authenticated]);
   const [orderDesigns, setOrderDesigns] = useState(loadUniformOrderDesigns);
   const [editingOrderDesignId, setEditingOrderDesignId] = useState("");
   const [designPromptSessionKey, setDesignPromptSessionKey] = useState("initial-design");
@@ -622,6 +620,11 @@ export default function UniformStudioPage() {
   const template = templates.find((t) => t.slug === selectedTemplate);
   const selectedLayer = layers.find((l) => l.id === selectedLayerId) || null;
   const sportConfig = sportConfigFor(activeSport);
+  useEffect(() => {
+    if (activeSport !== "basketball") return;
+    if (collar === "Polo") setCollar("V-Neck");
+    if (sleeve !== "Sleeveless") setSleeve("Sleeveless");
+  }, [activeSport, collar, sleeve]);
   const minimumKits = minimumFullKitsFor(activeSport);
   const fullKitUnitCount = rosterUnitCount(roster);
   const minimumKitsMet = fullKitUnitCount >= minimumKits;
@@ -866,7 +869,6 @@ export default function UniformStudioPage() {
       setLayers(removeRestrictedSoccerSockLayers(normalizedLayers, savedSport));
       setPlacements3d(saved.placements3d || {});
       if (saved.colors) setColors(normalizeZoneColors(saved.colors));
-      if (saved.studioBackground) setStudioBackground(normalizeStudioBackground(saved.studioBackground));
       if (saved.collar) setCollar(saved.collar);
       if (saved.sleeve) setSleeve(saved.sleeve);
       if (saved.zoneModel?.front && saved.zoneModel?.back) setZoneModel(saved.zoneModel);
@@ -2037,8 +2039,7 @@ export default function UniformStudioPage() {
   };
 
   // ---------- The studio itself: fills the viewport beneath site navigation ----------
-  const studioHeaderTitle = aiUniformPlan?.name || (template?.slug === "blank-canvas" ? "AI Uniform" : template?.name) || "AI Uniform";
-  const showStudioHeaderTitle = !["AI Uniform", "Classic Crew"].includes(studioHeaderTitle);
+  const studioHeaderTitle = categoryDetails[activeSport]?.title || sports.find((sport) => sport.slug === activeSport)?.label || "Uniform";
 
   return (
     <div ref={shellRef} data-testid="uniform-studio-workspace" data-mobile-panel={mobilePanel} data-keyboard-open={keyboardOpen} className="uniform-studio-shell flex flex-col overflow-hidden bg-[#10110f] text-background-50">
@@ -2052,11 +2053,9 @@ export default function UniformStudioPage() {
           <i className="ri-arrow-left-line" />
           <span className="studio-back-label">Back</span>
         </button>
-        <div className="studio-mobile-brand"><strong>Connect767 Design Studio</strong><span aria-live="polite">{sports.find((sport) => sport.slug === activeSport)?.label} · {draftSaveStatus === "error" ? "Not saved — check storage" : draftSaveStatus === "saved" ? "Draft saved on device" : "Design workspace"}</span></div>
+        <div className="studio-mobile-brand"><strong>Connect767 Design Studio</strong><span aria-live="polite">{studioHeaderTitle} · {draftSaveStatus === "error" ? "Not saved — check storage" : draftSaveStatus === "saved" ? "Draft saved on device" : "Design workspace"}</span></div>
         <div className="studio-desktop-title flex min-w-0 flex-1 items-center justify-center gap-2">
-          {showStudioHeaderTitle && (
-            <span className="truncate text-sm font-semibold text-background-50/85">{studioHeaderTitle}</span>
-          )}
+          <span className="truncate text-sm font-semibold text-background-50/85">{studioHeaderTitle}</span>
           <span className="hidden shrink-0 items-center gap-1.5 rounded-full border border-primary-500/20 bg-primary-950/35 px-2.5 py-1 text-[10px] font-semibold text-primary-200/90 xl:inline-flex">
             <span className="h-1.5 w-1.5 rounded-full bg-primary-400" /> {draftSaveStatus === "error" ? "Not saved — check storage" : draftSaveStatus === "saved" ? "Auto-saved on device" : "Draft"}
           </span>
@@ -2361,9 +2360,6 @@ export default function UniformStudioPage() {
                           onPointerCancel={() => { aiConceptDragRef.current = null; aiPointersRef.current.clear(); aiPinchRef.current = null; }}
                           style={{ touchAction: "none", backgroundColor: aiConceptBackground }}
                         >
-                          <div className="pointer-events-none absolute left-3 top-3 z-20 rounded-full border border-white/20 bg-foreground-950/75 px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-white/90 backdrop-blur">
-                            AI-Generated Preview — Edit with AI Only
-                          </div>
                           {aiComparisonPlan?.conceptImage?.src ? (
                             <div className="relative z-10 grid max-h-full max-w-full grid-cols-2 gap-px bg-foreground-900 p-px">
                               <figure className="relative min-w-0 bg-[#f5f0e7]" style={{ backgroundColor: aiComparisonBackgrounds.previous }}>
@@ -2453,7 +2449,7 @@ export default function UniformStudioPage() {
                     )}
                   />
                 </div>
-                {activeTool === "remove-bg" && <BackgroundRemovalPanel />}
+                {activeTool === "remove-bg" && <BackgroundRemovalPanel canDownload={designSecurityContext?.authenticated === true && designSecurityContext?.downloadUnlocked === true} />}
                 {activeTool === "roster" && (
                   <RosterTool
                     activeSport={activeSport}

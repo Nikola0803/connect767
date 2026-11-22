@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { reserveAIRequest, secureGeneratedFile, securityErrorResponse, settleAIRequest } from "./_ai-security.js";
+import { basketballKitRule, basketballSocksRequested } from "../shared/uniformPromptRules.js";
 
 export const config = { maxDuration: 60 };
 
@@ -84,7 +85,8 @@ export function normalizeBrief(body = {}) {
   if (!STYLES.has(style)) throw new Error("Choose a supported design style.");
   if (!brandName) throw new Error("Brand or team name is required.");
 
-  return { productType, style, brandName, tagline, notes, primaryColor, secondaryColor, generationMode, renderTier, sport, referenceImage: inputImage };
+  const includeSocks = basketballSocksRequested(text(body.userPrompt, 2000), body.includeSocks === true);
+  return { productType, style, brandName, tagline, notes, primaryColor, secondaryColor, generationMode, renderTier, sport, includeSocks, referenceImage: inputImage };
 }
 
 function outputSettings(brief) {
@@ -133,10 +135,11 @@ export function buildPrompt(brief) {
         : "",
       "Show three coordinated views side by side: the complete front view, strict 90-degree side view, and complete back view of the same uniform.",
       "Each view must include every applicable garment piece, including the jersey or dress, shorts or trousers, and socks when the sport uses socks.",
+      brief.sport === "Basketball" ? basketballKitRule(brief.includeSocks) : "",
       "If this uniform includes socks, they must remain one uninterrupted solid base colour from cuff to toe and must include exactly three separate horizontal stripes only at the top near the knee, with visible base-colour gaps. All three stripes must use the same single solid stripe colour, consistent on both socks and in every view. Do not create a contrasting solid-colour cuff, heel or toe. Do not add any other bands, logos, text, numbers, decorative patterns, gradients or artwork to socks. These sock production requirements take priority over conflicting styling requests.",
       "Keep all three uniforms fully visible, equally scaled, centred, and separated.",
       "Use one perfectly uniform flat solid warm-white background (#F5F0E7) covering the entire image edge to edge. Do not add white side gutters, vertical bands, stripes, panels, gradients, vignettes, horizon lines, frames, or any change in background tone.",
-      "Emboss one large, subtle Connect767 C-and-AI emblem directly into the exact centre of that existing background. The emblem must match the background colour exactly and be visible only through shallow raised or debossed highlights and shadows, with no black, white, coloured, metallic, or glossy fill. Keep it behind and partially obscured by the uniforms. Do not recolour the background, do not print the emblem on the garment, and do not repeat it elsewhere.",
+      "Emboss one subtle Connect767 C-and-AI emblem directly into the exact centre of that existing background. Preserve its natural proportions within the middle two-thirds of the image; never stretch it to fill the canvas. The emblem must match the background colour exactly and be visible only through shallow raised or debossed highlights and shadows, with no black, white, coloured, metallic, or glossy fill. Keep it behind and partially obscured by the uniforms. Do not recolour the background, do not print the emblem on the garment, and do not repeat it elsewhere.",
       "Use realistic performance fabric, stitching, seams, folds, highlights, and shadows while keeping the colors, trims, pattern, and design identity clearly readable.",
       "Do not show a person, mannequin head, hands, shoes, props, any watermark other than the required same-colour embossed Connect767 studio emblem, colour swatches, UI, presentation board, cropped garment, or duplicate angle.",
       "This is a customer-facing full-uniform design proof, not a manufacturing pattern or technical cut file.",
