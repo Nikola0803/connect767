@@ -1007,10 +1007,7 @@ export default function AddListingPage() {
               <p className="text-sm text-foreground-600 font-label mb-10">
                 Complete your account, select a plan, and add the information customers will see.
               </p>
-              {!isEditing && !auth.isAuthenticated && !accountCreated && (
-                <OwnerAccountPanel account={account} onChange={updateAccount} signInHref={signInHref} showRequiredErrors={showBusinessRequiredErrors} />
-              )}
-              <div id="listingTier" tabIndex="-1" className="mt-10 flex flex-wrap items-center gap-3 scroll-mt-28">
+              <div id="listingTier" tabIndex="-1" className="flex flex-wrap items-center gap-3 scroll-mt-28">
                 <h2 className="font-heading text-2xl font-light text-foreground-950">
                   Choose your <span className="text-accent-500 italic">listing plan</span>
                 </h2>
@@ -1029,13 +1026,16 @@ export default function AddListingPage() {
                     noteListingStarted();
                     setForm((f) => ({ ...f, tier }));
                   }}
-                  className="mx-auto max-w-3xl gap-4"
+                  className="w-full gap-4"
                 />
               </div>
               {planIsMissing && (
                 <p role="alert" className="mt-3 flex items-center gap-2 text-sm font-semibold text-red-700">
                   <i className="ri-error-warning-fill" aria-hidden="true" /> Select a listing plan before continuing.
                 </p>
+              )}
+              {!isEditing && !auth.isAuthenticated && !accountCreated && (
+                <OwnerAccountPanel account={account} onChange={updateAccount} signInHref={signInHref} showRequiredErrors={showBusinessRequiredErrors} />
               )}
             </section>
           )}
