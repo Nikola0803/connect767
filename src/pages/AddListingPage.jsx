@@ -976,7 +976,7 @@ export default function AddListingPage() {
                 {!isEditing && !auth.isAuthenticated && !accountCreated
                   ? "Create your account"
                   : "Choose your plan"}{" "}
-                <span className="text-accent-500 italic">& add your business</span>
+                <span className="text-accent-500 italic">& add your listing information</span>
               </h1>
               <p className="text-sm text-foreground-600 font-label mb-10">
                 Complete your account, select a plan, and add the information customers will see.
