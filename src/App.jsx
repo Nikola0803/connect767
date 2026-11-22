@@ -109,7 +109,7 @@ function App() {
                   <Route path="/listings/:slug" element={<ListingDetailPage />} />
                   <Route path="/saved" element={<SavedListingsPage />} />
                   <Route path="/auth/login" element={<AuthPage />} />
-                  <Route path="/auth/register" element={<AuthPage />} />
+                  <Route path="/auth/register" element={<AddListingPage />} />
                   <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
                   <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
                   <Route path="/dashboard" element={<ListingOnboardingGate><DashboardPage /></ListingOnboardingGate>} />

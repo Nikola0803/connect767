@@ -35,6 +35,8 @@ import { hasCompletePayoutDetails } from "../lib/payoutSettings";
 import { Spinner, ErrorState } from "../components/ui/States";
 import { isLiveApi } from "../lib/config";
 import { trackMarketingEventOnce } from "../lib/marketingAnalytics";
+import { register } from "../lib/authClient";
+import { useAuth } from "../hooks/useAuth";
 import { imageCropStyle } from "../lib/imagePosition";
 import {
   coverPhotoDimensionError,
@@ -53,15 +55,15 @@ import {
 import {
   completeListingOnboarding,
   getListingOnboardingDraft,
+  requireListingOnboarding,
   saveListingOnboardingDraft,
 } from "../lib/listingOnboarding";
 
 const steps = [
-  { n: 1, label: "Choose Tier" },
-  { n: 2, label: "Business Info" },
-  { n: 3, label: "Contact & Media" },
-  { n: 4, label: "Review" },
-  { n: 5, label: "Preview" },
+  { n: 1, label: "Account, Plan & Business" },
+  { n: 2, label: "Contact & Media" },
+  { n: 3, label: "Review" },
+  { n: 4, label: "Preview" },
 ];
 
 const priceChoices = ["$", "$$", "$$$"];
@@ -108,7 +110,7 @@ export function savedIndustrySelection(publicListing, ownedListings = []) {
 }
 
 const initialForm = {
-  tier: "classified",
+  tier: "",
   businessName: "",
   category: "",
   priceTier: "",
@@ -159,6 +161,26 @@ const initialForm = {
   bookingPayoutDigitalProvider: "",
   bookingPayoutDigitalAccount: "",
   amenities: "",
+};
+
+const demoForm = {
+  ...initialForm,
+  tier: "classified",
+  businessName: "James Local Fruits",
+  category: "catering",
+  priceTier: "$",
+  description: "Locally grown organic foods at affordable prices.",
+  tags: "farm-to-table, organic, local produce",
+  amenities: "Delivery, Pickup",
+  location: "Roseau, Dominica",
+  education: "Professional Certificate",
+  degreeType: "Food Safety & Hospitality",
+  yearsExperience: "25",
+  phone: "+1 (767) 555-0148",
+  email: "hello@jameslocalfruits.dm",
+  website: "jameslocalfruits.dm",
+  instagram: "instagram.com/jameslocalfruits",
+  photoPreview: "/uploads/hero.webp",
 };
 
 /**
@@ -272,35 +294,92 @@ function buildPreviewData(form) {
 
 function StepIndicator({ current }) {
   return (
-    <div className="flex items-center gap-2 mt-4 flex-wrap">
-      {steps.map((step, i) => (
-        <div key={step.n} className="flex items-center gap-2">
-          <div
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${
-              step.n === current
-                ? "bg-primary-500 text-background-50"
-                : step.n < current
-                ? "bg-primary-100 text-primary-800"
-                : "bg-background-100 text-foreground-500"
-            }`}
-          >
-            <span
-              className={`w-5 h-5 flex items-center justify-center rounded-full text-[10px] ${
-                step.n === current
-                  ? "bg-background-50/20"
-                  : step.n < current
-                  ? "bg-primary-200"
-                  : "bg-background-200"
-              }`}
-            >
-              {step.n < current ? <i className="ri-check-line" /> : step.n}
-            </span>
-            <span className="hidden sm:inline">{step.label}</span>
-          </div>
-          {i < steps.length - 1 && <div className="w-6 h-px bg-background-300" />}
+    <nav aria-label="Listing registration progress" className="mt-4 overflow-x-auto pb-1">
+      <ol className="flex min-w-max items-center rounded-2xl border border-background-200/80 bg-background-50/80 p-2 shadow-sm">
+        {steps.map((step, i) => {
+          const isCurrent = step.n === current;
+          const isComplete = step.n < current;
+          return (
+            <li key={step.n} className="flex items-center">
+              <div
+                aria-current={isCurrent ? "step" : undefined}
+                className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold whitespace-nowrap transition-colors ${
+                  isCurrent
+                    ? "bg-primary-700 text-white shadow-sm"
+                    : isComplete
+                      ? "bg-primary-50 text-primary-800"
+                      : "text-foreground-500"
+                }`}
+              >
+                <span
+                  className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${
+                    isCurrent
+                      ? "bg-white/20 text-white"
+                      : isComplete
+                        ? "bg-primary-200 text-primary-900"
+                        : "bg-background-200 text-foreground-600"
+                  }`}
+                >
+                  {isComplete ? (
+                    <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5 fill-none stroke-current" strokeWidth="2">
+                      <path d="m3 8 3 3 7-7" />
+                    </svg>
+                  ) : step.n}
+                </span>
+                <span>{step.label}</span>
+              </div>
+              {i < steps.length - 1 && (
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 36 12"
+                  className={`mx-2 h-3 w-9 ${isComplete ? "text-primary-400" : "text-background-400"}`}
+                >
+                  <path d="M1 6h30M26 1l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
+function OwnerAccountPanel({ account, onChange }) {
+  return (
+    <section className="mt-8 rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-background-50 p-5 shadow-[0_14px_38px_rgba(23,84,55,0.08)] md:p-6">
+      <div className="mb-5 flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-700 text-background-50">
+          <i className="ri-user-add-line text-lg" />
+        </span>
+        <div>
+          <h2 className="font-heading text-xl font-semibold text-primary-950">Create your account</h2>
+          <p className="mt-1 text-xs leading-relaxed text-foreground-600">
+            This account will own the listing and let you update it after submission.
+          </p>
         </div>
-      ))}
-    </div>
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <FormField label="Account name" htmlFor="accountName" required>
+          <Input id="accountName" placeholder="Personal or business name" value={account.name} onChange={onChange("name")} required />
+        </FormField>
+        <FormField label="Account email" htmlFor="accountEmail" required>
+          <Input id="accountEmail" type="email" placeholder="owner@email.com" value={account.email} onChange={onChange("email")} required />
+        </FormField>
+        <FormField label="Password" htmlFor="accountPassword" hint="At least 8 characters" required>
+          <Input id="accountPassword" type="password" placeholder="••••••••" minLength={8} value={account.password} onChange={onChange("password")} required />
+        </FormField>
+        <FormField label="Confirm password" htmlFor="accountConfirmPassword" required>
+          <Input id="accountConfirmPassword" type="password" placeholder="••••••••" minLength={8} value={account.confirmPassword} onChange={onChange("confirmPassword")} required />
+        </FormField>
+      </div>
+      <label className="mt-4 flex cursor-pointer items-start gap-2.5 text-xs text-foreground-700">
+        <input id="accountTerms" type="checkbox" className="mt-0.5 rounded border-background-300" checked={account.agree} onChange={onChange("agree")} />
+        <span>
+          I agree to the <Link to="/terms" target="_blank" className="font-semibold text-primary-800">Terms</Link> and <Link to="/privacy" target="_blank" className="font-semibold text-primary-800">Privacy Policy</Link>.
+        </span>
+      </label>
+    </section>
   );
 }
 
@@ -308,24 +387,34 @@ export default function AddListingPage() {
   const navigate = useNavigate();
   const { slug: editSlug } = useParams();
   const [searchParams] = useSearchParams();
+  const auth = useAuth();
   const isEditing = Boolean(editSlug);
   const requestedTier = searchParams.get("tier");
   const isOnboarding = !isEditing && searchParams.get("onboarding") === "1";
   const isManagingPlan = isEditing && searchParams.get("managePlan") === "1";
   const isManagingBookings = isEditing && searchParams.get("manageBookings") === "1";
+  const previewStep = import.meta.env.DEV ? Number(searchParams.get("previewStep")) : 0;
 
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(previewStep >= 1 && previewStep <= 4 ? previewStep : 1);
   const [form, setForm] = useState(() => {
     const savedDraft = isOnboarding ? getListingOnboardingDraft() : null;
     return {
-      ...initialForm,
+      ...(previewStep ? demoForm : initialForm),
       ...(savedDraft || {}),
       tier:
         requestedTier === "free" || requestedTier === "classified"
           ? requestedTier
-          : savedDraft?.tier || initialForm.tier,
+          : savedDraft?.tier || (previewStep ? demoForm.tier : initialForm.tier),
     };
   });
+  const [account, setAccount] = useState(() => ({
+    name: previewStep ? "James Local Fruits" : "",
+    email: previewStep ? "owner@jameslocalfruits.dm" : "",
+    password: previewStep ? "Preview123!" : "",
+    confirmPassword: previewStep ? "Preview123!" : "",
+    agree: Boolean(previewStep),
+  }));
+  const [accountCreated, setAccountCreated] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
@@ -464,10 +553,9 @@ export default function AddListingPage() {
             // Public listing data still contains enabled/price/duration;
             // only the private meeting URL is unavailable if this fails.
           });
-        // Normal edits start on Business Info. The Seller Center plan action
-        // opens the existing review step directly, where both plan cards are
-        // visible and the owner can upgrade or downgrade without hunting.
-        setStep(isManagingPlan ? 4 : isManagingBookings ? 3 : 2);
+        // Normal edits start on the combined plan and listing-information step.
+        // Seller Center shortcuts still open the matching relocated section.
+        setStep(isManagingPlan ? 3 : isManagingBookings ? 2 : 1);
       })
       .catch(() => {
         if (!cancelled) setLoadError("Couldn't load this listing.");
@@ -481,7 +569,7 @@ export default function AddListingPage() {
   }, [isEditing, editSlug, isManagingBookings, isManagingPlan]);
 
   useEffect(() => {
-    if (!isManagingBookings || loadingExisting || step !== 3) return;
+    if (!isManagingBookings || loadingExisting || step !== 2) return;
     const frame = window.requestAnimationFrame(() => {
       document.getElementById("booking-settings")?.scrollIntoView({
         behavior: "smooth",
@@ -494,6 +582,7 @@ export default function AddListingPage() {
   const handleSubmit = async () => {
     setSubmitError(null);
     const missingBusinessFields = [
+      [form.tier, "Listing plan"],
       [form.businessName.trim(), "Listing name"],
       [findIndustry(form.category), "Industry"],
       [form.priceTier, "Price tier"],
@@ -504,14 +593,31 @@ export default function AddListingPage() {
       .filter(([value]) => !value)
       .map(([, label]) => label);
     if (missingBusinessFields.length) {
-      setStep(2);
+      setStep(1);
       setSubmitError(`Complete all required fields: ${missingBusinessFields.join(", ")}.`);
       return;
     }
     if (!hasValidEmail(form.email)) {
-      setStep(3);
+      setStep(2);
       setSubmitError("Enter a valid email address.");
       return;
+    }
+    if (!isEditing && !auth.isAuthenticated && !accountCreated) {
+      if (!account.name.trim() || !hasValidEmail(account.email)) {
+        setStep(1);
+        setSubmitError("Enter your account name and a valid account email.");
+        return;
+      }
+      if (account.password.length < 8 || account.password !== account.confirmPassword) {
+        setStep(1);
+        setSubmitError("Use a password of at least 8 characters and confirm it correctly.");
+        return;
+      }
+      if (!account.agree) {
+        setStep(1);
+        setSubmitError("Accept the Terms and Privacy Policy to create your account.");
+        return;
+      }
     }
     setSubmitting(true);
     try {
@@ -528,10 +634,20 @@ export default function AddListingPage() {
         setSubmitted(true);
         return;
       }
+      if (!auth.isAuthenticated && !accountCreated) {
+        await register({
+          name: account.name.trim(),
+          email: account.email.trim(),
+          password: account.password,
+          accountType: "business",
+        });
+        requireListingOnboarding();
+        setAccountCreated(true);
+      }
       const result = await submitListing(form);
       if (result?.id) {
         setListingId(result.id);
-        if (isOnboarding) completeListingOnboarding();
+        completeListingOnboarding();
       }
       if (form.tier === "classified" && result?.id) {
         setPendingPayment({ listingId: result.id });
@@ -620,31 +736,62 @@ export default function AddListingPage() {
     event.target.value = "";
   };
 
+  const updateAccount = (field) => (e) =>
+    setAccount((current) => ({
+      ...current,
+      [field]: e.target.type === "checkbox" ? e.target.checked : e.target.value,
+    }));
+
   const canContinue = () => {
     // Description is required — it's the part of a listing that actually
     // sells the business, and an empty one makes the profile look abandoned.
     // Degree level and degree type are optional: plenty of trades and shops
     // have no academic qualification to give, and demanding one would either
     // block them or invite junk data.
-    if (step === 2)
-      return (
+    if (step === 1) {
+      const businessIsComplete =
+        form.tier &&
         form.businessName.trim() &&
         form.category &&
         form.priceTier &&
         form.description.trim() &&
         hasValidRequiredYears(form.yearsExperience) &&
-        form.location.trim()
-      );
-    if (step === 3)
+        form.location.trim();
+      const accountIsComplete =
+        isEditing ||
+        auth.isAuthenticated ||
+        accountCreated ||
+        (account.name.trim() &&
+          hasValidEmail(account.email) &&
+          account.password.length >= 8 &&
+          account.password === account.confirmPassword &&
+          account.agree);
+      return businessIsComplete && accountIsComplete;
+    }
+    if (step === 2)
       return hasValidEmail(form.email) && !coverPhotoError && hasCompletePayoutDetails(form);
     return true;
   };
 
   const missingRequiredFieldIds = () => {
-    if (step === 2) {
-      return missingBusinessRequiredFieldIds(form);
+    if (step === 1) {
+      const accountFields =
+        isEditing || auth.isAuthenticated || accountCreated
+          ? []
+          : [
+              !account.name.trim() && "accountName",
+              !hasValidEmail(account.email) && "accountEmail",
+              account.password.length < 8 && "accountPassword",
+              account.password !== account.confirmPassword && "accountConfirmPassword",
+              !account.agree && "accountTerms",
+            ].filter(Boolean);
+      return [
+        !form.tier && "listingTier",
+        ...accountFields,
+        ...missingBusinessRequiredFieldIds(form),
+      ].filter(Boolean);
     }
-    if (step === 3) {
+    if (step === 2) {
       return [
         !hasValidEmail(form.email) && "contactEmail",
         coverPhotoError && "coverPhoto",
@@ -667,10 +814,10 @@ export default function AddListingPage() {
     }
     setRequiredAttentionStep(null);
     setSubmitError(null);
-    setStep((s) => Math.min(5, s + 1));
+    setStep((s) => Math.min(4, s + 1));
   };
-  const goBack = () => setStep((s) => Math.max(isEditing ? 2 : 1, s - 1));
-  const showBusinessRequiredErrors = requiredAttentionStep === 2;
+  const goBack = () => setStep((s) => Math.max(1, s - 1));
+  const showBusinessRequiredErrors = requiredAttentionStep === 1;
   const industryIsMissing = !findIndustry(form.category);
 
   if (isEditing && loadingExisting) {
@@ -753,7 +900,7 @@ export default function AddListingPage() {
 
   return (
     <div className="pt-16 md:pt-20">
-      {coverPhotoError && step === 3 && (
+      {coverPhotoError && step === 2 && (
         <div
           role="alert"
           aria-live="assertive"
@@ -775,7 +922,7 @@ export default function AddListingPage() {
         </div>
       )}
       <div className="w-full px-4 md:px-8 lg:px-12 py-6 border-b border-background-200/70 bg-background-50">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           {isOnboarding && (
             <div className="mb-5 rounded-2xl border border-primary-200 bg-primary-50/80 px-4 py-4 sm:px-5">
               <div className="flex items-start gap-3">
@@ -812,41 +959,57 @@ export default function AddListingPage() {
       </div>
 
       <div className="w-full px-4 md:px-8 lg:px-12 py-10">
-        {/* Step 5 (Preview) renders the real ListingProfile component, which
+        {/* Step 4 (Preview) renders the real ListingProfile component, which
             expects the same max-w-7xl grid it gets on the live /listings/:slug
             page. Keeping this wrapper at the wizard's narrower max-w-3xl for
             that step squeezed the cover photo into a much smaller box than it
             actually gets on the live page, so the preview cropped/framed the
             image differently than reality — this wrapper now matches
-            ListingProfile's own width on step 5 only, every other step keeps
+            ListingProfile's own width on step 4 only, every other step keeps
             the narrower column that suits a form. */}
-        <div className={step === 5 ? "max-w-7xl mx-auto" : step === 1 ? "max-w-4xl mx-auto" : "max-w-3xl mx-auto"}>
+        <div className={step === 4 ? "max-w-7xl mx-auto" : step === 1 ? "max-w-4xl mx-auto" : "max-w-3xl mx-auto"}>
           {step === 1 && (
-            <div>
+            <section className="mb-6 rounded-3xl border border-background-200/80 bg-background-50/80 p-6 shadow-[0_18px_50px_rgba(49,77,62,0.07)] md:p-8">
               <h1 className="font-heading text-3xl md:text-4xl font-light text-foreground-950 mb-3">
-                Choose a Listing Plan to <span className="text-accent-500 italic">Complete Your Profile</span>
+                {!isEditing && !auth.isAuthenticated && !accountCreated
+                  ? "Create your account"
+                  : "Choose your plan"}{" "}
+                <span className="text-accent-500 italic">& add your business</span>
               </h1>
               <p className="text-sm text-foreground-600 font-label mb-10">
-                Free listings are a great way to get started. Upgrade to Classified anytime for
-                premium placement and tools.
+                Complete your account, select a plan, and add the information customers will see.
+              </p>
+              {!isEditing && !auth.isAuthenticated && !accountCreated && (
+                <OwnerAccountPanel account={account} onChange={updateAccount} />
+              )}
+              <div id="listingTier" tabIndex="-1" className="mt-10 flex flex-wrap items-center gap-3 scroll-mt-28">
+                <h2 className="font-heading text-2xl font-light text-foreground-950">
+                  Choose your <span className="text-accent-500 italic">listing plan</span>
+                </h2>
+                <span className="rounded-full bg-accent-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-accent-700">
+                  Required
+                </span>
+              </div>
+              <p className="mb-5 mt-2 text-sm text-foreground-600 font-label">
+                Select Free Listing or Classified to continue. Expand either plan to compare every feature.
               </p>
               <ListingTierCards
+                compact
                 selectedTier={form.tier}
                 onSelect={(tier) => {
                   noteListingStarted();
                   setForm((f) => ({ ...f, tier }));
                 }}
-                scale={0.7}
-                className="mx-auto max-w-4xl"
+                className="mx-auto max-w-3xl gap-4"
               />
-            </div>
+            </section>
           )}
 
-          {step === 2 && (
-            <div>
-              <h1 className="font-heading text-3xl md:text-4xl font-light text-foreground-950 mb-3">
-                Describe Your <span className="text-accent-500 italic">Listing</span>
-              </h1>
+          {step === 1 && (
+            <section className="rounded-3xl border border-background-200/80 bg-background-50/80 p-6 shadow-[0_18px_50px_rgba(49,77,62,0.07)] md:p-8">
+              <h2 className="font-heading text-2xl md:text-3xl font-light text-foreground-950 mb-3">
+                Listing <span className="text-accent-500 italic">Information</span>
+              </h2>
               <p className="text-sm text-foreground-600 font-label mb-10">
                 This is what shows up on your profile card and in search results.
               </p>
@@ -1022,10 +1185,10 @@ export default function AddListingPage() {
                   />
                 </FormField>
               </div>
-            </div>
+            </section>
           )}
 
-          {step === 3 && (
+          {step === 2 && (
             <div>
               <h1 className="font-heading text-3xl md:text-4xl font-light text-foreground-950 mb-3">
                 Contact <span className="text-accent-500 italic">& media</span>
@@ -1528,13 +1691,13 @@ export default function AddListingPage() {
             </div>
           )}
 
-          {step === 4 && (
+          {step === 3 && (
             <div>
               <h1 className="font-heading text-3xl md:text-4xl font-light text-foreground-950 mb-3">
-                Review <span className="text-accent-500 italic">& submit</span>
+                Review <span className="text-accent-500 italic">your listing</span>
               </h1>
               <p className="text-sm text-foreground-600 font-label mb-10">
-                Double-check everything looks right before you publish.
+                Double-check everything looks right before opening the final profile preview.
               </p>
               <div className="rounded-2xl border border-background-200/70 bg-background-100/40 p-6 space-y-5">
                 {/* Tier is changeable right here at the end. Previously it was
@@ -1672,7 +1835,7 @@ export default function AddListingPage() {
             </div>
           )}
 
-          {step === 5 && (
+          {step === 4 && (
             <div>
               <h1 className="font-heading text-3xl md:text-4xl font-light text-foreground-950 mb-3">
                 Preview <span className="text-accent-500 italic">your listing</span>
@@ -1685,16 +1848,16 @@ export default function AddListingPage() {
               {/* Cancels this page's own px-4 md:px-8 lg:px-12 padding so
                   ListingProfile gets the exact same available width here as
                   it does on the real /listings/:slug page — see the wrapper
-                  comment above for why step 5 alone uses max-w-7xl. */}
+                  comment above for why step 4 alone uses max-w-7xl. */}
               <div className="rounded-2xl border border-background-200/70 bg-background-50 overflow-hidden -mx-4 md:-mx-8 lg:-mx-12">
                 <ListingProfile data={buildPreviewData(form)} isPreview />
               </div>
             </div>
           )}
 
-          {step === 5 && !isLiveApi && <DemoModeNotice className="mt-6" />}
+          {step === 4 && !isLiveApi && <DemoModeNotice className="mt-6" />}
 
-          {step === 5 && form.sellProducts && !isEditing && (
+          {step === 4 && form.sellProducts && !isEditing && (
             <div className="mt-6 flex items-start gap-3 rounded-2xl border border-primary-200 bg-primary-50/80 px-4 py-4 sm:px-5">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-background-50">
                 <i className="ri-store-2-line" aria-hidden="true" />
@@ -1726,7 +1889,7 @@ export default function AddListingPage() {
             >
               Back
             </Button>
-            {step < 5 ? (
+            {step < 4 ? (
               <Button
                 type="button"
                 variant="primary"

@@ -154,33 +154,58 @@ function CompactTierCard({ planKey, selected, onSelect }) {
   const isClassified = planKey === "classified";
 
   return (
-    <button
-      type="button"
-      onClick={() => onSelect?.(planKey)}
-      aria-pressed={selected}
-      className={`relative overflow-hidden rounded-2xl border bg-background-50 p-4 text-left text-foreground-950 transition-all ${
+    <article
+      className={`relative overflow-hidden rounded-2xl border bg-white/90 p-5 text-left text-foreground-950 transition-all duration-200 ${
         isClassified ? "border-accent-300" : "border-background-300"
-      } ${selected ? "ring-3 ring-accent-300" : "hover:-translate-y-0.5 hover:shadow-md"}`}
+      } ${selected ? "-translate-y-0.5 border-primary-500 shadow-[0_12px_28px_rgba(23,84,55,0.14)] ring-2 ring-primary-200" : "hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md"}`}
     >
-      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-900">
-        {plan.eyebrow}
+      <button
+        type="button"
+        onClick={() => onSelect?.(planKey)}
+        aria-pressed={selected}
+        className="block w-full cursor-pointer text-left"
+      >
+        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-900">
+          {plan.eyebrow}
+        </span>
+        <span className="mt-2 flex items-end justify-between gap-3">
+          <span>
+            <span className="block font-heading text-xl font-semibold text-primary-950">{plan.title}</span>
+            <span className="mt-1 block text-xs text-foreground-600">{plan.description}</span>
+          </span>
+          <span className="shrink-0 text-right">
+            <span className="block font-heading text-2xl text-primary-950">{plan.price}</span>
+            <span className="block text-[10px] text-foreground-500">{plan.cadence}</span>
+          </span>
+        </span>
+      </button>
+      <span
+        aria-hidden="true"
+        className={`absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors ${
+          selected
+            ? "border-primary-700 bg-primary-700 text-white shadow-sm"
+            : "border-background-400 bg-white text-transparent"
+        }`}
+      >
+        <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="m3 8 3 3 7-7" />
+        </svg>
       </span>
-      <span className="mt-2 flex items-end justify-between gap-3">
-        <span>
-          <span className="block font-heading text-xl font-semibold text-primary-950">{plan.title}</span>
-          <span className="mt-1 block text-xs text-foreground-600">{plan.description}</span>
-        </span>
-        <span className="shrink-0 text-right">
-          <span className="block font-heading text-2xl text-primary-950">{plan.price}</span>
-          <span className="block text-[10px] text-foreground-500">{plan.cadence}</span>
-        </span>
-      </span>
-      {selected && (
-        <span className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-accent-500 text-white">
-          <i className="ri-check-line" aria-hidden="true" />
-        </span>
-      )}
-    </button>
+      <details className="group mt-3 border-t border-background-200 pt-3">
+        <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-semibold text-primary-800">
+          View plan details
+          <i className="ri-arrow-down-s-line text-base transition-transform group-open:rotate-180" />
+        </summary>
+        <ul className="mt-3 space-y-2">
+          {plan.features.map(([icon, label]) => (
+            <li key={label} className="flex items-center gap-2 text-[11px] text-foreground-700">
+              <i className={`${icon} text-sm text-primary-800`} aria-hidden="true" />
+              <span>{label}</span>
+            </li>
+          ))}
+        </ul>
+      </details>
+    </article>
   );
 }
 
