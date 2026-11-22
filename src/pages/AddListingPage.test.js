@@ -1,10 +1,25 @@
 import { describe, expect, it } from "vitest";
 import {
+  contactEmailForNextStep,
   missingBusinessRequiredFieldIds,
   savedBookingSelection,
   savedIndustrySelection,
   savedSellProductsSelection,
 } from "./AddListingPage";
+
+describe("contactEmailForNextStep", () => {
+  it("copies the new account email into a blank contact email", () => {
+    expect(contactEmailForNextStep("", "owner@example.com", "")).toBe("owner@example.com");
+  });
+
+  it("uses the authenticated account email when no new account is being created", () => {
+    expect(contactEmailForNextStep("", "", "member@example.com")).toBe("member@example.com");
+  });
+
+  it("preserves an explicitly entered contact email", () => {
+    expect(contactEmailForNextStep("contact@example.com", "owner@example.com", "member@example.com")).toBe("contact@example.com");
+  });
+});
 
 describe("savedIndustrySelection", () => {
   it("prefers the authenticated owner's exact saved industry", () => {
