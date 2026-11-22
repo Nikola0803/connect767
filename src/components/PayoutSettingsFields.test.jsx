@@ -55,7 +55,9 @@ describe("PayoutSettingsFields", () => {
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent(/highlighted banking or digital payment information/i);
-    expect(screen.getByRole("radio", { name: /bank account/i })).toHaveAttribute("aria-invalid", "true");
+    const bankMethod = screen.getByRole("radio", { name: /bank account/i });
+    expect(bankMethod).toHaveAttribute("aria-invalid", "true");
+    expect(bankMethod.closest("label")).toHaveClass("border-red-500");
     expect(screen.getByRole("radio", { name: /digital payment/i })).toHaveAttribute("aria-invalid", "true");
   });
 
@@ -69,6 +71,7 @@ describe("PayoutSettingsFields", () => {
     );
 
     expect(screen.getByLabelText(/account holder name/i)).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText(/account holder name/i)).toHaveClass("ring-red-200");
     expect(screen.getByLabelText(/bank name/i)).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByLabelText(/bank country/i)).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByLabelText(/account number \/ iban/i)).toHaveAttribute("aria-invalid", "true");

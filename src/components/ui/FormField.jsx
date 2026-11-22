@@ -26,7 +26,7 @@ export function FormField({ label, htmlFor, hint, error, required, children }) {
       )}
       {children}
       {hint && !error && <p className="mt-1.5 text-xs text-foreground-500 font-label">{hint}</p>}
-      {error && <p className="mt-1.5 text-xs text-accent-600 font-label">{error}</p>}
+      {error && <p className="mt-1.5 text-xs font-semibold text-red-700 font-label">{error}</p>}
     </div>
   );
 }
@@ -48,7 +48,7 @@ export function Input({ className = "", icon, error, type, ...props }) {
           type={effectiveType}
           className={`${baseFieldClass} ${icon ? "pl-10" : ""} ${
             isPassword ? "pr-10" : ""
-          } ${error ? "border-accent-500" : ""} ${className}`}
+          } ${error ? "border-red-500 ring-4 ring-red-100 shadow-[0_0_0_1px_rgba(220,38,38,0.35),0_6px_18px_rgba(220,38,38,0.1)]" : ""} ${className}`}
           {...props}
         />
         {isPassword && (
@@ -68,7 +68,7 @@ export function Input({ className = "", icon, error, type, ...props }) {
   return (
     <input
       type={type}
-      className={`${baseFieldClass} ${error ? "border-accent-500" : ""} ${className}`}
+      className={`${baseFieldClass} ${error ? "border-red-500 ring-4 ring-red-100 shadow-[0_0_0_1px_rgba(220,38,38,0.35),0_6px_18px_rgba(220,38,38,0.1)]" : ""} ${className}`}
       {...props}
     />
   );
@@ -88,7 +88,7 @@ export function Textarea({ className = "", error, resizable = true, ...props }) 
   return (
     <textarea
       className={`${baseFieldClass} ${resizable ? "resize-y min-h-[80px]" : "resize-none"} ${
-        error ? "border-accent-500" : ""
+        error ? "border-red-500 ring-4 ring-red-100 shadow-[0_0_0_1px_rgba(220,38,38,0.35),0_6px_18px_rgba(220,38,38,0.1)]" : ""
       } ${className}`}
       {...props}
     />
@@ -98,7 +98,7 @@ export function Textarea({ className = "", error, resizable = true, ...props }) 
 export function Select({ className = "", children, error, ...props }) {
   return (
     <select
-      className={`${baseFieldClass} cursor-pointer ${error ? "border-accent-500" : ""} ${className}`}
+      className={`${baseFieldClass} cursor-pointer ${error ? "border-red-500 ring-4 ring-red-100 shadow-[0_0_0_1px_rgba(220,38,38,0.35),0_6px_18px_rgba(220,38,38,0.1)]" : ""} ${className}`}
       {...props}
     >
       {children}

@@ -85,6 +85,11 @@ export function missingBusinessRequiredFieldIds(form) {
 }
 const hasValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
 
+export function contactEmailForNextStep(formEmail, accountEmail, authenticatedEmail) {
+  if (String(formEmail || "").trim()) return formEmail;
+  return String(accountEmail || authenticatedEmail || "").trim();
+}
+
 export function savedSellProductsSelection(publicListing, ownedListings = []) {
   const ownedListing = ownedListings.find(
     (listing) =>
@@ -351,6 +356,10 @@ function StepIndicator({ current }) {
 
 function OwnerAccountPanel({ account, onChange, signInHref, showRequiredErrors = false }) {
   const termsAreMissing = showRequiredErrors && !account.agree;
+  const nameIsMissing = showRequiredErrors && !account.name.trim();
+  const emailIsInvalid = showRequiredErrors && !hasValidEmail(account.email);
+  const passwordIsInvalid = showRequiredErrors && account.password.length < 8;
+  const confirmationIsInvalid = showRequiredErrors && (!account.confirmPassword || account.password !== account.confirmPassword);
 
   return (
     <section className="mt-8 rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-background-50 p-5 shadow-[0_14px_38px_rgba(23,84,55,0.08)] md:p-6">
@@ -366,20 +375,20 @@ function OwnerAccountPanel({ account, onChange, signInHref, showRequiredErrors =
         </div>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormField label="Account name" htmlFor="accountName" required>
-          <Input id="accountName" placeholder="Personal or business name" value={account.name} onChange={onChange("name")} required />
+        <FormField label="Account name" htmlFor="accountName" required error={nameIsMissing ? "Enter an account name." : ""}>
+          <Input id="accountName" placeholder="Personal or business name" value={account.name} onChange={onChange("name")} error={nameIsMissing} aria-invalid={nameIsMissing || undefined} required />
         </FormField>
-        <FormField label="Account email" htmlFor="accountEmail" required>
-          <Input id="accountEmail" type="email" placeholder="owner@email.com" value={account.email} onChange={onChange("email")} required />
+        <FormField label="Account email" htmlFor="accountEmail" required error={emailIsInvalid ? "Enter a valid email address." : ""}>
+          <Input id="accountEmail" type="email" placeholder="owner@email.com" value={account.email} onChange={onChange("email")} error={emailIsInvalid} aria-invalid={emailIsInvalid || undefined} required />
         </FormField>
-        <FormField label="Password" htmlFor="accountPassword" hint="At least 8 characters" required>
-          <Input id="accountPassword" type="password" placeholder="••••••••" minLength={8} value={account.password} onChange={onChange("password")} required />
+        <FormField label="Password" htmlFor="accountPassword" hint="At least 8 characters" required error={passwordIsInvalid ? "Use at least 8 characters." : ""}>
+          <Input id="accountPassword" type="password" placeholder="••••••••" minLength={8} value={account.password} onChange={onChange("password")} error={passwordIsInvalid} aria-invalid={passwordIsInvalid || undefined} required />
         </FormField>
-        <FormField label="Confirm password" htmlFor="accountConfirmPassword" required>
-          <Input id="accountConfirmPassword" type="password" placeholder="••••••••" minLength={8} value={account.confirmPassword} onChange={onChange("confirmPassword")} required />
+        <FormField label="Confirm password" htmlFor="accountConfirmPassword" required error={confirmationIsInvalid ? "Passwords must match." : ""}>
+          <Input id="accountConfirmPassword" type="password" placeholder="••••••••" minLength={8} value={account.confirmPassword} onChange={onChange("confirmPassword")} error={confirmationIsInvalid} aria-invalid={confirmationIsInvalid || undefined} required />
         </FormField>
       </div>
-      <label className={`mt-4 flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2.5 text-xs transition-colors ${termsAreMissing ? "border-red-400 bg-red-50 text-red-800 ring-2 ring-red-100" : "border-transparent text-foreground-700"}`}>
+      <label className={`mt-4 flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2.5 text-xs transition-all ${termsAreMissing ? "border-2 border-red-500 bg-red-50 text-red-900 ring-4 ring-red-200 shadow-[0_0_0_6px_rgba(254,202,202,0.45),0_10px_24px_rgba(220,38,38,0.12)]" : "border-transparent text-foreground-700"}`}>
         <input id="accountTerms" type="checkbox" className={`mt-0.5 rounded ${termsAreMissing ? "border-red-500 accent-red-600" : "border-background-300"}`} checked={account.agree} onChange={onChange("agree")} aria-invalid={termsAreMissing || undefined} aria-describedby={termsAreMissing ? "accountTermsError" : undefined} />
         <span>
           I agree to the <Link to="/terms" target="_blank" className="font-semibold text-primary-800">Terms</Link> and <Link to="/privacy" target="_blank" className="font-semibold text-primary-800">Privacy Policy</Link>.
@@ -791,7 +800,7 @@ export default function AddListingPage() {
               !account.name.trim() && "accountName",
               !hasValidEmail(account.email) && "accountEmail",
               account.password.length < 8 && "accountPassword",
-              account.password !== account.confirmPassword && "accountConfirmPassword",
+              (!account.confirmPassword || account.password !== account.confirmPassword) && "accountConfirmPassword",
               !account.agree && "accountTerms",
             ].filter(Boolean);
       return [
@@ -824,11 +833,19 @@ export default function AddListingPage() {
     }
     setRequiredAttentionStep(null);
     setSubmitError(null);
+    if (step === 1 && !form.email.trim()) {
+      const contactEmail = contactEmailForNextStep(form.email, account.email, auth.email);
+      if (contactEmail) {
+        setForm((current) => ({ ...current, email: contactEmail }));
+      }
+    }
     setStep((s) => Math.min(4, s + 1));
   };
   const goBack = () => setStep((s) => Math.max(1, s - 1));
   const showBusinessRequiredErrors = requiredAttentionStep === 1;
   const showPayoutRequiredErrors = requiredAttentionStep === 2;
+  const planIsMissing = showBusinessRequiredErrors && !form.tier;
+  const contactEmailIsInvalid = requiredAttentionStep === 2 && !hasValidEmail(form.email);
   const industryIsMissing = !findIndustry(form.category);
 
   if (isEditing && loadingExisting) {
@@ -1004,15 +1021,22 @@ export default function AddListingPage() {
               <p className="mb-5 mt-2 text-sm text-foreground-600 font-label">
                 Select Free Listing or Classified to continue. Expand either plan to compare every feature.
               </p>
-              <ListingTierCards
-                compact
-                selectedTier={form.tier}
-                onSelect={(tier) => {
-                  noteListingStarted();
-                  setForm((f) => ({ ...f, tier }));
-                }}
-                className="mx-auto max-w-3xl gap-4"
-              />
+              <div className={`rounded-2xl transition-all ${planIsMissing ? "border-2 border-red-500 bg-red-50/40 p-3 ring-4 ring-red-200 shadow-[0_0_0_7px_rgba(254,202,202,0.45),0_16px_36px_rgba(220,38,38,0.14)]" : ""}`}>
+                <ListingTierCards
+                  compact
+                  selectedTier={form.tier}
+                  onSelect={(tier) => {
+                    noteListingStarted();
+                    setForm((f) => ({ ...f, tier }));
+                  }}
+                  className="mx-auto max-w-3xl gap-4"
+                />
+              </div>
+              {planIsMissing && (
+                <p role="alert" className="mt-3 flex items-center gap-2 text-sm font-semibold text-red-700">
+                  <i className="ri-error-warning-fill" aria-hidden="true" /> Select a listing plan before continuing.
+                </p>
+              )}
             </section>
           )}
 
@@ -1078,7 +1102,7 @@ export default function AddListingPage() {
                     <div
                       id="priceTier"
                       tabIndex={showBusinessRequiredErrors && !form.priceTier ? -1 : undefined}
-                      className={`flex gap-2 rounded-xl ${showBusinessRequiredErrors && !form.priceTier ? "ring-4 ring-red-100" : ""}`}
+                      className={`flex gap-2 rounded-xl transition-all ${showBusinessRequiredErrors && !form.priceTier ? "border-2 border-red-500 bg-red-50/50 p-2 ring-4 ring-red-200 shadow-[0_0_0_6px_rgba(254,202,202,0.45),0_10px_24px_rgba(220,38,38,0.12)]" : ""}`}
                     >
                       {priceChoices.map((p) => (
                         <button
@@ -1217,13 +1241,15 @@ export default function AddListingPage() {
                       onChange={update("phone")}
                     />
                   </FormField>
-                  <FormField label="Email" htmlFor="contactEmail" required>
+                  <FormField label="Email" htmlFor="contactEmail" required error={contactEmailIsInvalid ? "Enter a valid contact email address." : ""}>
                     <Input
                       id="contactEmail"
                       placeholder="hello@yourbusiness.com"
                       type="email"
                       value={form.email}
                       onChange={update("email")}
+                      error={contactEmailIsInvalid}
+                      aria-invalid={contactEmailIsInvalid || undefined}
                       required
                     />
                   </FormField>
@@ -1898,9 +1924,9 @@ export default function AddListingPage() {
           )}
 
           {submitError && (
-            <div className="mt-6 px-4 py-3 rounded-lg bg-accent-50 border border-accent-200 text-sm text-accent-700 flex items-start gap-2">
-              <i className="ri-error-warning-line mt-0.5" />
-              {submitError}
+            <div role="alert" className="mt-6 flex items-start gap-2 rounded-lg border-2 border-red-400 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800 shadow-[0_0_0_5px_rgba(254,202,202,0.35)]">
+              <i className="ri-error-warning-fill mt-0.5 text-red-600" aria-hidden="true" />
+              <span>{submitError}</span>
             </div>
           )}
 
