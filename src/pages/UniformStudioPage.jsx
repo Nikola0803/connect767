@@ -561,6 +561,7 @@ export default function UniformStudioPage() {
   const [placementError, setPlacementError] = useState("");
   const [draftSaveStatus, setDraftSaveStatus] = useState("idle");
   const [designSecurityContext, setDesignSecurityContext] = useState(null);
+  const [aiPanelToolbarTarget, setAiPanelToolbarTarget] = useState(null);
   useEffect(() => {
     const concept = aiWorkspaceConcept;
     if (!designSecurityContext?.authenticated || !concept?.projectFileId || concept.backgroundBranding !== "connect767-embossed-v1") return;
@@ -2373,6 +2374,11 @@ export default function UniformStudioPage() {
               {/* Docked fields panel */}
               <aside className={`studio-fields-panel ${workflowStep.key !== "design" ? "is-order" : ""} hidden w-full flex-shrink-0 flex-col overflow-hidden border-l border-black/10 bg-[#f7f5ef] md:flex ${(activeTool === "ai" || workflowStep.key === "category") ? "md:w-[340px] md:max-w-[340px] lg:w-[380px] lg:max-w-[380px] 2xl:w-[410px] 2xl:max-w-[410px]" : "max-w-[420px]"}`} aria-label={(activeTool === "ai" || workflowStep.key === "category") ? "AI prompt chat" : undefined}>
                 <div className="studio-sheet-heading"><strong>{activeTool === "ai" ? "AI designer" : activeToolConfig?.label}</strong><button type="button" aria-label="Minimize design panel" onClick={() => setMobilePanel("")}><i className="ri-arrow-down-s-line" /></button></div>
+                {activeTool === "ai" && workflowStep.key === "design" && (
+                  <div className="flex flex-shrink-0 items-center justify-start border-b border-background-200 bg-white px-3 py-2">
+                    <div ref={setAiPanelToolbarTarget} className="relative shrink-0" aria-label="AI prompt tools" />
+                  </div>
+                )}
                 {activeTool !== "ai" && workflowStep.key !== "category" && <div className={`flex-shrink-0 border-b border-black/[0.07] bg-[#f7f5ef]/95 backdrop-blur-xl ${activeTool === "design" ? "px-4 py-3" : "px-5 py-4"}`}>
                   <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary-700">Step {workflowStep.step} · {workflowStep.label}</p>
                   <div className="mt-1 flex items-center justify-between gap-3">
@@ -2407,6 +2413,7 @@ export default function UniformStudioPage() {
                     onOpenBackgroundRemoval={() => setActiveTool("remove-bg")}
                     onSecurityContextChange={setDesignSecurityContext}
                     onCompleteOrder={continueWorkflow}
+                    toolbarTarget={aiPanelToolbarTarget}
                     hasExistingArtwork={layers.some(
                       (layer) => ["text", "logo", "clipart"].includes(layer.type) && !layer.source?.startsWith("ai-uniform"),
                     )}
