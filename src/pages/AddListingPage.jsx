@@ -345,7 +345,7 @@ function StepIndicator({ current }) {
   );
 }
 
-function OwnerAccountPanel({ account, onChange }) {
+function OwnerAccountPanel({ account, onChange, signInHref }) {
   return (
     <section className="mt-8 rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-background-50 p-5 shadow-[0_14px_38px_rgba(23,84,55,0.08)] md:p-6">
       <div className="mb-5 flex items-start gap-3">
@@ -379,6 +379,12 @@ function OwnerAccountPanel({ account, onChange }) {
           I agree to the <Link to="/terms" target="_blank" className="font-semibold text-primary-800">Terms</Link> and <Link to="/privacy" target="_blank" className="font-semibold text-primary-800">Privacy Policy</Link>.
         </span>
       </label>
+      <p className="mt-5 border-t border-primary-200/80 pt-4 text-center text-sm text-foreground-600">
+        Already have an account?{" "}
+        <Link to={signInHref} className="font-semibold text-primary-800 transition hover:text-primary-950 hover:underline">
+          Sign in
+        </Link>
+      </p>
     </section>
   );
 }
@@ -390,6 +396,8 @@ export default function AddListingPage() {
   const auth = useAuth();
   const isEditing = Boolean(editSlug);
   const requestedTier = searchParams.get("tier");
+  const submitQuery = searchParams.toString();
+  const signInHref = `/auth/login?redirect=${encodeURIComponent(`/listings/submit${submitQuery ? `?${submitQuery}` : ""}`)}`;
   const isOnboarding = !isEditing && searchParams.get("onboarding") === "1";
   const isManagingPlan = isEditing && searchParams.get("managePlan") === "1";
   const isManagingBookings = isEditing && searchParams.get("manageBookings") === "1";
@@ -922,7 +930,7 @@ export default function AddListingPage() {
         </div>
       )}
       <div className="w-full px-4 md:px-8 lg:px-12 py-6 border-b border-background-200/70 bg-background-50">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           {isOnboarding && (
             <div className="mb-5 rounded-2xl border border-primary-200 bg-primary-50/80 px-4 py-4 sm:px-5">
               <div className="flex items-start gap-3">
@@ -980,7 +988,7 @@ export default function AddListingPage() {
                 Complete your account, select a plan, and add the information customers will see.
               </p>
               {!isEditing && !auth.isAuthenticated && !accountCreated && (
-                <OwnerAccountPanel account={account} onChange={updateAccount} />
+                <OwnerAccountPanel account={account} onChange={updateAccount} signInHref={signInHref} />
               )}
               <div id="listingTier" tabIndex="-1" className="mt-10 flex flex-wrap items-center gap-3 scroll-mt-28">
                 <h2 className="font-heading text-2xl font-light text-foreground-950">
