@@ -3,7 +3,7 @@
  * Plugin Name: Connect767 CMS
  * Plugin URI: https://connect767.com
  * Description: Content management, REST API, auth, and WooCommerce checkout bridge for the Connect767 headless React frontend. Registers the Listing and Uniform Template custom post types, exposes the connect767/v1 REST namespace (auth, AI matching, listing submissions, uniform quotes, headless checkout), and includes a one-click sample content importer matching the frontend's local fixture data.
- * Version: 2.3.5
+ * Version: 2.4.0
  * Author: Connect767
  * Text Domain: connect767-cms
  * Requires PHP: 7.4
@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
     exit; // No direct access.
 }
 
-define('C767_VERSION', '2.3.5');
+define('C767_VERSION', '2.4.0');
 define('C767_PLUGIN_FILE', __FILE__);
 define('C767_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('C767_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -121,6 +121,7 @@ function c767_require_includes()
         'includes/class-rest-vendor-products.php',
         'includes/class-admin-dashboard.php',
         'includes/class-marketing-growth.php',
+        'includes/class-marketing-strategy.php',
         'includes/class-listing-review.php',
         'includes/class-notifications.php',
         'includes/class-importer.php',
@@ -168,6 +169,7 @@ function c767_init_plugin()
     C767_Rest_Vendor_Products::init();
     C767_Admin_Dashboard::init();
     C767_Marketing_Growth::init();
+    C767_Marketing_Strategy::init();
     C767_Listing_Review::init();
     C767_Notifications::init();
     C767_Importer::init();
@@ -188,6 +190,7 @@ function c767_activate()
     C767_Social_Database::install();
     C767_Design_Studio_Security::install();
     C767_Marketing_Growth::install();
+    C767_Marketing_Strategy::install();
     flush_rewrite_rules();
 }
 register_activation_hook(__FILE__, 'c767_activate');
