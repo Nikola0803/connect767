@@ -19,6 +19,13 @@ const INVALID_SESSION_CODES = new Set([
   "c767_user_not_found",
 ]);
 
+export function clearInvalidSession(status, payload, token = getStoredToken()) {
+  if (status === 401 && token && INVALID_SESSION_CODES.has(payload?.code)) {
+    setStoredUser(null);
+    setStoredToken(null);
+  }
+}
+
 async function request(url, options = {}) {
   const token = getStoredToken();
   let designGuestToken = "";
@@ -51,10 +58,7 @@ async function request(url, options = {}) {
     // An expired/revoked JWT must not leave the interface looking signed in.
     // Only clear an existing session; expected 401s from a failed login have
     // no stored token and therefore do not emit a misleading logout event.
-    if (res.status === 401 && token && INVALID_SESSION_CODES.has(payload?.code)) {
-      setStoredUser(null);
-      setStoredToken(null);
-    }
+    clearInvalidSession(res.status, payload, token);
     throw new ApiError(payload?.message || res.statusText, res.status, payload);
   }
   if (invalidJson) {

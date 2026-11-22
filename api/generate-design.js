@@ -302,6 +302,10 @@ export default async function handler(req, res) {
     if (settlesLogicalRequest) await settleAIRequest(req, { requestId, successful: false });
     const timedOut = error?.name === "AbortError";
     console.error("generate-design error", { requestId, timedOut, message: error?.message });
+    if (error?.payload) {
+      const security = securityErrorResponse(error, requestId);
+      return responseJson(res, security.status, security.payload);
+    }
     return responseJson(res, timedOut ? 504 : 500, {
       error: timedOut ? "AI generation timed out. Please try again." : "AI generation failed unexpectedly.",
       requestId,

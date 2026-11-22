@@ -1,11 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { initializeDesignSecurity } from "./designSecurity";
 vi.mock("./config", () => ({ config: { customApiUrl: "https://studio.test/api" } }));
-vi.mock("./apiClient", () => ({ getStoredUser: () => null, getStoredToken: () => "" }));
 const response = (payload, ok = true, status = 200) => ({ ok, status, json: async () => payload });
 beforeEach(() => { localStorage.clear(); vi.stubGlobal("fetch", vi.fn()); });
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 describe("studio usage initialization", () => {
+  it("clears an expired account session so the studio can show sign-in actions", async () => {
+    localStorage.setItem("c767_auth_token", "expired-test-token");
+    localStorage.setItem("c767_auth_user", JSON.stringify({ id: 7 }));
+    fetch.mockResolvedValue(response({ code: "c767_expired_token", message: "Session expired" }, false, 401));
+    await expect(initializeDesignSecurity({ sport: "soccer" })).rejects.toThrow("Session expired");
+    expect(localStorage.getItem("c767_auth_token")).toBeNull();
+    expect(localStorage.getItem("c767_auth_user")).toBeNull();
+  });
   it("reads guest limits from the backend without creating an authenticated project", async () => {
     fetch.mockResolvedValue(response({ authenticated: false, limit: 3, remaining: 2, guestToken: "test-guest" }));
     expect(await initializeDesignSecurity({ sport: "soccer" })).toMatchObject({ limit: 3, remaining: 2, projectId: "", accountRequired: true, downloadUnlocked: false });

@@ -25,6 +25,7 @@ import {
   sportModelUrl,
 } from "../data/uniforms";
 import MobileStudioNavigation from "../components/uniform-studio/MobileStudioNavigation";
+import StudioAccountMenu from "../components/uniform-studio/StudioAccountMenu";
 import useStudioViewport from "../components/uniform-studio/useStudioViewport";
 import useDesignHistory from "../components/uniform-studio/useDesignHistory";
 import Header from "../components/Header";
@@ -358,7 +359,6 @@ export default function UniformStudioPage() {
   const [view, setView] = useState("front");
   const { shellRef, compact, keyboardOpen } = useStudioViewport();
   const [mobilePanel, setMobilePanel] = useState("");
-  const [aiToolbarTarget, setAiToolbarTarget] = useState(null);
   useEffect(() => {
     if (!mobilePanel && document.activeElement?.closest?.(".studio-fields-panel, .studio-order-setup")) document.activeElement.blur?.();
   }, [mobilePanel]);
@@ -2062,9 +2062,9 @@ export default function UniformStudioPage() {
           </span>
         </div>
         <div className="studio-header-actions flex min-w-0 items-center gap-2 overflow-visible">
+          <StudioAccountMenu verified={designSecurityContext?.authenticated === true} />
           {workflowStep.key === "design" && <>
             <div className="studio-view-actions">{renderCanvasControls()}</div>
-            <div ref={setAiToolbarTarget} className="studio-ai-tools-target" aria-label="AI prompt tools" />
           </>}
           {headerCapabilities.aiDesigner && (
             <button
@@ -2405,7 +2405,7 @@ export default function UniformStudioPage() {
                             </div>
                           </ProductionViewport>
                         </div>
-                        <div data-testid="ai-workspace-empty-caption" className="shrink-0 px-3 py-2 text-center text-[11px] text-foreground-700"><h2 className="font-semibold">Your Design Will Appear Here</h2><p>AI-generated example · open AI to create your uniform.</p></div>
+                        <div data-testid="ai-workspace-empty-caption" className="shrink-0 px-3 py-2 text-center text-[11px] text-foreground-700"><h2 className="font-semibold">Your Design Will Appear Here</h2></div>
                       </div>
                     )}
 
@@ -2425,8 +2425,6 @@ export default function UniformStudioPage() {
                 <div className="min-h-0 flex-1 flex-col" style={{ display: activeTool === "ai" ? "flex" : "none" }}>
                   <AIArtworkPanel
                     allowFileActions={false}
-                    toolbarTarget={aiToolbarTarget}
-                    onOpenTools={openAIDesigner}
                     key={designPromptSessionKey}
                     sport={sports.find((item) => item.slug === activeSport)?.label || "Team sport"}
                     templateName={template?.name}
