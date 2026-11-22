@@ -53,7 +53,7 @@ function EmptyConversation({ dark, mode }) {
     <div className="ai-empty-conversation mx-auto flex h-full w-full max-w-sm items-center justify-center px-6 py-10 text-center">
       <div className="w-full">
         <img src={AI_COMMAND_LOGO_SRC} alt="Connect767 AI" className="mx-auto h-10 w-14 object-contain opacity-60 grayscale-[20%]" />
-        <span className={`mt-4 block text-[8px] font-bold uppercase tracking-[0.22em] ${dark ? "text-primary-200/80" : "text-primary-700"}`}>AI Design Studio</span>
+        <span className={`mt-4 block text-[8px] font-bold uppercase tracking-[0.22em] ${dark ? "text-primary-200/80" : "text-primary-700"}`}>Design Studio</span>
         <h3 className={`mt-2 font-heading text-xl font-semibold leading-tight ${dark ? "text-white" : "text-foreground-950"}`}>{modeCopy.title}</h3>
         <p className={`mx-auto mt-3 max-w-xs text-[10px] leading-relaxed ${dark ? "text-white/55" : "text-foreground-500"}`}>
           {modeCopy.description}
@@ -259,17 +259,17 @@ export default function AIUniformComposer({
             setToolsOpen(false);
             setSettingsOpen(false);
           }}
-          className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-white/10 px-2.5 text-[8px] font-bold text-white/80 transition hover:bg-white/10 hover:text-white"
-          aria-label="AI tools"
+          className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-primary-600 bg-primary-700 px-3 text-[9px] font-bold text-white shadow-[0_6px_16px_rgba(0,116,73,.18)] transition hover:border-primary-500 hover:bg-primary-600"
+          aria-label="Tools"
           aria-expanded={toolbarMenuOpen}
           aria-haspopup="menu"
           data-ai-popover-trigger
         >
-          <i className="ri-tools-line text-[10px]" /><span>AI tools</span><i className="ri-arrow-down-s-line" />
+          <i className="ri-tools-line text-[11px]" /><span>Tools</span><i className="ri-arrow-down-s-line" />
         </button>
         {toolbarMenuOpen && (
-          <div className="absolute left-0 top-[calc(100%+.4rem)] z-50 grid w-56 gap-1 rounded-xl border border-background-200 bg-white p-2 text-foreground-950 shadow-2xl" data-ai-popover role="menu" aria-label="AI prompt tools menu">
-            <div className="flex items-center justify-between border-b border-background-200 px-3 pb-2 text-xs font-bold xl:hidden"><span>AI tools</span><button type="button" aria-label="Close AI tools" onClick={() => setToolbarMenuOpen(false)} className="grid h-9 w-9 place-items-center rounded-lg hover:bg-background-100"><i className="ri-close-line text-lg" /></button></div>
+          <div className="absolute right-0 top-[calc(100%+.4rem)] z-50 grid w-56 gap-1 rounded-xl border border-background-200 bg-white p-2 text-foreground-950 shadow-2xl" data-ai-popover role="menu" aria-label="AI prompt tools menu">
+            <div className="flex items-center justify-between border-b border-background-200 px-3 pb-2 text-xs font-bold xl:hidden"><span>Tools</span><button type="button" aria-label="Close Tools" onClick={() => setToolbarMenuOpen(false)} className="grid h-9 w-9 place-items-center rounded-lg hover:bg-background-100"><i className="ri-close-line text-lg" /></button></div>
             <button type="button" onClick={() => { setToolbarMenuOpen(false); setHistoryOpen(true); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className="ri-history-line text-sm" /> History</button>
             <button type="button" onClick={() => { setToolbarMenuOpen(false); fileInputRef.current?.click(); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold hover:bg-background-100" role="menuitem"><i className="ri-image-add-line text-sm" /> Reference</button>
             <button type="button" onClick={() => { setToolbarMenuOpen(false); focusCommandPrompt(); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-[9px] font-semibold text-primary-800 hover:bg-primary-50" role="menuitem"><i className="ri-magic-line text-sm" /> Refine with AI</button>
