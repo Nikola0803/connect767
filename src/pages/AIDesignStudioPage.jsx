@@ -217,7 +217,7 @@ export default function AIDesignStudioPage() {
           Back
         </Link>
         <p className="text-xs font-label font-semibold uppercase tracking-widest text-foreground-500">
-          AI Design Studio
+          Design Studio
         </p>
         <div className={`inline-flex items-center gap-1.5 text-[10px] font-label ${connection.configured ? "text-primary-700" : "text-foreground-400"}`}>
           <span className={`w-2 h-2 rounded-full ${connection.configured ? "bg-primary-500" : "bg-background-300"}`} />

@@ -248,10 +248,12 @@ describe("required uniform fit selection", () => {
     expect(screen.getByLabelText("Custom studio background color")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Close studio settings" }));
     expect(header.queryByRole("button", { name: "Open uniform and order setup" })).not.toBeInTheDocument();
-    const promptTools = within(screen.getAllByLabelText("AI prompt tools")[0]);
+    const aiPanel = screen.getByRole("complementary", { name: "AI prompt chat" });
+    expect(within(aiPanel).queryByRole("heading", { name: "Design Studio" })).not.toBeInTheDocument();
+    const promptTools = within(within(aiPanel).getByLabelText("AI prompt tools"));
     expect(promptTools.queryByRole("button", { name: "New design" })).not.toBeInTheDocument();
-    expect(promptTools.getByRole("button", { name: "AI tools" })).toBeVisible();
-    fireEvent.click(promptTools.getByRole("button", { name: "AI tools" }));
+    expect(promptTools.getByRole("button", { name: "Tools" })).toHaveClass("bg-primary-700");
+    fireEvent.click(promptTools.getByRole("button", { name: "Tools" }));
     const promptMenu = screen.getByRole("menu", { name: "AI prompt tools menu" });
     expect(within(promptMenu).getByRole("menuitem", { name: "History" })).toBeVisible();
     expect(within(promptMenu).getByRole("menuitem", { name: "Reference" })).toBeVisible();
