@@ -43,7 +43,7 @@ export default function Hero() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-foreground-950/60 via-foreground-950/35 to-foreground-950/70" />
       </div>
-      <div className="relative z-10 w-full translate-y-6 px-4 pb-16 pt-20 sm:translate-y-14 md:translate-y-28 md:px-8 md:pb-12 md:pt-20 lg:px-12">
+      <div className="relative z-10 w-full translate-y-16 px-4 pb-16 pt-20 sm:translate-y-14 md:translate-y-28 md:px-8 md:pb-12 md:pt-20 lg:px-12">
         <div className="w-full max-w-7xl mx-auto text-center">
           <h1 className="whitespace-nowrap font-heading text-background-50 text-[clamp(1.2rem,6.2vw,2.05rem)] sm:text-[clamp(2.05rem,4.15vw,4.05rem)] font-semibold leading-[0.98] tracking-[-0.045em] sm:tracking-[-0.035em]">
             Dominica’s <span className="italic text-accent-400">Online Directory</span>
@@ -97,15 +97,18 @@ export default function Hero() {
               </div>
             </div>
           </form>
-          <div className="-mx-1 mt-4 flex snap-x snap-mandatory flex-nowrap items-center justify-start gap-1 overflow-x-auto px-1 pb-1 text-[11px] font-semibold text-background-50/85 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:justify-center sm:overflow-visible sm:px-0 sm:pb-0">
-            <Link to="/listings?tier=Classified" className="inline-flex shrink-0 snap-start items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 transition-colors hover:bg-background-50/15 hover:text-background-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300">
-              <i className="ri-award-line text-accent-300" aria-hidden="true" /> Classified Listings
+          <div className="mt-4 grid grid-cols-3 items-center gap-1 text-[9px] font-semibold text-background-50/85 sm:flex sm:flex-wrap sm:justify-center sm:text-[11px]">
+            <Link to="/listings?tier=Classified" className="inline-flex min-w-0 items-center justify-center gap-1 rounded-full px-1 py-2 text-center leading-tight transition-colors hover:bg-background-50/15 hover:text-background-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300 sm:shrink-0 sm:gap-1.5 sm:whitespace-nowrap sm:px-3">
+              <i className="ri-award-line shrink-0 text-accent-300" aria-hidden="true" />
+              <span className="sm:hidden">Classified</span><span className="hidden sm:inline">Classified Listings</span>
             </Link>
-            <Link to="/listings?booking=true" className="inline-flex shrink-0 snap-start items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 transition-colors hover:bg-background-50/15 hover:text-background-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300">
-              <i className="ri-calendar-check-line text-accent-300" aria-hidden="true" /> Book Rentals &amp; Services
+            <Link to="/listings?booking=true" className="inline-flex min-w-0 items-center justify-center gap-1 rounded-full px-1 py-2 text-center leading-tight transition-colors hover:bg-background-50/15 hover:text-background-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300 sm:shrink-0 sm:gap-1.5 sm:whitespace-nowrap sm:px-3">
+              <i className="ri-calendar-check-line shrink-0 text-accent-300" aria-hidden="true" />
+              <span className="sm:hidden">Book Services</span><span className="hidden sm:inline">Book Rentals &amp; Services</span>
             </Link>
-            <Link to="/listings/submit?tier=free" className="inline-flex shrink-0 snap-start items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 transition-colors hover:bg-background-50/15 hover:text-background-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300">
-              <i className="ri-add-circle-line text-accent-300" aria-hidden="true" /> Create Your Free Listing
+            <Link to="/listings/submit?tier=free" className="inline-flex min-w-0 items-center justify-center gap-1 rounded-full px-1 py-2 text-center leading-tight transition-colors hover:bg-background-50/15 hover:text-background-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300 sm:shrink-0 sm:gap-1.5 sm:whitespace-nowrap sm:px-3">
+              <i className="ri-add-circle-line shrink-0 text-accent-300" aria-hidden="true" />
+              <span className="sm:hidden">Free Listing</span><span className="hidden sm:inline">Create Your Free Listing</span>
             </Link>
           </div>
         </div>
