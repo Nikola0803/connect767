@@ -345,7 +345,9 @@ function StepIndicator({ current }) {
   );
 }
 
-function OwnerAccountPanel({ account, onChange, signInHref }) {
+function OwnerAccountPanel({ account, onChange, signInHref, showRequiredErrors = false }) {
+  const termsAreMissing = showRequiredErrors && !account.agree;
+
   return (
     <section className="mt-8 rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-background-50 p-5 shadow-[0_14px_38px_rgba(23,84,55,0.08)] md:p-6">
       <div className="mb-5 flex items-start gap-3">
@@ -373,10 +375,11 @@ function OwnerAccountPanel({ account, onChange, signInHref }) {
           <Input id="accountConfirmPassword" type="password" placeholder="••••••••" minLength={8} value={account.confirmPassword} onChange={onChange("confirmPassword")} required />
         </FormField>
       </div>
-      <label className="mt-4 flex cursor-pointer items-start gap-2.5 text-xs text-foreground-700">
-        <input id="accountTerms" type="checkbox" className="mt-0.5 rounded border-background-300" checked={account.agree} onChange={onChange("agree")} />
+      <label className={`mt-4 flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2.5 text-xs transition-colors ${termsAreMissing ? "border-red-400 bg-red-50 text-red-800 ring-2 ring-red-100" : "border-transparent text-foreground-700"}`}>
+        <input id="accountTerms" type="checkbox" className={`mt-0.5 rounded ${termsAreMissing ? "border-red-500 accent-red-600" : "border-background-300"}`} checked={account.agree} onChange={onChange("agree")} aria-invalid={termsAreMissing || undefined} aria-describedby={termsAreMissing ? "accountTermsError" : undefined} />
         <span>
           I agree to the <Link to="/terms" target="_blank" className="font-semibold text-primary-800">Terms</Link> and <Link to="/privacy" target="_blank" className="font-semibold text-primary-800">Privacy Policy</Link>.
+          {termsAreMissing && <span id="accountTermsError" className="ml-1 font-semibold text-red-700">Required to continue.</span>}
         </span>
       </label>
       <p className="mt-5 border-t border-primary-200/80 pt-4 text-center text-sm text-foreground-600">
@@ -982,7 +985,7 @@ export default function AddListingPage() {
                 Complete your account, select a plan, and add the information customers will see.
               </p>
               {!isEditing && !auth.isAuthenticated && !accountCreated && (
-                <OwnerAccountPanel account={account} onChange={updateAccount} signInHref={signInHref} />
+                <OwnerAccountPanel account={account} onChange={updateAccount} signInHref={signInHref} showRequiredErrors={showBusinessRequiredErrors} />
               )}
               <div id="listingTier" tabIndex="-1" className="mt-10 flex flex-wrap items-center gap-3 scroll-mt-28">
                 <h2 className="font-heading text-2xl font-light text-foreground-950">
