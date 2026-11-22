@@ -880,6 +880,34 @@ class C767_REST_Listings
         if (!self::resolve_category_term($values['category'])) {
             return new WP_Error('c767_invalid_category', 'Choose a valid industry from the listing form.', ['status' => 400]);
         }
+        $location_parts = array_values(array_filter(
+            array_map('trim', explode(',', $values['location'])),
+            static function ($part) {
+                return $part !== '';
+            }
+        ));
+        if (count($location_parts) < 3) {
+            return new WP_Error(
+                'c767_incomplete_location',
+                'Enter a city, county/state/parish, and country.',
+                ['status' => 400]
+            );
+        }
+        $location_city = $location_parts[0];
+        $location_country = $location_parts[count($location_parts) - 1];
+        $location_region = implode(', ', array_slice($location_parts, 1, -1));
+        foreach ([$location_city, $location_region, $location_country] as $location_part) {
+            if (mb_strlen($location_part) < 2 || !preg_match('/[\p{L}]/u', $location_part)) {
+                return new WP_Error(
+                    'c767_incomplete_location',
+                    'Enter a valid city, county/state/parish, and country.',
+                    ['status' => 400]
+                );
+            }
+        }
+        $values['location_city'] = $location_city;
+        $values['location_region'] = $location_region;
+        $values['location_country'] = $location_country;
         return $values;
     }
 
@@ -938,6 +966,9 @@ class C767_REST_Listings
             'price_tier' => $required['price_tier'],
             'description' => $required['description'],
             'location_display' => $location,
+            'location_city' => $required['location_city'],
+            'location_region' => $required['location_region'],
+            'location_country' => $required['location_country'],
             'phone' => sanitize_text_field((string) $request->get_param('phone')),
             'email' => $required['email'],
             'website' => esc_url_raw((string) $request->get_param('website')),
@@ -1044,6 +1075,9 @@ class C767_REST_Listings
             'sell_products' => filter_var($request->get_param('sellProducts'), FILTER_VALIDATE_BOOLEAN) ? '1' : '0',
             'description' => $required['description'],
             'location_display' => $location,
+            'location_city' => $required['location_city'],
+            'location_region' => $required['location_region'],
+            'location_country' => $required['location_country'],
             'phone' => sanitize_text_field((string) $request->get_param('phone')),
             'email' => $required['email'],
             'website' => esc_url_raw((string) $request->get_param('website')),

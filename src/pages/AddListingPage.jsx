@@ -73,6 +73,24 @@ const steps = [
 const priceChoices = ["$", "$$", "$$$"];
 const hasValidRequiredYears = (value) => /^\d+$/.test(String(value)) && Number(value) <= 80;
 
+export function listingLocationParts(value) {
+  const parts = String(value || "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length < 3) return null;
+
+  const city = parts[0];
+  const country = parts[parts.length - 1];
+  const region = parts.slice(1, -1).join(", ");
+  const validPart = (part) => part.length >= 2 && /[\p{L}]/u.test(part);
+  return validPart(city) && validPart(region) && validPart(country)
+    ? { city, region, country }
+    : null;
+}
+
+export const hasCompleteListingLocation = (value) => Boolean(listingLocationParts(value));
+
 export function missingBusinessRequiredFieldIds(form) {
   return [
     !String(form.businessName || "").trim() && "businessName",
@@ -80,7 +98,7 @@ export function missingBusinessRequiredFieldIds(form) {
     !form.priceTier && "priceTier",
     !hasValidRequiredYears(form.yearsExperience) && "yearsExperience",
     !String(form.description || "").trim() && "description",
-    !String(form.location || "").trim() && "location",
+    !hasCompleteListingLocation(form.location) && "location",
   ].filter(Boolean);
 }
 const hasValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
@@ -181,7 +199,7 @@ const demoForm = {
   description: "Locally grown organic foods at affordable prices.",
   tags: "farm-to-table, organic, local produce",
   amenities: "Delivery, Pickup",
-  location: "Roseau, Dominica",
+  location: "Roseau, Saint George Parish, Dominica",
   education: "Professional Certificate",
   degreeType: "Food Safety & Hospitality",
   yearsExperience: "25",
@@ -612,7 +630,7 @@ export default function AddListingPage() {
       [form.priceTier, "Price tier"],
       [form.description.trim(), "Description"],
       [hasValidRequiredYears(form.yearsExperience), "Years of experience (0–80)"],
-      [form.location.trim(), "Location"],
+      [hasCompleteListingLocation(form.location), "Location (city, county/state/parish, country)"],
     ]
       .filter(([value]) => !value)
       .map(([, label]) => label);
@@ -847,6 +865,7 @@ export default function AddListingPage() {
   const planIsMissing = showBusinessRequiredErrors && !form.tier;
   const contactEmailIsInvalid = requiredAttentionStep === 2 && !hasValidEmail(form.email);
   const industryIsMissing = !findIndustry(form.category);
+  const locationIsIncomplete = !hasCompleteListingLocation(form.location);
 
   if (isEditing && loadingExisting) {
     return <Spinner className="pt-16 md:pt-20 min-h-[60vh]" />;
@@ -1207,15 +1226,16 @@ export default function AddListingPage() {
                   label="Location"
                   htmlFor="location"
                   required
-                  error={showBusinessRequiredErrors && !form.location.trim() ? "Enter a location." : ""}
+                  hint="Required format: City, county/state/parish, country"
+                  error={showBusinessRequiredErrors && locationIsIncomplete ? "Enter a city, county/state/parish, and country." : ""}
                 >
                   <Input
                     id="location"
-                    placeholder="e.g. Roseau, Dominica"
+                    placeholder="e.g. Roseau, Saint George Parish, Dominica"
                     value={form.location}
                     onChange={update("location")}
-                    error={showBusinessRequiredErrors && !form.location.trim()}
-                    aria-invalid={showBusinessRequiredErrors && !form.location.trim()}
+                    error={showBusinessRequiredErrors && locationIsIncomplete}
+                    aria-invalid={showBusinessRequiredErrors && locationIsIncomplete}
                     required
                   />
                 </FormField>

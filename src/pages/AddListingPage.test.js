@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   contactEmailForNextStep,
+  hasCompleteListingLocation,
+  listingLocationParts,
   missingBusinessRequiredFieldIds,
   savedBookingSelection,
   savedIndustrySelection,
@@ -65,9 +67,38 @@ describe("missingBusinessRequiredFieldIds", () => {
         priceTier: "$$",
         yearsExperience: "7",
         description: "Accounting services",
-        location: "Roseau, Dominica",
+        location: "Roseau, Saint George Parish, Dominica",
       }),
     ).toEqual([]);
+  });
+
+  it("rejects a country-only or city-and-country location", () => {
+    const required = {
+      businessName: "Island Accounting",
+      category: "accounting-and-bookkeeping",
+      priceTier: "$$",
+      yearsExperience: "7",
+      description: "Accounting services",
+    };
+
+    expect(missingBusinessRequiredFieldIds({ ...required, location: "United States" })).toContain("location");
+    expect(missingBusinessRequiredFieldIds({ ...required, location: "Roseau, Dominica" })).toContain("location");
+  });
+});
+
+describe("listing location validation", () => {
+  it("requires city, county/state/parish, and country", () => {
+    expect(hasCompleteListingLocation("United States")).toBe(false);
+    expect(hasCompleteListingLocation("Houston, United States")).toBe(false);
+    expect(hasCompleteListingLocation("Houston, Harris County, United States")).toBe(true);
+  });
+
+  it("preserves additional regional detail between city and country", () => {
+    expect(listingLocationParts("Houston, Harris County, Texas, United States")).toEqual({
+      city: "Houston",
+      region: "Harris County, Texas",
+      country: "United States",
+    });
   });
 });
 
