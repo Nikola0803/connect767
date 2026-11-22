@@ -45,6 +45,10 @@ describe("required uniform fit selection", () => {
     }));
     openStudio();
     expect(screen.getByRole("img", { name: /Saved team kit complete/ })).toHaveAttribute("src", src);
+    expect(screen.getByTestId("protected-design-preview")).toHaveAttribute("data-protected-design-preview", "true");
+    expect(screen.getByTestId("protected-design-watermark")).toBeVisible();
+    fireEvent.keyDown(document, { key: "PrintScreen" });
+    expect(screen.getByTestId("capture-shield")).toHaveTextContent("Screen capture, copying and printing are disabled");
     expect(JSON.parse(window.localStorage.getItem("c767:studio:soccer:blank-canvas")).aiWorkspaceConcept.src).toBe(src);
     expect(screen.queryByRole("combobox", { name: "Editable garment tools" })).not.toBeInTheDocument();
   });
