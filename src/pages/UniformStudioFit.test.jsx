@@ -88,17 +88,17 @@ describe("required uniform fit selection", () => {
     expect(screen.getAllByRole("textbox", { name: "Message Connect767 AI" })[0]).toBeVisible();
   });
 
-  it("offers two clear AI and ready-made entry paths before the three-step studio", () => {
+  it("keeps the existing AI Studio tile and adds the ready-made entry path", () => {
     render(<MemoryRouter initialEntries={["/uniforms"]}><CartProvider><UniformStudioPage /></CartProvider></MemoryRouter>);
 
-    const entry = screen.getByRole("button", { name: "Design with AI" });
+    const entry = screen.getByRole("button", { name: "Start Designing" });
     expect(screen.getByTestId("uniform-entry-page")).toHaveClass("min-h-[100dvh]");
     expect(screen.queryByRole("link", { name: "Back to site" })).not.toBeInTheDocument();
     expect(entry).toBeVisible();
     expect(screen.getByRole("button", { name: "Browse Ready-Made Designs" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Start from Scratch" })).not.toBeInTheDocument();
     const categoryImages = screen.getAllByTestId("studio-cover-category");
-    expect(categoryImages).toHaveLength(4);
+    expect(categoryImages).toHaveLength(6);
     categoryImages.forEach((image) => {
       expect(image).toHaveClass("object-contain");
     });
