@@ -4,6 +4,7 @@ import { Input, Select } from "./ui/FormField";
 import CollarAttachment from "./uniform-studio/CollarAttachment";
 
 const sizes = ["XS", "S", "M", "L", "XL", "2XL", "3XL"];
+const fitTypes = ["Men", "Women", "Youth"];
 const sockCategories = new Set(["soccer", "goalkeeper"]);
 export const SUPPORTER_JERSEY_PRICE = 15;
 export const EXTRA_SOCK_PRICE = 5;
@@ -41,6 +42,7 @@ export function readyMadeExtrasStatus(items = [], extras = {}, roster = []) {
     : 0;
   const longSleeveQuantity = rosterLongSleeveQuantity + supporterLongSleeveQuantity;
   const insideCollarEnabled = Boolean(extras.insideCollarEnabled);
+  const fitValid = fitTypes.includes(extras.fitType);
   const insideCollarValid = !insideCollarEnabled || Boolean(
     String(extras.insideCollarMessage || "").trim() || extras.insideCollarAttachment?.src,
   );
@@ -50,6 +52,7 @@ export function readyMadeExtrasStatus(items = [], extras = {}, roster = []) {
   const insideCollarTotal = insideCollarEnabled ? kitQuantity * INSIDE_COLLAR_PRICE : 0;
   return {
     kitQuantity,
+    fitValid,
     requiredSocks,
     socksQuantity,
     extraSocks,
@@ -120,7 +123,7 @@ export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, extr
 
   const continueToReview = () => {
     setAttempted(true);
-    if (status.valid && extrasStatus.socksValid && extrasStatus.insideCollarValid) onContinue();
+    if (status.valid && extrasStatus.fitValid && extrasStatus.socksValid && extrasStatus.insideCollarValid) onContinue();
   };
 
   const updateSupporterRow = (index, field, value) => setExtras((current) => ({
@@ -141,6 +144,16 @@ export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, extr
             <span className={requirement.valid ? "font-bold text-primary-700" : "font-semibold text-foreground-600"}>{requirement.assigned} / {requirement.required}</span>
           </div>
         ))}
+      </div>
+
+      <div className={`mt-5 rounded-2xl border bg-white p-4 ${attempted && !extrasStatus.fitValid ? "border-accent-400 ring-2 ring-accent-100" : "border-background-200"}`}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span className="flex items-center gap-2 text-sm font-semibold text-foreground-900">Fit Type <span className="rounded-full bg-accent-50 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-accent-700">Required</span></span>
+          <div role="group" aria-label="Fit type (required)" className="flex flex-wrap gap-2">
+            {fitTypes.map((fitType) => <button key={fitType} type="button" aria-pressed={extras.fitType === fitType} onClick={() => setExtras((current) => ({ ...current, fitType }))} className={`rounded-lg border px-3 py-2 text-xs font-semibold ${extras.fitType === fitType ? "border-primary-600 bg-primary-600 text-white" : "border-background-300 bg-background-50 text-foreground-800"}`}>{fitType}</button>)}
+          </div>
+        </div>
+        {attempted && !extrasStatus.fitValid && <p role="alert" className="mt-2 text-xs font-semibold text-accent-800">Select a fit type before continuing.</p>}
       </div>
 
       <section aria-labelledby="ready-made-production-extras" className="mt-5 overflow-hidden rounded-2xl border-2 border-primary-500 bg-white">
@@ -257,7 +270,7 @@ export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, extr
         </div>
       )}
 
-      {attempted && (!status.valid || !extrasStatus.socksValid || !extrasStatus.insideCollarValid) && <p role="alert" className="mt-3 rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-900">Complete every required roster, production option and sock quantity shown above before continuing.</p>}
+      {attempted && (!status.valid || !extrasStatus.fitValid || !extrasStatus.socksValid || !extrasStatus.insideCollarValid) && <p role="alert" className="mt-3 rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-900">Complete the required fit, roster, production options and sock quantity shown above before continuing.</p>}
       <Button type="button" variant="primary" size="lg" className="mt-5 w-full" onClick={continueToReview}>Continue to Review &amp; Checkout</Button>
     </section>
   );

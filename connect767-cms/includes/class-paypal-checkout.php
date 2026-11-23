@@ -166,6 +166,7 @@ class C767_PayPal_Checkout
         $order = C767_WooCommerce::build_pending_order($items, (string) $request->get_param('email'), $shipping, false, [
             'readyMadeRoster' => (array) $request->get_param('readyMadeRoster'),
             'readyMadeExtras' => (array) $request->get_param('readyMadeExtras'),
+            'readyMadeOrderContact' => (array) $request->get_param('readyMadeOrderContact'),
         ]);
         if (is_wp_error($order)) {
             return $order;
