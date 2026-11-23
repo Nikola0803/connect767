@@ -342,7 +342,7 @@ function StepIndicator({ current }) {
           ))}
         </div>
       </div>
-      <ol className="hidden items-center rounded-2xl border border-background-200/80 bg-background-50/80 p-2 shadow-sm lg:flex">
+      <ol className="mx-auto hidden w-fit max-w-full items-center rounded-2xl border border-background-200/80 bg-background-50/80 p-2 shadow-sm lg:flex">
         {steps.map((step, i) => {
           const isCurrent = step.n === current;
           const isComplete = step.n < current;
