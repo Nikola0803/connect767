@@ -1090,14 +1090,11 @@ export default function AddListingPage() {
           {step === 2 && (
             <section className="rounded-2xl border border-background-200/80 bg-background-50/80 p-4 shadow-[0_18px_50px_rgba(49,77,62,0.07)] sm:rounded-3xl sm:p-6 md:p-8">
               <h1 className="mb-2 font-heading text-2xl font-light leading-tight text-foreground-950 sm:mb-3 sm:text-3xl md:text-4xl">
-                Tell us about your <span className="text-accent-500 italic">business</span>
+                Tell us about your <span className="text-accent-500 italic">listing</span>
               </h1>
               <p className="mb-6 text-xs text-foreground-600 font-label sm:mb-8 sm:text-sm">
                 Add the details customers need.
               </p>
-              <h2 className="mb-5 font-heading text-xl font-medium text-primary-900 sm:text-2xl">
-                Business essentials
-              </h2>
               <div className="space-y-4 sm:space-y-5">
                 <FormField
                   label="Listing Name"
