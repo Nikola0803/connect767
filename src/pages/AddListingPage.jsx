@@ -78,13 +78,13 @@ export function listingLocationParts(value) {
     .split(",")
     .map((part) => part.trim())
     .filter(Boolean);
-  if (parts.length < 3) return null;
+  if (parts.length < 2) return null;
 
   const city = parts[0];
   const country = parts[parts.length - 1];
   const region = parts.slice(1, -1).join(", ");
   const validPart = (part) => part.length >= 2 && /[\p{L}]/u.test(part);
-  return validPart(city) && validPart(region) && validPart(country)
+  return validPart(city) && (!region || validPart(region)) && validPart(country)
     ? { city, region, country }
     : null;
 }
@@ -650,7 +650,7 @@ export default function AddListingPage() {
       [form.priceTier, "Price tier"],
       [form.description.trim(), "Description"],
       [hasValidRequiredYears(form.yearsExperience), "Years of experience (0–80)"],
-      [hasCompleteListingLocation(form.location), "Location (city, county/state/parish, country)"],
+      [hasCompleteListingLocation(form.location), "Location (city/state/parish and country)"],
     ]
       .filter(([value]) => !value)
       .map(([, label]) => label);
@@ -1257,12 +1257,12 @@ export default function AddListingPage() {
                   label="Location"
                   htmlFor="location"
                   required
-                  hint="Required format: City, county/state/parish, country"
-                  error={showBusinessRequiredErrors && locationIsIncomplete ? "Enter a city, county/state/parish, and country." : ""}
+                  hint="Required: City/State/Parish and Country"
+                  error={showBusinessRequiredErrors && locationIsIncomplete ? "Enter a city/state/parish and country." : ""}
                 >
                   <Input
                     id="location"
-                    placeholder="e.g. Roseau, Saint George Parish, Dominica"
+                    placeholder="e.g. Roseau, Dominica"
                     value={form.location}
                     onChange={update("location")}
                     error={showBusinessRequiredErrors && locationIsIncomplete}
