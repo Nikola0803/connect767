@@ -82,14 +82,14 @@ describe("missingBusinessRequiredFieldIds", () => {
     };
 
     expect(missingBusinessRequiredFieldIds({ ...required, location: "United States" })).toContain("location");
-    expect(missingBusinessRequiredFieldIds({ ...required, location: "Roseau, Dominica" })).toContain("location");
+    expect(missingBusinessRequiredFieldIds({ ...required, location: "Roseau, Dominica" })).not.toContain("location");
   });
 });
 
 describe("listing location validation", () => {
-  it("requires city, county/state/parish, and country", () => {
+  it("requires city/state/parish and country", () => {
     expect(hasCompleteListingLocation("United States")).toBe(false);
-    expect(hasCompleteListingLocation("Houston, United States")).toBe(false);
+    expect(hasCompleteListingLocation("Houston, United States")).toBe(true);
     expect(hasCompleteListingLocation("Houston, Harris County, United States")).toBe(true);
   });
 
