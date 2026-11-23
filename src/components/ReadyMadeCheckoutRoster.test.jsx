@@ -84,4 +84,10 @@ describe("ready-made checkout roster", () => {
       ],
     });
   });
+
+  it("requires one of the supported ready-made fit types", () => {
+    expect(readyMadeExtrasStatus(items, {}).fitValid).toBe(false);
+    expect(readyMadeExtrasStatus(items, { fitType: "Men" }).fitValid).toBe(true);
+    expect(readyMadeExtrasStatus(items, { fitType: "Regular" }).fitValid).toBe(false);
+  });
 });

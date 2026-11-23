@@ -14,7 +14,7 @@ import {
 } from "../data/repository";
 import { isLiveApi } from "../lib/config";
 import Button from "../components/ui/Button";
-import { FormField, Input, Select } from "../components/ui/FormField";
+import { FormField, Input, Select, Textarea } from "../components/ui/FormField";
 import { Spinner } from "../components/ui/States";
 import PaypalButton from "../components/PaypalButton";
 import { readyMadeCartIssues } from "../lib/readyMadeMinimums";
@@ -36,6 +36,7 @@ const emptyShipping = {
   country: "US",
   phone: "",
 };
+const emptyOrderContact = { name: "", email: "", phone: "", club: "", notes: "" };
 
 function getStripe(publishableKey) {
   if (!stripePromise) stripePromise = loadStripe(publishableKey);
@@ -55,6 +56,8 @@ export default function CheckoutPage() {
   const [error, setError] = useState(null);
   const [fallingBack, setFallingBack] = useState(false);
   const [placingLocalOrder, setPlacingLocalOrder] = useState(false);
+  const [useDifferentOrderContact, setUseDifferentOrderContact] = useState(false);
+  const [orderContact, setOrderContact] = useState(emptyOrderContact);
   const [checkoutStep, setCheckoutStep] = useState("roster");
   const [readyMadeRoster, setReadyMadeRoster] = useState(() => {
     try {
@@ -83,11 +86,18 @@ export default function CheckoutPage() {
   const total = productTotal + extrasTotal;
   const readyMadeShippingUnits = items.filter((item) => item.readyMade).reduce((sum, item) => sum + Math.max(0, Number(item.qty) || 0), 0) + extrasStatus.supporterQuantity;
   const readyMadeShippingRate = hasReadyMadeDesigns ? uniformShippingRate(shipping.country, readyMadeShippingUnits) : null;
-  const orderContext = hasReadyMadeDesigns ? { readyMadeRoster, readyMadeExtras: { ...readyMadeExtras, supporterJerseys: extrasStatus.supporterJerseys } } : {};
+  const orderContext = hasReadyMadeDesigns ? {
+    readyMadeRoster,
+    readyMadeExtras: { ...readyMadeExtras, supporterJerseys: extrasStatus.supporterJerseys },
+    readyMadeOrderContact: { enabled: useDifferentOrderContact, ...orderContact },
+  } : {};
   const readyMadeAddressValidation = validateUniformShippingAddress(shipping);
   const addressRegions = uniformAddressRegions(shipping.country);
   const standardShippingComplete = Boolean(shipping.firstName.trim() && shipping.lastName.trim() && shipping.address1.trim() && shipping.city.trim() && (shipping.country !== "US" || (shipping.state.trim() && shipping.postcode.trim())));
-  const shippingComplete = Boolean(email.trim() && (hasReadyMadeDesigns ? readyMadeAddressValidation.valid : standardShippingComplete));
+  const orderContactValid = !useDifferentOrderContact || Boolean(
+    orderContact.name.trim().length > 1 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(orderContact.email.trim()),
+  );
+  const shippingComplete = Boolean(email.trim() && orderContactValid && (hasReadyMadeDesigns ? readyMadeAddressValidation.valid : standardShippingComplete));
 
   const updateShipping = (field) => (event) => {
     const value = event.target.value;
@@ -104,7 +114,7 @@ export default function CheckoutPage() {
       return false;
     }
     if (shippingComplete) return true;
-    setError("Enter your email and complete every required shipping-address field.");
+    setError(useDifferentOrderContact && !orderContactValid ? "Enter the order contact name and a valid email address." : "Enter your email and complete every required shipping-address field.");
     return false;
   };
 
@@ -338,6 +348,25 @@ export default function CheckoutPage() {
                   </FormField>
                 </div>
               </div>
+              {hasReadyMadeDesigns && <>
+                <label className="mt-4 flex cursor-pointer items-center gap-2 rounded-xl border border-background-200 bg-background-50 px-3 py-2.5 text-xs font-semibold text-foreground-800">
+                  <input type="checkbox" checked={useDifferentOrderContact} onChange={(event) => setUseDifferentOrderContact(event.target.checked)} className="h-4 w-4 rounded border-background-300 text-primary-600 focus:ring-primary-500" />
+                  Add Contact Details if Different From Order
+                </label>
+                {useDifferentOrderContact && <div className="mt-3 rounded-2xl border border-background-200 bg-white p-4">
+                  <h3 className="text-sm font-semibold text-foreground-900">Order Contact <span className="text-accent-700">Required</span></h3>
+                  <p className="mb-3 mt-1 text-xs text-foreground-500">We send the receipt, production proof and order updates here.</p>
+                  <div className="space-y-3">
+                    <Input aria-label="Order contact name" placeholder="Contact Name *" value={orderContact.name} onChange={(event) => setOrderContact((current) => ({ ...current, name: event.target.value }))} />
+                    <Input type="email" aria-label="Order contact email address" placeholder="Email Address *" value={orderContact.email} onChange={(event) => setOrderContact((current) => ({ ...current, email: event.target.value }))} />
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <Input aria-label="Order contact phone number" placeholder="Phone" value={orderContact.phone} onChange={(event) => setOrderContact((current) => ({ ...current, phone: event.target.value }))} />
+                      <Input aria-label="Club or team name" placeholder="Club / Team" value={orderContact.club} onChange={(event) => setOrderContact((current) => ({ ...current, club: event.target.value }))} />
+                    </div>
+                    <Textarea rows={2} aria-label="Additional order notes" placeholder="Deadline, delivery destination or production notes…" value={orderContact.notes} onChange={(event) => setOrderContact((current) => ({ ...current, notes: event.target.value }))} />
+                  </div>
+                </div>}
+              </>}
               <p className="mt-4 text-xs text-foreground-500 font-label">
                 {hasReadyMadeDesigns ? "Ready-made uniforms use the same North America and Caribbean shipping rates as the Custom Uniform Studio." : "Shipping is available to U.S. and Dominican addresses."} Carrier labels are created from the completed order in WooCommerce.
               </p>

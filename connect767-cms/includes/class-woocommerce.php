@@ -723,6 +723,11 @@ class C767_WooCommerce
             $order->delete(true);
             return $ready_made_extras;
         }
+        $ready_made_contact = self::validate_ready_made_order_contact((array) ($order_context['readyMadeOrderContact'] ?? []), !empty($ready_made_units));
+        if (is_wp_error($ready_made_contact)) {
+            $order->delete(true);
+            return $ready_made_contact;
+        }
         if (!empty($ready_made_units)) {
             $address_check = C767_Uniform_Checkout::validate_north_american_address($address);
             if (is_wp_error($address_check)) {
@@ -771,6 +776,11 @@ class C767_WooCommerce
             $stored_extras = $ready_made_extras;
             $stored_extras['inside_collar_attachment'] = $collar_attachment ? array_diff_key($collar_attachment, ['src' => true]) : null;
             $order->update_meta_data('_c767_ready_made_extras', wp_json_encode($stored_extras));
+            $order->update_meta_data('Ready-Made Fit Type', $ready_made_extras['fit_type']);
+            if ($ready_made_contact['enabled']) {
+                $order->update_meta_data('_c767_ready_made_order_contact', wp_json_encode($ready_made_contact));
+                $order->add_order_note(sprintf('Order contact: %s <%s>%s', $ready_made_contact['name'], $ready_made_contact['email'], $ready_made_contact['phone'] !== '' ? ' · ' . $ready_made_contact['phone'] : ''), false);
+            }
             if ($ready_made_extras['inside_collar_enabled']) {
                 $order->add_order_note('Inside-collar customization: ' . ($ready_made_extras['inside_collar_message'] !== '' ? $ready_made_extras['inside_collar_message'] : 'Artwork attached'), false);
             }
@@ -778,6 +788,14 @@ class C767_WooCommerce
 
         $billing = $address;
         $billing['email'] = $email;
+        if ($ready_made_contact['enabled']) {
+            $name_parts = preg_split('/\s+/', trim($ready_made_contact['name']), 2);
+            $billing['first_name'] = $name_parts[0] ?? '';
+            $billing['last_name'] = $name_parts[1] ?? '';
+            $billing['email'] = $ready_made_contact['email'];
+            $billing['phone'] = $ready_made_contact['phone'];
+            if ($ready_made_contact['club'] !== '') $billing['company'] = $ready_made_contact['club'];
+        }
         $order->set_address($billing, 'billing');
         $order->set_address($address, 'shipping');
         $order->calculate_totals(false);
@@ -983,7 +1001,12 @@ class C767_WooCommerce
                 'inside_collar_message' => '',
                 'inside_collar_attachment' => null,
                 'inside_collar_total' => 0.00,
+                'fit_type' => '',
             ];
+        }
+        $fit_type = sanitize_text_field((string) ($extras['fitType'] ?? ''));
+        if (!in_array($fit_type, ['Men', 'Women', 'Youth'], true)) {
+            return new WP_Error('c767_ready_made_fit_required', 'Select Men, Women or Youth as the required fit type.', ['status' => 400]);
         }
         $required_socks = (int) (($unit_counts['soccer'] ?? 0) + ($unit_counts['goalkeeper'] ?? 0));
         $socks_quantity = $required_socks > 0 ? max(0, (int) ($extras['socksQuantity'] ?? 0)) : 0;
@@ -1069,6 +1092,28 @@ class C767_WooCommerce
             'inside_collar_message' => $inside_collar_message,
             'inside_collar_attachment' => $inside_collar_attachment,
             'inside_collar_total' => $inside_collar_enabled ? $kit_quantity * 1.00 : 0.00,
+            'fit_type' => $fit_type,
+        ];
+    }
+
+    private static function validate_ready_made_order_contact(array $contact, $required_context)
+    {
+        $enabled = $required_context && rest_sanitize_boolean($contact['enabled'] ?? false);
+        if (!$enabled) {
+            return ['enabled' => false, 'name' => '', 'email' => '', 'phone' => '', 'club' => '', 'notes' => ''];
+        }
+        $name = sanitize_text_field((string) ($contact['name'] ?? ''));
+        $email = sanitize_email((string) ($contact['email'] ?? ''));
+        if (strlen($name) < 2 || !is_email($email)) {
+            return new WP_Error('c767_ready_made_contact_required', 'Enter the order contact name and a valid email address.', ['status' => 400]);
+        }
+        return [
+            'enabled' => true,
+            'name' => $name,
+            'email' => $email,
+            'phone' => sanitize_text_field((string) ($contact['phone'] ?? '')),
+            'club' => sanitize_text_field((string) ($contact['club'] ?? '')),
+            'notes' => sanitize_textarea_field((string) ($contact['notes'] ?? '')),
         ];
     }
 
@@ -1191,6 +1236,7 @@ class C767_WooCommerce
         $order = self::build_pending_order($items, $request->get_param('email'), $shipping, false, [
             'readyMadeRoster' => (array) $request->get_param('readyMadeRoster'),
             'readyMadeExtras' => (array) $request->get_param('readyMadeExtras'),
+            'readyMadeOrderContact' => (array) $request->get_param('readyMadeOrderContact'),
         ]);
         if (is_wp_error($order)) {
             return $order;
@@ -1226,6 +1272,7 @@ class C767_WooCommerce
             [
                 'readyMadeRoster' => (array) $request->get_param('readyMadeRoster'),
                 'readyMadeExtras' => (array) $request->get_param('readyMadeExtras'),
+                'readyMadeOrderContact' => (array) $request->get_param('readyMadeOrderContact'),
             ]
         );
         if (is_wp_error($order)) {
