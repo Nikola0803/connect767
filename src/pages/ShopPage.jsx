@@ -73,8 +73,7 @@ export default function ShopPage() {
             src={readyMadeBannerImage}
             alt=""
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-60 sm:opacity-80 lg:opacity-100"
-            style={{ objectPosition: "68% center" }}
+            className="pointer-events-none absolute inset-0 h-full w-full object-contain object-right opacity-60 sm:opacity-80 lg:opacity-100"
           />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-primary-950 via-primary-950/90 to-primary-950/10 sm:via-primary-950/75 lg:via-primary-950/55" />
         </> : <>
