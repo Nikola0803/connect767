@@ -238,9 +238,27 @@ class C767_Meta_Fields
     public static function uniform_template_fields()
     {
         return [
+            'sport_slug' => ['label' => 'Sport category slug', 'type' => 'string'],
+            'garment_type' => ['label' => 'Garment type', 'type' => 'string'],
             'default_collar' => ['label' => 'Default collar (Crew / V-Neck / Polo)', 'type' => 'string'],
             'default_sleeve' => ['label' => 'Default sleeve (Short / Long / Sleeveless)', 'type' => 'string'],
             'description' => ['label' => 'Description', 'type' => 'string', 'area' => true],
+            'front_asset' => ['label' => 'Public front preview URL (PNG, JPG or WebP)', 'type' => 'string', 'input_type' => 'url'],
+            'back_asset' => ['label' => 'Public back preview URL (PNG, JPG or WebP)', 'type' => 'string', 'input_type' => 'url'],
+            'available_views' => ['label' => 'Available views (one per line: front, back, side)', 'type' => 'array'],
+            'supported_colors' => ['label' => 'Supported colors (one per line)', 'type' => 'array'],
+            'style_tags' => ['label' => 'Design styles (one per line)', 'type' => 'array'],
+            'garment_variations' => ['label' => 'Garment variations (one per line)', 'type' => 'array'],
+            'template_mode' => ['label' => 'Template mode', 'type' => 'string', 'options' => ['ai-preview', 'editable']],
+            'editable_zones' => ['label' => 'Editable garment zones (JSON array)', 'type' => 'array', 'json' => true],
+            'patterns' => ['label' => 'Supported patterns (JSON array)', 'type' => 'array', 'json' => true],
+            'logo_placement_zones' => ['label' => 'Logo placement zones (JSON array)', 'type' => 'array', 'json' => true],
+            'name_number_placement' => ['label' => 'Allow player names and numbers', 'type' => 'boolean'],
+            'mask_asset' => ['label' => 'Verified garment mask URL (required for editable mode)', 'type' => 'string', 'input_type' => 'url'],
+            'featured' => ['label' => 'Featured design', 'type' => 'boolean'],
+            // The source attachment is deliberately excluded from REST. Only
+            // public preview derivatives belong in front_asset/back_asset.
+            'private_source_attachment_id' => ['label' => 'Private source attachment ID (admin only)', 'type' => 'integer', 'public' => false],
         ];
     }
 
@@ -303,7 +321,9 @@ class C767_Meta_Fields
             }
 
             register_post_meta($post_type, $key, [
-                'show_in_rest' => $schema ? ['schema' => $schema] : true,
+                'show_in_rest' => !empty($def['public']) || !array_key_exists('public', $def)
+                    ? ($schema ? ['schema' => $schema] : true)
+                    : false,
                 'single' => true,
                 'type' => $type,
                 'auth_callback' => function () {
@@ -361,7 +381,10 @@ class C767_Meta_Fields
 
         register_rest_field('uniform_template', 'acf', [
             'get_callback' => function ($post) {
-                return self::build_acf_object($post['id'], self::uniform_template_fields());
+                $public_fields = array_filter(self::uniform_template_fields(), function ($field) {
+                    return !array_key_exists('public', $field) || $field['public'];
+                });
+                return self::build_acf_object($post['id'], $public_fields);
             },
         ]);
 
@@ -792,6 +815,44 @@ class C767_Meta_Fields
     public static function save_uniform_template_meta($post_id)
     {
         self::save_fields($post_id, self::uniform_template_fields());
+
+        foreach (['front_asset', 'back_asset', 'mask_asset'] as $asset_key) {
+            $asset_url = esc_url_raw((string) get_post_meta($post_id, $asset_key, true));
+            $path = strtolower((string) wp_parse_url($asset_url, PHP_URL_PATH));
+            if ($asset_url && !preg_match('/\.(png|jpe?g|webp)$/', $path)) {
+                delete_post_meta($post_id, $asset_key);
+                update_post_meta($post_id, 'template_validation_notice', 'Template previews and masks must be PNG, JPG or WebP files.');
+            } elseif ($asset_url) {
+                update_post_meta($post_id, $asset_key, $asset_url);
+            }
+        }
+
+        $source_id = absint(get_post_meta($post_id, 'private_source_attachment_id', true));
+        if ($source_id) {
+            $allowed_source_types = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml', 'application/pdf', 'application/zip'];
+            if (!in_array((string) get_post_mime_type($source_id), $allowed_source_types, true)) {
+                delete_post_meta($post_id, 'private_source_attachment_id');
+                update_post_meta($post_id, 'template_validation_notice', 'Private source files must be PNG, JPG, WebP, SVG, PDF or ZIP.');
+            }
+        }
+
+        // A flat image must never be advertised as manually editable. An
+        // editable template needs both views, at least one structured zone,
+        // and a verified mask. Invalid admin input is safely downgraded to an
+        // AI-only preview while keeping the draft available for correction.
+        if (get_post_meta($post_id, 'template_mode', true) === 'editable') {
+            $views = json_decode((string) get_post_meta($post_id, 'available_views', true), true);
+            $zones = json_decode((string) get_post_meta($post_id, 'editable_zones', true), true);
+            $mask = esc_url_raw((string) get_post_meta($post_id, 'mask_asset', true));
+            $valid = is_array($views) && in_array('front', $views, true) && in_array('back', $views, true)
+                && is_array($zones) && !empty($zones) && $mask !== '';
+            if (!$valid) {
+                update_post_meta($post_id, 'template_mode', 'ai-preview');
+                update_post_meta($post_id, 'template_validation_notice', 'Editable mode requires front/back views, editable zones and a verified mask. Saved as AI preview.');
+            } else {
+                delete_post_meta($post_id, 'template_validation_notice');
+            }
+        }
     }
 
     public static function save_product_type_meta($post_id)

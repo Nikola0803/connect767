@@ -30,6 +30,14 @@ import useStudioViewport from "../components/uniform-studio/useStudioViewport";
 import useDesignHistory from "../components/uniform-studio/useDesignHistory";
 import Header from "../components/Header";
 import { uniformSampleFor } from "../components/uniform-studio/uniformSamples";
+import ReadyMadeGallery from "../components/uniform-studio/ReadyMadeGallery";
+import {
+  TEMPLATE_MODES,
+  bundledReadyMadeTemplates,
+  findReadyMadeTemplate,
+  hasVerifiedEditableData,
+  loadReadyMadeTemplates,
+} from "../data/uniformTemplates";
 import AIUniformSample from "../components/uniform-studio/AIUniformSample";
 import UniformOrderAgreement, { UNIFORM_ORDER_TERMS_VERSION } from "../components/uniform-studio/UniformOrderAgreement";
 import "../components/uniform-studio/mobileStudio.css";
@@ -340,13 +348,16 @@ export default function UniformStudioPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSport = searchParams.get("sport") || "soccer";
   const scratch = searchParams.get("mode") === "scratch";
+  const requestedTemplateSlug = searchParams.get("template");
   const requestedWorkflowStep = searchParams.get("step") || "design";
   const initialWorkflowStep = ["options", "category", "ai"].includes(requestedWorkflowStep) ? "design" : requestedWorkflowStep;
 
   const [activeSport, setActiveSport] = useState(
     sports.some((s) => s.slug === initialSport) ? initialSport : "soccer"
   );
-  const [selectedTemplate, setSelectedTemplate] = useState(scratch ? "blank-canvas" : null);
+  const [selectedTemplate, setSelectedTemplate] = useState(requestedTemplateSlug || (scratch ? "blank-canvas" : null));
+  const [entryView, setEntryView] = useState(searchParams.get("entry") === "gallery" ? "gallery" : "options");
+  const [readyMadeTemplates, setReadyMadeTemplates] = useState(bundledReadyMadeTemplates);
 
   // ---------- Design state ----------
   const [fitType, setFitType] = useState("");
@@ -426,6 +437,14 @@ export default function UniformStudioPage() {
   const [aiDesignerMode, setAiDesignerMode] = useState("uniform");
   const [aiCanvasMode, setAiCanvasMode] = useState("concept");
   const [studioMode, setStudioMode] = useState(STUDIO_MODES.AI_OUTPUT);
+
+  useEffect(() => {
+    let active = true;
+    loadReadyMadeTemplates().then((items) => {
+      if (active) setReadyMadeTemplates(items);
+    });
+    return () => { active = false; };
+  }, []);
   const [conversionError, setConversionError] = useState("");
   const aiConceptViewportRef = useRef(null);
   const [studioSettingsOpen, setStudioSettingsOpen] = useState(false);
@@ -684,7 +703,9 @@ export default function UniformStudioPage() {
     setSupporterJerseys([{ size: "M", quantity: 2 }, { size: "L", quantity: 1 }]);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const template = templates.find((t) => t.slug === selectedTemplate);
+  const template = templates.find((t) => t.slug === selectedTemplate)
+    || readyMadeTemplates.find((t) => t.slug === selectedTemplate);
+  const selectedReadyMadeTemplate = readyMadeTemplates.find((candidate) => candidate.slug === selectedTemplate) || null;
   const selectedLayer = layers.find((l) => l.id === selectedLayerId) || null;
   const sportConfig = sportConfigFor(activeSport);
   useEffect(() => {
@@ -1153,11 +1174,54 @@ export default function UniformStudioPage() {
     restoreSaved(`c767:studio:${sportSlug}:${t.slug}`, sportSlug);
   };
 
+  const customizeReadyMadeTemplate = (readyTemplate) => {
+    const baseTemplate = templates.find((candidate) => candidate.slug === readyTemplate.slug) || readyTemplate;
+    selectTemplate(baseTemplate, readyTemplate.sportSlug, "ai");
+    const editable = hasVerifiedEditableData(readyTemplate);
+    const workingCopyId = `template-${readyTemplate.id}-${Date.now()}`;
+    const workingCopy = {
+      id: workingCopyId,
+      masterTemplateId: readyTemplate.id,
+      templateSlug: readyTemplate.slug,
+      sport: readyTemplate.sportSlug,
+      createdAt: new Date().toISOString(),
+    };
+    window.sessionStorage.setItem("c767:selected-ready-made-template", JSON.stringify(workingCopy));
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      next.set("sport", readyTemplate.sportSlug);
+      next.set("template", readyTemplate.slug);
+      next.set("mode", "template");
+      next.set("step", "design");
+      next.delete("entry");
+      return next;
+    });
+    setCategoryConfirmed(true);
+    setStudioMode(editable ? STUDIO_MODES.EDITABLE : STUDIO_MODES.AI_OUTPUT);
+    if (!editable) {
+      setAiWorkspaceConcept({
+        src: readyTemplate.backAsset || readyTemplate.frontAsset,
+        name: readyTemplate.name,
+        summary: readyTemplate.description,
+        templateMode: TEMPLATE_MODES.AI_PREVIEW,
+        masterTemplateId: readyTemplate.id,
+      });
+      setAiUniformPlan({ name: readyTemplate.name, summary: readyTemplate.description });
+    }
+  };
+
   useEffect(() => {
     if (selectedTemplate || !searchParams.has("sport")) return;
     const initialTemplate = primaryTemplateForSport(activeSport);
     if (initialTemplate) selectTemplate(initialTemplate, activeSport, "ai");
   }, []); // Explicit sport links enter the studio; the bare /uniforms route stays on the landing page.
+
+  useEffect(() => {
+    if (!requestedTemplateSlug) return;
+    const requested = findReadyMadeTemplate(requestedTemplateSlug, readyMadeTemplates);
+    if (!requested || aiWorkspaceConcept?.masterTemplateId === requested.id) return;
+    customizeReadyMadeTemplate(requested);
+  }, [requestedTemplateSlug, readyMadeTemplates]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const changeDesignCategory = (sportSlug) => {
     if (sportSlug === activeSport) {
@@ -1848,6 +1912,17 @@ export default function UniformStudioPage() {
       template: templates.find((candidate) => candidate.sportSlug === sport.slug && candidate.slug !== "blank-canvas"),
     })).filter(({ template }) => Boolean(template));
 
+    if (entryView === "gallery") {
+      return (
+        <div data-testid="uniform-gallery-page" className="min-h-[100dvh] bg-[linear-gradient(145deg,#f8f3e9_0%,#fffdf8_48%,#eef8f1_100%)] pt-16 text-foreground-950 md:pt-20">
+          <Header showQuickNavigation={false} />
+          <main className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-9">
+            <ReadyMadeGallery templates={readyMadeTemplates} onCustomize={customizeReadyMadeTemplate} onBack={() => setEntryView("options")} />
+          </main>
+        </div>
+      );
+    }
+
     return (
       <div data-testid="uniform-entry-page" className="min-h-[100dvh] bg-[linear-gradient(145deg,#f8f3e9_0%,#fffdf8_48%,#eef8f1_100%)] pt-16 text-foreground-950 md:pt-20">
         <Header showQuickNavigation={false} />
@@ -1883,41 +1958,15 @@ export default function UniformStudioPage() {
                 <span className="block font-heading text-base font-semibold leading-snug">Design Your Kit</span>
               </div>
             </div>
-            <button
-              type="button"
-              aria-label="Start Designing"
-              onClick={() => selectTemplate(studioEntryTemplate, "soccer", "ai")}
-              className="group relative block w-full overflow-hidden rounded-[20px] border border-primary-300/80 bg-[#123126] text-left shadow-[0_18px_44px_rgba(0,74,45,.14)] transition duration-300 hover:-translate-y-0.5 hover:border-primary-400 hover:shadow-[0_24px_54px_rgba(0,74,45,.2)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 cursor-pointer"
-            >
-              <span className="grid h-[320px] grid-cols-3 grid-rows-2 sm:h-[350px]" aria-hidden="true">
-                {studioCoverTemplates.map(({ sport, template }, index) => (
-                  <span key={sport.slug} className="relative flex min-h-0 min-w-0 items-center justify-center overflow-hidden border border-white/[0.04] bg-[radial-gradient(circle_at_center,rgba(255,255,255,.08),transparent_70%)] p-4 sm:p-5">
-                    <img
-                      data-testid="studio-cover-category"
-                      src={uniformSampleFor(sport.slug).thumbnail}
-                      width="240"
-                      height="240"
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                      className="h-auto w-auto max-h-full max-w-full select-none object-contain opacity-30 grayscale invert contrast-125 mix-blend-screen drop-shadow-[-2px_-2px_2px_rgba(255,255,255,.15)] drop-shadow-[4px_5px_5px_rgba(0,0,0,.46)] transition duration-300 group-hover:opacity-60 group-hover:scale-[1.02]"
-                    />
-                    <span
-                      data-testid="studio-cover-category-label"
-                      className={`absolute left-3 rounded-full border border-white/10 bg-black/20 px-2 py-1 font-label text-[8px] font-bold uppercase tracking-[0.14em] text-white/65 backdrop-blur-sm sm:left-4 sm:text-[9px] ${index < 3 ? "top-2.5 sm:top-3" : "bottom-2.5 sm:bottom-3"}`}
-                    >
-                      {categoryDetails[sport.slug]?.title || sport.label}
-                    </span>
-                  </span>
-                ))}
-              </span>
-              <span className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,18,11,.12),rgba(4,18,11,.68))]" aria-hidden="true" />
-              <span className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white">
-                <strong className="mt-0 font-heading text-3xl font-semibold sm:text-4xl">Start Designing</strong>
-                <span className="mt-2 text-xs text-white/70 sm:text-sm">Choose a category to begin.</span>
-                <span className="mt-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-500 text-lg shadow-[0_10px_24px_rgba(0,0,0,.25)] transition group-hover:translate-x-1 group-hover:bg-primary-400"><i className="ri-arrow-right-line" /></span>
-              </span>
-            </button>
+            <div className="grid gap-4 md:grid-cols-2">
+              <button type="button" aria-label="Design with AI" onClick={() => selectTemplate(studioEntryTemplate, "soccer", "ai")} className="group relative min-h-[360px] overflow-hidden rounded-[24px] border border-primary-300/80 bg-[#123126] p-7 text-left text-white shadow-[0_18px_44px_rgba(0,74,45,.14)] transition hover:-translate-y-1 hover:shadow-[0_24px_54px_rgba(0,74,45,.2)] md:p-9">
+                <span className="absolute inset-0 grid grid-cols-2 opacity-20" aria-hidden="true">{studioCoverTemplates.slice(0, 4).map(({ sport }) => <img key={sport.slug} data-testid="studio-cover-category" src={uniformSampleFor(sport.slug).thumbnail} alt="" className="h-full w-full object-contain p-2 grayscale invert mix-blend-screen" />)}</span>
+                <span className="relative flex h-full flex-col justify-end"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-2xl text-primary-200 backdrop-blur-sm"><i className="ri-sparkling-2-line" /></span><strong className="mt-5 font-heading text-3xl font-semibold">Design with AI</strong><span className="mt-2 max-w-md text-sm leading-relaxed text-white/70">Describe your complete uniform or begin from a blank direction, then refine every change with prompts.</span><span className="mt-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[.1em]">Open Design Studio <i className="ri-arrow-right-line" /></span></span>
+              </button>
+              <button type="button" aria-label="Browse Ready-Made Designs" onClick={() => setEntryView("gallery")} className="group relative flex min-h-[360px] flex-col overflow-hidden rounded-[24px] border-2 border-primary-500 bg-white p-7 text-left shadow-[0_18px_44px_rgba(69,48,30,.08)] transition hover:-translate-y-1 hover:shadow-[0_24px_54px_rgba(69,48,30,.14)] md:p-9">
+                <span className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-primary-50 transition group-hover:scale-110" aria-hidden="true" /><span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-100 text-2xl text-primary-700"><i className="ri-layout-grid-line" /></span><span className="relative flex flex-1 flex-col justify-end"><strong className="mt-5 block font-heading text-3xl font-semibold">Browse Ready-Made Designs</strong><span className="mt-2 block max-w-md text-sm leading-relaxed text-foreground-600">Explore published designs for every available sport, compare views and choose a professional starting point.</span><span className="mt-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[.1em] text-primary-700">Browse {readyMadeTemplates.length} Designs <i className="ri-arrow-right-line" /></span></span>
+              </button>
+            </div>
           </section>
         </main>
       </div>
@@ -2317,6 +2366,11 @@ export default function UniformStudioPage() {
                   )}
                   {/* Canvas */}
                   <div data-testid="studio-canvas" className={`studio-canvas flex min-h-0 min-w-0 flex-1 flex-col items-center overflow-hidden ${(activeTool === "ai" || workflowStep.key === "category") ? "gap-0 px-0 py-0" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
+                    {selectedReadyMadeTemplate?.templateMode === TEMPLATE_MODES.AI_PREVIEW && (
+                      <div className="z-10 flex w-full flex-shrink-0 items-center justify-center gap-2 border-b border-accent-400/25 bg-[#211e10] px-3 py-2 text-center text-[10px] font-bold uppercase tracking-[.12em] text-accent-200">
+                        <i className="ri-sparkling-2-line" aria-hidden="true" /> AI-Generated Preview — Edit with AI Only
+                      </div>
+                    )}
                     {showingAIConcept ? (
                       <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden">
                         <div

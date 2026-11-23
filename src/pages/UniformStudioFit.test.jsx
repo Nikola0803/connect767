@@ -88,27 +88,20 @@ describe("required uniform fit selection", () => {
     expect(screen.getAllByRole("textbox", { name: "Message Connect767 AI" })[0]).toBeVisible();
   });
 
-  it("uses one category-spanning entry tile before the three-step studio", () => {
+  it("offers two clear AI and ready-made entry paths before the three-step studio", () => {
     render(<MemoryRouter initialEntries={["/uniforms"]}><CartProvider><UniformStudioPage /></CartProvider></MemoryRouter>);
 
-    const entry = screen.getByRole("button", { name: "Start Designing" });
+    const entry = screen.getByRole("button", { name: "Design with AI" });
     expect(screen.getByTestId("uniform-entry-page")).toHaveClass("min-h-[100dvh]");
     expect(screen.queryByRole("link", { name: "Back to site" })).not.toBeInTheDocument();
     expect(entry).toBeVisible();
+    expect(screen.getByRole("button", { name: "Browse Ready-Made Designs" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Start from Scratch" })).not.toBeInTheDocument();
     const categoryImages = screen.getAllByTestId("studio-cover-category");
-    expect(categoryImages).toHaveLength(6);
+    expect(categoryImages).toHaveLength(4);
     categoryImages.forEach((image) => {
-      expect(image).toHaveClass("object-contain", "h-auto", "w-auto", "max-h-full", "max-w-full");
-      expect(image).not.toHaveClass("object-cover", "h-full", "w-full");
+      expect(image).toHaveClass("object-contain");
     });
-    expect(screen.getAllByTestId("studio-cover-category-label").map((label) => label.textContent.trim())).toEqual([
-      "Soccer",
-      "Basketball",
-      "Netball",
-      "Cricket",
-      "Goalkeeper",
-      "Other Apparel",
-    ]);
     const logo = screen.getByTestId("studio-entry-ai-logo");
     const brandTitle = screen.getByText("Design Your Kit", { selector: "span" });
     expect(screen.queryByText("Custom Uniforms & Clothing")).not.toBeInTheDocument();
@@ -138,6 +131,21 @@ describe("required uniform fit selection", () => {
     fireEvent.click(entry);
     const setup = openUniformSetup();
     expect(setup.getByRole("group", { name: "Uniform category (required)" })).toBeVisible();
+  });
+
+  it("filters ready-made designs and opens a protected AI-only working copy", () => {
+    render(<MemoryRouter initialEntries={["/uniforms?entry=gallery"]}><CartProvider><UniformStudioPage /></CartProvider></MemoryRouter>);
+    expect(screen.getByRole("heading", { name: "Ready-Made Uniform Designs" })).toBeVisible();
+    fireEvent.change(screen.getByRole("combobox", { name: "Filter by sport" }), { target: { value: "basketball" } });
+    expect(screen.getAllByRole("heading", { name: "Shooter Tank" })[0]).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Classic Crew" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "Customize Design" })[0]);
+    expect(screen.getByText("AI-Generated Preview — Edit with AI Only")).toBeVisible();
+    expect(screen.queryByLabelText("Editable garment tools")).not.toBeInTheDocument();
+    expect(JSON.parse(window.sessionStorage.getItem("c767:selected-ready-made-template"))).toMatchObject({
+      templateSlug: "shooter-tank",
+      sport: "basketball",
+    });
   });
 
   it("shows a generated example in the AI workspace without production or watermark overlays", () => {
