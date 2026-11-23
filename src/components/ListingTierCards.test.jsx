@@ -71,4 +71,19 @@ describe("ListingTierCards", () => {
     expect(freeDetails).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("Up to 15 listings")).toBeVisible();
   });
+
+  it("makes the full compact card a plan selection target", () => {
+    const onSelect = vi.fn();
+    render(
+      <MemoryRouter>
+        <ListingTierCards compact onSelect={onSelect} />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Select Classified" }));
+    expect(onSelect).toHaveBeenCalledWith("classified");
+
+    fireEvent.click(screen.getByRole("button", { name: "View Free Listing plan details" }));
+    expect(onSelect).toHaveBeenCalledWith("free");
+  });
 });

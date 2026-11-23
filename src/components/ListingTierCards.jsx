@@ -166,8 +166,10 @@ function CompactTierCard({ planKey, selected, onSelect }) {
         type="button"
         onClick={() => onSelect?.(planKey)}
         aria-pressed={selected}
-        className="block w-full cursor-pointer text-left"
-      >
+        aria-label={`Select ${plan.title}`}
+        className="absolute inset-0 z-0 cursor-pointer rounded-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500"
+      />
+      <div className="pointer-events-none relative z-10">
         <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-900">
           {plan.eyebrow}
         </span>
@@ -181,10 +183,10 @@ function CompactTierCard({ planKey, selected, onSelect }) {
             <span className="block text-[10px] text-foreground-500">{plan.cadence}</span>
           </span>
         </span>
-      </button>
+      </div>
       <span
         aria-hidden="true"
-        className={`absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors ${
+        className={`pointer-events-none absolute right-3 top-3 z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors ${
           selected
             ? "border-primary-700 bg-primary-700 text-white shadow-sm"
             : "border-background-400 bg-white text-transparent"
@@ -194,14 +196,17 @@ function CompactTierCard({ planKey, selected, onSelect }) {
           <path d="m3 8 3 3 7-7" />
         </svg>
       </span>
-      <div className="mt-3 border-t border-background-200 pt-3">
+      <div className="pointer-events-none relative z-10 mt-3 border-t border-background-200 pt-3">
         <button
           type="button"
-          onClick={() => setDetailsOpen((open) => !open)}
+          onClick={() => {
+            onSelect?.(planKey);
+            setDetailsOpen((open) => !open);
+          }}
           aria-expanded={detailsOpen}
           aria-controls={detailsId}
           aria-label={`View ${plan.title} plan details`}
-          className="flex w-full cursor-pointer items-center justify-between text-xs font-semibold text-primary-800"
+          className="pointer-events-auto flex w-full cursor-pointer items-center justify-between text-xs font-semibold text-primary-800"
         >
           View plan details
           <i className={`ri-arrow-down-s-line text-base transition-transform ${detailsOpen ? "rotate-180" : ""}`} aria-hidden="true" />
