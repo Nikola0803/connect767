@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import {
@@ -342,49 +342,53 @@ function StepIndicator({ current }) {
           ))}
         </div>
       </div>
-      <ol className="mx-auto hidden w-fit max-w-full items-center rounded-2xl border border-background-200/80 bg-background-50/80 p-2 shadow-sm lg:flex">
+      <ol className="hidden w-full items-center rounded-2xl border border-background-200/80 bg-background-50/80 p-2 shadow-sm lg:flex">
         {steps.map((step, i) => {
           const isCurrent = step.n === current;
           const isComplete = step.n < current;
           return (
-            <li key={step.n} className="flex items-center">
-              <div
-                aria-current={isCurrent ? "step" : undefined}
-                className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold whitespace-nowrap transition-colors ${
-                  isCurrent
-                    ? "bg-primary-700 text-white shadow-sm"
-                    : isComplete
-                      ? "bg-primary-50 text-primary-800"
-                      : "text-foreground-500"
-                }`}
-              >
-                <span
-                  className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${
+            <Fragment key={step.n}>
+              <li className="shrink-0">
+                <div
+                  aria-current={isCurrent ? "step" : undefined}
+                  className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold whitespace-nowrap transition-colors ${
                     isCurrent
-                      ? "bg-white/20 text-white"
+                      ? "bg-primary-700 text-white shadow-sm"
                       : isComplete
-                        ? "bg-primary-200 text-primary-900"
-                        : "bg-background-200 text-foreground-600"
+                        ? "bg-primary-50 text-primary-800"
+                        : "text-foreground-500"
                   }`}
                 >
-                  {isComplete ? (
-                    <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5 fill-none stroke-current" strokeWidth="2">
-                      <path d="m3 8 3 3 7-7" />
-                    </svg>
-                  ) : step.n}
-                </span>
-                <span>{step.label}</span>
-              </div>
+                  <span
+                    className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${
+                      isCurrent
+                        ? "bg-white/20 text-white"
+                        : isComplete
+                          ? "bg-primary-200 text-primary-900"
+                          : "bg-background-200 text-foreground-600"
+                    }`}
+                  >
+                    {isComplete ? (
+                      <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5 fill-none stroke-current" strokeWidth="2">
+                        <path d="m3 8 3 3 7-7" />
+                      </svg>
+                    ) : step.n}
+                  </span>
+                  <span>{step.label}</span>
+                </div>
+              </li>
               {i < steps.length - 1 && (
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 36 12"
-                  className={`mx-2 h-3 w-9 ${isComplete ? "text-primary-400" : "text-background-400"}`}
-                >
-                  <path d="M1 6h30M26 1l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <li aria-hidden="true" role="presentation" className="mx-2 flex min-w-9 flex-1 items-center">
+                  <svg
+                    viewBox="0 0 36 12"
+                    preserveAspectRatio="none"
+                    className={`h-3 w-full ${isComplete ? "text-primary-400" : "text-background-400"}`}
+                  >
+                    <path d="M1 6h30M26 1l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </li>
               )}
-            </li>
+            </Fragment>
           );
         })}
       </ol>
@@ -1002,7 +1006,7 @@ export default function AddListingPage() {
         </div>
       )}
       <div className="w-full border-b border-background-200/70 bg-background-50 px-3 py-4 sm:px-4 sm:py-6 md:px-8 lg:px-12">
-        <div className={`${step === 4 ? "max-w-2xl" : "max-w-4xl"} mx-auto`}>
+        <div className={`${step === 1 ? "max-w-4xl" : step === 4 ? "max-w-2xl" : "max-w-3xl"} mx-auto`}>
           {isOnboarding && (
             <div className="mb-5 rounded-2xl border border-primary-200 bg-primary-50/80 px-4 py-4 sm:px-5">
               <div className="flex items-start gap-3">
