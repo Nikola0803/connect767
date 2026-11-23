@@ -29,7 +29,7 @@ const POST_TYPES = [
 ];
 
 const FEED_CATEGORIES = [
-  { value: "all", label: "All Posts", icon: "ri-layout-grid-line" },
+  { value: "all", label: "Latest", icon: "ri-layout-grid-line" },
   { value: "offer", label: "Offers", icon: "ri-price-tag-3-line" },
   { value: "opportunity", label: "Opportunities", icon: "ri-briefcase-4-line" },
   { value: "event", label: "Events", icon: "ri-calendar-event-line" },
@@ -427,7 +427,6 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
   const hasLiveLocation = Number.isFinite(Number(post.latitude)) && Number.isFinite(Number(post.longitude));
   const hasLegacyLocationLabel = hasLiveLocation && isLegacyCoordinateLabel(post.postLocation);
   const [postLocationLabel, setPostLocationLabel] = useState(hasLegacyLocationLabel ? "Current location" : post.postLocation);
-  const headerLocationLabel = postLocationLabel ? "Connect767 community" : (post.location || "Connect767 community");
   const postShareUrl = typeof window !== "undefined" ? `${window.location.origin}/community#community-post-${post.id}` : "";
   const reactionCounts = post.reactions || { like: post.thumbCount || 0, love: post.reactionCount || 0 };
   const viewerReaction = post.viewerReaction || (post.thumbed ? "like" : post.reacted ? "love" : "");
@@ -517,7 +516,7 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
             {post.verified && <i className="ri-verified-badge-fill text-primary-600" aria-label="Verified listing" />}
             <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-primary-700 sm:px-2.5 sm:py-1 sm:text-[10px] sm:tracking-[0.12em]">{post.industry || "Business"}</span>
           </div>
-          <p className="mt-0.5 text-[11px] text-foreground-500 sm:mt-1 sm:text-xs">{headerLocationLabel} · {relativeTime(post.createdAt)}</p>
+          <p className="mt-0.5 text-[11px] text-foreground-500 sm:mt-1 sm:text-xs">{relativeTime(post.createdAt)}</p>
         </div>
         <div className="flex shrink-0 items-start gap-0.5">
           <CommunityBrandLink />
@@ -544,9 +543,9 @@ function CommunityPost({ post, authenticated, canManage, onReact, onComment, onD
       <div className="mt-3 flex items-center justify-between border-b border-background-200 pb-2.5 text-[11px] text-foreground-500 sm:mt-4 sm:pb-3 sm:text-xs">
         <span className="inline-flex min-h-6 items-center gap-2">
           {visibleReactions.length > 0 && <span className="flex -space-x-1" aria-hidden="true">{visibleReactions.slice(0, 4).map((item) => <span key={item.value} className="grid h-6 w-6 place-items-center rounded-full border-2 border-background-50 bg-white text-sm shadow-sm">{item.emoji}</span>)}</span>}
-          <span>{totalReactions} reaction{totalReactions === 1 ? "" : "s"}{Number(post.repostCount) > 0 ? ` · ${post.repostCount} repost${Number(post.repostCount) === 1 ? "" : "s"}` : ""}</span>
+          <span className="inline-flex items-center gap-1" aria-label={`${totalReactions} reaction${totalReactions === 1 ? "" : "s"}${Number(post.repostCount) > 0 ? ` and ${post.repostCount} repost${Number(post.repostCount) === 1 ? "" : "s"}` : ""}`}><i className="ri-emotion-line" aria-hidden="true" />{totalReactions}{Number(post.repostCount) > 0 && <><span aria-hidden="true">·</span><i className="ri-repeat-2-line" aria-hidden="true" />{post.repostCount}</>}</span>
         </span>
-        <button type="button" onClick={() => setCommentsOpen((open) => !open)}>{comments.length} comment{comments.length === 1 ? "" : "s"}</button>
+        <button type="button" onClick={() => setCommentsOpen((open) => !open)} aria-label={`${comments.length} comment${comments.length === 1 ? "" : "s"}`} className="inline-flex items-center gap-1"><i className="ri-chat-3-line" aria-hidden="true" />{comments.length}</button>
       </div>
       <div className="mt-1.5 flex items-center gap-1 border-t border-background-200 px-0.5 pt-1.5 sm:mt-2 sm:gap-2 sm:px-1 sm:pt-2">
         <div role="toolbar" aria-label="Post actions" className="flex min-w-0 flex-1 items-center justify-around gap-1 sm:flex-none sm:justify-start">
@@ -938,7 +937,7 @@ export default function CommunityPage() {
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-700">Connect · Share · Grow</p>
           <div className="mt-1.5 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
             <h1 className="text-3xl font-bold leading-tight tracking-[-0.035em] text-foreground-950">Community <span className="font-semibold italic text-accent-500">Feed</span></h1>
-            <p className="text-sm leading-5 text-foreground-500 sm:pb-1 sm:text-right">People, businesses and opportunities—together.</p>
+            <p className="text-sm leading-5 text-foreground-500 sm:pb-1 sm:text-right">Local updates and opportunities.</p>
           </div>
         </div>
 
@@ -1015,7 +1014,7 @@ export default function CommunityPage() {
 
           <aside className="space-y-3 lg:sticky lg:top-28">
             <section className="rounded-2xl border border-background-200 bg-white p-4 shadow-[0_4px_18px_rgba(24,48,36,0.03)]"><div className="flex items-center justify-between"><h2 className="text-sm font-bold tracking-[-0.01em]">Trending</h2><i className="ri-fire-line text-accent-500" /></div><div className="mt-2 divide-y divide-background-200">{[["#ShopLocal767", "38 updates", "all"], ["Holiday services", "24 offers", "offer"], ["Small-business tips", "17 conversations", "all"]].map(([label, detail, postType]) => <button type="button" key={label} onClick={() => { setActiveTab("trending"); setCategoryFilter(postType); document.getElementById("community-feed-updates")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} className="block w-full py-3 text-left transition hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" aria-label={`Show ${label} in the community feed`}><span className="block text-xs font-bold">{label}</span><span className="mt-0.5 block text-[10px] text-foreground-500">{detail}</span></button>)}</div></section>
-            <section className="rounded-2xl border border-primary-100 bg-primary-50/45 p-4"><div className="flex items-center gap-2 text-primary-700"><i className="ri-shield-check-line" /><h2 className="text-xs font-bold">Trusted community</h2></div><p className="mt-2 text-[11px] leading-5 text-foreground-500">Posts connect to published listings and include reporting and moderation.</p></section>
+            <section className="rounded-2xl border border-primary-100 bg-primary-50/45 p-4"><div className="flex items-center gap-2 text-primary-700"><i className="ri-shield-check-line" /><h2 className="text-xs font-bold">Community Standards</h2></div><p className="mt-2 text-[11px] leading-5 text-foreground-500">Posts come from published listings and are moderated.</p></section>
           </aside>
         </div>
       </section>

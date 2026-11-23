@@ -125,7 +125,7 @@ function ListingHighlights({ listing }) {
   return (
     <div data-testid="listing-highlights" className="mt-2 grid min-h-[3.45rem] grid-cols-[0.7fr_1.3fr] items-stretch gap-1.5">
       <div className="flex min-w-0 flex-col justify-between rounded-lg border border-background-200 bg-background-100/75 px-2.5 py-2">
-        <span className="block text-[8px] font-semibold uppercase tracking-[0.08em] text-foreground-500">Yrs. Exp.</span>
+        <span className="block text-[8px] font-semibold uppercase tracking-[0.08em] text-foreground-500">Experience</span>
         <span className="mt-0.5 flex items-center gap-1.5 truncate text-[10.5px] font-semibold leading-tight text-foreground-800" title={experience}>
           <i className="ri-briefcase-line text-primary-700 flex-shrink-0" />
           {experience}
@@ -258,7 +258,7 @@ export default function DirectoryListingCard({
           <div className="mt-2 flex items-center justify-between gap-3 border-t border-background-200/70 pt-3">
             <RatingSignal listing={listing} />
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-700 px-3 py-1.5 text-xs font-semibold text-background-50 shadow-[0_8px_20px_rgba(31,112,78,0.2)] transition-colors group-hover:bg-primary-800 whitespace-nowrap">
-              Profile <i className="ri-arrow-right-line" />
+              View profile <i className="ri-arrow-right-line" />
             </span>
           </div>
         </div>

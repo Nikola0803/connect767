@@ -16,7 +16,7 @@ export default function Categories() {
               Browse by category
             </div>
             <h2 className="font-heading text-3xl md:text-5xl font-light text-foreground-950 leading-tight max-w-2xl">
-              Every Community. Every Business. <span className="italic">One Connection.</span>
+              Every Business. <span className="italic">One Connection.</span>
             </h2>
           </div>
           <Link

@@ -28,8 +28,8 @@ export default function Hero() {
   };
 
   const placeholder = searchScope === "shop"
-    ? "Search Dominican products, apparel and gifts"
-    : "Search business, professionals & service providers worldwide";
+    ? "Search products & apparel"
+    : "Search businesses & services";
 
   return (
     <section className="relative flex min-h-[560px] w-full items-center overflow-hidden sm:min-h-[680px] md:min-h-[820px]">
@@ -49,7 +49,7 @@ export default function Hero() {
             Dominica’s <span className="italic text-accent-400">Online Directory</span>
           </h1>
           <p className="mx-auto mt-1.5 max-w-fit font-heading text-background-50 text-[clamp(0.78rem,1.1vw,1rem)] font-semibold leading-[0.98] tracking-[-0.035em]">
-            Discover Dominican Excellence at Home &amp; Abroad
+            Discover Dominican Talent Worldwide
           </p>
           <form onSubmit={handleSubmit} className="mx-auto mt-5 max-w-5xl">
             <div className="flex flex-col overflow-hidden rounded-[1.35rem] bg-background-50 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.25)] transition-shadow focus-within:shadow-[0_18px_55px_rgba(0,0,0,0.34)] lg:flex-row lg:items-center lg:rounded-full">
@@ -100,15 +100,15 @@ export default function Hero() {
           <div className="mt-4 grid grid-cols-3 items-center gap-1 text-[9px] font-semibold text-background-50/85 sm:flex sm:flex-wrap sm:justify-center sm:text-[11px]">
             <Link to="/listings?tier=Classified" className="inline-flex min-w-0 items-center justify-center gap-1 rounded-full px-1 py-2 text-center leading-tight transition-colors hover:bg-background-50/15 hover:text-background-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300 sm:shrink-0 sm:gap-1.5 sm:whitespace-nowrap sm:px-3">
               <i className="ri-award-line shrink-0 text-accent-300" aria-hidden="true" />
-              <span className="sm:hidden">Classified</span><span className="hidden sm:inline">Classified Listings</span>
+              <span>Classifieds</span>
             </Link>
             <Link to="/listings?booking=true" className="inline-flex min-w-0 items-center justify-center gap-1 rounded-full px-1 py-2 text-center leading-tight transition-colors hover:bg-background-50/15 hover:text-background-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300 sm:shrink-0 sm:gap-1.5 sm:whitespace-nowrap sm:px-3">
               <i className="ri-calendar-check-line shrink-0 text-accent-300" aria-hidden="true" />
-              <span className="sm:hidden">Book Services</span><span className="hidden sm:inline">Book Rentals &amp; Services</span>
+              <span className="sm:hidden">Book Services</span><span className="hidden sm:inline">Book Services &amp; Rentals</span>
             </Link>
             <Link to="/listings/submit?tier=free" className="inline-flex min-w-0 items-center justify-center gap-1 rounded-full px-1 py-2 text-center leading-tight transition-colors hover:bg-background-50/15 hover:text-background-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300 sm:shrink-0 sm:gap-1.5 sm:whitespace-nowrap sm:px-3">
               <i className="ri-add-circle-line shrink-0 text-accent-300" aria-hidden="true" />
-              <span className="sm:hidden">Free Listing</span><span className="hidden sm:inline">Create Your Free Listing</span>
+              <span className="sm:hidden">List Free</span><span className="hidden sm:inline">List for Free</span>
             </Link>
           </div>
         </div>

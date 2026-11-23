@@ -69,7 +69,7 @@ describe("CommunityPage composer menus", () => {
     const composer = await screen.findByLabelText("Status update. Type @ to mention a business.");
     const consolidatedFilters = screen.getByRole("region", { name: "Community feed filters" });
     expect(consolidatedFilters).toContainElement(screen.getByRole("button", { name: "Feed view: For you" }));
-    expect(consolidatedFilters).toContainElement(screen.getByRole("button", { name: "Post type: All Posts" }));
+    expect(consolidatedFilters).toContainElement(screen.getByRole("button", { name: "Post type: Latest" }));
 
     for (const label of ["Following", "Latest", "Trending", "Businesses", "Community", "For you"]) {
       fireEvent.click(screen.getByRole("button", { name: /^Feed view:/ }));
@@ -77,7 +77,7 @@ describe("CommunityPage composer menus", () => {
       expect(screen.getByRole("button", { name: `Feed view: ${label}` })).toHaveAttribute("aria-expanded", "false");
     }
 
-    for (const label of ["Offers", "Opportunities", "Events", "Announcements", "Requests", "All Posts"]) {
+    for (const label of ["Offers", "Opportunities", "Events", "Announcements", "Requests", "Latest"]) {
       fireEvent.click(screen.getByRole("button", { name: /^Post type:/ }));
       fireEvent.click(screen.getByRole("menuitemradio", { name: label }));
       expect(screen.getByRole("button", { name: `Post type: ${label}` })).toHaveAttribute("aria-expanded", "false");
@@ -85,7 +85,7 @@ describe("CommunityPage composer menus", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Feed view: For you" }));
     fireEvent.click(screen.getByRole("menuitemradio", { name: "Community" }));
-    fireEvent.click(screen.getByRole("button", { name: "Post type: All Posts" }));
+    fireEvent.click(screen.getByRole("button", { name: "Post type: Latest" }));
     fireEvent.click(screen.getByRole("menuitemradio", { name: "Requests" }));
     expect(screen.getByRole("button", { name: "Feed view: For you" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Post type: Requests" })).toBeInTheDocument();
@@ -121,7 +121,7 @@ describe("CommunityPage composer menus", () => {
     expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "Show #ShopLocal767 in the community feed" }));
-    expect(screen.getByRole("button", { name: "Post type: All Posts" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Post type: Latest" })).toBeInTheDocument();
   });
 
   it("starts the post cards directly below the composer without a redundant feed heading", async () => {

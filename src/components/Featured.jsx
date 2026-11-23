@@ -77,7 +77,7 @@ export default function Featured() {
               This week's picks
             </div>
             <h2 className="font-heading text-3xl md:text-5xl font-light text-foreground-950 leading-tight max-w-2xl">
-              Discover <span className="text-accent-500 italic">Trending Listings</span>
+              <span className="text-accent-500 italic">Trending Listings</span>
             </h2>
           </div>
           <div className="flex items-center gap-4">
@@ -178,7 +178,7 @@ export default function Featured() {
             className="inline-flex items-center gap-2 px-6 py-3 rounded-md border border-background-300 bg-background-50 text-sm font-semibold text-foreground-950 hover:bg-background-200/60 cursor-pointer whitespace-nowrap"
             to="/listings"
           >
-            Explore the full directory
+            View all listings
             <i className="ri-arrow-right-line" />
           </Link>
         </div>

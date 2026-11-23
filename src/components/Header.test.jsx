@@ -9,11 +9,11 @@ it("keeps five mobile destinations outside the blurred header and retains Saved 
   render(<MemoryRouter initialEntries={["/listings"]}><CartProvider><Header /></CartProvider></MemoryRouter>);
   const bar = screen.getByRole("navigation", { name: "Mobile quick navigation" });
   expect(bar.closest("header")).toBeNull();
-  expect(within(bar).getAllByRole("link").map(link => link.textContent.trim())).toEqual(["Home", "Directory", "Shop", "Community Feed", "Account"]);
+  expect(within(bar).getAllByRole("link").map(link => link.textContent.trim())).toEqual(["Home", "Directory", "Shop", "Community", "Account"]);
   expect(within(bar).getByRole("link", { name: "Account" })).toHaveAttribute("href", "/auth/login");
   fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
   const menu = screen.getByRole("navigation", { name: "Mobile menu" });
-  for (const label of ["Directory", "Shop", "Community Feed", "Custom Uniforms", "Blog", "Saved"]) expect(within(menu).getByRole("link", { name: label })).toBeInTheDocument();
+  for (const label of ["Directory", "Shop", "Community", "Uniform Studio", "Blog", "Saved"]) expect(within(menu).getByRole("link", { name: label })).toBeInTheDocument();
   fireEvent.click(within(menu).getByRole("link", { name: "Shop", exact: true }));
   expect(screen.queryByRole("navigation", { name: "Mobile menu" })).not.toBeInTheDocument();
   expect(screen.getByRole("navigation", { name: "Mobile quick navigation" })).toBeInTheDocument();

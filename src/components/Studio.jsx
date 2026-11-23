@@ -3,10 +3,10 @@ import { uniformImage } from "../data/content";
 import { sports } from "../data/uniforms";
 
 const checklist = [
-  "Shirt, shorts and socks — all in one live 3D preview",
-  "Predefined templates or start from a blank mockup",
-  "Upload your own transparent PNG artwork",
-  "Roster table for sizes, names, and numbers",
+  "Full kit in live 3D",
+  "Start with a template or blank design",
+  "Upload PNG logos",
+  "Add names, numbers and sizes",
 ];
 
 export default function Studio() {
@@ -20,12 +20,10 @@ export default function Studio() {
               3D Uniform Studio
             </div>
             <h2 className="font-heading text-3xl md:text-5xl font-light leading-tight mb-6">
-              Kit up the whole squad — <span className="italic text-accent-400">in one window.</span>
+              Design Your <span className="italic text-accent-400">Team Kit.</span>
             </h2>
             <p className="text-background-50/80 text-base md:text-lg font-light leading-relaxed mb-8 max-w-xl">
-              Rotate a full 3D uniform, swap crew or V-neck, long or short sleeves, recolor every
-              panel, and drop logos anywhere. Print for the team, or grab a fan jersey — same
-              design, shirt only.
+              Customize colors, sleeves and logos in a live 3D preview. Order team kits or fan jerseys.
             </p>
             <ul className="space-y-3 mb-8">
               {checklist.map((item) => (

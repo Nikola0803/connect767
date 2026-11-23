@@ -38,8 +38,8 @@ export function AccountAvatar({
 const navItems = [
   { label: "Directory", href: "/listings" },
   { label: "Shop", href: "/shop" },
-  { label: "Community Feed", href: "/community" },
-  { label: "Custom Uniforms", href: "/uniforms", opensNewWindow: true },
+  { label: "Community", href: "/community" },
+  { label: "Uniform Studio", href: "/uniforms", opensNewWindow: true },
   { label: "Blog", href: "/blog" },
 ];
 
@@ -146,7 +146,7 @@ export default function Header({ showQuickNavigation = true }) {
     { label: "Home", href: "/", icon: "ri-home-5-line" },
     { label: "Directory", href: "/listings", icon: "ri-map-pin-2-line" },
     { label: "Shop", href: "/shop", icon: "ri-shopping-bag-3-line" },
-    { label: "Community Feed", href: "/community", icon: "ri-group-line" },
+    { label: "Community", href: "/community", icon: "ri-group-line" },
     {
       label: isAuthenticated ? "Dashboard" : "Account",
       href: isAuthenticated ? "/dashboard" : "/auth/login",
