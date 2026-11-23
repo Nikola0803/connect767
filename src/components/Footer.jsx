@@ -2,10 +2,10 @@ import { Link } from "react-router-dom";
 import BrandLogo from "./BrandLogo";
 
 const discoverLinks = [
-  { label: "Browse Directory", href: "/listings" },
+  { label: "Directory", href: "/listings" },
   { label: "Add a Listing", href: "/listings/submit" },
   { label: "Shop", href: "/shop" },
-  { label: "Community Feed", href: "/community" },
+  { label: "Community", href: "/community" },
   { label: "Blog", href: "/blog" },
 ];
 
@@ -42,11 +42,10 @@ export default function Footer() {
               />
             </Link>
             <h3 className="font-heading text-3xl md:text-4xl font-light leading-tight mb-4">
-              Get the weekly digest of new listings, deals &amp; drops.
+              Weekly Listings, Deals &amp; Drops
             </h3>
             <p className="text-background-50/70 text-sm mb-6 max-w-md">
-              Fresh classifieds, custom uniform ideas, and shop offers — every Sunday, straight to
-              your inbox.
+              New listings and offers, delivered every Sunday.
             </p>
             <form className="flex flex-col sm:flex-row gap-3 max-w-md">
               <input
@@ -67,7 +66,7 @@ export default function Footer() {
           </div>
 
           <div className="lg:col-span-2">
-            <h4 className="text-sm font-semibold mb-4 text-background-50">Discover</h4>
+            <h4 className="text-sm font-semibold mb-4 text-background-50">Explore</h4>
             <ul className="space-y-3 text-sm text-background-50/75">
               {discoverLinks.map((l) => (
                 <li key={l.label}>

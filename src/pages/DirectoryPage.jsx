@@ -189,10 +189,10 @@ export default function DirectoryPage() {
           </div>
           <div className="mt-5 max-w-3xl">
             <h1 className="font-heading text-3xl font-light leading-tight text-background-50 md:text-5xl">
-              Find the right <span className="italic text-accent-400">local connection.</span>
+              Find <span className="italic text-accent-400">Businesses &amp; Professionals</span>
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-background-50/65 md:text-base">
-              Explore Dominican businesses, professionals, services, products, and opportunities in one trusted directory.
+              Explore trusted businesses, services, products and opportunities worldwide.
             </p>
           </div>
         </div>
@@ -302,9 +302,9 @@ export default function DirectoryPage() {
               </label>
 
               <label className="relative flex-shrink-0">
-                <span className="sr-only">Listing Type</span>
+                <span className="sr-only">Type</span>
                 <select value={tier} onChange={(e) => updateFilter(setTier)(e.target.value)} className="appearance-none h-10 min-w-32 pl-3.5 pr-8 rounded-xl border border-background-300 bg-white text-xs font-semibold text-foreground-700 focus:outline-none focus:border-primary-400 cursor-pointer">
-                  {tierOptions.map((option) => <option key={option.value} value={option.value}>{option.value === "all" ? "Listing Type" : option.label}</option>)}
+                  {tierOptions.map((option) => <option key={option.value} value={option.value}>{option.value === "all" ? "Type" : option.label}</option>)}
                 </select>
                 <i className="ri-arrow-down-s-line absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground-400 pointer-events-none" />
               </label>
@@ -420,11 +420,11 @@ export default function DirectoryPage() {
           <div className="mb-7 flex flex-col gap-4 border-b border-background-200/80 pb-5 sm:flex-row sm:items-end">
             <div>
               <h2 className="font-heading text-2xl md:text-4xl font-light text-foreground-950">
-                Browse the <span className="text-accent-500 italic">directory</span>
+                Directory <span className="text-accent-500 italic">Listings</span>
               </h2>
             </div>
             <div className="sm:ml-auto flex items-center gap-2">
-              <label className="sr-only" htmlFor="directory-sort">Sort listings</label>
+              <label className="sr-only" htmlFor="directory-sort">Sort</label>
               <select
                 id="directory-sort"
                 value={sort}

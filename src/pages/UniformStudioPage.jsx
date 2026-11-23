@@ -328,8 +328,8 @@ const categoryDetails = {
   basketball: { title: "Basketball", description: "Modern jerseys and shorts for teams, clubs and leagues." },
   netball: { title: "Netball", description: "Court-ready dresses and coordinated team uniforms." },
   cricket: { title: "Cricket", description: "Match shirts, trousers and complete cricket teamwear." },
-  goalkeeper: { title: "Goal Keeper", description: "Dedicated keeper kits with long- and short-sleeve options." },
-  other: { title: "Clothing & Other", description: "Polos, training wear, club clothing and any custom garment idea." },
+  goalkeeper: { title: "Goalkeeper", description: "Dedicated keeper kits with long- and short-sleeve options." },
+  other: { title: "Other Apparel", description: "Polos, training wear, club clothing and any custom garment idea." },
 };
 
 const primaryTemplateForSport = (sportSlug) => templates.find(
@@ -1878,14 +1878,14 @@ export default function UniformStudioPage() {
               />
               <div className="min-w-0 text-left">
                 <p className="font-label text-[9px] font-bold uppercase tracking-[0.2em] text-primary-700">
-                  Connect767 Design Studio
+                  Custom Uniform Studio
                 </p>
-                <span className="block font-heading text-base font-semibold leading-snug">Custom Uniforms</span>
+                <span className="block font-heading text-base font-semibold leading-snug">Design Your Kit</span>
               </div>
             </div>
             <button
               type="button"
-              aria-label="Enter Design Studio"
+              aria-label="Start Designing"
               onClick={() => selectTemplate(studioEntryTemplate, "soccer", "ai")}
               className="group relative block w-full overflow-hidden rounded-[20px] border border-primary-300/80 bg-[#123126] text-left shadow-[0_18px_44px_rgba(0,74,45,.14)] transition duration-300 hover:-translate-y-0.5 hover:border-primary-400 hover:shadow-[0_24px_54px_rgba(0,74,45,.2)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 cursor-pointer"
             >
@@ -1913,8 +1913,8 @@ export default function UniformStudioPage() {
               </span>
               <span className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,18,11,.12),rgba(4,18,11,.68))]" aria-hidden="true" />
               <span className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white">
-                <strong className="mt-0 font-heading text-3xl font-semibold sm:text-4xl">Enter Design Studio</strong>
-                <span className="mt-2 text-xs text-white/70 sm:text-sm">Choose your category and fit inside.</span>
+                <strong className="mt-0 font-heading text-3xl font-semibold sm:text-4xl">Start Designing</strong>
+                <span className="mt-2 text-xs text-white/70 sm:text-sm">Choose a category to begin.</span>
                 <span className="mt-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-500 text-lg shadow-[0_10px_24px_rgba(0,0,0,.25)] transition group-hover:translate-x-1 group-hover:bg-primary-400"><i className="ri-arrow-right-line" /></span>
               </span>
             </button>

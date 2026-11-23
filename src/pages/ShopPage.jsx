@@ -61,7 +61,7 @@ export default function ShopPage() {
                 Island-made. <span className="italic text-accent-400">World-ready.</span>
               </h1>
               <p className="mt-4 max-w-xl text-sm md:text-base leading-relaxed text-background-200">
-                Discover apparel, essentials and experiences from Dominican brands and creators—at home and around the world.
+                Shop apparel and essentials from Dominican brands worldwide.
               </p>
               <div className="mt-6 flex flex-col sm:flex-row gap-3">
                 <Link
@@ -69,7 +69,7 @@ export default function ShopPage() {
                   className="inline-flex items-center justify-center gap-2 h-12 px-5 rounded-full bg-background-50 text-primary-950 text-sm font-bold hover:bg-background-100 transition-colors cursor-pointer whitespace-nowrap"
                 >
                   <i className="ri-magic-line text-lg" />
-                  Design custom gear
+                  Design Uniforms
                   <i className="ri-arrow-right-line" />
                 </Link>
                 <button
@@ -178,14 +178,11 @@ export default function ShopPage() {
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-7">
             <div>
-              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-700 mb-2">
-                Curated for you
-              </div>
               <h2 className="font-heading text-2xl md:text-4xl font-light text-foreground-950">
                 Featured <span className="text-accent-500 italic">products</span>
               </h2>
               <p className="mt-1 text-xs text-foreground-500">
-                {loading ? "Finding products…" : `${visibleProducts.length} product${visibleProducts.length === 1 ? "" : "s"} found`}
+                {loading ? "Finding products…" : `${visibleProducts.length} product${visibleProducts.length === 1 ? "" : "s"}`}
               </p>
             </div>
             <label className="relative sm:ml-auto flex-shrink-0">

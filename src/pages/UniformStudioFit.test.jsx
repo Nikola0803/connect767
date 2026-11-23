@@ -91,7 +91,7 @@ describe("required uniform fit selection", () => {
   it("uses one category-spanning entry tile before the three-step studio", () => {
     render(<MemoryRouter initialEntries={["/uniforms"]}><CartProvider><UniformStudioPage /></CartProvider></MemoryRouter>);
 
-    const entry = screen.getByRole("button", { name: "Enter Design Studio" });
+    const entry = screen.getByRole("button", { name: "Start Designing" });
     expect(screen.getByTestId("uniform-entry-page")).toHaveClass("min-h-[100dvh]");
     expect(screen.queryByRole("link", { name: "Back to site" })).not.toBeInTheDocument();
     expect(entry).toBeVisible();
@@ -106,11 +106,11 @@ describe("required uniform fit selection", () => {
       "Basketball",
       "Netball",
       "Cricket",
-      "Goal Keeper",
-      "Clothing & Other",
+      "Goalkeeper",
+      "Other Apparel",
     ]);
     const logo = screen.getByTestId("studio-entry-ai-logo");
-    const brandTitle = screen.getByText("Custom Uniforms", { selector: "span" });
+    const brandTitle = screen.getByText("Design Your Kit", { selector: "span" });
     expect(screen.queryByText("Custom Uniforms & Clothing")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
     expect(within(screen.getByRole("navigation", { name: "Mobile menu" })).getByRole("link", { name: "Shop" })).toHaveAttribute("href", "/shop");
@@ -158,9 +158,9 @@ describe("required uniform fit selection", () => {
     openStudio("ai");
     const setup = openUniformSetup();
     const categoryPanel = within(setup.getByRole("group", { name: "Uniform category (required)" }));
-    for (const category of ["Soccer", "Basketball", "Netball", "Cricket", "Goal Keeper"]) {
+    for (const category of ["Soccer", "Basketball", "Netball", "Cricket", "Goalkeeper"]) {
       fireEvent.click(categoryPanel.getByRole("button", { name: `${category} category` }));
-      const slug = category === "Goal Keeper" ? "goalkeeper" : category.toLowerCase();
+      const slug = category.toLowerCase();
       expect(screen.getByRole("img", { name: `AI-generated ${slug} uniform example, front, side and back` })).toHaveAttribute("src", `/uploads/ai-uniform-samples/${slug}-views.webp`);
     }
   });
@@ -176,8 +176,8 @@ describe("required uniform fit selection", () => {
       "Basketball",
       "Netball",
       "Cricket",
-      "Goal Keeper",
-      "Clothing & Other",
+      "Goalkeeper",
+      "Other Apparel",
     ]);
 
     const categoryTemplates = [
@@ -189,7 +189,7 @@ describe("required uniform fit selection", () => {
       ["soccer", "Classic Crew"],
     ];
     for (const [sport, templateName] of categoryTemplates) {
-      const label = sport === "goalkeeper" ? "Goal Keeper" : sport === "other" ? "Clothing & Other" : `${sport[0].toUpperCase()}${sport.slice(1)}`;
+      const label = sport === "goalkeeper" ? "Goalkeeper" : sport === "other" ? "Other Apparel" : `${sport[0].toUpperCase()}${sport.slice(1)}`;
       fireEvent.click(categoryPanel.getByRole("button", { name: `${label} category` }));
       const studioHeader = within(screen.getByRole("button", { name: "Back" }).closest("header"));
       expect(studioHeader.queryByText(templateName)).not.toBeInTheDocument();
