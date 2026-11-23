@@ -294,6 +294,13 @@ two completion stages as the studio: customers must finish the Team Roster
 & Checkout. The plugin validates the roster again and stores it securely on the
 WooCommerce order for fulfillment.
 
+Ready-made checkout also mirrors the studio's production extras and delivery
+rules. Soccer and goalkeeper kits include one pair of socks per ordered full
+uniform; extra pairs cost $5 each. Supporter jerseys are grouped by size and
+cost $15 each. North America and Caribbean shipping uses the studio's fixed
+unit tiers, and customers can pay by configured card, PayPal, WooCommerce
+hosted gateways, or choose local pickup/payment for delivery in Dominica.
+
 ## REST endpoints the app calls
 
 All under the standard WP/WooCommerce namespaces — no custom routes needed for

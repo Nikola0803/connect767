@@ -717,25 +717,73 @@ class C767_WooCommerce
             $order->add_order_note("Ready-Made Team Roster:\n" . implode("\n", $roster_lines), false);
         }
 
+        $ready_made_units = self::ready_made_unit_counts($order);
+        $ready_made_extras = self::validate_ready_made_extras($ready_made_units, (array) ($order_context['readyMadeExtras'] ?? []));
+        if (is_wp_error($ready_made_extras)) {
+            $order->delete(true);
+            return $ready_made_extras;
+        }
+        if (!empty($ready_made_units)) {
+            $address_check = C767_Uniform_Checkout::validate_north_american_address($address);
+            if (is_wp_error($address_check)) {
+                $order->delete(true);
+                return $address_check;
+            }
+        }
+
+        if ($ready_made_extras['supporter_total'] > 0) {
+            $fee = new WC_Order_Item_Fee();
+            $fee->set_name(sprintf('Supporter jerseys · %d × $15.00', $ready_made_extras['supporter_quantity']));
+            $fee->set_amount($ready_made_extras['supporter_total']);
+            $fee->set_total($ready_made_extras['supporter_total']);
+            $fee->set_tax_status('taxable');
+            $fee->add_meta_data('Sizes', $ready_made_extras['supporter_summary'], true);
+            $order->add_item($fee);
+        }
+        if ($ready_made_extras['extra_socks_total'] > 0) {
+            $fee = new WC_Order_Item_Fee();
+            $fee->set_name(sprintf('Extra socks · %d × $5.00', $ready_made_extras['extra_socks']));
+            $fee->set_amount($ready_made_extras['extra_socks_total']);
+            $fee->set_total($ready_made_extras['extra_socks_total']);
+            $fee->set_tax_status('taxable');
+            $order->add_item($fee);
+        }
+        if (!empty($ready_made_units)) {
+            $order->update_meta_data('_c767_ready_made_extras', wp_json_encode($ready_made_extras));
+        }
+
         $billing = $address;
         $billing['email'] = $email;
         $order->set_address($billing, 'billing');
         $order->set_address($address, 'shipping');
         $order->calculate_totals(false);
 
-        $shipping_rate = self::calculate_shipping_rate($order, $address);
-        if (is_wp_error($shipping_rate)) {
-            if (!$allow_local_arrangement || $address['country'] !== 'DM') {
-                $order->delete(true);
-                return $shipping_rate;
-            }
-
+        if ($allow_local_arrangement && $address['country'] === 'DM') {
             $shipping_item = new WC_Order_Item_Shipping();
             $shipping_item->set_method_title('Local delivery / pickup arrangement');
             $shipping_item->set_method_id('c767_local_arrangement');
             $shipping_item->set_total(0);
             $shipping_item->set_taxes([]);
+        } elseif (!empty($ready_made_units)) {
+            $shipping_units = array_sum($ready_made_units) + $ready_made_extras['supporter_quantity'];
+            $shipping_rate = C767_Uniform_Checkout::uniform_shipping_rate($address['country'], $shipping_units);
+            if (is_wp_error($shipping_rate)) {
+                $order->delete(true);
+                return $shipping_rate;
+            }
+            $shipping_item = new WC_Order_Item_Shipping();
+            $shipping_item->set_method_title($shipping_rate['label']);
+            $shipping_item->set_method_id('c767_uniform_zone_rate');
+            $shipping_item->set_instance_id(0);
+            $shipping_item->set_total($shipping_rate['amount']);
+            $shipping_item->add_meta_data('Shipping zone', $shipping_rate['zoneLabel'], true);
+            $shipping_item->add_meta_data('Total order units', $shipping_units, true);
         } else {
+            $shipping_rate = self::calculate_shipping_rate($order, $address);
+            if (is_wp_error($shipping_rate)) {
+                $order->delete(true);
+                return $shipping_rate;
+            }
             $shipping_item = new WC_Order_Item_Shipping();
             $shipping_item->set_method_title($shipping_rate->get_label());
             $shipping_item->set_method_id($shipping_rate->get_method_id());
@@ -871,6 +919,78 @@ class C767_WooCommerce
         return $clean;
     }
 
+    private static function ready_made_unit_counts(WC_Order $order)
+    {
+        $counts = [];
+        foreach ($order->get_items('line_item') as $item) {
+            $product = $item->get_product();
+            if (!self::is_ready_made_product($product)) {
+                continue;
+            }
+            $category = self::ready_made_uniform_category($product);
+            if ($category) {
+                $counts[$category] = ($counts[$category] ?? 0) + max(1, (int) $item->get_quantity());
+            }
+        }
+        return $counts;
+    }
+
+    private static function validate_ready_made_extras(array $unit_counts, array $extras)
+    {
+        if (empty($unit_counts)) {
+            return [
+                'required_socks' => 0,
+                'socks_quantity' => 0,
+                'extra_socks' => 0,
+                'extra_socks_total' => 0.00,
+                'supporter_jerseys' => [],
+                'supporter_quantity' => 0,
+                'supporter_total' => 0.00,
+                'supporter_summary' => '',
+            ];
+        }
+        $required_socks = (int) (($unit_counts['soccer'] ?? 0) + ($unit_counts['goalkeeper'] ?? 0));
+        $socks_quantity = $required_socks > 0 ? max(0, (int) ($extras['socksQuantity'] ?? 0)) : 0;
+        if ($required_socks > 0 && $socks_quantity < $required_socks) {
+            return new WP_Error(
+                'c767_ready_made_socks_required',
+                sprintf('Sock quantity must be at least %d to match the full-uniform order.', $required_socks),
+                ['status' => 400]
+            );
+        }
+
+        $supporter_rows = [];
+        $supporter_quantity = 0;
+        $allowed_sizes = ['Youth S', 'Youth M', 'Youth L', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
+        if (rest_sanitize_boolean($extras['supporterEnabled'] ?? false)) {
+            foreach ((array) ($extras['supporterJerseys'] ?? []) as $row) {
+                $size = sanitize_text_field((string) ($row['size'] ?? ''));
+                $quantity = max(0, (int) ($row['quantity'] ?? 0));
+                if (in_array($size, $allowed_sizes, true) && $quantity > 0) {
+                    $supporter_rows[] = ['size' => $size, 'quantity' => $quantity];
+                    $supporter_quantity += $quantity;
+                }
+            }
+            if ($supporter_quantity < 1) {
+                return new WP_Error('c767_ready_made_supporter_required', 'Add at least one supporter jersey size and quantity.', ['status' => 400]);
+            }
+        }
+
+        $extra_socks = max(0, $socks_quantity - $required_socks);
+        return [
+            'required_socks' => $required_socks,
+            'socks_quantity' => $socks_quantity,
+            'extra_socks' => $extra_socks,
+            'extra_socks_total' => $extra_socks * 5.00,
+            'supporter_jerseys' => $supporter_rows,
+            'supporter_quantity' => $supporter_quantity,
+            'supporter_total' => $supporter_quantity * 15.00,
+            'supporter_summary' => implode(', ', array_map(function ($row) {
+                return $row['size'] . ' × ' . $row['quantity'];
+            }, $supporter_rows)),
+        ];
+    }
+
     public static function sanitize_shipping_address(array $shipping)
     {
         $address = [
@@ -989,6 +1109,7 @@ class C767_WooCommerce
         $shipping = (array) $request->get_param('shipping');
         $order = self::build_pending_order($items, $request->get_param('email'), $shipping, false, [
             'readyMadeRoster' => (array) $request->get_param('readyMadeRoster'),
+            'readyMadeExtras' => (array) $request->get_param('readyMadeExtras'),
         ]);
         if (is_wp_error($order)) {
             return $order;
@@ -1021,7 +1142,10 @@ class C767_WooCommerce
             $request->get_param('email'),
             $shipping,
             true,
-            ['readyMadeRoster' => (array) $request->get_param('readyMadeRoster')]
+            [
+                'readyMadeRoster' => (array) $request->get_param('readyMadeRoster'),
+                'readyMadeExtras' => (array) $request->get_param('readyMadeExtras'),
+            ]
         );
         if (is_wp_error($order)) {
             return $order;
