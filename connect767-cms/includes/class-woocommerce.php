@@ -718,7 +718,7 @@ class C767_WooCommerce
         }
 
         $ready_made_units = self::ready_made_unit_counts($order);
-        $ready_made_extras = self::validate_ready_made_extras($ready_made_units, (array) ($order_context['readyMadeExtras'] ?? []));
+        $ready_made_extras = self::validate_ready_made_extras($ready_made_units, (array) ($order_context['readyMadeExtras'] ?? []), $roster);
         if (is_wp_error($ready_made_extras)) {
             $order->delete(true);
             return $ready_made_extras;
@@ -748,8 +748,32 @@ class C767_WooCommerce
             $fee->set_tax_status('taxable');
             $order->add_item($fee);
         }
+        $production_fees = [
+            ['total' => $ready_made_extras['polo_collar_total'], 'name' => sprintf('Polo style collars · %d × $2.00', $ready_made_extras['kit_quantity'])],
+            ['total' => $ready_made_extras['long_sleeve_total'], 'name' => sprintf('Long-sleeve upgrades · %d × $2.00', $ready_made_extras['long_sleeve_quantity'])],
+            ['total' => $ready_made_extras['embroidery_total'], 'name' => sprintf('Embroidered team logos · %d × $1.50', $ready_made_extras['kit_quantity'])],
+            ['total' => $ready_made_extras['inside_collar_total'], 'name' => sprintf('Inside-collar logo or message · %d × $1.00', $ready_made_extras['kit_quantity'])],
+        ];
+        foreach ($production_fees as $production_fee) {
+            if ($production_fee['total'] <= 0) continue;
+            $fee = new WC_Order_Item_Fee();
+            $fee->set_name($production_fee['name']);
+            $fee->set_amount($production_fee['total']);
+            $fee->set_total($production_fee['total']);
+            $fee->set_tax_status('taxable');
+            $order->add_item($fee);
+        }
         if (!empty($ready_made_units)) {
-            $order->update_meta_data('_c767_ready_made_extras', wp_json_encode($ready_made_extras));
+            $collar_attachment = $ready_made_extras['inside_collar_attachment'];
+            if ($collar_attachment) {
+                $order->update_meta_data('_c767_ready_made_collar_attachment', wp_json_encode($collar_attachment));
+            }
+            $stored_extras = $ready_made_extras;
+            $stored_extras['inside_collar_attachment'] = $collar_attachment ? array_diff_key($collar_attachment, ['src' => true]) : null;
+            $order->update_meta_data('_c767_ready_made_extras', wp_json_encode($stored_extras));
+            if ($ready_made_extras['inside_collar_enabled']) {
+                $order->add_order_note('Inside-collar customization: ' . ($ready_made_extras['inside_collar_message'] !== '' ? $ready_made_extras['inside_collar_message'] : 'Artwork attached'), false);
+            }
         }
 
         $billing = $address;
@@ -908,7 +932,7 @@ class C767_WooCommerce
                 'number' => sanitize_text_field((string) ($row['number'] ?? '')),
                 'shirt_size' => sanitize_text_field((string) ($row['shirtSize'] ?? '')),
                 'bottom_size' => sanitize_text_field((string) ($row['bottomSize'] ?? '')),
-                'sleeve' => sanitize_text_field((string) ($row['sleeve'] ?? 'Short')),
+                'sleeve' => (($row['sleeve'] ?? 'Short') === 'Long') ? 'Long' : 'Short',
                 'quantity' => $quantity,
                 'notes' => sanitize_textarea_field((string) ($row['notes'] ?? '')),
             ];
@@ -935,7 +959,7 @@ class C767_WooCommerce
         return $counts;
     }
 
-    private static function validate_ready_made_extras(array $unit_counts, array $extras)
+    private static function validate_ready_made_extras(array $unit_counts, array $extras, array $roster = [])
     {
         if (empty($unit_counts)) {
             return [
@@ -947,6 +971,18 @@ class C767_WooCommerce
                 'supporter_quantity' => 0,
                 'supporter_total' => 0.00,
                 'supporter_summary' => '',
+                'kit_quantity' => 0,
+                'polo_collar' => false,
+                'polo_collar_total' => 0.00,
+                'mixed_sleeves' => false,
+                'long_sleeve_quantity' => 0,
+                'long_sleeve_total' => 0.00,
+                'embroidered_logo' => false,
+                'embroidery_total' => 0.00,
+                'inside_collar_enabled' => false,
+                'inside_collar_message' => '',
+                'inside_collar_attachment' => null,
+                'inside_collar_total' => 0.00,
             ];
         }
         $required_socks = (int) (($unit_counts['soccer'] ?? 0) + ($unit_counts['goalkeeper'] ?? 0));
@@ -977,6 +1013,30 @@ class C767_WooCommerce
         }
 
         $extra_socks = max(0, $socks_quantity - $required_socks);
+        $kit_quantity = array_sum($unit_counts);
+        $polo_collar = rest_sanitize_boolean($extras['poloCollar'] ?? false);
+        $mixed_sleeves = rest_sanitize_boolean($extras['mixedSleeves'] ?? false);
+        $long_sleeve_quantity = 0;
+        if ($mixed_sleeves) {
+            foreach ($roster as $row) {
+                if (($row['sleeve'] ?? 'Short') === 'Long') {
+                    $long_sleeve_quantity += max(0, (int) ($row['quantity'] ?? 0));
+                }
+            }
+        }
+        $embroidered_logo = rest_sanitize_boolean($extras['embroideredLogo'] ?? false);
+        $inside_collar_enabled = rest_sanitize_boolean($extras['insideCollarEnabled'] ?? false);
+        $inside_collar_message = $inside_collar_enabled ? sanitize_text_field((string) ($extras['insideCollarMessage'] ?? '')) : '';
+        $inside_collar_attachment = $inside_collar_enabled
+            ? C767_REST_Uniform_Quotes::sanitize_collar_attachment($extras['insideCollarAttachment'] ?? null)
+            : null;
+        if ($inside_collar_enabled && $inside_collar_message === '' && !$inside_collar_attachment) {
+            return new WP_Error(
+                'c767_ready_made_inside_collar_required',
+                'Enter an inside-collar message or attach a valid logo/artwork file.',
+                ['status' => 400]
+            );
+        }
         return [
             'required_socks' => $required_socks,
             'socks_quantity' => $socks_quantity,
@@ -988,6 +1048,18 @@ class C767_WooCommerce
             'supporter_summary' => implode(', ', array_map(function ($row) {
                 return $row['size'] . ' × ' . $row['quantity'];
             }, $supporter_rows)),
+            'kit_quantity' => $kit_quantity,
+            'polo_collar' => $polo_collar,
+            'polo_collar_total' => $polo_collar ? $kit_quantity * 2.00 : 0.00,
+            'mixed_sleeves' => $mixed_sleeves,
+            'long_sleeve_quantity' => $long_sleeve_quantity,
+            'long_sleeve_total' => $long_sleeve_quantity * 2.00,
+            'embroidered_logo' => $embroidered_logo,
+            'embroidery_total' => $embroidered_logo ? $kit_quantity * 1.50 : 0.00,
+            'inside_collar_enabled' => $inside_collar_enabled,
+            'inside_collar_message' => $inside_collar_message,
+            'inside_collar_attachment' => $inside_collar_attachment,
+            'inside_collar_total' => $inside_collar_enabled ? $kit_quantity * 1.00 : 0.00,
         ];
     }
 

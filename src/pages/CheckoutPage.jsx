@@ -78,8 +78,8 @@ export default function CheckoutPage() {
   const hasReadyMadeDesigns = items.some((item) => item.readyMade);
   const readyMadeItemKeys = items.filter((item) => item.readyMade).map((item) => item.key).sort().join("|");
   const accountRequired = hasReadyMadeDesigns && !getStoredUser();
-  const extrasStatus = readyMadeExtrasStatus(items, readyMadeExtras);
-  const extrasTotal = extrasStatus.supporterTotal + extrasStatus.extraSocksTotal;
+  const extrasStatus = readyMadeExtrasStatus(items, readyMadeExtras, readyMadeRoster);
+  const extrasTotal = extrasStatus.supporterTotal + extrasStatus.extraSocksTotal + extrasStatus.productionTotal;
   const total = productTotal + extrasTotal;
   const readyMadeShippingUnits = items.filter((item) => item.readyMade).reduce((sum, item) => sum + Math.max(0, Number(item.qty) || 0), 0) + extrasStatus.supporterQuantity;
   const readyMadeShippingRate = hasReadyMadeDesigns ? uniformShippingRate(shipping.country, readyMadeShippingUnits) : null;
@@ -251,6 +251,10 @@ export default function CheckoutPage() {
           ))}
           {extrasStatus.supporterQuantity > 0 && <div className="flex justify-between py-1.5 text-sm"><span className="text-foreground-700">Supporter Jerseys × {extrasStatus.supporterQuantity}</span><span className="font-semibold text-foreground-950">${extrasStatus.supporterTotal.toFixed(2)}</span></div>}
           {extrasStatus.extraSocks > 0 && <div className="flex justify-between py-1.5 text-sm"><span className="text-foreground-700">Extra Socks × {extrasStatus.extraSocks}</span><span className="font-semibold text-foreground-950">${extrasStatus.extraSocksTotal.toFixed(2)}</span></div>}
+          {extrasStatus.poloCollarTotal > 0 && <div className="flex justify-between py-1.5 text-sm"><span className="text-foreground-700">Polo Style Collars × {extrasStatus.kitQuantity}</span><span className="font-semibold text-foreground-950">${extrasStatus.poloCollarTotal.toFixed(2)}</span></div>}
+          {extrasStatus.longSleeveTotal > 0 && <div className="flex justify-between py-1.5 text-sm"><span className="text-foreground-700">Long-Sleeve Upgrades × {extrasStatus.longSleeveQuantity}</span><span className="font-semibold text-foreground-950">${extrasStatus.longSleeveTotal.toFixed(2)}</span></div>}
+          {extrasStatus.embroideryTotal > 0 && <div className="flex justify-between py-1.5 text-sm"><span className="text-foreground-700">Embroidered Team Logos × {extrasStatus.kitQuantity}</span><span className="font-semibold text-foreground-950">${extrasStatus.embroideryTotal.toFixed(2)}</span></div>}
+          {extrasStatus.insideCollarTotal > 0 && <div className="flex justify-between py-1.5 text-sm"><span className="text-foreground-700">Inside-Collar Logo or Message × {extrasStatus.kitQuantity}</span><span className="font-semibold text-foreground-950">${extrasStatus.insideCollarTotal.toFixed(2)}</span></div>}
           <div className="flex justify-between text-base font-semibold pt-3 mt-2 border-t border-background-200/70">
             <span>Subtotal</span>
             <span>${total.toFixed(2)}</span>
