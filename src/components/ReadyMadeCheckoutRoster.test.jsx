@@ -36,4 +36,32 @@ describe("ready-made checkout roster", () => {
     const status = readyMadeExtrasStatus(items, { supporterEnabled: true, supporterJerseys: [{ size: "Youth S", quantity: 2 }] });
     expect(status.supporterJerseys).toEqual([{ size: "M", quantity: 2 }]);
   });
+
+  it("calculates production extras from authoritative kit and roster quantities", () => {
+    const status = readyMadeExtrasStatus(items, {
+      poloCollar: true,
+      mixedSleeves: true,
+      embroideredLogo: true,
+      insideCollarEnabled: true,
+      insideCollarMessage: "ONE TEAM",
+    }, [
+      { sleeve: "Long", quantity: 4 },
+      { sleeve: "Short", quantity: 6 },
+    ]);
+    expect(status).toMatchObject({
+      kitQuantity: 10,
+      longSleeveQuantity: 4,
+      poloCollarTotal: 20,
+      longSleeveTotal: 8,
+      embroideryTotal: 15,
+      insideCollarTotal: 10,
+      productionTotal: 53,
+      insideCollarValid: true,
+    });
+  });
+
+  it("requires message text or artwork when inside-collar customization is selected", () => {
+    expect(readyMadeExtrasStatus(items, { insideCollarEnabled: true }).insideCollarValid).toBe(false);
+    expect(readyMadeExtrasStatus(items, { insideCollarEnabled: true, insideCollarAttachment: { src: "data:image/png;base64,AA==" } }).insideCollarValid).toBe(true);
+  });
 });

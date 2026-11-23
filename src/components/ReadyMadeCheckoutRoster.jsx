@@ -1,13 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import Button from "./ui/Button";
 import { Input, Select } from "./ui/FormField";
+import CollarAttachment from "./uniform-studio/CollarAttachment";
 
 const sizes = ["XS", "S", "M", "L", "XL", "2XL", "3XL"];
 const sockCategories = new Set(["soccer", "goalkeeper"]);
 export const SUPPORTER_JERSEY_PRICE = 15;
 export const EXTRA_SOCK_PRICE = 5;
+export const POLO_COLLAR_PRICE = 2;
+export const LONG_SLEEVE_PRICE = 2;
+export const EMBROIDERED_LOGO_PRICE = 1.5;
+export const INSIDE_COLLAR_PRICE = 1;
 
-export function readyMadeExtrasStatus(items = [], extras = {}) {
+export function readyMadeExtrasStatus(items = [], extras = {}, roster = []) {
+  const kitQuantity = items
+    .filter((item) => item.readyMade)
+    .reduce((sum, item) => sum + Math.max(0, Math.floor(Number(item.qty) || 0)), 0);
   const requiredSocks = items
     .filter((item) => item.readyMade && sockCategories.has(String(item.uniformCategory || "").toLowerCase()))
     .reduce((sum, item) => sum + Math.max(0, Math.floor(Number(item.qty) || 0)), 0);
@@ -21,7 +29,19 @@ export function readyMadeExtrasStatus(items = [], extras = {}) {
     : [];
   const supporterQuantity = supporterJerseys.reduce((sum, row) => sum + row.quantity, 0);
   const extraSocks = Math.max(0, socksQuantity - requiredSocks);
+  const longSleeveQuantity = extras.mixedSleeves
+    ? roster.reduce((sum, row) => sum + (row.sleeve === "Long" ? Math.max(0, Math.floor(Number(row.quantity) || 0)) : 0), 0)
+    : 0;
+  const insideCollarEnabled = Boolean(extras.insideCollarEnabled);
+  const insideCollarValid = !insideCollarEnabled || Boolean(
+    String(extras.insideCollarMessage || "").trim() || extras.insideCollarAttachment?.src,
+  );
+  const poloCollarTotal = extras.poloCollar ? kitQuantity * POLO_COLLAR_PRICE : 0;
+  const longSleeveTotal = longSleeveQuantity * LONG_SLEEVE_PRICE;
+  const embroideryTotal = extras.embroideredLogo ? kitQuantity * EMBROIDERED_LOGO_PRICE : 0;
+  const insideCollarTotal = insideCollarEnabled ? kitQuantity * INSIDE_COLLAR_PRICE : 0;
   return {
+    kitQuantity,
     requiredSocks,
     socksQuantity,
     extraSocks,
@@ -30,6 +50,13 @@ export function readyMadeExtrasStatus(items = [], extras = {}) {
     supporterQuantity,
     supporterTotal: supporterQuantity * SUPPORTER_JERSEY_PRICE,
     extraSocksTotal: extraSocks * EXTRA_SOCK_PRICE,
+    longSleeveQuantity,
+    insideCollarValid,
+    poloCollarTotal,
+    longSleeveTotal,
+    embroideryTotal,
+    insideCollarTotal,
+    productionTotal: poloCollarTotal + longSleeveTotal + embroideryTotal + insideCollarTotal,
   };
 }
 
@@ -61,7 +88,7 @@ export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, extr
   const [entry, setEntry] = useState(() => emptyEntry(readyMadeItems[0]?.key));
   const [attempted, setAttempted] = useState(false);
   const status = readyMadeRosterStatus(items, roster);
-  const extrasStatus = readyMadeExtrasStatus(items, extras);
+  const extrasStatus = readyMadeExtrasStatus(items, extras, roster);
 
   useEffect(() => {
     if (!extrasStatus.requiredSocks || extrasStatus.socksQuantity >= extrasStatus.requiredSocks) return;
@@ -83,7 +110,7 @@ export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, extr
 
   const continueToReview = () => {
     setAttempted(true);
-    if (status.valid && extrasStatus.socksValid) onContinue();
+    if (status.valid && extrasStatus.socksValid && extrasStatus.insideCollarValid) onContinue();
   };
 
   const updateSupporterRow = (index, field, value) => setExtras((current) => ({
@@ -106,6 +133,48 @@ export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, extr
         ))}
       </div>
 
+      <section aria-labelledby="ready-made-production-extras" className="mt-5 overflow-hidden rounded-2xl border-2 border-primary-500 bg-white">
+        <header className="flex items-center justify-between gap-3 bg-primary-700 px-4 py-3 text-white">
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15"><i className="ri-settings-4-line" aria-hidden="true" /></span>
+            <span><h3 id="ready-made-production-extras" className="font-heading text-base font-bold leading-tight">Production Extras</h3><span className="block text-[10px] text-white/75">Collar, sleeve and logo customization</span></span>
+          </span>
+          <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide">Sublimation</span>
+        </header>
+        <div className="space-y-4 p-4">
+          <div>
+            <p className="mb-2 font-heading text-xs font-bold uppercase tracking-wide text-foreground-500">Collar &amp; Sleeves</p>
+            <label className={`flex cursor-pointer items-center justify-between rounded-xl border px-3 py-3 text-sm ${extras.poloCollar ? "border-primary-500 bg-primary-50" : "border-background-300 bg-background-50"}`}>
+              <span className="font-semibold text-foreground-900">Polo Style Collar <span className="font-normal text-foreground-600">(+${POLO_COLLAR_PRICE.toFixed(2)}/kit)</span></span>
+              <input type="checkbox" aria-label="Polo Style Collar" className="h-4 w-4 accent-primary-700" checked={Boolean(extras.poloCollar)} onChange={(event) => setExtras((current) => ({ ...current, poloCollar: event.target.checked }))} />
+            </label>
+            <p className="mt-2 text-xs text-foreground-600">Crew, V-Neck and short sleeves included in base price.</p>
+            <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm font-semibold text-foreground-900">
+              <input type="checkbox" className="mt-0.5 h-4 w-4 accent-primary-700" checked={Boolean(extras.mixedSleeves)} onChange={(event) => { const checked = event.target.checked; setExtras((current) => ({ ...current, mixedSleeves: checked })); if (!checked) { setRoster((current) => current.map((row) => ({ ...row, sleeve: "Short" }))); setEntry((current) => ({ ...current, sleeve: "Short" })); } }} />
+              <span>Mixed Sleeve Team Order<span className="mt-0.5 block text-xs font-normal text-foreground-500">Choose each player’s sleeve in the roster. Long sleeves +${LONG_SLEEVE_PRICE.toFixed(2)}/kit.</span></span>
+            </label>
+          </div>
+          <div className="border-t border-background-200 pt-4">
+            <p className="mb-2 text-xs text-foreground-600">All prints and logos are sublimated and included.</p>
+            <label className="flex cursor-pointer items-start gap-2 text-sm font-semibold text-foreground-900">
+              <input type="checkbox" className="mt-0.5 h-4 w-4 accent-primary-700" checked={Boolean(extras.embroideredLogo)} onChange={(event) => setExtras((current) => ({ ...current, embroideredLogo: event.target.checked }))} />
+              <span>Embroidered Team Logo <span className="font-normal text-foreground-600">(+${EMBROIDERED_LOGO_PRICE.toFixed(2)}/kit)</span></span>
+            </label>
+            <div className="mt-4">
+              <span className="block text-sm font-semibold text-foreground-900">Inside-Collar Logo or Message <span className="font-normal text-foreground-600">(+${INSIDE_COLLAR_PRICE.toFixed(2)}/kit)</span></span>
+              <div className="mt-2 flex gap-2">
+                {[false, true].map((enabled) => <button key={String(enabled)} type="button" onClick={() => setExtras((current) => ({ ...current, insideCollarEnabled: enabled, ...(!enabled ? { insideCollarMessage: "", insideCollarAttachment: null } : {}) }))} className={`rounded-lg border px-3 py-2 text-xs font-bold ${Boolean(extras.insideCollarEnabled) === enabled ? "border-primary-600 bg-primary-600 text-white" : "border-background-300 bg-background-50 text-foreground-800"}`}>{enabled ? "Yes" : "No"}</button>)}
+              </div>
+              {extras.insideCollarEnabled && <div className="mt-3">
+                <label className="block text-xs font-semibold text-foreground-800">Inside-Collar Message <span className="text-red-600">*</span><Input className="mt-1.5" aria-label="Inside-collar message" placeholder="Message for the inside collar" value={extras.insideCollarMessage || ""} onChange={(event) => setExtras((current) => ({ ...current, insideCollarMessage: event.target.value }))} /></label>
+                <CollarAttachment attachment={extras.insideCollarAttachment || null} onChange={(attachment) => setExtras((current) => ({ ...current, insideCollarAttachment: attachment }))} />
+                {attempted && !extrasStatus.insideCollarValid && <p role="alert" className="mt-2 rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-900">Enter an inside-collar message or attach a logo/artwork file.</p>}
+              </div>}
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div className="mt-5 grid gap-3 rounded-xl border border-background-200 bg-white p-4 sm:grid-cols-2">
         {readyMadeItems.length > 1 && (
           <label className="sm:col-span-2 text-xs font-semibold text-foreground-700">Design
@@ -122,9 +191,9 @@ export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, extr
         <label className="text-xs font-semibold text-foreground-700">Bottom Size
           <Select className="mt-1" value={entry.bottomSize} onChange={(event) => setEntry((current) => ({ ...current, bottomSize: event.target.value }))}>{sizes.map((size) => <option key={size}>{size}</option>)}</Select>
         </label>
-        <label className="text-xs font-semibold text-foreground-700">Sleeve
+        {extras.mixedSleeves && <label className="text-xs font-semibold text-foreground-700">Sleeve
           <Select className="mt-1" value={entry.sleeve} onChange={(event) => setEntry((current) => ({ ...current, sleeve: event.target.value }))}><option>Short</option><option>Long</option></Select>
-        </label>
+        </label>}
         <label className="text-xs font-semibold text-foreground-700">Quantity
           <Input className="mt-1" type="number" min="1" max="99" value={entry.quantity} onChange={(event) => setEntry((current) => ({ ...current, quantity: event.target.value }))} />
         </label>
@@ -174,7 +243,7 @@ export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, extr
         </div>
       )}
 
-      {attempted && (!status.valid || !extrasStatus.socksValid) && <p role="alert" className="mt-3 rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-900">Complete every required roster and sock quantity shown above before continuing.</p>}
+      {attempted && (!status.valid || !extrasStatus.socksValid || !extrasStatus.insideCollarValid) && <p role="alert" className="mt-3 rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-900">Complete every required roster, production option and sock quantity shown above before continuing.</p>}
       <Button type="button" variant="primary" size="lg" className="mt-5 w-full" onClick={continueToReview}>Continue to Review &amp; Checkout</Button>
     </section>
   );
