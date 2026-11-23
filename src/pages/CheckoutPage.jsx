@@ -83,7 +83,7 @@ export default function CheckoutPage() {
   const total = productTotal + extrasTotal;
   const readyMadeShippingUnits = items.filter((item) => item.readyMade).reduce((sum, item) => sum + Math.max(0, Number(item.qty) || 0), 0) + extrasStatus.supporterQuantity;
   const readyMadeShippingRate = hasReadyMadeDesigns ? uniformShippingRate(shipping.country, readyMadeShippingUnits) : null;
-  const orderContext = hasReadyMadeDesigns ? { readyMadeRoster, readyMadeExtras } : {};
+  const orderContext = hasReadyMadeDesigns ? { readyMadeRoster, readyMadeExtras: { ...readyMadeExtras, supporterJerseys: extrasStatus.supporterJerseys } } : {};
   const readyMadeAddressValidation = validateUniformShippingAddress(shipping);
   const addressRegions = uniformAddressRegions(shipping.country);
   const standardShippingComplete = Boolean(shipping.firstName.trim() && shipping.lastName.trim() && shipping.address1.trim() && shipping.city.trim() && (shipping.country !== "US" || (shipping.state.trim() && shipping.postcode.trim())));

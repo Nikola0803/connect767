@@ -961,7 +961,7 @@ class C767_WooCommerce
 
         $supporter_rows = [];
         $supporter_quantity = 0;
-        $allowed_sizes = ['Youth S', 'Youth M', 'Youth L', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
+        $allowed_sizes = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
         if (rest_sanitize_boolean($extras['supporterEnabled'] ?? false)) {
             foreach ((array) ($extras['supporterJerseys'] ?? []) as $row) {
                 $size = sanitize_text_field((string) ($row['size'] ?? ''));

@@ -31,4 +31,9 @@ describe("ready-made checkout roster", () => {
     const status = readyMadeExtrasStatus(items, { supporterEnabled: true, supporterJerseys: [{ size: "S", quantity: 4 }, { size: "XL", quantity: 2 }] });
     expect(status).toMatchObject({ supporterQuantity: 6, supporterTotal: 90 });
   });
+
+  it("normalizes retired youth sizes to a supported adult size", () => {
+    const status = readyMadeExtrasStatus(items, { supporterEnabled: true, supporterJerseys: [{ size: "Youth S", quantity: 2 }] });
+    expect(status.supporterJerseys).toEqual([{ size: "M", quantity: 2 }]);
+  });
 });

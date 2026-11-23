@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import Button from "./ui/Button";
 import { Input, Select } from "./ui/FormField";
 
-const sizes = ["Youth S", "Youth M", "Youth L", "XS", "S", "M", "L", "XL", "2XL", "3XL"];
+const sizes = ["XS", "S", "M", "L", "XL", "2XL", "3XL"];
 const sockCategories = new Set(["soccer", "goalkeeper"]);
 export const SUPPORTER_JERSEY_PRICE = 15;
 export const EXTRA_SOCK_PRICE = 5;
@@ -16,7 +16,7 @@ export function readyMadeExtrasStatus(items = [], extras = {}) {
     : 0;
   const supporterJerseys = extras.supporterEnabled
     ? (Array.isArray(extras.supporterJerseys) ? extras.supporterJerseys : [])
-        .map((row) => ({ size: String(row.size || "M"), quantity: Math.max(0, Math.floor(Number(row.quantity) || 0)) }))
+        .map((row) => ({ size: sizes.includes(String(row.size || "")) ? String(row.size) : "M", quantity: Math.max(0, Math.floor(Number(row.quantity) || 0)) }))
         .filter((row) => row.quantity > 0)
     : [];
   const supporterQuantity = supporterJerseys.reduce((sum, row) => sum + row.quantity, 0);
@@ -152,9 +152,9 @@ export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, extr
           <div className="mt-4 space-y-2 border-t border-background-200 pt-4">
             {(extras.supporterJerseys || []).map((row, index) => (
               <div key={`${index}-${row.size}`} className="grid grid-cols-[1fr_7rem_2.5rem] gap-2">
-                <Select aria-label={`Supporter jersey size ${index + 1}`} value={row.size} onChange={(event) => updateSupporterRow(index, "size", event.target.value)}>{sizes.map((size) => <option key={size} disabled={(extras.supporterJerseys || []).some((other, rowIndex) => rowIndex !== index && other.size === size)}>{size}</option>)}</Select>
+                <Select aria-label={`Supporter jersey size ${index + 1}`} value={sizes.includes(row.size) ? row.size : "M"} onChange={(event) => updateSupporterRow(index, "size", event.target.value)}>{sizes.map((size) => <option key={size} disabled={(extras.supporterJerseys || []).some((other, rowIndex) => rowIndex !== index && other.size === size)}>{size}</option>)}</Select>
                 <Input aria-label={`Supporter jersey quantity ${index + 1}`} type="number" min="1" max="99" value={row.quantity} onChange={(event) => updateSupporterRow(index, "quantity", event.target.value)} />
-                <button type="button" aria-label={`Remove supporter jersey size ${row.size}`} disabled={(extras.supporterJerseys || []).length === 1} className="rounded-lg text-accent-600 hover:bg-accent-50 disabled:opacity-30" onClick={() => setExtras((current) => ({ ...current, supporterJerseys: current.supporterJerseys.filter((_, rowIndex) => rowIndex !== index) }))}><i className="ri-delete-bin-line" /></button>
+                <button type="button" aria-label={`Remove supporter jersey size ${row.size}`} className="rounded-lg text-accent-600 hover:bg-accent-50" onClick={() => setExtras((current) => { const supporterJerseys = (current.supporterJerseys || []).filter((_, rowIndex) => rowIndex !== index); return { ...current, supporterEnabled: supporterJerseys.length > 0, supporterJerseys }; })}><i className="ri-delete-bin-line" /></button>
               </div>
             ))}
             {(extras.supporterJerseys || []).length < sizes.length && <button type="button" className="text-xs font-bold text-primary-700" onClick={() => setExtras((current) => { const nextSize = sizes.find((size) => !(current.supporterJerseys || []).some((row) => row.size === size)); return { ...current, supporterJerseys: [...(current.supporterJerseys || []), { size: nextSize || "M", quantity: 1 }] }; })}>+ Add Another Size</button>}
