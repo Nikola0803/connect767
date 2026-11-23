@@ -64,10 +64,10 @@ import {
 } from "../lib/listingOnboarding";
 
 const steps = [
-  { n: 1, label: "Account & Listing Info" },
-  { n: 2, label: "Contact & Media" },
-  { n: 3, label: "Review" },
-  { n: 4, label: "Preview" },
+  { n: 1, label: "Plan" },
+  { n: 2, label: "Business Details" },
+  { n: 3, label: "Contact & Photos" },
+  { n: 4, label: "Preview & Submit" },
 ];
 
 const priceChoices = ["$", "$$", "$$$"];
@@ -615,9 +615,9 @@ export default function AddListingPage() {
             // Public listing data still contains enabled/price/duration;
             // only the private meeting URL is unavailable if this fails.
           });
-        // Normal edits start on the combined plan and listing-information step.
-        // Seller Center shortcuts still open the matching relocated section.
-        setStep(isManagingPlan ? 3 : isManagingBookings ? 2 : 1);
+        // Normal edits start at the plan. Seller Center shortcuts still open
+        // the matching relocated review or booking section.
+        setStep(isManagingPlan ? 4 : isManagingBookings ? 3 : 1);
       })
       .catch(() => {
         if (!cancelled) setLoadError("Couldn't load this listing.");
@@ -631,7 +631,7 @@ export default function AddListingPage() {
   }, [isEditing, editSlug, isManagingBookings, isManagingPlan]);
 
   useEffect(() => {
-    if (!isManagingBookings || loadingExisting || step !== 2) return;
+    if (!isManagingBookings || loadingExisting || step !== 3) return;
     const frame = window.requestAnimationFrame(() => {
       document.getElementById("booking-settings")?.scrollIntoView({
         behavior: "smooth",
@@ -655,13 +655,23 @@ export default function AddListingPage() {
       .filter(([value]) => !value)
       .map(([, label]) => label);
     if (missingBusinessFields.length) {
-      setStep(1);
+      setStep(2);
       setSubmitError(`Complete all required fields: ${missingBusinessFields.join(", ")}.`);
       return;
     }
     if (!hasValidEmail(form.email)) {
-      setStep(2);
+      setStep(3);
       setSubmitError("Enter a valid email address.");
+      return;
+    }
+    if (coverPhotoError) {
+      setStep(3);
+      setSubmitError("Choose a valid cover photo before submitting.");
+      return;
+    }
+    if (!hasCompletePayoutDetails(form)) {
+      setStep(3);
+      setSubmitError("Complete the required payment and payout information before submitting.");
       return;
     }
     if (!isEditing && !auth.isAuthenticated && !accountCreated) {
@@ -812,7 +822,6 @@ export default function AddListingPage() {
     // block them or invite junk data.
     if (step === 1) {
       const planIsSelected = form.tier === "free" || form.tier === "classified";
-      const listingInformationIsComplete = missingBusinessRequiredFieldIds(form).length === 0;
       const accountIsComplete =
         isEditing ||
         auth.isAuthenticated ||
@@ -822,9 +831,10 @@ export default function AddListingPage() {
           account.password.length >= 8 &&
           account.password === account.confirmPassword &&
           account.agree);
-      return planIsSelected && listingInformationIsComplete && accountIsComplete;
+      return planIsSelected && accountIsComplete;
     }
-    if (step === 2)
+    if (step === 2) return missingBusinessRequiredFieldIds(form).length === 0;
+    if (step === 3)
       return hasValidEmail(form.email) && !coverPhotoError && hasCompletePayoutDetails(form);
     return true;
   };
@@ -844,10 +854,12 @@ export default function AddListingPage() {
       return [
         !form.tier && "listingTier",
         ...accountFields,
-        ...missingBusinessRequiredFieldIds(form),
       ].filter(Boolean);
     }
     if (step === 2) {
+      return missingBusinessRequiredFieldIds(form);
+    }
+    if (step === 3) {
       return [
         !hasValidEmail(form.email) && "contactEmail",
         coverPhotoError && "coverPhoto",
@@ -880,10 +892,11 @@ export default function AddListingPage() {
     setStep((s) => Math.min(4, s + 1));
   };
   const goBack = () => setStep((s) => Math.max(1, s - 1));
-  const showBusinessRequiredErrors = requiredAttentionStep === 1;
-  const showPayoutRequiredErrors = requiredAttentionStep === 2;
-  const planIsMissing = showBusinessRequiredErrors && !form.tier;
-  const contactEmailIsInvalid = requiredAttentionStep === 2 && !hasValidEmail(form.email);
+  const showAccountRequiredErrors = requiredAttentionStep === 1;
+  const showBusinessRequiredErrors = requiredAttentionStep === 2;
+  const showPayoutRequiredErrors = requiredAttentionStep === 3;
+  const planIsMissing = showAccountRequiredErrors && !form.tier;
+  const contactEmailIsInvalid = requiredAttentionStep === 3 && !hasValidEmail(form.email);
   const industryIsMissing = !findIndustry(form.category);
   const locationIsIncomplete = !hasCompleteListingLocation(form.location);
 
@@ -967,7 +980,7 @@ export default function AddListingPage() {
 
   return (
     <div className="pt-16 md:pt-20">
-      {coverPhotoError && step === 2 && (
+      {coverPhotoError && step === 3 && (
         <div
           role="alert"
           aria-live="assertive"
@@ -1038,13 +1051,10 @@ export default function AddListingPage() {
           {step === 1 && (
             <section className="mb-4 rounded-2xl border border-background-200/80 bg-background-50/80 p-4 shadow-[0_18px_50px_rgba(49,77,62,0.07)] sm:mb-6 sm:rounded-3xl sm:p-6 md:p-8">
               <h1 className="mb-2 font-heading text-2xl font-light leading-tight text-foreground-950 sm:mb-3 sm:text-3xl md:text-4xl">
-                {!isEditing && !auth.isAuthenticated && !accountCreated
-                  ? "Create your account"
-                  : "Choose your plan"}{" "}
-                <span className="text-accent-500 italic">& add your listing information</span>
+                Create your <span className="text-accent-500 italic">listing</span>
               </h1>
-              <p className="mb-6 hidden text-xs text-foreground-600 font-label sm:mb-10 sm:block sm:text-sm">
-                Complete your account, select a plan, and add the information customers will see.
+              <p className="mb-6 text-xs text-foreground-600 font-label sm:mb-8 sm:text-sm">
+                Get discovered on Connect767.
               </p>
               <div id="listingTier" tabIndex="-1" className="flex flex-wrap items-center gap-3 scroll-mt-28">
                 <h2 className="font-heading text-xl font-light text-foreground-950 sm:text-2xl">
@@ -1054,9 +1064,7 @@ export default function AddListingPage() {
                   Required
                 </span>
               </div>
-              <p className="mb-4 mt-2 hidden text-xs text-foreground-600 font-label sm:mb-5 sm:block sm:text-sm">
-                Select Free Listing or Classified to continue. Expand either plan to compare every feature.
-              </p>
+              <div className="mb-4 sm:mb-5" />
               <div className={`rounded-2xl transition-all ${planIsMissing ? "border-2 border-red-500 bg-red-50/40 p-3 ring-4 ring-red-200 shadow-[0_0_0_7px_rgba(254,202,202,0.45),0_16px_36px_rgba(220,38,38,0.14)]" : ""}`}>
                 <ListingTierCards
                   compact
@@ -1074,19 +1082,22 @@ export default function AddListingPage() {
                 </p>
               )}
               {!isEditing && !auth.isAuthenticated && !accountCreated && (
-                <OwnerAccountPanel account={account} onChange={updateAccount} signInHref={signInHref} showRequiredErrors={showBusinessRequiredErrors} />
+                <OwnerAccountPanel account={account} onChange={updateAccount} signInHref={signInHref} showRequiredErrors={showAccountRequiredErrors} />
               )}
             </section>
           )}
 
-          {step === 1 && (
+          {step === 2 && (
             <section className="rounded-2xl border border-background-200/80 bg-background-50/80 p-4 shadow-[0_18px_50px_rgba(49,77,62,0.07)] sm:rounded-3xl sm:p-6 md:p-8">
-              <h2 className="mb-2 font-heading text-xl font-light text-foreground-950 sm:mb-3 sm:text-2xl md:text-3xl">
-                Listing <span className="text-accent-500 italic">Information</span>
-              </h2>
-              <p className="mb-6 hidden text-xs text-foreground-600 font-label sm:mb-10 sm:block sm:text-sm">
-                This is what shows up on your profile card and in search results.
+              <h1 className="mb-2 font-heading text-2xl font-light leading-tight text-foreground-950 sm:mb-3 sm:text-3xl md:text-4xl">
+                Tell us about your <span className="text-accent-500 italic">business</span>
+              </h1>
+              <p className="mb-6 text-xs text-foreground-600 font-label sm:mb-8 sm:text-sm">
+                Add the details customers need.
               </p>
+              <h2 className="mb-5 font-heading text-xl font-medium text-primary-900 sm:text-2xl">
+                Business essentials
+              </h2>
               <div className="space-y-4 sm:space-y-5">
                 <FormField
                   label="Listing Name"
@@ -1263,13 +1274,13 @@ export default function AddListingPage() {
             </section>
           )}
 
-          {step === 2 && (
+          {step === 3 && (
             <section className="rounded-2xl border border-background-200/80 bg-background-50/80 p-4 shadow-[0_18px_50px_rgba(49,77,62,0.07)] sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
               <h1 className="mb-2 font-heading text-2xl font-light text-foreground-950 sm:mb-3 sm:text-3xl md:text-4xl">
-                Contact <span className="text-accent-500 italic">& media</span>
+                Help customers <span className="text-accent-500 italic">connect</span>
               </h1>
-              <p className="mb-6 hidden text-xs text-foreground-600 font-label sm:mb-10 sm:block sm:text-sm">
-                How customers reach you, plus a photo to bring your profile to life.
+              <p className="mb-6 text-xs text-foreground-600 font-label sm:mb-8 sm:text-sm">
+                Add contact details, business tools, and profile images.
               </p>
               <div className="space-y-4 sm:space-y-5">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
@@ -1783,13 +1794,13 @@ export default function AddListingPage() {
             </section>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <div>
               <h1 className="mb-2 font-heading text-2xl font-light text-foreground-950 sm:mb-3 sm:text-3xl md:text-4xl">
-                Review <span className="text-accent-500 italic">your listing</span>
+                Review your <span className="text-accent-500 italic">listing</span>
               </h1>
               <p className="mb-6 hidden text-xs text-foreground-600 font-label sm:mb-10 sm:block sm:text-sm">
-                Double-check everything looks right before opening the final profile preview.
+                Make sure everything looks right before submitting.
               </p>
               <div className="space-y-4 rounded-2xl border border-background-200/70 bg-background-100/40 p-4 sm:space-y-5 sm:p-6">
                 {/* Tier is changeable right here at the end. Previously it was
@@ -1928,21 +1939,33 @@ export default function AddListingPage() {
           )}
 
           {step === 4 && (
-            <div>
-              <h1 className="mb-2 font-heading text-2xl font-light text-foreground-950 sm:mb-3 sm:text-3xl md:text-4xl">
-                Preview <span className="text-accent-500 italic">your listing</span>
-              </h1>
-              <p className="mb-5 hidden text-xs text-foreground-600 font-label sm:mb-6 sm:block sm:text-sm">
-                This is the actual listing page layout — exactly how your profile will look once
-                it's approved, not a mockup.
-              </p>
-
-              {/* Cancels this page's own px-4 md:px-8 lg:px-12 padding so
-                  ListingProfile gets the exact same available width here as
-                  it does on the real /listings/:slug page — see the wrapper
-                  comment above for why step 4 alone uses max-w-7xl. */}
-              <div className="rounded-2xl border border-background-200/70 bg-background-50 overflow-hidden -mx-4 md:-mx-8 lg:-mx-12">
+            <details className="mt-6 overflow-hidden rounded-2xl border border-background-200/80 bg-background-50 shadow-[0_14px_38px_rgba(49,77,62,0.06)]">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-semibold text-primary-800 sm:px-6">
+                <span className="inline-flex items-center gap-2">
+                  <i className="ri-eye-line text-lg" aria-hidden="true" />
+                  View full profile preview
+                </span>
+                <i className="ri-arrow-down-s-line text-lg" aria-hidden="true" />
+              </summary>
+              {/* ListingProfile remains the real production component. The
+                  redesign only collapses it until the owner chooses to view
+                  it; no preview behavior or data mapping is replaced. */}
+              <div className="overflow-hidden border-t border-background-200/70 bg-background-50">
                 <ListingProfile data={buildPreviewData(form)} isPreview />
+              </div>
+            </details>
+          )}
+
+          {step === 4 && !isEditing && (
+            <div className="mt-6 flex items-start gap-3 rounded-2xl border border-primary-200 bg-primary-50/70 px-4 py-4 sm:px-5">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-background-50">
+                <i className="ri-mail-check-line" aria-hidden="true" />
+              </span>
+              <div>
+                <h2 className="font-heading text-lg font-medium text-primary-950">What happens next?</h2>
+                <p className="mt-1 text-xs leading-relaxed text-foreground-700 sm:text-sm">
+                  We&apos;ll review your listing and email you when it goes live.
+                </p>
               </div>
             </div>
           )}
