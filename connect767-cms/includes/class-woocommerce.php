@@ -25,6 +25,9 @@ if (!defined('ABSPATH')) {
 class C767_WooCommerce
 {
     const NAMESPACE_ = 'connect767/v1';
+    const READY_MADE_CATEGORY_SLUG = 'ready-made-designs';
+    const READY_MADE_META = '_c767_ready_made';
+    const UNIFORM_CATEGORY_META = '_c767_uniform_category';
 
     public static function init()
     {
@@ -48,7 +51,104 @@ class C767_WooCommerce
             },
         ]);
 
+        add_action('woocommerce_product_options_general_product_data', [__CLASS__, 'render_ready_made_product_fields']);
+        add_action('woocommerce_process_product_meta', [__CLASS__, 'save_ready_made_product_fields']);
+
         add_action('rest_api_init', [__CLASS__, 'register_routes']);
+    }
+
+    public static function uniform_category_options()
+    {
+        return [
+            '' => 'Choose a category',
+            'soccer' => 'Soccer',
+            'basketball' => 'Basketball',
+            'netball' => 'Netball',
+            'cricket' => 'Cricket',
+            'goalkeeper' => 'Goalkeeper',
+            'other' => 'Clothing & Other',
+        ];
+    }
+
+    public static function minimum_order_quantity_for_category($category)
+    {
+        $minimums = [
+            'soccer' => 22,
+            'basketball' => 10,
+            'netball' => 10,
+            'cricket' => 20,
+            'goalkeeper' => 1,
+            'other' => 10,
+        ];
+        $category = sanitize_key((string) $category);
+        return $minimums[$category] ?? 1;
+    }
+
+    public static function render_ready_made_product_fields()
+    {
+        echo '<div class="options_group">';
+        woocommerce_wp_checkbox([
+            'id' => self::READY_MADE_META,
+            'label' => 'Ready-Made Uniform Design',
+            'description' => 'Display this product on the Ready-Made Designs shop page and enforce its team-order minimum.',
+        ]);
+        woocommerce_wp_select([
+            'id' => self::UNIFORM_CATEGORY_META,
+            'label' => 'Uniform category',
+            'description' => 'Controls the minimum order quantity used by the storefront and checkout.',
+            'desc_tip' => true,
+            'options' => self::uniform_category_options(),
+        ]);
+        echo '</div>';
+    }
+
+    public static function save_ready_made_product_fields($product_id)
+    {
+        if (!current_user_can('edit_post', $product_id)) {
+            return;
+        }
+
+        $ready_made = isset($_POST[self::READY_MADE_META]) ? 'yes' : 'no';
+        $category = isset($_POST[self::UNIFORM_CATEGORY_META])
+            ? sanitize_key(wp_unslash($_POST[self::UNIFORM_CATEGORY_META]))
+            : '';
+        if (!array_key_exists($category, self::uniform_category_options())) {
+            $category = '';
+        }
+
+        update_post_meta($product_id, self::READY_MADE_META, $ready_made);
+        update_post_meta($product_id, self::UNIFORM_CATEGORY_META, $ready_made === 'yes' ? $category : '');
+
+        $term = term_exists(self::READY_MADE_CATEGORY_SLUG, 'product_cat');
+        if (!$term && $ready_made === 'yes') {
+            $term = wp_insert_term('Ready-Made Designs', 'product_cat', ['slug' => self::READY_MADE_CATEGORY_SLUG]);
+            if (is_array($term) && !empty($term['term_id'])) {
+                update_term_meta((int) $term['term_id'], 'c767_icon', 'ri-layout-grid-line');
+            }
+        }
+        $term_id = is_array($term) ? (int) $term['term_id'] : (int) $term;
+        if ($term_id) {
+            if ($ready_made === 'yes') {
+                wp_set_object_terms($product_id, [$term_id], 'product_cat', true);
+            } else {
+                wp_remove_object_terms($product_id, [$term_id], 'product_cat');
+            }
+        }
+    }
+
+    private static function product_meta_id($product)
+    {
+        return $product && $product->is_type('variation') ? (int) $product->get_parent_id() : (int) $product->get_id();
+    }
+
+    private static function is_ready_made_product($product)
+    {
+        return $product && get_post_meta(self::product_meta_id($product), self::READY_MADE_META, true) === 'yes';
+    }
+
+    private static function ready_made_uniform_category($product)
+    {
+        return sanitize_key((string) get_post_meta(self::product_meta_id($product), self::UNIFORM_CATEGORY_META, true));
     }
 
     /**
@@ -282,6 +382,9 @@ class C767_WooCommerce
             'size_chart' => current(array_filter($images, function ($image) {
                 return !empty($image['is_size_chart']);
             })) ?: null,
+            'ready_made' => self::is_ready_made_product($product),
+            'uniform_category' => self::ready_made_uniform_category($product),
+            'minimum_order_quantity' => self::minimum_order_quantity_for_category(self::ready_made_uniform_category($product)),
         ];
 
         // Real size/color (etc.) support — previously this endpoint only
@@ -529,7 +632,7 @@ class C767_WooCommerce
      * Stripe, PayPal, and the hosted WooCommerce fallback all call this method
      * so customer addresses, shipping lines, taxes, and totals stay identical.
      */
-    public static function build_pending_order(array $items, $email, array $shipping, $allow_local_arrangement = false)
+    public static function build_pending_order(array $items, $email, array $shipping, $allow_local_arrangement = false, array $order_context = [])
     {
         if (empty($items)) {
             return new WP_Error('c767_empty_cart', 'Cart is empty.', ['status' => 400]);
@@ -583,6 +686,35 @@ class C767_WooCommerce
         if (count($order->get_items()) === 0) {
             $order->delete(true);
             return new WP_Error('c767_no_valid_items', 'None of the cart items matched a real product.', ['status' => 400]);
+        }
+
+        $minimum_check = self::validate_ready_made_order_minimums($order);
+        if (is_wp_error($minimum_check)) {
+            $order->delete(true);
+            return $minimum_check;
+        }
+
+        $roster = self::validate_ready_made_roster($order, (array) ($order_context['readyMadeRoster'] ?? []));
+        if (is_wp_error($roster)) {
+            $order->delete(true);
+            return $roster;
+        }
+        if (!empty($roster)) {
+            $order->update_meta_data('_c767_ready_made_roster', wp_json_encode($roster));
+            $order->update_meta_data('Connect767 Team Roster', sprintf('%d roster row%s attached', count($roster), count($roster) === 1 ? '' : 's'));
+            $roster_lines = array_map(function ($row) {
+                return sprintf(
+                    '%s%s — %s top / %s bottom / %s sleeve — Qty %d%s',
+                    $row['name'],
+                    $row['number'] !== '' ? ' #' . $row['number'] : '',
+                    $row['shirt_size'],
+                    $row['bottom_size'],
+                    $row['sleeve'],
+                    $row['quantity'],
+                    $row['product_title'] !== '' ? ' — ' . $row['product_title'] : ''
+                );
+            }, $roster);
+            $order->add_order_note("Ready-Made Team Roster:\n" . implode("\n", $roster_lines), false);
         }
 
         $billing = $address;
@@ -646,6 +778,97 @@ class C767_WooCommerce
         }
 
         return true;
+    }
+
+    private static function validate_ready_made_order_minimums(WC_Order $order)
+    {
+        $totals = [];
+        foreach ($order->get_items('line_item') as $item) {
+            $product = $item->get_product();
+            if (!self::is_ready_made_product($product)) {
+                continue;
+            }
+            $category = self::ready_made_uniform_category($product);
+            if (!$category) {
+                return new WP_Error(
+                    'c767_ready_made_category_required',
+                    sprintf('The ready-made design “%s” needs a uniform category before it can be ordered.', $item->get_name()),
+                    ['status' => 400]
+                );
+            }
+            $totals[$category] = ($totals[$category] ?? 0) + max(1, (int) $item->get_quantity());
+        }
+
+        if (!empty($totals) && get_current_user_id() <= 0) {
+            return new WP_Error(
+                'c767_ready_made_account_required',
+                'Sign in before ordering a ready-made uniform design.',
+                ['status' => 401]
+            );
+        }
+
+        foreach ($totals as $category => $quantity) {
+            $minimum = self::minimum_order_quantity_for_category($category);
+            if ($quantity < $minimum) {
+                return new WP_Error(
+                    'c767_ready_made_minimum',
+                    sprintf('Minimum order: %d ready-made %s units. Your cart currently has %d.', $minimum, $category, $quantity),
+                    ['status' => 400, 'category' => $category, 'minimumQuantity' => $minimum, 'quantity' => $quantity]
+                );
+            }
+        }
+
+        if (!empty($totals['goalkeeper']) && empty($totals['soccer'])) {
+            return new WP_Error(
+                'c767_goalkeeper_requires_soccer',
+                'Ready-made goalkeeper designs must be ordered with a ready-made soccer order.',
+                ['status' => 400]
+            );
+        }
+
+        return true;
+    }
+
+    private static function validate_ready_made_roster(WC_Order $order, array $rows)
+    {
+        $required = 0;
+        foreach ($order->get_items('line_item') as $item) {
+            if (self::is_ready_made_product($item->get_product())) {
+                $required += max(1, (int) $item->get_quantity());
+            }
+        }
+        if ($required === 0) {
+            return [];
+        }
+        if (empty($rows)) {
+            return new WP_Error('c767_ready_made_roster_required', 'Complete the Team Roster before checking out.', ['status' => 400]);
+        }
+
+        $clean = [];
+        $assigned = 0;
+        foreach ($rows as $row) {
+            $name = sanitize_text_field((string) ($row['name'] ?? ''));
+            $quantity = max(0, (int) ($row['quantity'] ?? 0));
+            if ($name === '' || $quantity < 1) {
+                return new WP_Error('c767_ready_made_roster_invalid', 'Every Team Roster row needs a player name and quantity.', ['status' => 400]);
+            }
+            $assigned += $quantity;
+            $clean[] = [
+                'product_slug' => sanitize_title((string) ($row['productSlug'] ?? '')),
+                'product_title' => sanitize_text_field((string) ($row['productTitle'] ?? '')),
+                'name' => $name,
+                'number' => sanitize_text_field((string) ($row['number'] ?? '')),
+                'shirt_size' => sanitize_text_field((string) ($row['shirtSize'] ?? '')),
+                'bottom_size' => sanitize_text_field((string) ($row['bottomSize'] ?? '')),
+                'sleeve' => sanitize_text_field((string) ($row['sleeve'] ?? 'Short')),
+                'quantity' => $quantity,
+                'notes' => sanitize_textarea_field((string) ($row['notes'] ?? '')),
+            ];
+        }
+        if ($assigned !== $required) {
+            return new WP_Error('c767_ready_made_roster_quantity', sprintf('Team Roster quantity must equal the %d ready-made uniforms in this order.', $required), ['status' => 400]);
+        }
+        return $clean;
     }
 
     public static function sanitize_shipping_address(array $shipping)
@@ -764,7 +987,9 @@ class C767_WooCommerce
         }
         $items = (array) $request->get_param('items');
         $shipping = (array) $request->get_param('shipping');
-        $order = self::build_pending_order($items, $request->get_param('email'), $shipping);
+        $order = self::build_pending_order($items, $request->get_param('email'), $shipping, false, [
+            'readyMadeRoster' => (array) $request->get_param('readyMadeRoster'),
+        ]);
         if (is_wp_error($order)) {
             return $order;
         }
@@ -795,7 +1020,8 @@ class C767_WooCommerce
             (array) $request->get_param('items'),
             $request->get_param('email'),
             $shipping,
-            true
+            true,
+            ['readyMadeRoster' => (array) $request->get_param('readyMadeRoster')]
         );
         if (is_wp_error($order)) {
             return $order;

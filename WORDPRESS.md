@@ -273,6 +273,27 @@ The shop category pills need an icon (Remix Icon class name, e.g.
 `ri-t-shirt-line`). Add an ACF field `icon` to the `product_cat` taxonomy term, or
 hardcode a slug→icon map in the plugin's REST response filter if that's simpler.
 
+### Ready-Made Uniform Designs
+
+Ready-made designs are normal WooCommerce products and do not open the Design
+Studio. Add or edit them under **WooCommerce → Products**:
+
+1. Enable **Ready-Made Uniform Design** in the product's General panel.
+2. Choose its **Uniform category** (Soccer, Basketball, Netball, Cricket,
+   Goalkeeper, or Clothing & Other).
+3. Add the product images, price, stock, sizes and colors using standard
+   WooCommerce fields, then publish it.
+
+The plugin assigns the product to the `ready-made-designs` Shop category, so it
+appears at `/shop?category=ready-made-designs`. Category minimums match the
+studio rules and are enforced in the React cart and again server-side for every
+payment path. Ready-made orders require a signed-in account. Goalkeeper designs
+also require a ready-made soccer order in the same cart. Checkout uses the same
+two completion stages as the studio: customers must finish the Team Roster
+(names, numbers, top and bottom sizes, sleeve choice and quantity) before Review
+& Checkout. The plugin validates the roster again and stores it securely on the
+WooCommerce order for fulfillment.
+
 ## REST endpoints the app calls
 
 All under the standard WP/WooCommerce namespaces — no custom routes needed for

@@ -75,6 +75,24 @@ describe("mapWcProduct", () => {
     expect(mapped.categories).toEqual([{ name: "Apparel", slug: "apparel" }]);
   });
 
+  it("maps ready-made uniform commerce metadata", () => {
+    const mapped = mapWcProduct({
+      id: 99,
+      slug: "ready-cricket-kit",
+      name: "Ready Cricket Kit",
+      price: "40",
+      ready_made: true,
+      uniform_category: "cricket",
+      minimum_order_quantity: 20,
+    });
+
+    expect(mapped).toMatchObject({
+      readyMade: true,
+      uniformCategory: "cricket",
+      minimumOrderQuantity: 20,
+    });
+  });
+
   it("retains every assigned product category and ignores Uncategorized when real categories exist", () => {
     const mapped = mapWcProduct({
       id: 15,

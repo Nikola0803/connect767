@@ -35,6 +35,25 @@ describe("useCart", () => {
     expect(result.current.isOpen).toBe(true);
   });
 
+  it("starts a ready-made design at its category minimum", () => {
+    const readyMadeProduct = {
+      ...product,
+      slug: "ready-soccer-kit",
+      readyMade: true,
+      uniformCategory: "soccer",
+      minimumOrderQuantity: 22,
+    };
+    const { result } = renderHook(() => useCart(), { wrapper });
+    act(() => result.current.addItem(readyMadeProduct, null, 1));
+
+    expect(result.current.items[0]).toMatchObject({
+      readyMade: true,
+      uniformCategory: "soccer",
+      minimumOrderQuantity: 22,
+      qty: 22,
+    });
+  });
+
   it("merges quantity when the same product+variation is added again", () => {
     const { result } = renderHook(() => useCart(), { wrapper });
     act(() => result.current.addItem(product, null, 1));
