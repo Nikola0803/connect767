@@ -34,7 +34,7 @@ describe("ready-made checkout roster", () => {
 
   it("normalizes retired youth sizes to a supported adult size", () => {
     const status = readyMadeExtrasStatus(items, { supporterEnabled: true, supporterJerseys: [{ size: "Youth S", quantity: 2 }] });
-    expect(status.supporterJerseys).toEqual([{ size: "M", quantity: 2 }]);
+    expect(status.supporterJerseys).toEqual([{ size: "M", sleeve: "Short", quantity: 2 }]);
   });
 
   it("calculates production extras from authoritative kit and roster quantities", () => {
@@ -63,5 +63,25 @@ describe("ready-made checkout roster", () => {
   it("requires message text or artwork when inside-collar customization is selected", () => {
     expect(readyMadeExtrasStatus(items, { insideCollarEnabled: true }).insideCollarValid).toBe(false);
     expect(readyMadeExtrasStatus(items, { insideCollarEnabled: true, insideCollarAttachment: { src: "data:image/png;base64,AA==" } }).insideCollarValid).toBe(true);
+  });
+
+  it("applies mixed sleeve selection and long-sleeve pricing to supporter jerseys", () => {
+    const status = readyMadeExtrasStatus(items, {
+      mixedSleeves: true,
+      supporterEnabled: true,
+      supporterJerseys: [
+        { size: "S", sleeve: "Long", quantity: 3 },
+        { size: "L", sleeve: "Short", quantity: 2 },
+      ],
+    });
+    expect(status).toMatchObject({
+      supporterLongSleeveQuantity: 3,
+      longSleeveQuantity: 3,
+      longSleeveTotal: 6,
+      supporterJerseys: [
+        { size: "S", sleeve: "Long", quantity: 3 },
+        { size: "L", sleeve: "Short", quantity: 2 },
+      ],
+    });
   });
 });

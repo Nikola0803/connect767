@@ -24,14 +24,22 @@ export function readyMadeExtrasStatus(items = [], extras = {}, roster = []) {
     : 0;
   const supporterJerseys = extras.supporterEnabled
     ? (Array.isArray(extras.supporterJerseys) ? extras.supporterJerseys : [])
-        .map((row) => ({ size: sizes.includes(String(row.size || "")) ? String(row.size) : "M", quantity: Math.max(0, Math.floor(Number(row.quantity) || 0)) }))
+        .map((row) => ({
+          size: sizes.includes(String(row.size || "")) ? String(row.size) : "M",
+          sleeve: extras.mixedSleeves && row.sleeve === "Long" ? "Long" : "Short",
+          quantity: Math.max(0, Math.floor(Number(row.quantity) || 0)),
+        }))
         .filter((row) => row.quantity > 0)
     : [];
   const supporterQuantity = supporterJerseys.reduce((sum, row) => sum + row.quantity, 0);
   const extraSocks = Math.max(0, socksQuantity - requiredSocks);
-  const longSleeveQuantity = extras.mixedSleeves
+  const rosterLongSleeveQuantity = extras.mixedSleeves
     ? roster.reduce((sum, row) => sum + (row.sleeve === "Long" ? Math.max(0, Math.floor(Number(row.quantity) || 0)) : 0), 0)
     : 0;
+  const supporterLongSleeveQuantity = extras.mixedSleeves
+    ? supporterJerseys.reduce((sum, row) => sum + (row.sleeve === "Long" ? row.quantity : 0), 0)
+    : 0;
+  const longSleeveQuantity = rosterLongSleeveQuantity + supporterLongSleeveQuantity;
   const insideCollarEnabled = Boolean(extras.insideCollarEnabled);
   const insideCollarValid = !insideCollarEnabled || Boolean(
     String(extras.insideCollarMessage || "").trim() || extras.insideCollarAttachment?.src,
@@ -51,6 +59,8 @@ export function readyMadeExtrasStatus(items = [], extras = {}, roster = []) {
     supporterTotal: supporterQuantity * SUPPORTER_JERSEY_PRICE,
     extraSocksTotal: extraSocks * EXTRA_SOCK_PRICE,
     longSleeveQuantity,
+    rosterLongSleeveQuantity,
+    supporterLongSleeveQuantity,
     insideCollarValid,
     poloCollarTotal,
     longSleeveTotal,
@@ -150,8 +160,8 @@ export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, extr
             </label>
             <p className="mt-2 text-xs text-foreground-600">Crew, V-Neck and short sleeves included in base price.</p>
             <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm font-semibold text-foreground-900">
-              <input type="checkbox" className="mt-0.5 h-4 w-4 accent-primary-700" checked={Boolean(extras.mixedSleeves)} onChange={(event) => { const checked = event.target.checked; setExtras((current) => ({ ...current, mixedSleeves: checked })); if (!checked) { setRoster((current) => current.map((row) => ({ ...row, sleeve: "Short" }))); setEntry((current) => ({ ...current, sleeve: "Short" })); } }} />
-              <span>Mixed Sleeve Team Order<span className="mt-0.5 block text-xs font-normal text-foreground-500">Choose each player’s sleeve in the roster. Long sleeves +${LONG_SLEEVE_PRICE.toFixed(2)}/kit.</span></span>
+              <input type="checkbox" className="mt-0.5 h-4 w-4 accent-primary-700" checked={Boolean(extras.mixedSleeves)} onChange={(event) => { const checked = event.target.checked; setExtras((current) => ({ ...current, mixedSleeves: checked, supporterJerseys: !checked ? (current.supporterJerseys || []).map((row) => ({ ...row, sleeve: "Short" })) : current.supporterJerseys })); if (!checked) { setRoster((current) => current.map((row) => ({ ...row, sleeve: "Short" }))); setEntry((current) => ({ ...current, sleeve: "Short" })); } }} />
+              <span>Mixed Sleeve Team Order<span className="mt-0.5 block text-xs font-normal text-foreground-500">Choose each player and supporter jersey sleeve. Long sleeves +${LONG_SLEEVE_PRICE.toFixed(2)}/kit.</span></span>
             </label>
           </div>
           <div className="border-t border-background-200 pt-4">
@@ -214,20 +224,24 @@ export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, extr
 
       <div className="mt-5 rounded-2xl border border-background-200 bg-white p-4">
         <label className="flex cursor-pointer items-start gap-3">
-          <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-background-300 text-primary-700" checked={Boolean(extras.supporterEnabled)} onChange={(event) => setExtras((current) => ({ ...current, supporterEnabled: event.target.checked, supporterJerseys: current.supporterJerseys?.length ? current.supporterJerseys : [{ size: "M", quantity: 1 }] }))} />
+          <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-background-300 text-primary-700" checked={Boolean(extras.supporterEnabled)} onChange={(event) => setExtras((current) => ({ ...current, supporterEnabled: event.target.checked, supporterJerseys: current.supporterJerseys?.length ? current.supporterJerseys : [{ size: "M", sleeve: "Short", quantity: 1 }] }))} />
           <span><strong className="block text-sm text-foreground-900">Add Supporter Jerseys</strong><span className="text-xs text-foreground-500">Same team design without player numbers · ${SUPPORTER_JERSEY_PRICE.toFixed(2)} each</span></span>
         </label>
         {extras.supporterEnabled && (
           <div className="mt-4 space-y-2 border-t border-background-200 pt-4">
             {(extras.supporterJerseys || []).map((row, index) => (
-              <div key={`${index}-${row.size}`} className="grid grid-cols-[1fr_7rem_2.5rem] gap-2">
-                <Select aria-label={`Supporter jersey size ${index + 1}`} value={sizes.includes(row.size) ? row.size : "M"} onChange={(event) => updateSupporterRow(index, "size", event.target.value)}>{sizes.map((size) => <option key={size} disabled={(extras.supporterJerseys || []).some((other, rowIndex) => rowIndex !== index && other.size === size)}>{size}</option>)}</Select>
+              <div key={`${index}-${row.size}`} className="grid grid-cols-[minmax(0,1fr)_5.5rem_2.5rem] gap-2">
+                <div className={`grid min-w-0 gap-2 ${extras.mixedSleeves ? "grid-cols-2" : "grid-cols-1"}`}>
+                  <Select aria-label={`Supporter jersey size ${index + 1}`} value={sizes.includes(row.size) ? row.size : "M"} onChange={(event) => updateSupporterRow(index, "size", event.target.value)}>{sizes.map((size) => <option key={size} disabled={(extras.supporterJerseys || []).some((other, rowIndex) => rowIndex !== index && other.size === size)}>{size}</option>)}</Select>
+                  {extras.mixedSleeves && <Select aria-label={`Supporter jersey sleeve ${index + 1}`} value={row.sleeve === "Long" ? "Long" : "Short"} onChange={(event) => updateSupporterRow(index, "sleeve", event.target.value)}><option>Short</option><option>Long</option></Select>}
+                </div>
                 <Input aria-label={`Supporter jersey quantity ${index + 1}`} type="number" min="1" max="99" value={row.quantity} onChange={(event) => updateSupporterRow(index, "quantity", event.target.value)} />
                 <button type="button" aria-label={`Remove supporter jersey size ${row.size}`} className="rounded-lg text-accent-600 hover:bg-accent-50" onClick={() => setExtras((current) => { const supporterJerseys = (current.supporterJerseys || []).filter((_, rowIndex) => rowIndex !== index); return { ...current, supporterEnabled: supporterJerseys.length > 0, supporterJerseys }; })}><i className="ri-delete-bin-line" /></button>
               </div>
             ))}
-            {(extras.supporterJerseys || []).length < sizes.length && <button type="button" className="text-xs font-bold text-primary-700" onClick={() => setExtras((current) => { const nextSize = sizes.find((size) => !(current.supporterJerseys || []).some((row) => row.size === size)); return { ...current, supporterJerseys: [...(current.supporterJerseys || []), { size: nextSize || "M", quantity: 1 }] }; })}>+ Add Another Size</button>}
+            {(extras.supporterJerseys || []).length < sizes.length && <button type="button" className="text-xs font-bold text-primary-700" onClick={() => setExtras((current) => { const nextSize = sizes.find((size) => !(current.supporterJerseys || []).some((row) => row.size === size)); return { ...current, supporterJerseys: [...(current.supporterJerseys || []), { size: nextSize || "M", sleeve: "Short", quantity: 1 }] }; })}>+ Add Another Size</button>}
             <div className="flex justify-between border-t border-background-200 pt-3 text-sm font-semibold"><span>{extrasStatus.supporterQuantity} Supporter Jersey{extrasStatus.supporterQuantity === 1 ? "" : "s"}</span><span>${extrasStatus.supporterTotal.toFixed(2)}</span></div>
+            {extrasStatus.supporterLongSleeveQuantity > 0 && <div className="flex justify-between text-xs font-semibold text-foreground-600"><span>{extrasStatus.supporterLongSleeveQuantity} Long-Sleeve Upgrade{extrasStatus.supporterLongSleeveQuantity === 1 ? "" : "s"}</span><span>+${(extrasStatus.supporterLongSleeveQuantity * LONG_SLEEVE_PRICE).toFixed(2)}</span></div>}
           </div>
         )}
       </div>

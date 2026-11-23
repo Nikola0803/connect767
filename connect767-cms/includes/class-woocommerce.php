@@ -1003,7 +1003,11 @@ class C767_WooCommerce
                 $size = sanitize_text_field((string) ($row['size'] ?? ''));
                 $quantity = max(0, (int) ($row['quantity'] ?? 0));
                 if (in_array($size, $allowed_sizes, true) && $quantity > 0) {
-                    $supporter_rows[] = ['size' => $size, 'quantity' => $quantity];
+                    $supporter_rows[] = [
+                        'size' => $size,
+                        'sleeve' => rest_sanitize_boolean($extras['mixedSleeves'] ?? false) && ($row['sleeve'] ?? 'Short') === 'Long' ? 'Long' : 'Short',
+                        'quantity' => $quantity,
+                    ];
                     $supporter_quantity += $quantity;
                 }
             }
@@ -1019,6 +1023,11 @@ class C767_WooCommerce
         $long_sleeve_quantity = 0;
         if ($mixed_sleeves) {
             foreach ($roster as $row) {
+                if (($row['sleeve'] ?? 'Short') === 'Long') {
+                    $long_sleeve_quantity += max(0, (int) ($row['quantity'] ?? 0));
+                }
+            }
+            foreach ($supporter_rows as $row) {
                 if (($row['sleeve'] ?? 'Short') === 'Long') {
                     $long_sleeve_quantity += max(0, (int) ($row['quantity'] ?? 0));
                 }
@@ -1046,7 +1055,7 @@ class C767_WooCommerce
             'supporter_quantity' => $supporter_quantity,
             'supporter_total' => $supporter_quantity * 15.00,
             'supporter_summary' => implode(', ', array_map(function ($row) {
-                return $row['size'] . ' × ' . $row['quantity'];
+                return $row['size'] . ' / ' . $row['sleeve'] . ' sleeve × ' . $row['quantity'];
             }, $supporter_rows)),
             'kit_quantity' => $kit_quantity,
             'polo_collar' => $polo_collar,
