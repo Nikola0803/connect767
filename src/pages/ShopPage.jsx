@@ -66,11 +66,24 @@ export default function ShopPage() {
     <div className="pt-16 md:pt-20">
       <ReadyMadeCaptureShield active={captureShieldActive} />
       <section className="relative overflow-hidden bg-primary-950 text-background-50">
-        <div className="absolute -top-32 -right-24 w-80 h-80 rounded-full bg-primary-500/20 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-40 left-1/4 w-96 h-96 rounded-full bg-accent-500/15 blur-3xl pointer-events-none" />
+        {isReadyMadePage ? <>
+          <img
+            fetchPriority="high"
+            decoding="async"
+            src={readyMadeBannerImage}
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-60 sm:opacity-80 lg:opacity-100"
+            style={{ objectPosition: "68% center" }}
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-primary-950 via-primary-950/90 to-primary-950/10 sm:via-primary-950/75 lg:via-primary-950/55" />
+        </> : <>
+          <div className="absolute -top-32 -right-24 w-80 h-80 rounded-full bg-primary-500/20 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-40 left-1/4 w-96 h-96 rounded-full bg-accent-500/15 blur-3xl pointer-events-none" />
+        </>}
         <div className="relative w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12 pt-10 pb-16 md:pt-12 md:pb-20">
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.85fr)] lg:items-center gap-8 lg:gap-12">
-            <div className="max-w-3xl">
+          <div className={isReadyMadePage ? "flex min-h-[390px] items-center py-8 md:min-h-[460px]" : "grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.85fr)] lg:items-center gap-8 lg:gap-12"}>
+            <div className={isReadyMadePage ? "max-w-2xl" : "max-w-3xl"}>
               <div className="inline-flex items-center gap-2 rounded-full border border-background-50/15 bg-background-50/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-primary-200">
                 <span className="w-1.5 h-1.5 rounded-full bg-accent-400" />
                 {isReadyMadePage ? "Ready-Made Sports" : "The Connect767 Shop"}
@@ -120,54 +133,26 @@ export default function ShopPage() {
               </div>
             </div>
 
-            <div className="relative hidden sm:block">
+            {!isReadyMadePage && <div className="relative hidden sm:block">
               <div className="relative aspect-[5/4] overflow-hidden rounded-[2rem] border border-background-50/15 bg-background-50/5 shadow-[0_24px_70px_rgba(0,0,0,0.28)]">
                 <img
                   fetchPriority="high"
                   decoding="async"
-                  src={isReadyMadePage ? readyMadeBannerImage : shopBannerImage}
-                  alt={isReadyMadePage ? "Soccer, basketball and cricket players wearing Ready-Made Connect767 sports uniforms" : "Dominican-made products in the Connect767 Shop"}
+                  src={shopBannerImage}
+                  alt="Dominican-made products in the Connect767 Shop"
                   className="h-full w-full object-cover"
-                  style={{ objectPosition: isReadyMadePage ? "62% center" : "center 6%" }}
+                  style={{ objectPosition: "center 6%" }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-primary-950/75 via-transparent to-transparent" />
-                {isReadyMadePage ? <>
-                  <div className="absolute top-5 left-5 flex items-center gap-2 rounded-full bg-background-50/95 px-3 py-1.5 text-xs font-semibold text-foreground-950">
-                    <span className="h-2 w-2 rounded-full bg-primary-500" />
-                    Ready-Made Sports
-                  </div>
-                  <div className="absolute bottom-5 left-5 right-5 grid grid-cols-3 gap-2.5">
-                    <div className="rounded-xl bg-background-50/95 p-3 text-foreground-950">
-                      <div className="text-[9px] font-label uppercase tracking-wider text-foreground-600">Categories</div>
-                      <div className="mt-1 text-xs font-semibold">Six Sports</div>
-                    </div>
-                    <div className="rounded-xl bg-background-50/95 p-3 text-foreground-950">
-                      <div className="text-[9px] font-label uppercase tracking-wider text-foreground-600">Ordering</div>
-                      <div className="mt-1 text-xs font-semibold">Team Roster</div>
-                    </div>
-                    <div className="rounded-xl bg-accent-500 p-3 text-background-50">
-                      <div className="text-[9px] font-label uppercase tracking-wider text-background-50/80">Checkout</div>
-                      <div className="mt-1 text-xs font-semibold">Secure</div>
-                    </div>
-                  </div>
-                </> : <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-4">
+                <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-4">
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-100">Curated in Dominica</p>
                       <p className="mt-1 font-heading text-2xl text-background-50">Made with island character.</p>
                     </div>
                     <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-accent-500 text-background-50"><i className="ri-arrow-right-up-line" /></span>
-                  </div>}
+                  </div>
               </div>
-              {isReadyMadePage && <div className="absolute -bottom-4 -right-4 hidden md:flex items-center gap-3 rounded-2xl bg-background-50 px-4 py-3 text-foreground-950 shadow-lg">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
-                  <i className="ri-shield-check-line text-lg" />
-                </div>
-                <div>
-                  <div className="text-xs font-semibold">Protected previews</div>
-                  <div className="text-[10px] font-label text-foreground-600">Watermarked in store</div>
-                </div>
-              </div>}
-            </div>
+            </div>}
           </div>
         </div>
       </section>
