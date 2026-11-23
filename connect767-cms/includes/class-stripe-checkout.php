@@ -219,6 +219,7 @@ class C767_Stripe_Checkout
         $shipping = (array) $request->get_param('shipping');
         $order = C767_WooCommerce::build_pending_order($items, $email, $shipping, false, [
             'readyMadeRoster' => (array) $request->get_param('readyMadeRoster'),
+            'readyMadeExtras' => (array) $request->get_param('readyMadeExtras'),
         ]);
         if (is_wp_error($order)) {
             return $order;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readyMadeRosterStatus } from "./ReadyMadeCheckoutRoster";
+import { readyMadeExtrasStatus, readyMadeRosterStatus } from "./ReadyMadeCheckoutRoster";
 
 describe("ready-made checkout roster", () => {
   const items = [
@@ -20,5 +20,15 @@ describe("ready-made checkout roster", () => {
       { productKey: "home-kit", quantity: 4 },
       { productKey: "cap", quantity: 2 },
     ])).toMatchObject({ valid: true, requirements: [{ required: 10, assigned: 10, valid: true }] });
+  });
+
+  it("includes one sock per soccer uniform and charges only additional pairs", () => {
+    const status = readyMadeExtrasStatus(items.map((item) => item.key === "home-kit" ? { ...item, uniformCategory: "soccer" } : item), { socksQuantity: 13 });
+    expect(status).toMatchObject({ requiredSocks: 10, socksQuantity: 13, extraSocks: 3, extraSocksTotal: 15, socksValid: true });
+  });
+
+  it("calculates supporter jerseys by size at fifteen dollars each", () => {
+    const status = readyMadeExtrasStatus(items, { supporterEnabled: true, supporterJerseys: [{ size: "S", quantity: 4 }, { size: "XL", quantity: 2 }] });
+    expect(status).toMatchObject({ supporterQuantity: 6, supporterTotal: 90 });
   });
 });

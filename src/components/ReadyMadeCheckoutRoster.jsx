@@ -1,8 +1,37 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Button from "./ui/Button";
 import { Input, Select } from "./ui/FormField";
 
 const sizes = ["Youth S", "Youth M", "Youth L", "XS", "S", "M", "L", "XL", "2XL", "3XL"];
+const sockCategories = new Set(["soccer", "goalkeeper"]);
+export const SUPPORTER_JERSEY_PRICE = 15;
+export const EXTRA_SOCK_PRICE = 5;
+
+export function readyMadeExtrasStatus(items = [], extras = {}) {
+  const requiredSocks = items
+    .filter((item) => item.readyMade && sockCategories.has(String(item.uniformCategory || "").toLowerCase()))
+    .reduce((sum, item) => sum + Math.max(0, Math.floor(Number(item.qty) || 0)), 0);
+  const socksQuantity = requiredSocks
+    ? Math.max(0, Math.floor(Number(extras.socksQuantity) || 0))
+    : 0;
+  const supporterJerseys = extras.supporterEnabled
+    ? (Array.isArray(extras.supporterJerseys) ? extras.supporterJerseys : [])
+        .map((row) => ({ size: String(row.size || "M"), quantity: Math.max(0, Math.floor(Number(row.quantity) || 0)) }))
+        .filter((row) => row.quantity > 0)
+    : [];
+  const supporterQuantity = supporterJerseys.reduce((sum, row) => sum + row.quantity, 0);
+  const extraSocks = Math.max(0, socksQuantity - requiredSocks);
+  return {
+    requiredSocks,
+    socksQuantity,
+    extraSocks,
+    socksValid: requiredSocks === 0 || socksQuantity >= requiredSocks,
+    supporterJerseys,
+    supporterQuantity,
+    supporterTotal: supporterQuantity * SUPPORTER_JERSEY_PRICE,
+    extraSocksTotal: extraSocks * EXTRA_SOCK_PRICE,
+  };
+}
 
 export function readyMadeRosterStatus(items = [], roster = []) {
   const readyMadeItems = items.filter((item) => item.readyMade);
@@ -27,11 +56,17 @@ const emptyEntry = (productKey = "") => ({
   notes: "",
 });
 
-export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, onContinue }) {
+export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, extras, setExtras, onContinue }) {
   const readyMadeItems = useMemo(() => items.filter((item) => item.readyMade), [items]);
   const [entry, setEntry] = useState(() => emptyEntry(readyMadeItems[0]?.key));
   const [attempted, setAttempted] = useState(false);
   const status = readyMadeRosterStatus(items, roster);
+  const extrasStatus = readyMadeExtrasStatus(items, extras);
+
+  useEffect(() => {
+    if (!extrasStatus.requiredSocks || extrasStatus.socksQuantity >= extrasStatus.requiredSocks) return;
+    setExtras((current) => ({ ...current, socksQuantity: extrasStatus.requiredSocks }));
+  }, [extrasStatus.requiredSocks, extrasStatus.socksQuantity, setExtras]);
 
   const addPlayer = () => {
     setAttempted(true);
@@ -48,8 +83,13 @@ export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, onCo
 
   const continueToReview = () => {
     setAttempted(true);
-    if (status.valid) onContinue();
+    if (status.valid && extrasStatus.socksValid) onContinue();
   };
+
+  const updateSupporterRow = (index, field, value) => setExtras((current) => ({
+    ...current,
+    supporterJerseys: (current.supporterJerseys || []).map((row, rowIndex) => rowIndex === index ? { ...row, [field]: value } : row),
+  }));
 
   return (
     <section aria-labelledby="ready-made-roster-title" className="rounded-2xl border border-background-200 bg-background-50 p-5 shadow-sm">
@@ -74,7 +114,7 @@ export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, onCo
             </Select>
           </label>
         )}
-        <Input aria-label="Player name" placeholder="Player name *" value={entry.name} error={attempted && !entry.name.trim()} onChange={(event) => setEntry((current) => ({ ...current, name: event.target.value }))} />
+        <Input aria-label="Player or team name" placeholder="Player or Team Name *" value={entry.name} error={attempted && !entry.name.trim()} onChange={(event) => setEntry((current) => ({ ...current, name: event.target.value }))} />
         <Input aria-label="Jersey number" placeholder="Jersey number" value={entry.number} onChange={(event) => setEntry((current) => ({ ...current, number: event.target.value }))} />
         <label className="text-xs font-semibold text-foreground-700">Top Size
           <Select className="mt-1" value={entry.shirtSize} onChange={(event) => setEntry((current) => ({ ...current, shirtSize: event.target.value }))}>{sizes.map((size) => <option key={size}>{size}</option>)}</Select>
@@ -103,7 +143,38 @@ export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, onCo
         </div>
       )}
 
-      {attempted && !status.valid && <p role="alert" className="mt-3 rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-900">Complete every design quantity shown above before continuing.</p>}
+      <div className="mt-5 rounded-2xl border border-background-200 bg-white p-4">
+        <label className="flex cursor-pointer items-start gap-3">
+          <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-background-300 text-primary-700" checked={Boolean(extras.supporterEnabled)} onChange={(event) => setExtras((current) => ({ ...current, supporterEnabled: event.target.checked, supporterJerseys: current.supporterJerseys?.length ? current.supporterJerseys : [{ size: "M", quantity: 1 }] }))} />
+          <span><strong className="block text-sm text-foreground-900">Add Supporter Jerseys</strong><span className="text-xs text-foreground-500">Same team design without player numbers · ${SUPPORTER_JERSEY_PRICE.toFixed(2)} each</span></span>
+        </label>
+        {extras.supporterEnabled && (
+          <div className="mt-4 space-y-2 border-t border-background-200 pt-4">
+            {(extras.supporterJerseys || []).map((row, index) => (
+              <div key={`${index}-${row.size}`} className="grid grid-cols-[1fr_7rem_2.5rem] gap-2">
+                <Select aria-label={`Supporter jersey size ${index + 1}`} value={row.size} onChange={(event) => updateSupporterRow(index, "size", event.target.value)}>{sizes.map((size) => <option key={size} disabled={(extras.supporterJerseys || []).some((other, rowIndex) => rowIndex !== index && other.size === size)}>{size}</option>)}</Select>
+                <Input aria-label={`Supporter jersey quantity ${index + 1}`} type="number" min="1" max="99" value={row.quantity} onChange={(event) => updateSupporterRow(index, "quantity", event.target.value)} />
+                <button type="button" aria-label={`Remove supporter jersey size ${row.size}`} disabled={(extras.supporterJerseys || []).length === 1} className="rounded-lg text-accent-600 hover:bg-accent-50 disabled:opacity-30" onClick={() => setExtras((current) => ({ ...current, supporterJerseys: current.supporterJerseys.filter((_, rowIndex) => rowIndex !== index) }))}><i className="ri-delete-bin-line" /></button>
+              </div>
+            ))}
+            {(extras.supporterJerseys || []).length < sizes.length && <button type="button" className="text-xs font-bold text-primary-700" onClick={() => setExtras((current) => { const nextSize = sizes.find((size) => !(current.supporterJerseys || []).some((row) => row.size === size)); return { ...current, supporterJerseys: [...(current.supporterJerseys || []), { size: nextSize || "M", quantity: 1 }] }; })}>+ Add Another Size</button>}
+            <div className="flex justify-between border-t border-background-200 pt-3 text-sm font-semibold"><span>{extrasStatus.supporterQuantity} Supporter Jersey{extrasStatus.supporterQuantity === 1 ? "" : "s"}</span><span>${extrasStatus.supporterTotal.toFixed(2)}</span></div>
+          </div>
+        )}
+      </div>
+
+      {extrasStatus.requiredSocks > 0 && (
+        <div className={`mt-4 rounded-2xl border p-4 ${attempted && !extrasStatus.socksValid ? "border-accent-400 bg-accent-50" : "border-background-200 bg-white"}`}>
+          <div className="flex items-center justify-between gap-4">
+            <span><strong className="block text-sm text-foreground-900">Socks</strong><span className="text-xs text-foreground-500">{extrasStatus.requiredSocks} included with the full-uniform order. Additional pairs are ${EXTRA_SOCK_PRICE.toFixed(2)} each.</span></span>
+            <label className="w-24 text-xs font-semibold text-foreground-700">Quantity<Input className="mt-1" aria-label="Sock quantity" type="number" min={extrasStatus.requiredSocks} max="999" value={extrasStatus.socksQuantity} onChange={(event) => setExtras((current) => ({ ...current, socksQuantity: event.target.value }))} /></label>
+          </div>
+          {extrasStatus.extraSocks > 0 && <div className="mt-3 flex justify-between border-t border-background-200 pt-3 text-sm font-semibold"><span>{extrasStatus.extraSocks} Extra Pair{extrasStatus.extraSocks === 1 ? "" : "s"} × ${EXTRA_SOCK_PRICE.toFixed(2)}</span><span>${extrasStatus.extraSocksTotal.toFixed(2)}</span></div>}
+          {attempted && !extrasStatus.socksValid && <p role="alert" className="mt-2 text-xs font-semibold text-accent-800">Sock quantity must be at least {extrasStatus.requiredSocks}.</p>}
+        </div>
+      )}
+
+      {attempted && (!status.valid || !extrasStatus.socksValid) && <p role="alert" className="mt-3 rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-900">Complete every required roster and sock quantity shown above before continuing.</p>}
       <Button type="button" variant="primary" size="lg" className="mt-5 w-full" onClick={continueToReview}>Continue to Review &amp; Checkout</Button>
     </section>
   );

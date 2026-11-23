@@ -19,7 +19,9 @@ import { Spinner } from "../components/ui/States";
 import PaypalButton from "../components/PaypalButton";
 import { readyMadeCartIssues } from "../lib/readyMadeMinimums";
 import { getStoredUser } from "../lib/apiClient";
-import ReadyMadeCheckoutRoster from "../components/ReadyMadeCheckoutRoster";
+import ReadyMadeCheckoutRoster, { readyMadeExtrasStatus } from "../components/ReadyMadeCheckoutRoster";
+import { UNIFORM_SHIPPING_COUNTRIES, uniformShippingRate } from "../lib/uniformShipping";
+import { uniformAddressRegions, validateUniformShippingAddress } from "../lib/uniformAddress";
 
 let stripePromise = null;
 const emptyShipping = {
@@ -62,24 +64,34 @@ export default function CheckoutPage() {
       return [];
     }
   });
+  const [readyMadeExtras, setReadyMadeExtras] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("c767_ready_made_extras") || "{}");
+      return saved && typeof saved === "object" ? saved : {};
+    } catch {
+      return {};
+    }
+  });
 
-  const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const productTotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
   const minimumIssues = readyMadeCartIssues(items);
   const hasReadyMadeDesigns = items.some((item) => item.readyMade);
   const readyMadeItemKeys = items.filter((item) => item.readyMade).map((item) => item.key).sort().join("|");
   const accountRequired = hasReadyMadeDesigns && !getStoredUser();
-  const orderContext = hasReadyMadeDesigns ? { readyMadeRoster } : {};
-  const shippingComplete = Boolean(
-    email.trim() &&
-      shipping.firstName.trim() &&
-      shipping.lastName.trim() &&
-      shipping.address1.trim() &&
-      shipping.city.trim() &&
-      (shipping.country !== "US" || (shipping.state.trim() && shipping.postcode.trim()))
-  );
+  const extrasStatus = readyMadeExtrasStatus(items, readyMadeExtras);
+  const extrasTotal = extrasStatus.supporterTotal + extrasStatus.extraSocksTotal;
+  const total = productTotal + extrasTotal;
+  const readyMadeShippingUnits = items.filter((item) => item.readyMade).reduce((sum, item) => sum + Math.max(0, Number(item.qty) || 0), 0) + extrasStatus.supporterQuantity;
+  const readyMadeShippingRate = hasReadyMadeDesigns ? uniformShippingRate(shipping.country, readyMadeShippingUnits) : null;
+  const orderContext = hasReadyMadeDesigns ? { readyMadeRoster, readyMadeExtras } : {};
+  const readyMadeAddressValidation = validateUniformShippingAddress(shipping);
+  const addressRegions = uniformAddressRegions(shipping.country);
+  const standardShippingComplete = Boolean(shipping.firstName.trim() && shipping.lastName.trim() && shipping.address1.trim() && shipping.city.trim() && (shipping.country !== "US" || (shipping.state.trim() && shipping.postcode.trim())));
+  const shippingComplete = Boolean(email.trim() && (hasReadyMadeDesigns ? readyMadeAddressValidation.valid : standardShippingComplete));
 
   const updateShipping = (field) => (event) => {
-    setShipping((current) => ({ ...current, [field]: event.target.value }));
+    const value = event.target.value;
+    setShipping((current) => field === "country" ? { ...current, country: value, state: "", postcode: "" } : { ...current, [field]: value });
   };
 
   const requireShipping = () => {
@@ -110,6 +122,14 @@ export default function CheckoutPage() {
       // Checkout still works when browser storage is unavailable.
     }
   }, [readyMadeRoster]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("c767_ready_made_extras", JSON.stringify(readyMadeExtras));
+    } catch {
+      // Checkout still works when browser storage is unavailable.
+    }
+  }, [readyMadeExtras]);
 
   useEffect(() => {
     const currentKeys = new Set(readyMadeItemKeys.split("|").filter(Boolean));
@@ -209,12 +229,12 @@ export default function CheckoutPage() {
         )}
 
         {hasReadyMadeDesigns && checkoutStep === "roster" && (
-          <ReadyMadeCheckoutRoster items={items} roster={readyMadeRoster} setRoster={setReadyMadeRoster} onContinue={() => setCheckoutStep("review")} />
+          <ReadyMadeCheckoutRoster items={items} roster={readyMadeRoster} setRoster={setReadyMadeRoster} extras={readyMadeExtras} setExtras={setReadyMadeExtras} onContinue={() => setCheckoutStep("review")} />
         )}
 
         {hasReadyMadeDesigns && checkoutStep === "review" && readyMadeRoster.length > 0 && (
           <div className="mb-6 rounded-xl border border-primary-200 bg-primary-50 p-4 text-sm">
-            <div className="flex items-center justify-between gap-3"><div><p className="font-bold text-primary-950">Team Roster Confirmed</p><p className="mt-1 text-xs text-primary-800">{readyMadeRoster.length} roster row{readyMadeRoster.length === 1 ? "" : "s"} saved with this order.</p></div><Button type="button" variant="secondary" size="sm" onClick={() => setCheckoutStep("roster")}>Edit Roster</Button></div>
+            <div className="flex items-center justify-between gap-3"><div><p className="font-bold text-primary-950">Team Roster Confirmed</p><p className="mt-1 text-xs text-primary-800">{readyMadeRoster.length} roster row{readyMadeRoster.length === 1 ? "" : "s"}{extrasStatus.supporterQuantity ? ` · ${extrasStatus.supporterQuantity} supporter jerseys` : ""}{extrasStatus.requiredSocks ? ` · ${extrasStatus.socksQuantity} socks` : ""} saved with this order.</p></div><Button type="button" variant="secondary" size="sm" onClick={() => setCheckoutStep("roster")}>Edit Roster</Button></div>
           </div>
         )}
 
@@ -229,6 +249,8 @@ export default function CheckoutPage() {
               </span>
             </div>
           ))}
+          {extrasStatus.supporterQuantity > 0 && <div className="flex justify-between py-1.5 text-sm"><span className="text-foreground-700">Supporter Jerseys × {extrasStatus.supporterQuantity}</span><span className="font-semibold text-foreground-950">${extrasStatus.supporterTotal.toFixed(2)}</span></div>}
+          {extrasStatus.extraSocks > 0 && <div className="flex justify-between py-1.5 text-sm"><span className="text-foreground-700">Extra Socks × {extrasStatus.extraSocks}</span><span className="font-semibold text-foreground-950">${extrasStatus.extraSocksTotal.toFixed(2)}</span></div>}
           <div className="flex justify-between text-base font-semibold pt-3 mt-2 border-t border-background-200/70">
             <span>Subtotal</span>
             <span>${total.toFixed(2)}</span>
@@ -283,10 +305,10 @@ export default function CheckoutPage() {
                 <FormField label="City" htmlFor="shipping-city" required>
                   <Input id="shipping-city" autoComplete="address-level2" value={shipping.city} onChange={updateShipping("city")} />
                 </FormField>
-                <FormField label={shipping.country === "US" ? "State" : "Region / parish"} htmlFor="shipping-state" hint={shipping.country === "US" ? "Two-letter code, e.g. TX" : "Optional"} required={shipping.country === "US"}>
-                  <Input id="shipping-state" autoComplete="address-level1" maxLength={shipping.country === "US" ? 2 : undefined} value={shipping.state} onChange={updateShipping("state")} />
+                <FormField label={shipping.country === "CA" ? "Province / territory" : addressRegions.length ? "State" : "Region / parish"} htmlFor="shipping-state" hint={addressRegions.length ? undefined : "Optional"} required={addressRegions.length > 0}>
+                  {addressRegions.length ? <Select id="shipping-state" autoComplete="address-level1" value={shipping.state} onChange={updateShipping("state")}><option value="">Choose a region</option>{addressRegions.map(([code, name]) => <option key={code} value={code}>{name}</option>)}</Select> : <Input id="shipping-state" autoComplete="address-level1" value={shipping.state} onChange={updateShipping("state")} />}
                 </FormField>
-                <FormField label={shipping.country === "US" ? "ZIP code" : "Postal code"} htmlFor="shipping-postcode" hint={shipping.country === "DM" ? "Optional" : undefined} required={shipping.country === "US"}>
+                <FormField label={shipping.country === "US" ? "ZIP code" : "Postal code"} htmlFor="shipping-postcode" hint={addressRegions.length ? undefined : "Optional"} required={addressRegions.length > 0}>
                   <Input id="shipping-postcode" autoComplete="postal-code" value={shipping.postcode} onChange={updateShipping("postcode")} />
                 </FormField>
                 <FormField label="Phone" htmlFor="shipping-phone" hint="Optional">
@@ -295,8 +317,7 @@ export default function CheckoutPage() {
                 <div className="sm:col-span-2">
                   <FormField label="Country" htmlFor="shipping-country" required>
                     <Select id="shipping-country" autoComplete="country" value={shipping.country} onChange={updateShipping("country")}>
-                      <option value="US">United States</option>
-                      <option value="DM">Dominica</option>
+                      {hasReadyMadeDesigns ? UNIFORM_SHIPPING_COUNTRIES.map((zone) => <optgroup key={zone.label} label={zone.label}>{zone.countries.map(([code, name]) => <option key={code} value={code}>{name}</option>)}</optgroup>) : <><option value="US">United States</option><option value="DM">Dominica</option></>}
                     </Select>
                   </FormField>
                 </div>
@@ -314,8 +335,9 @@ export default function CheckoutPage() {
                 </div>
               </div>
               <p className="mt-4 text-xs text-foreground-500 font-label">
-                Shipping is available to U.S. and Dominican addresses. Carrier labels are created from the completed order in WooCommerce.
+                {hasReadyMadeDesigns ? "Ready-made uniforms use the same North America and Caribbean shipping rates as the Custom Uniform Studio." : "Shipping is available to U.S. and Dominican addresses."} Carrier labels are created from the completed order in WooCommerce.
               </p>
+              {readyMadeShippingRate && <div role="note" className="mt-3 rounded-xl border border-primary-200 bg-primary-50 px-3 py-2.5 text-xs text-primary-900"><strong>{readyMadeShippingRate.zoneLabel}:</strong> ${readyMadeShippingRate.amount.toFixed(2)} shipping for {readyMadeShippingRate.rangeLabel || (readyMadeShippingUnits >= 50 ? "50+ units" : "under 50 units")}.</div>}
             </div>
 
             {config?.stripeEnabled && (
@@ -363,8 +385,8 @@ export default function CheckoutPage() {
                       <i className="ri-shake-hands-line" />
                     </span>
                     <span>
-                      <span className="block text-base font-bold text-[#064b2b]">Pay Locally in Dominica</span>
-                      <span className="mt-0.5 block text-xs leading-relaxed text-foreground-600">Complete your order now and arrange payment in person on the island.</span>
+                      <span className="block text-base font-bold text-[#064b2b]">Local Pickup / Pay in Dominica</span>
+                      <span className="mt-0.5 block text-xs leading-relaxed text-foreground-600">Reserve the order with $0 pickup shipping, then arrange pickup and payment in person.</span>
                     </span>
                   </div>
                 </div>
@@ -376,7 +398,7 @@ export default function CheckoutPage() {
                   onClick={placeLocalDominicaOrder}
                   disabled={!isLiveApi || placingLocalOrder || !shippingComplete}
                 >
-                  {placingLocalOrder ? "Reserving order…" : "Place order — pay locally in Dominica"}
+                  {placingLocalOrder ? "Reserving Order…" : "Choose Local Pickup & Pay in Dominica"}
                 </Button>
                 <p className="mt-2 text-center text-xs text-foreground-500 font-label">Payment instructions will be emailed after checkout. The order remains on hold until local payment is confirmed.</p>
               </div>

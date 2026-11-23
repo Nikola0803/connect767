@@ -11,21 +11,33 @@ import { productMatchesCategory, productMatchesSearch } from "../lib/productCate
 import { sortShopProducts } from "../lib/productSorting";
 
 const shopBannerImage = "https://admin.connect767.com/wp-content/uploads/2026/10/portrait_500KB.jpg";
+const readyMadeCategories = [
+  { slug: "all", label: "All Uniforms", icon: "ri-layout-grid-line" },
+  { slug: "soccer", label: "Soccer", icon: "ri-football-line" },
+  { slug: "basketball", label: "Basketball", icon: "ri-basketball-line" },
+  { slug: "netball", label: "Netball", icon: "ri-basketball-line" },
+  { slug: "cricket", label: "Cricket", icon: "ri-trophy-line" },
+  { slug: "goalkeeper", label: "Goal Keeper", icon: "ri-hand-heart-line" },
+  { slug: "other", label: "Clothing & Other", icon: "ri-t-shirt-line" },
+];
 
 export default function ShopPage() {
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("q") || "");
   const [activeCategory, setActiveCategory] = useState(searchParams.get("category") || "all");
+  const [readyMadeCategory, setReadyMadeCategory] = useState("all");
   const [sort, setSort] = useState("featured");
   const { count: cartCount, addItem, setIsOpen: setCartOpen } = useCart();
 
   const { data: products, loading, error, reload } = useAsync(() => getProducts(), []);
   const { data: shopCategories } = useAsync(() => getShopCategories(), []);
+  const isReadyMadePage = activeCategory === "ready-made-designs";
 
   const visibleProducts = useMemo(() => {
     if (!products) return [];
-    let list =
-      activeCategory === "all"
+    let list = isReadyMadePage
+      ? products.filter((product) => product.readyMade && (readyMadeCategory === "all" || product.uniformCategory === readyMadeCategory))
+      : activeCategory === "all"
         ? products
         : products.filter((product) => productMatchesCategory(product, activeCategory));
 
@@ -34,13 +46,14 @@ export default function ShopPage() {
     }
 
     return sortShopProducts(list, sort);
-  }, [products, activeCategory, search, sort]);
+  }, [products, activeCategory, isReadyMadePage, readyMadeCategory, search, sort]);
 
-  const hasActiveFilters = activeCategory !== "all" || Boolean(search.trim());
+  const hasActiveFilters = isReadyMadePage ? readyMadeCategory !== "all" || Boolean(search.trim()) : activeCategory !== "all" || Boolean(search.trim());
 
   const clearFilters = () => {
     setSearch("");
-    setActiveCategory("all");
+    if (isReadyMadePage) setReadyMadeCategory("all");
+    else setActiveCategory("all");
   };
 
   const handleAddToCart = (product) => addItem(product, null, 1);
@@ -141,14 +154,14 @@ export default function ShopPage() {
           </form>
 
           <div className="mt-3 pt-3 border-t border-background-200/70 flex items-center gap-2 overflow-x-auto no-scrollbar">
-            {(shopCategories || []).map((cat) => {
-              const isActive = activeCategory === cat.slug;
+            {(isReadyMadePage ? readyMadeCategories : (shopCategories || [])).map((cat) => {
+              const isActive = isReadyMadePage ? readyMadeCategory === cat.slug : activeCategory === cat.slug;
               return (
                 <button
                   key={cat.slug}
                   type="button"
                   aria-pressed={isActive}
-                  onClick={() => setActiveCategory(cat.slug)}
+                  onClick={() => isReadyMadePage ? setReadyMadeCategory(cat.slug) : setActiveCategory(cat.slug)}
                   className={`inline-flex h-9 items-center gap-2 px-3.5 rounded-full text-xs font-semibold whitespace-nowrap cursor-pointer transition-all ${
                     isActive
                       ? "bg-primary-600 text-background-50 shadow-sm"
@@ -156,7 +169,7 @@ export default function ShopPage() {
                   }`}
                 >
                   <i className={`${cat.icon} text-sm`} />
-                  {cat.slug === "all" ? "All products" : cat.label}
+                  {cat.label}
                 </button>
               );
             })}
@@ -179,13 +192,13 @@ export default function ShopPage() {
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-7">
             <div>
               <h2 className="font-heading text-2xl md:text-4xl font-light text-foreground-950">
-                {activeCategory === "ready-made-designs" ? (
+                {isReadyMadePage ? (
                   <>Ready-Made <span className="text-accent-500 italic">Uniform Designs</span></>
                 ) : (
                   <>Featured <span className="text-accent-500 italic">products</span></>
                 )}
               </h2>
-              {activeCategory === "ready-made-designs" && (
+              {isReadyMadePage && (
                 <p className="mt-2 max-w-2xl text-sm leading-relaxed text-foreground-600">
                   Finished designs are purchased directly through the Shop. Category minimums are enforced in the cart and verified again securely at checkout.
                 </p>
@@ -221,8 +234,8 @@ export default function ShopPage() {
         {!loading && !error && visibleProducts.length === 0 && (
           <EmptyState
             icon="ri-shopping-bag-3-line"
-            title={activeCategory === "ready-made-designs" ? "No ready-made designs published yet" : "No products match this category"}
-            description={activeCategory === "ready-made-designs" ? "Publish a Ready-Made Uniform Design in WooCommerce to add it here." : "Try a different filter"}
+            title={isReadyMadePage ? "No ready-made designs published yet" : "No products match this category"}
+            description={isReadyMadePage ? "Publish a Ready-Made Uniform Design in WooCommerce to add it here." : "Try a different filter"}
           />
         )}
 

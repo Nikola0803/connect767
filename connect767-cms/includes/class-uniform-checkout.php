@@ -582,7 +582,7 @@ class C767_Uniform_Checkout
         return $prices[$sport] ?? self::BASE_KIT_PRICE;
     }
 
-    private static function uniform_shipping_rate($country, $unit_count)
+    public static function uniform_shipping_rate($country, $unit_count)
     {
         $country = strtoupper(sanitize_text_field((string) $country));
         $unit_count = max(0, absint($unit_count));
@@ -614,7 +614,7 @@ class C767_Uniform_Checkout
         );
     }
 
-    private static function validate_north_american_address(array $address)
+    public static function validate_north_american_address(array $address)
     {
         $country = strtoupper((string) ($address['country'] ?? ''));
         if (!in_array($country, self::NORTH_AMERICA_COUNTRIES, true)) {
