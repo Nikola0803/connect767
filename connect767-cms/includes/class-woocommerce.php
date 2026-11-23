@@ -728,6 +728,9 @@ class C767_WooCommerce
             $order->delete(true);
             return $ready_made_contact;
         }
+        $ready_made_additional_details = !empty($ready_made_units)
+            ? mb_substr(sanitize_textarea_field((string) ($order_context['readyMadeAdditionalDetails'] ?? '')), 0, 2000)
+            : '';
         if (!empty($ready_made_units)) {
             $address_check = C767_Uniform_Checkout::validate_north_american_address($address);
             if (is_wp_error($address_check)) {
@@ -780,6 +783,10 @@ class C767_WooCommerce
             if ($ready_made_contact['enabled']) {
                 $order->update_meta_data('_c767_ready_made_order_contact', wp_json_encode($ready_made_contact));
                 $order->add_order_note(sprintf('Order contact: %s <%s>%s', $ready_made_contact['name'], $ready_made_contact['email'], $ready_made_contact['phone'] !== '' ? ' · ' . $ready_made_contact['phone'] : ''), false);
+            }
+            if ($ready_made_additional_details !== '') {
+                $order->update_meta_data('Additional Order Details', $ready_made_additional_details);
+                $order->add_order_note("Additional order details:\n" . $ready_made_additional_details, false);
             }
             if ($ready_made_extras['inside_collar_enabled']) {
                 $order->add_order_note('Inside-collar customization: ' . ($ready_made_extras['inside_collar_message'] !== '' ? $ready_made_extras['inside_collar_message'] : 'Artwork attached'), false);
@@ -1237,6 +1244,7 @@ class C767_WooCommerce
             'readyMadeRoster' => (array) $request->get_param('readyMadeRoster'),
             'readyMadeExtras' => (array) $request->get_param('readyMadeExtras'),
             'readyMadeOrderContact' => (array) $request->get_param('readyMadeOrderContact'),
+            'readyMadeAdditionalDetails' => sanitize_textarea_field((string) $request->get_param('readyMadeAdditionalDetails')),
         ]);
         if (is_wp_error($order)) {
             return $order;
@@ -1273,6 +1281,7 @@ class C767_WooCommerce
                 'readyMadeRoster' => (array) $request->get_param('readyMadeRoster'),
                 'readyMadeExtras' => (array) $request->get_param('readyMadeExtras'),
                 'readyMadeOrderContact' => (array) $request->get_param('readyMadeOrderContact'),
+                'readyMadeAdditionalDetails' => sanitize_textarea_field((string) $request->get_param('readyMadeAdditionalDetails')),
             ]
         );
         if (is_wp_error($order)) {

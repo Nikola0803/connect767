@@ -221,6 +221,7 @@ class C767_Stripe_Checkout
             'readyMadeRoster' => (array) $request->get_param('readyMadeRoster'),
             'readyMadeExtras' => (array) $request->get_param('readyMadeExtras'),
             'readyMadeOrderContact' => (array) $request->get_param('readyMadeOrderContact'),
+            'readyMadeAdditionalDetails' => sanitize_textarea_field((string) $request->get_param('readyMadeAdditionalDetails')),
         ]);
         if (is_wp_error($order)) {
             return $order;

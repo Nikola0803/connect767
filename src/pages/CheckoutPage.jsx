@@ -58,6 +58,7 @@ export default function CheckoutPage() {
   const [placingLocalOrder, setPlacingLocalOrder] = useState(false);
   const [useDifferentOrderContact, setUseDifferentOrderContact] = useState(false);
   const [orderContact, setOrderContact] = useState(emptyOrderContact);
+  const [additionalDetails, setAdditionalDetails] = useState("");
   const [checkoutStep, setCheckoutStep] = useState("roster");
   const [readyMadeRoster, setReadyMadeRoster] = useState(() => {
     try {
@@ -90,6 +91,7 @@ export default function CheckoutPage() {
     readyMadeRoster,
     readyMadeExtras: { ...readyMadeExtras, supporterJerseys: extrasStatus.supporterJerseys },
     readyMadeOrderContact: { enabled: useDifferentOrderContact, ...orderContact },
+    readyMadeAdditionalDetails: additionalDetails,
   } : {};
   const readyMadeAddressValidation = validateUniformShippingAddress(shipping);
   const addressRegions = uniformAddressRegions(shipping.country);
@@ -250,21 +252,22 @@ export default function CheckoutPage() {
 
         {(!hasReadyMadeDesigns || checkoutStep === "review") && <div className="rounded-xl border border-background-200/70 bg-background-50 p-5 mb-6">
           {items.map((item) => (
-            <div key={item.key} className="flex justify-between text-sm py-1.5">
-              <span className="text-foreground-700">
-                {item.title} {item.variationLabel && `(${item.variationLabel})`} × {item.qty}
+            <div key={item.key} className="flex items-start justify-between gap-4 py-1.5 text-sm">
+              <span className="min-w-0 text-foreground-700">
+                <span className="block">{item.title} {item.variationLabel && `(${item.variationLabel})`} × {item.qty}</span>
+                <span className="block text-[11px] text-foreground-500">${Number(item.price).toFixed(2)} per unit</span>
               </span>
               <span className="font-semibold text-foreground-950">
                 ${(item.price * item.qty).toFixed(2)}
               </span>
             </div>
           ))}
-          {extrasStatus.supporterQuantity > 0 && <div className="flex justify-between py-1.5 text-sm"><span className="text-foreground-700">Supporter Jerseys × {extrasStatus.supporterQuantity}</span><span className="font-semibold text-foreground-950">${extrasStatus.supporterTotal.toFixed(2)}</span></div>}
-          {extrasStatus.extraSocks > 0 && <div className="flex justify-between py-1.5 text-sm"><span className="text-foreground-700">Extra Socks × {extrasStatus.extraSocks}</span><span className="font-semibold text-foreground-950">${extrasStatus.extraSocksTotal.toFixed(2)}</span></div>}
-          {extrasStatus.poloCollarTotal > 0 && <div className="flex justify-between py-1.5 text-sm"><span className="text-foreground-700">Polo Style Collars × {extrasStatus.kitQuantity}</span><span className="font-semibold text-foreground-950">${extrasStatus.poloCollarTotal.toFixed(2)}</span></div>}
-          {extrasStatus.longSleeveTotal > 0 && <div className="flex justify-between py-1.5 text-sm"><span className="text-foreground-700">Long-Sleeve Upgrades × {extrasStatus.longSleeveQuantity}</span><span className="font-semibold text-foreground-950">${extrasStatus.longSleeveTotal.toFixed(2)}</span></div>}
-          {extrasStatus.embroideryTotal > 0 && <div className="flex justify-between py-1.5 text-sm"><span className="text-foreground-700">Embroidered Team Logos × {extrasStatus.kitQuantity}</span><span className="font-semibold text-foreground-950">${extrasStatus.embroideryTotal.toFixed(2)}</span></div>}
-          {extrasStatus.insideCollarTotal > 0 && <div className="flex justify-between py-1.5 text-sm"><span className="text-foreground-700">Inside-Collar Logo or Message × {extrasStatus.kitQuantity}</span><span className="font-semibold text-foreground-950">${extrasStatus.insideCollarTotal.toFixed(2)}</span></div>}
+          {extrasStatus.supporterQuantity > 0 && <CheckoutLineItem label="Supporter Jerseys" quantity={extrasStatus.supporterQuantity} unitPrice={15} total={extrasStatus.supporterTotal} />}
+          {extrasStatus.extraSocks > 0 && <CheckoutLineItem label="Extra Socks" quantity={extrasStatus.extraSocks} unitPrice={5} total={extrasStatus.extraSocksTotal} />}
+          {extrasStatus.poloCollarTotal > 0 && <CheckoutLineItem label="Polo Style Collars" quantity={extrasStatus.kitQuantity} unitPrice={2} total={extrasStatus.poloCollarTotal} />}
+          {extrasStatus.longSleeveTotal > 0 && <CheckoutLineItem label="Long-Sleeve Upgrades" quantity={extrasStatus.longSleeveQuantity} unitPrice={2} total={extrasStatus.longSleeveTotal} />}
+          {extrasStatus.embroideryTotal > 0 && <CheckoutLineItem label="Embroidered Team Logos" quantity={extrasStatus.kitQuantity} unitPrice={1.5} total={extrasStatus.embroideryTotal} />}
+          {extrasStatus.insideCollarTotal > 0 && <CheckoutLineItem label="Inside-Collar Logo or Message" quantity={extrasStatus.kitQuantity} unitPrice={1} total={extrasStatus.insideCollarTotal} />}
           <div className="flex justify-between text-base font-semibold pt-3 mt-2 border-t border-background-200/70">
             <span>Subtotal</span>
             <span>${total.toFixed(2)}</span>
@@ -272,6 +275,15 @@ export default function CheckoutPage() {
           <p className="mt-2 text-xs text-foreground-500 font-label">
             Shipping is calculated from the delivery address and included before payment.
           </p>
+          {hasReadyMadeDesigns && <label className="mt-4 block border-t border-background-200 pt-4 text-xs font-semibold text-foreground-800">
+            Any Additional Details
+            <Textarea rows={3} maxLength={2000} className="mt-2" aria-label="Any additional details" placeholder="Add production, delivery or order details…" value={additionalDetails} onChange={(event) => setAdditionalDetails(event.target.value)} />
+            <span className="mt-1 block text-[10px] font-normal text-foreground-500">Optional · {additionalDetails.length}/2000 characters</span>
+          </label>}
+          {hasReadyMadeDesigns && <div role="note" className="mt-4 flex items-start gap-2 border-t border-background-200 pt-4 text-xs font-semibold text-foreground-800">
+            <i className="ri-information-line mt-0.5 shrink-0 text-primary-700" aria-hidden="true" />
+            <span>Custom &amp; Predesign Uniforms are non-refundable</span>
+          </div>}
         </div>}
 
         {error && (
@@ -467,6 +479,16 @@ export default function CheckoutPage() {
       </div>
     </div>
   );
+}
+
+function CheckoutLineItem({ label, quantity, unitPrice, total }) {
+  return <div className="flex items-start justify-between gap-4 py-1.5 text-sm">
+    <span className="min-w-0 text-foreground-700">
+      <span className="block">{label} × {quantity}</span>
+      <span className="block text-[11px] text-foreground-500">${Number(unitPrice).toFixed(2)} per unit</span>
+    </span>
+    <span className="shrink-0 font-semibold text-foreground-950">${Number(total).toFixed(2)}</span>
+  </div>;
 }
 
 function StripePaymentForm({ orderId, accessToken, onSuccess }) {
