@@ -425,6 +425,10 @@ class C767_Importer
             update_post_meta($post_id, 'description', $item['description']);
             update_post_meta($post_id, 'default_collar', $item['defaultCollar']);
             update_post_meta($post_id, 'default_sleeve', $item['defaultSleeve']);
+            update_post_meta($post_id, 'sport_slug', $item['sportSlug']);
+            update_post_meta($post_id, 'garment_type', 'Team uniform');
+            update_post_meta($post_id, 'template_mode', 'ai-preview');
+            update_post_meta($post_id, 'available_views', wp_json_encode(['front', 'back']));
 
             $sport_label = self::sport_label_for_slug($item['sportSlug']);
             if ($sport_label) {
