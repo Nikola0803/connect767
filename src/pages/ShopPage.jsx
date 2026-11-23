@@ -13,6 +13,7 @@ import { ReadyMadeCaptureShield } from "../components/ready-made/ReadyMadeImageP
 import useReadyMadeImageProtection from "../hooks/useReadyMadeImageProtection";
 
 const shopBannerImage = "https://admin.connect767.com/wp-content/uploads/2026/10/portrait_500KB.jpg";
+const readyMadeBannerImage = "/uploads/ready-made-sports-banner.png";
 const readyMadeCategories = [
   { slug: "all", label: "All Uniforms", icon: "ri-layout-grid-line" },
   { slug: "soccer", label: "Soccer", icon: "ri-football-line" },
@@ -72,23 +73,36 @@ export default function ShopPage() {
             <div className="max-w-3xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-background-50/15 bg-background-50/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-primary-200">
                 <span className="w-1.5 h-1.5 rounded-full bg-accent-400" />
-                The Connect767 Shop
+                {isReadyMadePage ? "Ready-Made Sports" : "The Connect767 Shop"}
               </div>
               <h1 className="mt-4 font-heading text-[clamp(2.6rem,5vw,4.8rem)] font-medium leading-[0.95] tracking-[-0.045em]">
-                Island-made. <span className="italic text-accent-400">World-ready.</span>
+                {isReadyMadePage ? <>
+                  Team-ready. <span className="italic text-accent-400">Order-ready.</span>
+                </> : <>
+                  Island-made. <span className="italic text-accent-400">World-ready.</span>
+                </>}
               </h1>
               <p className="mt-4 max-w-xl text-sm md:text-base leading-relaxed text-background-200">
-                Shop apparel and essentials from Dominican brands worldwide.
+                {isReadyMadePage
+                  ? "Choose a finished sports uniform, then complete team sizes, roster details and production options at checkout."
+                  : "Shop apparel and essentials from Dominican brands worldwide."}
               </p>
               <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                <Link
+                {isReadyMadePage ? <a
+                  href="#ready-made-products"
+                  className="inline-flex items-center justify-center gap-2 h-12 px-5 rounded-full bg-background-50 text-primary-950 text-sm font-bold hover:bg-background-100 transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  <i className="ri-layout-grid-line text-lg" />
+                  Browse Designs
+                  <i className="ri-arrow-right-line" />
+                </a> : <Link
                   to="/shop/customize"
                   className="inline-flex items-center justify-center gap-2 h-12 px-5 rounded-full bg-background-50 text-primary-950 text-sm font-bold hover:bg-background-100 transition-colors cursor-pointer whitespace-nowrap"
                 >
                   <i className="ri-magic-line text-lg" />
                   Design Uniforms
                   <i className="ri-arrow-right-line" />
-                </Link>
+                </Link>}
                 <button
                   aria-label="Open cart"
                   type="button"
@@ -111,20 +125,48 @@ export default function ShopPage() {
                 <img
                   fetchPriority="high"
                   decoding="async"
-                  src={shopBannerImage}
-                  alt="Dominican-made products in the Connect767 Shop"
+                  src={isReadyMadePage ? readyMadeBannerImage : shopBannerImage}
+                  alt={isReadyMadePage ? "Soccer, basketball and cricket players wearing Ready-Made Connect767 sports uniforms" : "Dominican-made products in the Connect767 Shop"}
                   className="h-full w-full object-cover"
-                  style={{ objectPosition: "center 6%" }}
+                  style={{ objectPosition: isReadyMadePage ? "62% center" : "center 6%" }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-primary-950/75 via-transparent to-transparent" />
-                <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-4">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-100">Curated in Dominica</p>
-                    <p className="mt-1 font-heading text-2xl text-background-50">Made with island character.</p>
+                {isReadyMadePage ? <>
+                  <div className="absolute top-5 left-5 flex items-center gap-2 rounded-full bg-background-50/95 px-3 py-1.5 text-xs font-semibold text-foreground-950">
+                    <span className="h-2 w-2 rounded-full bg-primary-500" />
+                    Ready-Made Sports
                   </div>
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-accent-500 text-background-50"><i className="ri-arrow-right-up-line" /></span>
-                </div>
+                  <div className="absolute bottom-5 left-5 right-5 grid grid-cols-3 gap-2.5">
+                    <div className="rounded-xl bg-background-50/95 p-3 text-foreground-950">
+                      <div className="text-[9px] font-label uppercase tracking-wider text-foreground-600">Categories</div>
+                      <div className="mt-1 text-xs font-semibold">Six Sports</div>
+                    </div>
+                    <div className="rounded-xl bg-background-50/95 p-3 text-foreground-950">
+                      <div className="text-[9px] font-label uppercase tracking-wider text-foreground-600">Ordering</div>
+                      <div className="mt-1 text-xs font-semibold">Team Roster</div>
+                    </div>
+                    <div className="rounded-xl bg-accent-500 p-3 text-background-50">
+                      <div className="text-[9px] font-label uppercase tracking-wider text-background-50/80">Checkout</div>
+                      <div className="mt-1 text-xs font-semibold">Secure</div>
+                    </div>
+                  </div>
+                </> : <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-4">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-100">Curated in Dominica</p>
+                      <p className="mt-1 font-heading text-2xl text-background-50">Made with island character.</p>
+                    </div>
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-accent-500 text-background-50"><i className="ri-arrow-right-up-line" /></span>
+                  </div>}
               </div>
+              {isReadyMadePage && <div className="absolute -bottom-4 -right-4 hidden md:flex items-center gap-3 rounded-2xl bg-background-50 px-4 py-3 text-foreground-950 shadow-lg">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                  <i className="ri-shield-check-line text-lg" />
+                </div>
+                <div>
+                  <div className="text-xs font-semibold">Protected previews</div>
+                  <div className="text-[10px] font-label text-foreground-600">Watermarked in store</div>
+                </div>
+              </div>}
             </div>
           </div>
         </div>
@@ -191,7 +233,7 @@ export default function ShopPage() {
         </div>
       </section>
 
-      <section className="w-full px-4 md:px-8 lg:px-12 pt-14 pb-10 md:pt-16">
+      <section id={isReadyMadePage ? "ready-made-products" : undefined} className="w-full px-4 md:px-8 lg:px-12 pt-14 pb-10 md:pt-16 scroll-mt-24">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-7">
             <div>
