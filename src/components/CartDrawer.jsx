@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
+import { readyMadeCartIssues } from "../lib/readyMadeMinimums";
 
 export default function CartDrawer() {
   const {
@@ -14,10 +15,12 @@ export default function CartDrawer() {
   } = useCart();
   const navigate = useNavigate();
   const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const minimumIssues = readyMadeCartIssues(items);
 
   const close = () => setIsOpen(false);
 
   const goToCheckout = () => {
+    if (minimumIssues.length) return;
     close();
     navigate("/checkout");
   };
@@ -126,6 +129,11 @@ export default function CartDrawer() {
                           </select>
                         </label>
                       )}
+                      {item.readyMade && (
+                        <p className="mt-2 text-[10px] font-semibold text-primary-700">
+                          {item.uniformCategory || "Uniform"} minimum: {item.minimumOrderQuantity} units
+                        </p>
+                      )}
                       <div className="mt-2 flex items-center justify-between gap-2">
                         <div
                           className="inline-flex h-9 items-center rounded-lg border border-background-300 bg-background-50"
@@ -166,6 +174,14 @@ export default function CartDrawer() {
                 ))}
               </div>
               <div className="px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-background-200/70">
+                {minimumIssues.length > 0 && (
+                  <div role="alert" className="mb-4 rounded-xl border border-accent-200 bg-accent-50 p-3 text-xs leading-relaxed text-accent-900">
+                    <p className="font-bold">Complete the ready-made order minimum</p>
+                    <ul className="mt-1 list-disc space-y-1 pl-4">
+                      {minimumIssues.map((issue) => <li key={`${issue.category}-${issue.message}`}>{issue.message}</li>)}
+                    </ul>
+                  </div>
+                )}
                 <div className="flex items-center justify-between mb-4 text-sm">
                   <span className="text-foreground-600 font-label">Subtotal</span>
                   <span className="font-semibold text-foreground-950">${total.toFixed(2)}</span>
@@ -173,7 +189,8 @@ export default function CartDrawer() {
                 <button
                   type="button"
                   onClick={goToCheckout}
-                  className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md bg-primary-500 text-background-50 text-sm font-semibold hover:bg-primary-600 transition-colors cursor-pointer"
+                  disabled={minimumIssues.length > 0}
+                  className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md bg-primary-500 text-background-50 text-sm font-semibold hover:bg-primary-600 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   Checkout
                   <i className="ri-arrow-right-line" />

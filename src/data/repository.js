@@ -324,7 +324,7 @@ export async function getShopCategories() {
  * Without a live backend, there's no real order to create, so this throws —
  * callers should catch and show a "connect a backend to check out" message.
  */
-export async function checkout(items, email, shipping) {
+export async function checkout(items, email, shipping, orderContext = {}) {
   if (!isLiveApi) {
     throw new Error(
       "Checkout needs a live WordPress/WooCommerce backend — set VITE_WP_BASE_URL to enable it."
@@ -334,6 +334,7 @@ export async function checkout(items, email, shipping) {
     items: items.map((item) => ({ slug: item.slug, qty: item.qty, variationId: item.variationId })),
     email,
     shipping,
+    ...orderContext,
   });
 }
 
@@ -349,11 +350,12 @@ export async function getCheckoutConfig() {
   return customClient.get("/checkout/config");
 }
 
-export async function createPaymentIntent(items, email, shipping) {
+export async function createPaymentIntent(items, email, shipping, orderContext = {}) {
   return customClient.post("/checkout/intent", {
     items: items.map((item) => ({ slug: item.slug, qty: item.qty, variationId: item.variationId })),
     email,
     shipping,
+    ...orderContext,
   });
 }
 
@@ -369,11 +371,12 @@ export async function confirmOrder(orderId, accessToken) {
  * CheckoutPage.jsx even though the backend route has existed all along,
  * which is why PayPal never showed up on Shop checkout.
  */
-export async function createCartPaypalOrder(items, email, shipping) {
+export async function createCartPaypalOrder(items, email, shipping, orderContext = {}) {
   return customClient.post("/checkout/paypal/order", {
     items: items.map((item) => ({ slug: item.slug, qty: item.qty, variationId: item.variationId })),
     email,
     shipping,
+    ...orderContext,
   });
 }
 
@@ -381,11 +384,12 @@ export async function captureCartPaypalOrder(orderId, accessToken) {
   return customClient.post("/checkout/paypal/capture", { orderId, accessToken });
 }
 
-export async function createCartLocalDominicaOrder(items, email, shipping) {
+export async function createCartLocalDominicaOrder(items, email, shipping, orderContext = {}) {
   return customClient.post("/checkout/local-dominica", {
     items: items.map((item) => ({ slug: item.slug, qty: item.qty, variationId: item.variationId })),
     email,
     shipping,
+    ...orderContext,
   });
 }
 

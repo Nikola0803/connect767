@@ -42,6 +42,11 @@ export default function ProductCard({ product, onAddToCart }) {
         <h3 className="text-sm font-medium text-foreground-950 leading-snug mb-2 mt-1 group-hover:text-primary-700 transition-colors line-clamp-2">
           {product.title}
         </h3>
+        {product.readyMade && (
+          <p className="mb-3 text-[11px] font-semibold text-primary-700">
+            {product.uniformCategory || "Uniform"} · Minimum {product.minimumOrderQuantity} units
+          </p>
+        )}
         <div className="flex items-center justify-between">
           <div className="flex items-baseline gap-2">
             <span className="text-base font-semibold text-foreground-950">

@@ -151,6 +151,9 @@ export default function ProductDetailPage() {
             .filter(Boolean)
             .join(" / "),
         })),
+        readyMade: product.readyMade,
+        uniformCategory: product.uniformCategory,
+        minimumOrderQuantity: product.minimumOrderQuantity,
       },
       matchedVariation ? { ...matchedVariation, label: variationLabel } : null,
       1
@@ -239,6 +242,15 @@ export default function ProductDetailPage() {
                 </span>
               )}
             </div>
+
+            {product.readyMade && (
+              <div className="mb-6 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-950">
+                <p className="font-semibold">Ready-Made {product.uniformCategory || "Uniform"} Design</p>
+                <p className="mt-1 text-xs leading-relaxed text-primary-800">
+                  Minimum order: {product.minimumOrderQuantity} units. Your cart may combine ready-made designs in the same category to meet this minimum.
+                </p>
+              </div>
+            )}
 
             {hasVariations && (
               <div className="mb-6 space-y-4">

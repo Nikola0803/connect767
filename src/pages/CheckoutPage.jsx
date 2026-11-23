@@ -17,6 +17,9 @@ import Button from "../components/ui/Button";
 import { FormField, Input, Select } from "../components/ui/FormField";
 import { Spinner } from "../components/ui/States";
 import PaypalButton from "../components/PaypalButton";
+import { readyMadeCartIssues } from "../lib/readyMadeMinimums";
+import { getStoredUser } from "../lib/apiClient";
+import ReadyMadeCheckoutRoster from "../components/ReadyMadeCheckoutRoster";
 
 let stripePromise = null;
 const emptyShipping = {
@@ -50,8 +53,22 @@ export default function CheckoutPage() {
   const [error, setError] = useState(null);
   const [fallingBack, setFallingBack] = useState(false);
   const [placingLocalOrder, setPlacingLocalOrder] = useState(false);
+  const [checkoutStep, setCheckoutStep] = useState("roster");
+  const [readyMadeRoster, setReadyMadeRoster] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("c767_ready_made_roster") || "[]");
+      return Array.isArray(saved) ? saved : [];
+    } catch {
+      return [];
+    }
+  });
 
   const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const minimumIssues = readyMadeCartIssues(items);
+  const hasReadyMadeDesigns = items.some((item) => item.readyMade);
+  const readyMadeItemKeys = items.filter((item) => item.readyMade).map((item) => item.key).sort().join("|");
+  const accountRequired = hasReadyMadeDesigns && !getStoredUser();
+  const orderContext = hasReadyMadeDesigns ? { readyMadeRoster } : {};
   const shippingComplete = Boolean(
     email.trim() &&
       shipping.firstName.trim() &&
@@ -66,6 +83,14 @@ export default function CheckoutPage() {
   };
 
   const requireShipping = () => {
+    if (accountRequired) {
+      setError("Sign in before checking out with a ready-made uniform design.");
+      return false;
+    }
+    if (minimumIssues.length) {
+      setError(minimumIssues.map((issue) => issue.message).join(" "));
+      return false;
+    }
     if (shippingComplete) return true;
     setError("Enter your email and complete every required shipping-address field.");
     return false;
@@ -78,11 +103,24 @@ export default function CheckoutPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem("c767_ready_made_roster", JSON.stringify(readyMadeRoster));
+    } catch {
+      // Checkout still works when browser storage is unavailable.
+    }
+  }, [readyMadeRoster]);
+
+  useEffect(() => {
+    const currentKeys = new Set(readyMadeItemKeys.split("|").filter(Boolean));
+    setReadyMadeRoster((current) => current.filter((row) => currentKeys.has(row.productKey)));
+  }, [readyMadeItemKeys]);
+
   const startEmbeddedCheckout = async () => {
     if (!requireShipping()) return;
     setError(null);
     try {
-      const result = await createPaymentIntent(items, email, shipping);
+      const result = await createPaymentIntent(items, email, shipping, orderContext);
       setClientSecret(result.clientSecret);
       setOrderId(result.orderId);
       setOrderAccessToken(result.accessToken);
@@ -96,7 +134,7 @@ export default function CheckoutPage() {
     setFallingBack(true);
     setError(null);
     try {
-      const result = await checkout(items, email, shipping);
+      const result = await checkout(items, email, shipping, orderContext);
       clearCart();
       window.location.href = result.checkoutUrl;
     } catch (err) {
@@ -110,7 +148,7 @@ export default function CheckoutPage() {
     setPlacingLocalOrder(true);
     setError(null);
     try {
-      const result = await createCartLocalDominicaOrder(items, email, shipping);
+      const result = await createCartLocalDominicaOrder(items, email, shipping, orderContext);
       clearCart();
       navigate(`/checkout/thank-you?order=${result.orderId}&payment=local-dominica`);
     } catch (err) {
@@ -139,7 +177,48 @@ export default function CheckoutPage() {
       <div className="w-full px-4 md:px-8 lg:px-12 py-10 max-w-2xl mx-auto">
         <h1 className="font-heading text-3xl font-light text-foreground-950 mb-6">Checkout</h1>
 
-        <div className="rounded-xl border border-background-200/70 bg-background-50 p-5 mb-6">
+        {hasReadyMadeDesigns && (
+          <div aria-label="Ready-made checkout progress" className="mb-6 grid grid-cols-2 gap-2 rounded-2xl border border-background-200 bg-background-50 p-2">
+            <button type="button" onClick={() => setCheckoutStep("roster")} className={`rounded-xl px-3 py-3 text-left ${checkoutStep === "roster" ? "bg-primary-700 text-white" : "bg-background-100 text-foreground-600"}`}>
+              <span className="block font-label text-[9px] font-bold uppercase tracking-widest opacity-70">Step 2</span>
+              <span className="text-sm font-bold">Team Roster</span>
+            </button>
+            <div className={`rounded-xl px-3 py-3 ${checkoutStep === "review" ? "bg-primary-700 text-white" : "bg-background-100 text-foreground-500"}`}>
+              <span className="block font-label text-[9px] font-bold uppercase tracking-widest opacity-70">Step 3</span>
+              <span className="text-sm font-bold">Review &amp; Checkout</span>
+            </div>
+          </div>
+        )}
+
+        {accountRequired && (
+          <div role="alert" className="mb-6 rounded-xl border border-accent-300 bg-accent-50 p-4 text-sm text-accent-950">
+            <p className="font-bold">Account required</p>
+            <p className="mt-1 text-xs leading-relaxed">Sign in to protect your order, payment record and ready-made design purchase.</p>
+            <Button to="/auth/login?redirect=%2Fcheckout" variant="primary" className="mt-4">Sign In</Button>
+          </div>
+        )}
+
+        {minimumIssues.length > 0 && (
+          <div role="alert" className="mb-6 rounded-xl border border-accent-200 bg-accent-50 p-4 text-sm text-accent-900">
+            <p className="font-bold">Ready-made order minimum not met</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs leading-relaxed">
+              {minimumIssues.map((issue) => <li key={`${issue.category}-${issue.message}`}>{issue.message}</li>)}
+            </ul>
+            <Button to="/shop?category=ready-made-designs" variant="secondary" className="mt-4">Return to Ready-Made Designs</Button>
+          </div>
+        )}
+
+        {hasReadyMadeDesigns && checkoutStep === "roster" && (
+          <ReadyMadeCheckoutRoster items={items} roster={readyMadeRoster} setRoster={setReadyMadeRoster} onContinue={() => setCheckoutStep("review")} />
+        )}
+
+        {hasReadyMadeDesigns && checkoutStep === "review" && readyMadeRoster.length > 0 && (
+          <div className="mb-6 rounded-xl border border-primary-200 bg-primary-50 p-4 text-sm">
+            <div className="flex items-center justify-between gap-3"><div><p className="font-bold text-primary-950">Team Roster Confirmed</p><p className="mt-1 text-xs text-primary-800">{readyMadeRoster.length} roster row{readyMadeRoster.length === 1 ? "" : "s"} saved with this order.</p></div><Button type="button" variant="secondary" size="sm" onClick={() => setCheckoutStep("roster")}>Edit Roster</Button></div>
+          </div>
+        )}
+
+        {(!hasReadyMadeDesigns || checkoutStep === "review") && <div className="rounded-xl border border-background-200/70 bg-background-50 p-5 mb-6">
           {items.map((item) => (
             <div key={item.key} className="flex justify-between text-sm py-1.5">
               <span className="text-foreground-700">
@@ -157,7 +236,7 @@ export default function CheckoutPage() {
           <p className="mt-2 text-xs text-foreground-500 font-label">
             Shipping is calculated from the delivery address and included before payment.
           </p>
-        </div>
+        </div>}
 
         {error && (
           <div className="mb-4 px-3.5 py-2.5 rounded-lg bg-accent-50 border border-accent-200 text-sm text-accent-700">
@@ -171,7 +250,7 @@ export default function CheckoutPage() {
           </p>
         )}
 
-        {!clientSecret ? (
+        {(!hasReadyMadeDesigns || checkoutStep === "review") && (!clientSecret ? (
           <>
             <div className="rounded-xl border border-background-200/70 bg-background-50 p-5 mb-6">
               <div className="flex items-center gap-2 mb-4">
@@ -259,7 +338,7 @@ export default function CheckoutPage() {
                 disabled={!isLiveApi || !shippingComplete}
                 createOrder={async () => {
                   if (!requireShipping()) throw new Error("Complete the shipping address first.");
-                  const result = await createCartPaypalOrder(items, email, shipping);
+                  const result = await createCartPaypalOrder(items, email, shipping, orderContext);
                   return {
                     orderId: result.orderId,
                     paypalOrderId: result.paypalOrderId,
@@ -329,7 +408,7 @@ export default function CheckoutPage() {
               onSuccess={() => navigate(`/checkout/thank-you?order=${orderId}`)}
             />
           </Elements>
-        )}
+        ))}
       </div>
     </div>
   );

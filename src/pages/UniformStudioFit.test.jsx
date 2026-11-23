@@ -88,14 +88,14 @@ describe("required uniform fit selection", () => {
     expect(screen.getAllByRole("textbox", { name: "Message Connect767 AI" })[0]).toBeVisible();
   });
 
-  it("keeps the existing AI Studio tile and adds the ready-made entry path", () => {
+  it("keeps the existing AI Studio tile and sends ready-made designs to the shop", () => {
     render(<MemoryRouter initialEntries={["/uniforms"]}><CartProvider><UniformStudioPage /></CartProvider></MemoryRouter>);
 
     const entry = screen.getByRole("button", { name: "Start Designing" });
     expect(screen.getByTestId("uniform-entry-page")).toHaveClass("min-h-[100dvh]");
     expect(screen.queryByRole("link", { name: "Back to site" })).not.toBeInTheDocument();
     expect(entry).toBeVisible();
-    expect(screen.getByRole("button", { name: "Browse Ready-Made Designs" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Shop Ready-Made Designs" })).toHaveAttribute("href", "/shop?category=ready-made-designs");
     expect(screen.queryByRole("button", { name: "Start from Scratch" })).not.toBeInTheDocument();
     const categoryImages = screen.getAllByTestId("studio-cover-category");
     expect(categoryImages).toHaveLength(6);
@@ -133,19 +133,11 @@ describe("required uniform fit selection", () => {
     expect(setup.getByRole("group", { name: "Uniform category (required)" })).toBeVisible();
   });
 
-  it("filters ready-made designs and opens a protected AI-only working copy", () => {
+  it("does not expose the retired ready-made studio gallery", () => {
     render(<MemoryRouter initialEntries={["/uniforms?entry=gallery"]}><CartProvider><UniformStudioPage /></CartProvider></MemoryRouter>);
-    expect(screen.getByRole("heading", { name: "Ready-Made Uniform Designs" })).toBeVisible();
-    fireEvent.change(screen.getByRole("combobox", { name: "Filter by sport" }), { target: { value: "basketball" } });
-    expect(screen.getAllByRole("heading", { name: "Shooter Tank" })[0]).toBeVisible();
-    expect(screen.queryByRole("heading", { name: "Classic Crew" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole("button", { name: "Customize Design" })[0]);
-    expect(screen.getByText("AI-Generated Preview — Edit with AI Only")).toBeVisible();
-    expect(screen.queryByLabelText("Editable garment tools")).not.toBeInTheDocument();
-    expect(JSON.parse(window.sessionStorage.getItem("c767:selected-ready-made-template"))).toMatchObject({
-      templateSlug: "shooter-tank",
-      sport: "basketball",
-    });
+    expect(screen.getByTestId("uniform-entry-page")).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Ready-Made Uniform Designs" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Shop Ready-Made Designs" })).toHaveAttribute("href", "/shop?category=ready-made-designs");
   });
 
   it("shows a generated example in the AI workspace without production or watermark overlays", () => {

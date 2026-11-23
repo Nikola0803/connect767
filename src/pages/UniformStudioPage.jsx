@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import {
@@ -30,14 +30,6 @@ import useStudioViewport from "../components/uniform-studio/useStudioViewport";
 import useDesignHistory from "../components/uniform-studio/useDesignHistory";
 import Header from "../components/Header";
 import { uniformSampleFor } from "../components/uniform-studio/uniformSamples";
-import ReadyMadeGallery from "../components/uniform-studio/ReadyMadeGallery";
-import {
-  TEMPLATE_MODES,
-  bundledReadyMadeTemplates,
-  findReadyMadeTemplate,
-  hasVerifiedEditableData,
-  loadReadyMadeTemplates,
-} from "../data/uniformTemplates";
 import AIUniformSample from "../components/uniform-studio/AIUniformSample";
 import UniformOrderAgreement, { UNIFORM_ORDER_TERMS_VERSION } from "../components/uniform-studio/UniformOrderAgreement";
 import "../components/uniform-studio/mobileStudio.css";
@@ -356,8 +348,6 @@ export default function UniformStudioPage() {
     sports.some((s) => s.slug === initialSport) ? initialSport : "soccer"
   );
   const [selectedTemplate, setSelectedTemplate] = useState(requestedTemplateSlug || (scratch ? "blank-canvas" : null));
-  const [entryView, setEntryView] = useState(searchParams.get("entry") === "gallery" ? "gallery" : "options");
-  const [readyMadeTemplates, setReadyMadeTemplates] = useState(bundledReadyMadeTemplates);
 
   // ---------- Design state ----------
   const [fitType, setFitType] = useState("");
@@ -438,13 +428,6 @@ export default function UniformStudioPage() {
   const [aiCanvasMode, setAiCanvasMode] = useState("concept");
   const [studioMode, setStudioMode] = useState(STUDIO_MODES.AI_OUTPUT);
 
-  useEffect(() => {
-    let active = true;
-    loadReadyMadeTemplates().then((items) => {
-      if (active) setReadyMadeTemplates(items);
-    });
-    return () => { active = false; };
-  }, []);
   const [conversionError, setConversionError] = useState("");
   const aiConceptViewportRef = useRef(null);
   const [studioSettingsOpen, setStudioSettingsOpen] = useState(false);
@@ -703,9 +686,7 @@ export default function UniformStudioPage() {
     setSupporterJerseys([{ size: "M", quantity: 2 }, { size: "L", quantity: 1 }]);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const template = templates.find((t) => t.slug === selectedTemplate)
-    || readyMadeTemplates.find((t) => t.slug === selectedTemplate);
-  const selectedReadyMadeTemplate = readyMadeTemplates.find((candidate) => candidate.slug === selectedTemplate) || null;
+  const template = templates.find((t) => t.slug === selectedTemplate);
   const selectedLayer = layers.find((l) => l.id === selectedLayerId) || null;
   const sportConfig = sportConfigFor(activeSport);
   useEffect(() => {
@@ -1174,54 +1155,11 @@ export default function UniformStudioPage() {
     restoreSaved(`c767:studio:${sportSlug}:${t.slug}`, sportSlug);
   };
 
-  const customizeReadyMadeTemplate = (readyTemplate) => {
-    const baseTemplate = templates.find((candidate) => candidate.slug === readyTemplate.slug) || readyTemplate;
-    selectTemplate(baseTemplate, readyTemplate.sportSlug, "ai");
-    const editable = hasVerifiedEditableData(readyTemplate);
-    const workingCopyId = `template-${readyTemplate.id}-${Date.now()}`;
-    const workingCopy = {
-      id: workingCopyId,
-      masterTemplateId: readyTemplate.id,
-      templateSlug: readyTemplate.slug,
-      sport: readyTemplate.sportSlug,
-      createdAt: new Date().toISOString(),
-    };
-    window.sessionStorage.setItem("c767:selected-ready-made-template", JSON.stringify(workingCopy));
-    setSearchParams((previous) => {
-      const next = new URLSearchParams(previous);
-      next.set("sport", readyTemplate.sportSlug);
-      next.set("template", readyTemplate.slug);
-      next.set("mode", "template");
-      next.set("step", "design");
-      next.delete("entry");
-      return next;
-    });
-    setCategoryConfirmed(true);
-    setStudioMode(editable ? STUDIO_MODES.EDITABLE : STUDIO_MODES.AI_OUTPUT);
-    if (!editable) {
-      setAiWorkspaceConcept({
-        src: readyTemplate.backAsset || readyTemplate.frontAsset,
-        name: readyTemplate.name,
-        summary: readyTemplate.description,
-        templateMode: TEMPLATE_MODES.AI_PREVIEW,
-        masterTemplateId: readyTemplate.id,
-      });
-      setAiUniformPlan({ name: readyTemplate.name, summary: readyTemplate.description });
-    }
-  };
-
   useEffect(() => {
     if (selectedTemplate || !searchParams.has("sport")) return;
     const initialTemplate = primaryTemplateForSport(activeSport);
     if (initialTemplate) selectTemplate(initialTemplate, activeSport, "ai");
   }, []); // Explicit sport links enter the studio; the bare /uniforms route stays on the landing page.
-
-  useEffect(() => {
-    if (!requestedTemplateSlug) return;
-    const requested = findReadyMadeTemplate(requestedTemplateSlug, readyMadeTemplates);
-    if (!requested || aiWorkspaceConcept?.masterTemplateId === requested.id) return;
-    customizeReadyMadeTemplate(requested);
-  }, [requestedTemplateSlug, readyMadeTemplates]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const changeDesignCategory = (sportSlug) => {
     if (sportSlug === activeSport) {
@@ -1912,17 +1850,6 @@ export default function UniformStudioPage() {
       template: templates.find((candidate) => candidate.sportSlug === sport.slug && candidate.slug !== "blank-canvas"),
     })).filter(({ template }) => Boolean(template));
 
-    if (entryView === "gallery") {
-      return (
-        <div data-testid="uniform-gallery-page" className="min-h-[100dvh] bg-[linear-gradient(145deg,#f8f3e9_0%,#fffdf8_48%,#eef8f1_100%)] pt-16 text-foreground-950 md:pt-20">
-          <Header showQuickNavigation={false} />
-          <main className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-9">
-            <ReadyMadeGallery templates={readyMadeTemplates} onCustomize={customizeReadyMadeTemplate} onBack={() => setEntryView("options")} />
-          </main>
-        </div>
-      );
-    }
-
     return (
       <div data-testid="uniform-entry-page" className="min-h-[100dvh] bg-[linear-gradient(145deg,#f8f3e9_0%,#fffdf8_48%,#eef8f1_100%)] pt-16 text-foreground-950 md:pt-20">
         <Header showQuickNavigation={false} />
@@ -1991,9 +1918,15 @@ export default function UniformStudioPage() {
                   <span className="mt-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-500 text-lg shadow-[0_10px_24px_rgba(0,0,0,.25)] transition group-hover:translate-x-1 group-hover:bg-primary-400"><i className="ri-arrow-right-line" /></span>
                 </span>
               </button>
-              <button type="button" aria-label="Browse Ready-Made Designs" onClick={() => setEntryView("gallery")} className="group relative flex min-h-[360px] flex-col overflow-hidden rounded-[24px] border-2 border-primary-500 bg-white p-7 text-left shadow-[0_18px_44px_rgba(69,48,30,.08)] transition hover:-translate-y-1 hover:shadow-[0_24px_54px_rgba(69,48,30,.14)] md:p-9">
-                <span className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-primary-50 transition group-hover:scale-110" aria-hidden="true" /><span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-100 text-2xl text-primary-700"><i className="ri-layout-grid-line" /></span><span className="relative flex flex-1 flex-col justify-end"><strong className="mt-5 block font-heading text-3xl font-semibold">Browse Ready-Made Designs</strong><span className="mt-2 block max-w-md text-sm leading-relaxed text-foreground-600">Explore published designs for every available sport, compare views and choose a professional starting point.</span><span className="mt-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[.1em] text-primary-700">Browse {readyMadeTemplates.length} Designs <i className="ri-arrow-right-line" /></span></span>
-              </button>
+              <Link to="/shop?category=ready-made-designs" aria-label="Shop Ready-Made Designs" className="group relative flex min-h-[360px] flex-col overflow-hidden rounded-[24px] border-2 border-primary-500 bg-white p-7 text-left shadow-[0_18px_44px_rgba(69,48,30,.08)] transition hover:-translate-y-1 hover:shadow-[0_24px_54px_rgba(69,48,30,.14)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 md:p-9">
+                <span className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-primary-50 transition group-hover:scale-110" aria-hidden="true" />
+                <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-100 text-2xl text-primary-700"><i className="ri-shopping-bag-3-line" /></span>
+                <span className="relative flex flex-1 flex-col justify-end">
+                  <strong className="mt-5 block font-heading text-3xl font-semibold">Ready-Made Designs</strong>
+                  <span className="mt-2 block max-w-md text-sm leading-relaxed text-foreground-600">Shop finished uniform designs, select sizes and quantities, and check out securely without entering the Design Studio.</span>
+                  <span className="mt-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[.1em] text-primary-700">Shop Ready-Made Designs</span>
+                </span>
+              </Link>
             </div>
           </section>
         </main>
@@ -2394,11 +2327,6 @@ export default function UniformStudioPage() {
                   )}
                   {/* Canvas */}
                   <div data-testid="studio-canvas" className={`studio-canvas flex min-h-0 min-w-0 flex-1 flex-col items-center overflow-hidden ${(activeTool === "ai" || workflowStep.key === "category") ? "gap-0 px-0 py-0" : "gap-3 px-4 py-3 md:px-6 xl:px-10"}`}>
-                    {selectedReadyMadeTemplate?.templateMode === TEMPLATE_MODES.AI_PREVIEW && (
-                      <div className="z-10 flex w-full flex-shrink-0 items-center justify-center gap-2 border-b border-accent-400/25 bg-[#211e10] px-3 py-2 text-center text-[10px] font-bold uppercase tracking-[.12em] text-accent-200">
-                        <i className="ri-sparkling-2-line" aria-hidden="true" /> AI-Generated Preview — Edit with AI Only
-                      </div>
-                    )}
                     {showingAIConcept ? (
                       <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden">
                         <div

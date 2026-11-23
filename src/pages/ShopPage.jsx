@@ -179,8 +179,17 @@ export default function ShopPage() {
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-7">
             <div>
               <h2 className="font-heading text-2xl md:text-4xl font-light text-foreground-950">
-                Featured <span className="text-accent-500 italic">products</span>
+                {activeCategory === "ready-made-designs" ? (
+                  <>Ready-Made <span className="text-accent-500 italic">Uniform Designs</span></>
+                ) : (
+                  <>Featured <span className="text-accent-500 italic">products</span></>
+                )}
               </h2>
+              {activeCategory === "ready-made-designs" && (
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-foreground-600">
+                  Finished designs are purchased directly through the Shop. Category minimums are enforced in the cart and verified again securely at checkout.
+                </p>
+              )}
               <p className="mt-1 text-xs text-foreground-500">
                 {loading ? "Finding products…" : `${visibleProducts.length} product${visibleProducts.length === 1 ? "" : "s"}`}
               </p>
@@ -212,8 +221,8 @@ export default function ShopPage() {
         {!loading && !error && visibleProducts.length === 0 && (
           <EmptyState
             icon="ri-shopping-bag-3-line"
-            title="No products match this category"
-            description="Try a different filter"
+            title={activeCategory === "ready-made-designs" ? "No ready-made designs published yet" : "No products match this category"}
+            description={activeCategory === "ready-made-designs" ? "Publish a Ready-Made Uniform Design in WooCommerce to add it here." : "Try a different filter"}
           />
         )}
 

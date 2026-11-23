@@ -60,7 +60,13 @@ export function CartProvider({ children }) {
     const stockQuantity = normalizedStockQuantity(stockSource);
     const currentItems = itemsRef.current;
     const existingQuantity = currentItems.find((item) => item.key === key)?.qty || 0;
-    const requestedQuantity = existingQuantity + qty;
+    const minimumOrderQuantity = product.readyMade
+      ? Math.max(1, Number(product.minimumOrderQuantity) || 1)
+      : 1;
+    const quantityToAdd = existingQuantity === 0 && product.readyMade
+      ? Math.max(minimumOrderQuantity, Math.floor(Number(qty) || 1))
+      : Math.max(1, Math.floor(Number(qty) || 1));
+    const requestedQuantity = existingQuantity + quantityToAdd;
 
     if (
       stockQuantity !== null &&
@@ -83,7 +89,7 @@ export function CartProvider({ children }) {
           item.key === key
             ? {
                 ...item,
-                qty: item.qty + qty,
+                qty: item.qty + quantityToAdd,
                 productImage: product.image || item.productImage || item.image,
                 variationName: product.variationName || item.variationName || "",
                 variationOptions: product.variationOptions || item.variationOptions || [],
@@ -105,7 +111,10 @@ export function CartProvider({ children }) {
             variationOptions: product.variationOptions || [],
             stockQuantity,
             backordersAllowed: stockSource?.backordersAllowed === true,
-            qty,
+            readyMade: Boolean(product.readyMade),
+            uniformCategory: product.uniformCategory || "",
+            minimumOrderQuantity,
+            qty: quantityToAdd,
           },
         ];
     itemsRef.current = nextItems;
