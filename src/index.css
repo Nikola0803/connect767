@@ -247,6 +247,16 @@ h1, h2, h3, h4, h5, h6 {
   user-select: none;
 }
 
+[data-protected-ready-made="true"] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+[data-protected-ready-made="true"] img {
+  pointer-events: none;
+}
+
 @media print {
   [data-protected-design-preview="true"] > * {
     visibility: hidden !important;
@@ -264,6 +274,26 @@ h1, h2, h3, h4, h5, h6 {
     padding: 2rem;
     position: absolute;
     text-align: center;
+    z-index: 9999;
+  }
+
+  [data-protected-ready-made="true"] > * {
+    visibility: hidden !important;
+  }
+
+  [data-protected-ready-made="true"]::after {
+    align-items: center;
+    background: #111713;
+    color: #fff;
+    content: "Connect767 protected ready-made preview — printing disabled";
+    display: flex;
+    font: 700 16px/1.4 sans-serif;
+    inset: 0;
+    justify-content: center;
+    padding: 1rem;
+    position: absolute;
+    text-align: center;
+    visibility: visible !important;
     z-index: 9999;
   }
 }

@@ -12,6 +12,8 @@ import {
   normalizeVariationAttributeName,
 } from "../lib/productVariations";
 import { detectLegacySizeChart, explicitSizeChart } from "../lib/productSizeGuide";
+import { ReadyMadeCaptureShield, ReadyMadeImageWatermark } from "../components/ready-made/ReadyMadeImageProtection";
+import useReadyMadeImageProtection from "../hooks/useReadyMadeImageProtection";
 
 export default function ProductDetailPage() {
   const { slug } = useParams();
@@ -21,6 +23,7 @@ export default function ProductDetailPage() {
   const [added, setAdded] = useState(false);
   const [selectedImage, setSelectedImage] = useState("");
   const [detectedSizeChart, setDetectedSizeChart] = useState(null);
+  const captureShieldActive = useReadyMadeImageProtection(Boolean(product?.readyMade));
 
   useEffect(() => {
     setSelections({});
@@ -165,6 +168,7 @@ export default function ProductDetailPage() {
 
   return (
     <div className="pt-16 md:pt-20">
+      <ReadyMadeCaptureShield active={captureShieldActive} />
       <div className="w-full px-4 md:px-8 lg:px-12 py-4 border-b border-background-200/70 bg-background-50">
         <div className="max-w-6xl mx-auto flex items-center gap-2 text-xs font-label text-foreground-500">
           <Link className="hover:text-foreground-800 cursor-pointer" to="/">
@@ -182,7 +186,7 @@ export default function ProductDetailPage() {
       <div className="w-full px-4 md:px-8 lg:px-12 py-10">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10">
           <div>
-            <div className="relative rounded-2xl overflow-hidden border border-background-200/70 aspect-square bg-background-50">
+            <div className="relative rounded-2xl overflow-hidden border border-background-200/70 aspect-square bg-background-50" data-protected-ready-made={product.readyMade ? "true" : undefined}>
               <img
                 key={displayImage}
                 src={displayImage}
@@ -191,7 +195,9 @@ export default function ProductDetailPage() {
                   (matchedVariation ? `${product.title} — selected variation` : product.title)
                 }
                 className="w-full h-full object-cover object-top transition-opacity duration-200"
+                draggable={product.readyMade ? false : undefined}
               />
+              {product.readyMade && <ReadyMadeImageWatermark />}
               {displayOriginalPrice && (
                 <span className="absolute top-4 left-4 px-2.5 py-1 rounded-md bg-accent-500 text-background-50 text-xs font-semibold font-label">
                   Sale
@@ -211,7 +217,8 @@ export default function ProductDetailPage() {
                     onClick={() => setSelectedImage(image.src)}
                     aria-label={`View product image ${index + 1}`}
                     aria-pressed={displayImage === image.src}
-                    className={`aspect-square overflow-hidden rounded-lg border-2 bg-background-50 transition-colors cursor-pointer ${
+                    data-protected-ready-made={product.readyMade ? "true" : undefined}
+                    className={`relative aspect-square overflow-hidden rounded-lg border-2 bg-background-50 transition-colors cursor-pointer ${
                       displayImage === image.src
                         ? "border-primary-500"
                         : "border-background-200 hover:border-primary-300"
@@ -221,7 +228,9 @@ export default function ProductDetailPage() {
                       src={image.src}
                       alt=""
                       className="w-full h-full object-cover object-top"
+                      draggable={product.readyMade ? false : undefined}
                     />
+                    {product.readyMade && <ReadyMadeImageWatermark compact />}
                   </button>
                 ))}
               </div>

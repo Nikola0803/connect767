@@ -9,6 +9,8 @@ import { getProducts, getShopCategories } from "../data/repository";
 import { sortOptions } from "../data/shop";
 import { productMatchesCategory, productMatchesSearch } from "../lib/productCategories";
 import { sortShopProducts } from "../lib/productSorting";
+import { ReadyMadeCaptureShield } from "../components/ready-made/ReadyMadeImageProtection";
+import useReadyMadeImageProtection from "../hooks/useReadyMadeImageProtection";
 
 const shopBannerImage = "https://admin.connect767.com/wp-content/uploads/2026/10/portrait_500KB.jpg";
 const readyMadeCategories = [
@@ -32,6 +34,7 @@ export default function ShopPage() {
   const { data: products, loading, error, reload } = useAsync(() => getProducts(), []);
   const { data: shopCategories } = useAsync(() => getShopCategories(), []);
   const isReadyMadePage = activeCategory === "ready-made-designs";
+  const captureShieldActive = useReadyMadeImageProtection(isReadyMadePage);
 
   const visibleProducts = useMemo(() => {
     if (!products) return [];
@@ -60,6 +63,7 @@ export default function ShopPage() {
 
   return (
     <div className="pt-16 md:pt-20">
+      <ReadyMadeCaptureShield active={captureShieldActive} />
       <section className="relative overflow-hidden bg-primary-950 text-background-50">
         <div className="absolute -top-32 -right-24 w-80 h-80 rounded-full bg-primary-500/20 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-40 left-1/4 w-96 h-96 rounded-full bg-accent-500/15 blur-3xl pointer-events-none" />
