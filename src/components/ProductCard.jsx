@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { ReadyMadeImageWatermark } from "./ready-made/ReadyMadeImageProtection";
 
 export default function ProductCard({ product, onAddToCart }) {
   const navigate = useNavigate();
@@ -10,7 +11,7 @@ export default function ProductCard({ product, onAddToCart }) {
       className="group block rounded-xl bg-background-50 border border-background-200/70 overflow-hidden transition-all duration-200 hover:border-background-300/80 cursor-pointer"
       data-product-shop="true"
     >
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden" data-protected-ready-made={product.readyMade ? "true" : undefined}>
         <div className="aspect-square w-full overflow-hidden">
           <img
             loading="lazy"
@@ -19,8 +20,10 @@ export default function ProductCard({ product, onAddToCart }) {
             title={`${product.title} — Connect767 Shop`}
             className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
             src={product.image}
+            draggable={product.readyMade ? false : undefined}
           />
         </div>
+        {product.readyMade && <ReadyMadeImageWatermark />}
         {product.originalPrice && (
           <span className="absolute top-3 left-3 px-2 py-1 rounded-md bg-accent-500 text-background-50 text-xs font-semibold font-label">
             Sale
