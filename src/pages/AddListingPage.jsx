@@ -1002,7 +1002,7 @@ export default function AddListingPage() {
         </div>
       )}
       <div className="w-full border-b border-background-200/70 bg-background-50 px-3 py-4 sm:px-4 sm:py-6 md:px-8 lg:px-12">
-        <div className="max-w-4xl mx-auto">
+        <div className={`${step === 4 ? "max-w-2xl" : "max-w-4xl"} mx-auto`}>
           {isOnboarding && (
             <div className="mb-5 rounded-2xl border border-primary-200 bg-primary-50/80 px-4 py-4 sm:px-5">
               <div className="flex items-start gap-3">
@@ -1792,20 +1792,20 @@ export default function AddListingPage() {
           )}
 
           {step === 4 && (
-            <div>
+            <div className="mx-auto max-w-2xl">
               <h1 className="mb-2 font-heading text-2xl font-light text-foreground-950 sm:mb-3 sm:text-3xl md:text-4xl">
                 Review your <span className="text-accent-500 italic">listing</span>
               </h1>
               <p className="mb-6 hidden text-xs text-foreground-600 font-label sm:mb-10 sm:block sm:text-sm">
                 Make sure everything looks right before submitting.
               </p>
-              <div className="space-y-4 rounded-2xl border border-background-200/70 bg-background-100/40 p-4 sm:space-y-5 sm:p-6">
+              <div className="space-y-3 rounded-2xl border border-background-200/70 bg-background-100/40 p-4 sm:p-5">
                 {/* Tier is changeable right here at the end. Previously it was
                     locked in at step 1, so anyone who reconsidered after
                     seeing their finished listing had to abandon the form and
                     start over. */}
-                <div className="pb-4 border-b border-background-200/70">
-                  <span className="mb-3 block text-sm font-semibold text-foreground-800">Tier</span>
+                <div className="border-b border-background-200/70 pb-3">
+                  <span className="mb-2 block text-sm font-semibold text-foreground-800">Tier</span>
                   <ListingTierCards
                     compact
                     selectedTier={form.tier}
@@ -1836,9 +1836,9 @@ export default function AddListingPage() {
                   ["Website", form.website || "—"],
                   ["Storefront", form.sellProducts ? "Add products after saving" : "No products selected"],
                 ].map(([label, value]) => (
-                  <div key={label} className="flex items-center justify-between text-sm">
+                  <div key={label} className="grid grid-cols-[minmax(7.5rem,0.7fr)_minmax(0,1fr)] items-start gap-x-3 text-sm sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-x-4">
                     <span className="text-foreground-600 font-label">{label}</span>
-                    <span className="font-semibold text-foreground-900 font-label text-right">
+                    <span className="min-w-0 break-words font-semibold text-foreground-900 font-label">
                       {value}
                     </span>
                   </div>
@@ -1849,9 +1849,9 @@ export default function AddListingPage() {
                     File object, never the already-saved image) and was never
                     much use even when right. A picture answers "did that
                     upload, and is it cropped how I want?" in one glance. */}
-                <div className="pt-4 border-t border-background-200/70">
-                  <span className="text-sm text-foreground-600 font-label block mb-3">Images</span>
-                  <div className="flex flex-wrap items-start gap-5">
+                <div className="border-t border-background-200/70 pt-3">
+                  <span className="mb-2 block text-sm text-foreground-600 font-label">Images</span>
+                  <div className="flex flex-wrap items-start gap-4">
                     <div>
                       <span className="text-[11px] font-label text-foreground-500 block mb-1.5">
                         Logo
@@ -1919,7 +1919,7 @@ export default function AddListingPage() {
                 </div>
 
                 {form.description && (
-                  <div className="pt-4 border-t border-background-200/70">
+                  <div className="border-t border-background-200/70 pt-3">
                     <span className="text-sm text-foreground-600 font-label block mb-1.5">
                       Description
                     </span>
@@ -1931,23 +1931,43 @@ export default function AddListingPage() {
                     </p>
                   </div>
                 )}
+
+                <div className="flex justify-end border-t border-background-200/70 pt-4">
+                  <Button
+                    type="button"
+                    variant="accent"
+                    onClick={handleSubmit}
+                    disabled={submitting}
+                    icon="ri-check-line"
+                  >
+                    {submitting
+                      ? "Saving…"
+                      : isEditing
+                        ? "Save changes"
+                        : form.sellProducts
+                          ? "Save listing & add product"
+                          : "Submit Listing"}
+                  </Button>
+                </div>
               </div>
             </div>
           )}
 
           {step === 4 && (
-            <details className="mt-6 overflow-hidden rounded-2xl border border-background-200/80 bg-background-50 shadow-[0_14px_38px_rgba(49,77,62,0.06)]">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-semibold text-primary-800 sm:px-6">
+            <details className="group mt-6">
+              <summary className="mx-auto flex max-w-2xl cursor-pointer list-none items-center justify-between gap-4 rounded-2xl border-2 border-primary-200 bg-gradient-to-r from-primary-50 to-background-50 px-4 py-4 text-base font-semibold text-primary-900 shadow-[0_12px_30px_rgba(23,84,55,0.12)] transition hover:border-primary-300 hover:shadow-[0_16px_34px_rgba(23,84,55,0.16)] sm:px-5">
                 <span className="inline-flex items-center gap-2">
-                  <i className="ri-eye-line text-lg" aria-hidden="true" />
-                  View full profile preview
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-700 text-background-50 shadow-sm">
+                    <i className="ri-eye-line text-lg" aria-hidden="true" />
+                  </span>
+                  Preview Profile
                 </span>
-                <i className="ri-arrow-down-s-line text-lg" aria-hidden="true" />
+                <i className="ri-arrow-down-s-line text-xl transition-transform group-open:rotate-180" aria-hidden="true" />
               </summary>
               {/* ListingProfile remains the real production component. The
                   redesign only collapses it until the owner chooses to view
                   it; no preview behavior or data mapping is replaced. */}
-              <div className="overflow-hidden border-t border-background-200/70 bg-background-50">
+              <div className="mt-4 overflow-hidden rounded-2xl border border-background-200/70 bg-background-50">
                 <ListingProfile data={buildPreviewData(form)} isPreview />
               </div>
             </details>
@@ -1992,11 +2012,7 @@ export default function AddListingPage() {
 
           <div
             id="listing-wizard-actions"
-            className={`mt-6 flex items-center justify-between sm:mt-10 ${
-              step === 4
-                ? "-mx-4 px-4 md:-mx-8 md:px-8 lg:-mx-12 lg:grid lg:grid-cols-3 lg:gap-x-8 lg:px-12"
-                : ""
-            }`}
+            className={`mt-6 flex items-center sm:mt-10 ${step === 4 ? "mx-auto max-w-2xl justify-start" : "justify-between"}`}
           >
             <Button
               type="button"
@@ -2019,24 +2035,7 @@ export default function AddListingPage() {
               >
                 Continue
               </Button>
-            ) : (
-              <Button
-                type="button"
-                variant="accent"
-                onClick={handleSubmit}
-                disabled={submitting}
-                icon="ri-check-line"
-                className="lg:col-start-2 lg:justify-self-end"
-              >
-                {submitting
-                  ? "Saving…"
-                  : isEditing
-                    ? "Save changes"
-                    : form.sellProducts
-                      ? "Save listing & add product"
-                      : "Submit Listing"}
-              </Button>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
