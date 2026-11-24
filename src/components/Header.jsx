@@ -5,6 +5,7 @@ import { useCart } from "../hooks/useCart";
 import BrandLogo from "./BrandLogo";
 import { getUnreadMessageCount } from "../data/repository";
 import { imageCropStyle } from "../lib/imagePosition";
+import { prefetchNavigation, prefetchNavigationChunks } from "../lib/navigationPrefetch";
 
 export function AccountAvatar({
   email,
@@ -98,7 +99,17 @@ export default function Header({ showQuickNavigation = true }) {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [isAuthenticated, pathname]);
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    const warmRoutes = () => prefetchNavigationChunks(["/listings", "/shop", "/community"]);
+    if ("requestIdleCallback" in window) {
+      const id = window.requestIdleCallback(warmRoutes, { timeout: 2500 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(warmRoutes, 1200);
+    return () => window.clearTimeout(id);
+  }, []);
 
   // Lock background scroll while the mobile menu is open.
   useEffect(() => {
@@ -174,6 +185,9 @@ export default function Header({ showQuickNavigation = true }) {
             <NavLink
               key={item.href}
               to={item.href}
+              onPointerEnter={() => prefetchNavigation(item.href)}
+              onFocus={() => prefetchNavigation(item.href)}
+              onTouchStart={() => prefetchNavigation(item.href)}
               target={item.opensNewWindow ? "_blank" : undefined}
               rel={item.opensNewWindow ? "noopener noreferrer" : undefined}
               className={({ isActive }) =>
@@ -319,6 +333,9 @@ export default function Header({ showQuickNavigation = true }) {
               <NavLink
                 key={item.href}
                 to={item.href}
+                onPointerEnter={() => prefetchNavigation(item.href)}
+                onFocus={() => prefetchNavigation(item.href)}
+                onTouchStart={() => prefetchNavigation(item.href)}
                 target={item.opensNewWindow ? "_blank" : undefined}
                 rel={item.opensNewWindow ? "noopener noreferrer" : undefined}
                 onClick={() => setMobileOpen(false)}
@@ -431,6 +448,9 @@ export default function Header({ showQuickNavigation = true }) {
               <Link
                 key={item.href}
                 to={item.href}
+                onPointerEnter={() => prefetchNavigation(item.href)}
+                onFocus={() => prefetchNavigation(item.href)}
+                onTouchStart={() => prefetchNavigation(item.href)}
                 aria-current={active ? "page" : undefined}
                 className={`grid min-h-14 grid-rows-[20px_28px] place-items-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-semibold transition-colors ${
                   active

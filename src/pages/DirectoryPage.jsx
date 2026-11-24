@@ -26,13 +26,7 @@ export default function DirectoryPage() {
   const [sort, setSort] = useState("rating");
   const [view, setView] = useState("grid");
   const [page, setPage] = useState(1);
-  const [databaseSearch, setDatabaseSearch] = useState(search.trim());
   const [filtersOpen, setFiltersOpen] = useState(false);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setDatabaseSearch(search.trim()), 250);
-    return () => window.clearTimeout(timeout);
-  }, [search]);
 
   useEffect(() => {
     if (!filtersOpen) return undefined;
@@ -75,7 +69,7 @@ export default function DirectoryPage() {
     loading,
     error,
     reload,
-  } = useAsync(() => getListings({ search: databaseSearch }), [databaseSearch]);
+  } = useAsync(() => getListings(), []);
   const { data: directoryCategories } = useAsync(() => getDirectoryCategories(), []);
 
   const activeFilterChips = [
