@@ -179,7 +179,7 @@ export default function ProductDetailPage() {
             className="hover:text-foreground-800 cursor-pointer"
             to={product.readyMade ? "/shop?category=ready-made-designs" : "/shop"}
           >
-            {product.readyMade ? "Ready-Made Designs" : "Shop"}
+            {product.readyMade ? "Pre-Design Uniforms" : "Shop"}
           </Link>
           <i className="ri-arrow-right-s-line text-xs" />
           <span className="text-foreground-800 font-medium truncate">{product.title}</span>

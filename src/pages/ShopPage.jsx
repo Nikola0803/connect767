@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
 import Studio from "../components/Studio";
 import { CardSkeleton, EmptyState, ErrorState } from "../components/ui/States";
@@ -32,7 +32,7 @@ export default function ShopPage() {
   const [activeCategory, setActiveCategory] = useState(urlCategory);
   const [readyMadeCategory, setReadyMadeCategory] = useState("all");
   const [sort, setSort] = useState("featured");
-  const { count: cartCount, addItem, setIsOpen: setCartOpen } = useCart();
+  const { addItem } = useCart();
 
   const { data: products, loading, error, reload } = useAsync(() => getProducts(), []);
   const { data: shopCategories } = useAsync(() => getShopCategories(), []);
@@ -49,9 +49,9 @@ export default function ShopPage() {
     if (!products) return [];
     let list = isReadyMadePage
       ? products.filter((product) => product.readyMade && (readyMadeCategory === "all" || product.uniformCategory === readyMadeCategory))
-      : activeCategory === "all"
-        ? products
-        : products.filter((product) => productMatchesCategory(product, activeCategory));
+      : products.filter((product) => !product.readyMade && (
+        activeCategory === "all" || productMatchesCategory(product, activeCategory)
+      ));
 
     if (search) {
       list = list.filter((product) => productMatchesSearch(product, search));
@@ -110,37 +110,16 @@ export default function ShopPage() {
                   ? "Choose a finished sports uniform, then complete team sizes, roster details and production options at checkout."
                   : "Shop apparel and essentials from Dominican brands worldwide."}
               </p>
-              <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                {isReadyMadePage ? <a
+              {isReadyMadePage && <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                <a
                   href="#ready-made-products"
                   className="inline-flex items-center justify-center gap-2 h-12 px-5 rounded-full bg-background-50 text-primary-950 text-sm font-bold hover:bg-background-100 transition-colors cursor-pointer whitespace-nowrap"
                 >
                   <i className="ri-layout-grid-line text-lg" />
                   Browse Designs
                   <i className="ri-arrow-right-line" />
-                </a> : <Link
-                  to="/shop/customize"
-                  className="inline-flex items-center justify-center gap-2 h-12 px-5 rounded-full bg-background-50 text-primary-950 text-sm font-bold hover:bg-background-100 transition-colors cursor-pointer whitespace-nowrap"
-                >
-                  <i className="ri-magic-line text-lg" />
-                  Design Uniforms
-                  <i className="ri-arrow-right-line" />
-                </Link>}
-                <button
-                  aria-label="Open cart"
-                  type="button"
-                  onClick={() => setCartOpen(true)}
-                  className="relative inline-flex items-center justify-center gap-2 h-12 px-5 rounded-full border border-background-50/20 bg-background-50/5 text-sm font-semibold hover:bg-background-50/10 cursor-pointer transition-colors"
-                >
-                  <i className="ri-shopping-bag-3-line text-lg" />
-                  Cart
-                  {cartCount > 0 && (
-                    <span className="min-w-[20px] h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-accent-500 text-background-50 text-[10px] font-bold">
-                      {cartCount}
-                    </span>
-                  )}
-                </button>
-              </div>
+                </a>
+              </div>}
             </div>
 
             {!isReadyMadePage && <div className="relative hidden sm:block">
@@ -210,7 +189,7 @@ export default function ShopPage() {
                   }`}
                 >
                   <i className={`${cat.icon} text-sm`} />
-                  {cat.label}
+                  {cat.slug === "ready-made-designs" ? "Pre-Design Uniforms" : cat.label}
                 </button>
               );
             })}

@@ -9,7 +9,10 @@ vi.mock("../data/repository", () => ({
     { id: 1, slug: "ready-kit", title: "Ready Kit", image: "/ready.png", images: [], price: 30, readyMade: true, uniformCategory: "soccer", minimumOrderQuantity: 22, categories: [], tags: [] },
     { id: 2, slug: "shop-shirt", title: "Shop Shirt", image: "/shirt.png", images: [], price: 20, readyMade: false, categories: [], tags: [] },
   ]),
-  getShopCategories: vi.fn(async () => []),
+  getShopCategories: vi.fn(async () => [
+    { slug: "all", label: "All Products", icon: "ri-store-3-line" },
+    { slug: "ready-made-designs", label: "Ready-Made Designs", icon: "ri-layout-grid-line" },
+  ]),
 }));
 
 describe("ShopPage URL navigation", () => {
@@ -24,8 +27,15 @@ describe("ShopPage URL navigation", () => {
     );
 
     expect(await screen.findByText("Ready-Made Sports")).toBeInTheDocument();
+    expect(screen.getByText("Ready Kit")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("link", { name: "Open Shop" }));
     await waitFor(() => expect(screen.getByText("The Connect767 Shop")).toBeInTheDocument());
     expect(screen.queryByText("Ready-Made Sports")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ready Kit")).not.toBeInTheDocument();
+    expect(screen.getByText("Shop Shirt")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pre-Design Uniforms" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ready-Made Designs" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Design Uniforms" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Open cart" })).not.toBeInTheDocument();
   });
 });

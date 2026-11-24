@@ -1,6 +1,6 @@
 export const shopCategories = [
   { icon: "ri-store-3-line", label: "All Products", slug: "all" },
-  { icon: "ri-layout-grid-line", label: "Ready-Made Designs", slug: "ready-made-designs" },
+  { icon: "ri-layout-grid-line", label: "Pre-Design Uniforms", slug: "ready-made-designs" },
   // Keep the offline preview aligned with the Product Categories currently
   // configured in WordPress. Production still reads this list dynamically
   // from WooCommerce through getShopCategories().
