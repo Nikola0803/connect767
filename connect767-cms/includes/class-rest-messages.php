@@ -386,7 +386,13 @@ class C767_REST_Messages
             $message_preview,
             $url
         );
-        if (!wp_mail($recipient->user_email, $subject, $mail_body)) {
+        if (!C767_Notifications::send_branded_mail(
+            $recipient->user_email,
+            $subject,
+            $mail_body,
+            [],
+            ['cta_url' => $url, 'cta_label' => 'Reply securely']
+        )) {
             error_log('Connect767 message notification could not be sent for thread ' . (int) $thread_id . '.');
         }
     }

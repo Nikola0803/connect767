@@ -8,9 +8,9 @@
  *
  * Kept separate from the REST/CPT classes that fire these hooks so the
  * "what happens on this event" list stays in one file instead of being
- * scattered across five others. Uses plain wp_mail() the same way
- * class-rest-product-quotes.php / class-rest-uniform-quotes.php already
- * do, for consistency — no HTML templates, no extra dependencies.
+ * scattered across five others. Every outgoing message is rendered through
+ * the same Connect767 Directory HTML shell so account, listing, booking,
+ * sales, quote, message, and administrator mail remains visually consistent.
  */
 
 if (!defined('ABSPATH')) {
@@ -41,6 +41,9 @@ class C767_Notifications
         // visible sender with its own brevosend.com relay address.
         add_filter('wp_mail_from', [__CLASS__, 'mail_from'], PHP_INT_MAX);
         add_filter('wp_mail_from_name', [__CLASS__, 'mail_from_name'], PHP_INT_MAX);
+        add_filter('wp_mail', [__CLASS__, 'brand_outgoing_mail'], PHP_INT_MAX);
+        add_filter('woocommerce_email_styles', [__CLASS__, 'woocommerce_email_styles'], 20, 2);
+        add_filter('woocommerce_email_footer_text', [__CLASS__, 'woocommerce_email_footer_text']);
 
         add_action('c767_user_registered', [__CLASS__, 'on_user_registered'], 10, 2);
         add_action(self::PROFILE_REMINDER_HOOK, [__CLASS__, 'send_profile_completion_reminder'], 10, 2);
@@ -76,7 +79,7 @@ class C767_Notifications
 
     public static function mail_from_name()
     {
-        return 'Connect767';
+        return 'Connect767 Directory';
     }
 
     private static function site_name()
@@ -90,25 +93,146 @@ class C767_Notifications
         return $email && is_email($email) ? ['Reply-To: ' . $email] : [];
     }
 
-    /** Render transactional booking messages as HTML so every URL is an explicit clickable link. */
-    private static function booking_email_html($body)
+    private static function has_html_content_type($headers)
     {
-        $linked_body = make_clickable(esc_html((string) $body));
-        $favicon = sprintf(
-            '<img src="%s" alt="Connect767" width="36" height="36" style="display:block;width:36px;height:36px;object-fit:contain;border:0;" />',
-            esc_url(self::frontend_url('/connect767-favicon.png'))
-        );
-        $linked_body = str_replace('__C767_FAVICON__', $favicon, $linked_body);
-
-        return '<div style="font-family:Arial,sans-serif;font-size:16px;line-height:1.6;color:#172019;">'
-            . nl2br($linked_body)
-            . '</div>';
+        $headers = is_array($headers) ? $headers : preg_split('/\r\n|\r|\n/', (string) $headers);
+        foreach ((array) $headers as $header) {
+            if (stripos((string) $header, 'content-type:') === 0 && stripos((string) $header, 'text/html') !== false) {
+                return true;
+            }
+        }
+        return false;
     }
 
-    /** Preserve optional Reply-To headers while sending a standards-compliant HTML email. */
-    private static function booking_email_headers($headers = [])
+    private static function html_email_headers($headers = [])
     {
-        return array_merge((array) $headers, ['Content-Type: text/html; charset=UTF-8']);
+        $headers = is_array($headers) ? $headers : preg_split('/\r\n|\r|\n/', (string) $headers, -1, PREG_SPLIT_NO_EMPTY);
+        if (!self::has_html_content_type($headers)) {
+            $headers[] = 'Content-Type: text/html; charset=UTF-8';
+        }
+        return $headers;
+    }
+
+    private static function first_url($body)
+    {
+        if (!preg_match('#https?://[^\s<>"\']+#i', (string) $body, $matches)) {
+            return '';
+        }
+        return rtrim($matches[0], '.,);]');
+    }
+
+    private static function is_branded_email($body)
+    {
+        $body = (string) $body;
+        return strpos($body, 'data-c767-email="1"') !== false
+            || (strpos($body, 'background:#f8f5ef') !== false && stripos($body, 'Connect767 Directory') !== false);
+    }
+
+    private static function is_woocommerce_email($body)
+    {
+        $body = (string) $body;
+        return stripos($body, 'id="wrapper"') !== false
+            || stripos($body, 'id="template_container"') !== false
+            || stripos($body, 'woocommerce-email') !== false;
+    }
+
+    /**
+     * Render any plain-text or HTML fragment inside the same branded card used
+     * by the directory-profile follow-up email. This method is public so REST
+     * modules can share the exact template without duplicating markup.
+     */
+    public static function branded_email_html($body, $subject = '', $args = [])
+    {
+        if (self::is_branded_email($body)) {
+            return (string) $body;
+        }
+
+        $args = wp_parse_args((array) $args, [
+            'heading' => '',
+            'cta_url' => '',
+            'cta_label' => 'Open Connect767',
+            'preheader' => '',
+            'html' => false,
+        ]);
+        $plain_body = trim((string) $body);
+        $heading = trim((string) $args['heading']);
+        $content = '';
+
+        if ($args['html']) {
+            $content = wp_kses_post($plain_body);
+        } else {
+            $lines = preg_split('/\r\n|\r|\n/', $plain_body);
+            while ($lines && trim((string) $lines[0]) === '') {
+                array_shift($lines);
+            }
+            if (!$heading && $lines && preg_match('/^Hi\b.+[,!]$/i', trim((string) $lines[0]))) {
+                $heading = trim((string) array_shift($lines));
+                while ($lines && trim((string) $lines[0]) === '') {
+                    array_shift($lines);
+                }
+            }
+            $content = nl2br(make_clickable(esc_html(implode("\n", $lines))));
+            $content = str_replace('__C767_FAVICON__', '', $content);
+        }
+
+        if (!$heading) {
+            $heading = $subject ?: 'Connect767 update';
+        }
+        $cta_url = $args['cta_url'] ? esc_url_raw($args['cta_url']) : self::first_url($plain_body);
+        $favicon_url = self::frontend_url('/connect767-favicon.png');
+        $website_url = self::frontend_url('/');
+        $preheader = trim((string) $args['preheader']);
+
+        return '<div data-c767-email="1" style="margin:0;padding:32px 16px;background:#f8f5ef;font-family:Arial,sans-serif;color:#172019;">'
+            . ($preheader !== '' ? '<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">' . esc_html($preheader) . '</div>' : '')
+            . '<div style="max-width:620px;margin:0 auto;padding:36px;border:1px solid #e4ded2;border-radius:18px;background:#fffdf9;">'
+            . '<p style="margin:0 0 20px;color:#006a46;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;">Connect767 Directory</p>'
+            . '<h1 style="margin:0 0 18px;font-family:Georgia,serif;font-size:30px;line-height:1.2;color:#111a14;">' . esc_html($heading) . '</h1>'
+            . '<div style="font-size:16px;line-height:1.7;color:#172019;">' . $content . '</div>'
+            . ($cta_url ? '<p style="margin:26px 0 0;"><a href="' . esc_url($cta_url) . '" style="display:inline-block;padding:14px 22px;border-radius:999px;background:#006a46;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;">' . esc_html($args['cta_label']) . ' &rarr;</a></p>' : '')
+            . ($cta_url ? '<p style="margin:20px 0 0;font-size:13px;line-height:1.6;color:#5d675f;">If the button does not open, copy this link into your browser:<br><a href="' . esc_url($cta_url) . '" style="color:#006a46;word-break:break-all;">' . esc_html($cta_url) . '</a></p>' : '')
+            . '<div style="margin:24px 0 0;padding-top:20px;border-top:1px solid #ece6dc;">'
+            . '<p style="margin:0 0 10px;"><img src="' . esc_url($favicon_url) . '" alt="Connect767 C" width="38" height="38" style="display:block;width:38px;height:38px;border:0;object-fit:contain;" /></p>'
+            . '<p style="margin:0;font-size:15px;line-height:1.6;color:#172019;"><strong>The Connect767 Team</strong><br><a href="' . esc_url($website_url) . '" style="color:#006a46;text-decoration:none;">connect767.com</a></p>'
+            . '</div></div></div>';
+    }
+
+    /** Catch WordPress, WooCommerce extensions, and future plugin mail that bypasses the helpers below. */
+    public static function brand_outgoing_mail($mail)
+    {
+        if (!is_array($mail) || empty($mail['message'])) {
+            return $mail;
+        }
+        if (!self::is_branded_email($mail['message']) && !self::is_woocommerce_email($mail['message'])) {
+            $is_html = self::has_html_content_type($mail['headers'] ?? []);
+            $mail['message'] = self::branded_email_html(
+                $mail['message'],
+                $mail['subject'] ?? '',
+                ['html' => $is_html]
+            );
+            $mail['headers'] = self::html_email_headers($mail['headers'] ?? []);
+        }
+        return $mail;
+    }
+
+    /** Bring native WooCommerce order and sales emails into the same palette and card treatment. */
+    public static function woocommerce_email_styles($css, $email = null)
+    {
+        return (string) $css . "\n"
+            . 'body,#wrapper{background:#f8f5ef!important;color:#172019!important;font-family:Arial,sans-serif!important;}'
+            . '#template_container{max-width:620px!important;border:1px solid #e4ded2!important;border-radius:18px!important;background:#fffdf9!important;box-shadow:none!important;overflow:hidden!important;}'
+            . '#template_header{background:#006a46!important;border-radius:18px 18px 0 0!important;}'
+            . '#template_header h1{font-family:Georgia,serif!important;font-size:30px!important;color:#fff!important;}'
+            . '#body_content,#body_content_inner{background:#fffdf9!important;color:#172019!important;font-size:16px!important;line-height:1.7!important;}'
+            . '#body_content a,#template_footer a{color:#006a46!important;}'
+            . 'h2,h3{font-family:Georgia,serif!important;color:#111a14!important;}'
+            . '.button,a.button{background:#006a46!important;border-radius:999px!important;color:#fff!important;font-weight:700!important;}'
+            . '#template_footer{color:#5d675f!important;}';
+    }
+
+    public static function woocommerce_email_footer_text($text)
+    {
+        return 'The Connect767 Team — connect767.com';
     }
 
     private static function directory_mail_from()
@@ -118,15 +242,22 @@ class C767_Notifications
     }
 
     /** Send directory notifications through the dedicated verified Brevo identity. */
-    private static function send_directory_mail($to, $subject, $body, $headers = [])
+    private static function send_directory_mail($to, $subject, $body, $headers = [], $args = [])
     {
         self::$mail_from_override = self::directory_mail_from();
-        $headers = array_merge((array) $headers, ['BIMI-Selector: v=BIMI1; s=default;']);
+        $body = self::branded_email_html($body, $subject, $args);
+        $headers = array_merge(self::html_email_headers($headers), ['BIMI-Selector: v=BIMI1; s=default;']);
         try {
             return wp_mail($to, $subject, $body, $headers);
         } finally {
             self::$mail_from_override = '';
         }
+    }
+
+    /** Public entry point for quote, message, and commerce modules. */
+    public static function send_branded_mail($to, $subject, $body, $headers = [], $args = [])
+    {
+        return self::send_directory_mail($to, $subject, $body, $headers, $args);
     }
 
     /**
@@ -280,7 +411,7 @@ class C767_Notifications
             ? 'Add your category, industry, experience, contact details, and photos. It only takes a few minutes, and you can begin with a free listing and update it whenever your business changes.'
             : 'Add your category, industry, experience, contact details, and photos to create a professional profile that is ready to share.';
 
-        $html = '<div style="margin:0;padding:32px 16px;background:#f8f5ef;font-family:Arial,sans-serif;color:#172019;">'
+        $html = '<div data-c767-email="1" style="margin:0;padding:32px 16px;background:#f8f5ef;font-family:Arial,sans-serif;color:#172019;">'
             . '<div style="max-width:620px;margin:0 auto;padding:36px;border:1px solid #e4ded2;border-radius:18px;background:#fffdf9;">'
             . '<p style="margin:0 0 20px;color:#006a46;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;">Connect767 Directory</p>'
             . '<h1 style="margin:0 0 18px;font-family:Georgia,serif;font-size:30px;line-height:1.2;color:#111a14;">{{greeting}}</h1>'
@@ -578,7 +709,7 @@ class C767_Notifications
         $subject = sprintf('Welcome to %s!', self::site_name());
         $body = $is_business
             ? sprintf(
-                "Hi %s,\n\nYour Connect767 business account is ready. You can add your first listing here:\n%s\n\nManage everything (listings, bookings, orders) from your dashboard:\n%s\n\nThanks for joining us.",
+                "Hi %s,\n\nYour Connect767 account is ready. You can add your first listing here:\n%s\n\nManage everything (listings, bookings, orders) from your dashboard:\n%s\n\nThanks for joining us.",
                 $user->display_name ?: $user->user_login,
                 self::frontend_url('/listings/submit'),
                 self::frontend_url('/dashboard')
@@ -634,7 +765,10 @@ class C767_Notifications
             self::site_name()
         );
 
-        return wp_mail($user->user_email, $subject, $body);
+        return self::send_directory_mail($user->user_email, $subject, $body, [], [
+            'cta_url' => $reset_url,
+            'cta_label' => 'Reset your password',
+        ]);
     }
 
     // ---------- Listing submitted (pending review) ----------
@@ -846,11 +980,12 @@ class C767_Notifications
                 $listing_url,
                 self::frontend_url('/dashboard')
             );
-            wp_mail(
+            self::send_directory_mail(
                 $owner->user_email,
                 $subject,
-                self::booking_email_html($body),
-                self::booking_email_headers(self::reply_to($email))
+                $body,
+                self::reply_to($email),
+                ['cta_url' => self::frontend_url('/dashboard'), 'cta_label' => 'Manage booking']
             );
         }
 
@@ -873,7 +1008,10 @@ class C767_Notifications
                     $name ?: 'there', $listing->post_title, $listing_url
                 );
             }
-            wp_mail($email, $subject, self::booking_email_html($body), self::booking_email_headers());
+            self::send_directory_mail($email, $subject, $body, [], [
+                'cta_url' => $listing_url,
+                'cta_label' => 'View listing',
+            ]);
         }
     }
 
@@ -912,17 +1050,21 @@ class C767_Notifications
                     $name ?: 'there', $listing->post_title, $date ?: 'To be arranged', $time ?: 'To be arranged', $duration,
                     $meeting_url ?: 'The business will send this separately.', $listing_url
                 );
-            wp_mail($email, $subject, self::booking_email_html($body), self::booking_email_headers());
+            self::send_directory_mail($email, $subject, $body, [], [
+                'cta_url' => $listing_url,
+                'cta_label' => $is_rental ? 'View rental' : 'View booking',
+            ]);
         }
 
         if ($owner) {
-            wp_mail(
+            self::send_directory_mail(
                 $owner->user_email,
                 sprintf('Booking confirmed — %s', $listing->post_title),
-                self::booking_email_html($is_rental
+                ($is_rental
                     ? sprintf("%s's rental is confirmed from %s to %s.\n\nView the listing:\n%s\n\nManage it from your dashboard:\n%s", $name ?: 'A customer', $check_in, $check_out, $listing_url, self::frontend_url('/dashboard'))
                     : sprintf("%s's booking is confirmed for %s at %s.\n\nView the listing:\n%s\n\nManage it from your dashboard:\n%s", $name ?: 'A customer', $date ?: 'a date to be arranged', $time ?: 'a time to be arranged', $listing_url, self::frontend_url('/dashboard'))),
-                self::booking_email_headers(self::reply_to($email))
+                self::reply_to($email),
+                ['cta_url' => self::frontend_url('/dashboard'), 'cta_label' => 'Manage booking']
             );
         }
     }
@@ -948,9 +1090,12 @@ class C767_Notifications
             $booking_id,
             admin_url('post.php?post=' . $booking_id . '&action=edit')
         );
-        wp_mail(get_option('admin_email'), $subject, $body, self::reply_to($owner->user_email));
+        self::send_directory_mail(get_option('admin_email'), $subject, $body, self::reply_to($owner->user_email), [
+            'cta_url' => admin_url('post.php?post=' . $booking_id . '&action=edit'),
+            'cta_label' => 'Open booking',
+        ]);
 
-        wp_mail(
+        self::send_directory_mail(
             $owner->user_email,
             sprintf('Cash-out request received — %s', $listing->post_title),
             sprintf(
@@ -959,7 +1104,9 @@ class C767_Notifications
                 number_format($amount_cents / 100, 2),
                 $booking_id,
                 self::frontend_url('/dashboard')
-            )
+            ),
+            [],
+            ['cta_url' => self::frontend_url('/dashboard'), 'cta_label' => 'Track cash-out']
         );
     }
 
@@ -972,7 +1119,7 @@ class C767_Notifications
             return;
         }
         $amount_cents = (int) get_post_meta($booking_id, 'owner_payout_amount_cents', true);
-        wp_mail(
+        self::send_directory_mail(
             $owner->user_email,
             sprintf('Your Connect767 payout was sent — %s', $listing->post_title),
             sprintf(
@@ -981,7 +1128,9 @@ class C767_Notifications
                 number_format($amount_cents / 100, 2),
                 $booking_id,
                 self::frontend_url('/dashboard')
-            )
+            ),
+            [],
+            ['cta_url' => self::frontend_url('/dashboard'), 'cta_label' => 'View bookings']
         );
     }
 
@@ -1001,7 +1150,7 @@ class C767_Notifications
         $payout = (int) get_post_meta($order_id, 'owner_payout_amount_cents', true);
         $buyer_email = sanitize_email((string) get_post_meta($order_id, 'buyer_email', true));
 
-        wp_mail(
+        self::send_directory_mail(
             $owner->user_email,
             sprintf('New paid storefront order — %s', $product->post_title),
             sprintf(
@@ -1014,10 +1163,11 @@ class C767_Notifications
                 number_format($payout / 100, 2),
                 self::frontend_url('/dashboard?products=' . $listing_id . '#products-services')
             ),
-            self::reply_to($buyer_email)
+            self::reply_to($buyer_email),
+            ['cta_url' => self::frontend_url('/dashboard?products=' . $listing_id . '#products-services'), 'cta_label' => 'Review order']
         );
 
-        wp_mail(
+        self::send_directory_mail(
             get_option('admin_email'),
             sprintf('[Connect767] Paid storefront order #%d — %s', $order_id, $product->post_title),
             sprintf(
@@ -1029,7 +1179,8 @@ class C767_Notifications
                 number_format($payout / 100, 2),
                 admin_url('admin.php?page=connect767-storefront-payouts')
             ),
-            self::reply_to($owner->user_email)
+            self::reply_to($owner->user_email),
+            ['cta_url' => admin_url('admin.php?page=connect767-storefront-payouts'), 'cta_label' => 'Manage payouts']
         );
     }
 
@@ -1045,7 +1196,7 @@ class C767_Notifications
         }
 
         $payout = (int) get_post_meta($order_id, 'owner_payout_amount_cents', true);
-        wp_mail(
+        self::send_directory_mail(
             $owner->user_email,
             sprintf('Your storefront payout was sent — %s', $product ? $product->post_title : $listing->post_title),
             sprintf(
@@ -1054,7 +1205,9 @@ class C767_Notifications
                 number_format($payout / 100, 2),
                 $order_id,
                 self::frontend_url('/dashboard?products=' . $listing_id . '#products-services')
-            )
+            ),
+            [],
+            ['cta_url' => self::frontend_url('/dashboard?products=' . $listing_id . '#products-services'), 'cta_label' => 'Track sales']
         );
     }
 }

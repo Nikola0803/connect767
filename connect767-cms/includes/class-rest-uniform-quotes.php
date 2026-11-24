@@ -186,13 +186,19 @@ class C767_REST_Uniform_Quotes
                 $contact['email']
             );
         }
-        wp_mail($to, $subject, $body, $headers);
+        C767_Notifications::send_branded_mail(
+            $to,
+            $subject,
+            $body,
+            $headers,
+            ['cta_url' => admin_url('post.php?post=' . $post_id . '&action=edit'), 'cta_label' => 'Review quote']
+        );
 
         // Acknowledgement to the customer. Someone who has just spent twenty
         // minutes designing a kit and hit send with no confirmation has no way
         // to tell whether it worked.
         if ($contact['email'] !== '') {
-            wp_mail(
+            C767_Notifications::send_branded_mail(
                 $contact['email'],
                 'We received your Connect767 uniform quote request',
                 sprintf(
@@ -204,7 +210,12 @@ class C767_REST_Uniform_Quotes
                     count($quote_designs) === 1 ? '' : 's',
                     $unit_count,
                     $unit_count === 1 ? '' : 's'
-                )
+                ),
+                [],
+                [
+                    'cta_url' => c767_frontend_url('/uniforms'),
+                    'cta_label' => 'Return to Uniform Studio',
+                ]
             );
         }
 
