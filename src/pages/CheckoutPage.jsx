@@ -60,6 +60,7 @@ export default function CheckoutPage() {
   const [orderContact, setOrderContact] = useState(emptyOrderContact);
   const [additionalDetails, setAdditionalDetails] = useState("");
   const [checkoutStep, setCheckoutStep] = useState("roster");
+  const [shippingAddressOpen, setShippingAddressOpen] = useState(true);
   const [readyMadeRoster, setReadyMadeRoster] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("c767_ready_made_roster") || "[]");
@@ -87,6 +88,8 @@ export default function CheckoutPage() {
   const total = productTotal + extrasTotal;
   const readyMadeShippingUnits = items.filter((item) => item.readyMade).reduce((sum, item) => sum + Math.max(0, Number(item.qty) || 0), 0) + extrasStatus.supporterQuantity;
   const readyMadeShippingRate = hasReadyMadeDesigns ? uniformShippingRate(shipping.country, readyMadeShippingUnits) : null;
+  const shippingCost = Number(readyMadeShippingRate?.amount || 0);
+  const orderTotal = total + shippingCost;
   const orderContext = hasReadyMadeDesigns ? {
     readyMadeRoster,
     readyMadeExtras: { ...readyMadeExtras, supporterJerseys: extrasStatus.supporterJerseys },
@@ -116,6 +119,7 @@ export default function CheckoutPage() {
       return false;
     }
     if (shippingComplete) return true;
+    setShippingAddressOpen(true);
     setError(useDifferentOrderContact && !orderContactValid ? "Enter the order contact name and a valid email address." : "Enter your email and complete every required shipping-address field.");
     return false;
   };
@@ -272,9 +276,18 @@ export default function CheckoutPage() {
             <span>Subtotal</span>
             <span>${total.toFixed(2)}</span>
           </div>
-          <p className="mt-2 text-xs text-foreground-500 font-label">
-            Shipping is calculated from the delivery address and included before payment.
-          </p>
+          {hasReadyMadeDesigns && readyMadeShippingRate && <div className="flex items-start justify-between gap-4 py-2 text-sm text-foreground-700">
+            <span className="min-w-0">
+              <span className="block">Shipping</span>
+              <span className="block text-[11px] text-foreground-500">{readyMadeShippingRate.zoneLabel}{readyMadeShippingRate.rangeLabel ? ` · ${readyMadeShippingRate.rangeLabel}` : ""}</span>
+            </span>
+            <span className="shrink-0 font-semibold text-foreground-950">${shippingCost.toFixed(2)}</span>
+          </div>}
+          <div className="flex justify-between border-t border-background-200/70 pt-3 text-lg font-bold text-foreground-950">
+            <span>Order Total</span>
+            <span>${orderTotal.toFixed(2)}</span>
+          </div>
+          {!readyMadeShippingRate && <p className="mt-2 text-xs text-foreground-500 font-label">Shipping is calculated from the delivery address and included before payment.</p>}
           {hasReadyMadeDesigns && <label className="mt-4 block border-t border-background-200 pt-4 text-xs font-semibold text-foreground-800">
             Any Additional Details
             <Textarea rows={3} maxLength={2000} className="mt-2" aria-label="Any additional details" placeholder="Add production, delivery or order details…" value={additionalDetails} onChange={(event) => setAdditionalDetails(event.target.value)} />
@@ -300,12 +313,25 @@ export default function CheckoutPage() {
 
         {(!hasReadyMadeDesigns || checkoutStep === "review") && (!clientSecret ? (
           <>
-            <div className="rounded-xl border border-background-200/70 bg-background-50 p-5 mb-6">
-              <div className="flex items-center gap-2 mb-4">
-                <i className="ri-truck-line text-primary-700" />
-                <h2 className="font-heading text-xl font-medium text-foreground-950">Shipping address</h2>
-              </div>
+            <div className="rounded-xl border border-background-200/70 bg-background-50 mb-6">
+              <button
+                type="button"
+                className="flex w-full items-center justify-between gap-4 rounded-xl p-5 text-left transition-colors hover:bg-background-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500"
+                aria-expanded={shippingAddressOpen}
+                aria-controls="checkout-shipping-address"
+                onClick={() => setShippingAddressOpen((open) => !open)}
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <i className="ri-truck-line shrink-0 text-primary-700" aria-hidden="true" />
+                  <span>
+                    <span className="block font-heading text-xl font-medium text-foreground-950">Shipping Address</span>
+                    {!shippingAddressOpen && shipping.address1 && <span className="mt-0.5 block truncate text-xs font-normal text-foreground-500">{[shipping.firstName, shipping.lastName, shipping.address1, shipping.city].filter(Boolean).join(" · ")}</span>}
+                  </span>
+                </span>
+                <i className={`${shippingAddressOpen ? "ri-arrow-up-s-line" : "ri-arrow-down-s-line"} shrink-0 text-xl text-primary-700`} aria-hidden="true" />
+              </button>
 
+              {shippingAddressOpen && <div id="checkout-shipping-address" className="border-t border-background-200/70 px-5 pb-5 pt-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField label="First name" htmlFor="shipping-first-name" required>
                   <Input id="shipping-first-name" autoComplete="given-name" value={shipping.firstName} onChange={updateShipping("firstName")} />
@@ -383,6 +409,7 @@ export default function CheckoutPage() {
                 {hasReadyMadeDesigns ? "Ready-made uniforms use the same North America and Caribbean shipping rates as the Custom Uniform Studio." : "Shipping is available to U.S. and Dominican addresses."} Carrier labels are created from the completed order in WooCommerce.
               </p>
               {readyMadeShippingRate && <div role="note" className="mt-3 rounded-xl border border-primary-200 bg-primary-50 px-3 py-2.5 text-xs text-primary-900"><strong>{readyMadeShippingRate.zoneLabel}:</strong> ${readyMadeShippingRate.amount.toFixed(2)} shipping for {readyMadeShippingRate.rangeLabel || (readyMadeShippingUnits >= 50 ? "50+ units" : "under 50 units")}.</div>}
+              </div>}
             </div>
 
             {config?.stripeEnabled && (
