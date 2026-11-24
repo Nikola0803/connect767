@@ -23,7 +23,7 @@ export default function DirectoryPage() {
   const [priceTier, setPriceTier] = useState("all");
   const [educationFilter, setEducationFilter] = useState("all");
   const [experienceRange, setExperienceRange] = useState("all");
-  const [sort, setSort] = useState("rating");
+  const [sort, setSort] = useState("newest");
   const [view, setView] = useState("grid");
   const [page, setPage] = useState(1);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -422,7 +422,7 @@ export default function DirectoryPage() {
               <select
                 id="directory-sort"
                 value={sort}
-                onChange={(e) => setSort(e.target.value)}
+                onChange={(e) => updateFilter(setSort)(e.target.value)}
                 className="h-10 min-w-40 text-xs font-semibold pl-4 pr-8 rounded-full border border-background-300 bg-background-50 text-foreground-800 focus:outline-none focus:border-primary-400 cursor-pointer"
               >
                 {directorySortOptions.map((opt) => (

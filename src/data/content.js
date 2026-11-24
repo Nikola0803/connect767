@@ -82,4 +82,4 @@ export const partners = ["Printful", "USPS", "UPS", "FedEx", "Amazon", "Meta", "
 
 export const heroImage = "/uploads/hero.webp";
 
-export const uniformImage = "/uploads/uniform-studio-green-white-ai-emboss.png";
+export const uniformImage = "/uploads/uniform-studio-green-white-ai-emboss-v2.png";
