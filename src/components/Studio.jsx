@@ -72,7 +72,7 @@ export default function Studio() {
                   title="Green and white uniform preview — jersey, shorts and socks"
                   loading="lazy"
                   decoding="async"
-                  className="w-full h-full object-cover object-top"
+                  className="w-full h-full object-cover object-center scale-[1.02]"
                   src={uniformImage}
                 />
               </div>

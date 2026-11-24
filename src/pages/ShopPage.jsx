@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
 import Studio from "../components/Studio";
@@ -26,8 +26,10 @@ const readyMadeCategories = [
 
 export default function ShopPage() {
   const [searchParams] = useSearchParams();
-  const [search, setSearch] = useState(searchParams.get("q") || "");
-  const [activeCategory, setActiveCategory] = useState(searchParams.get("category") || "all");
+  const urlSearch = searchParams.get("q") || "";
+  const urlCategory = searchParams.get("category") || "all";
+  const [search, setSearch] = useState(urlSearch);
+  const [activeCategory, setActiveCategory] = useState(urlCategory);
   const [readyMadeCategory, setReadyMadeCategory] = useState("all");
   const [sort, setSort] = useState("featured");
   const { count: cartCount, addItem, setIsOpen: setCartOpen } = useCart();
@@ -36,6 +38,12 @@ export default function ShopPage() {
   const { data: shopCategories } = useAsync(() => getShopCategories(), []);
   const isReadyMadePage = activeCategory === "ready-made-designs";
   const captureShieldActive = useReadyMadeImageProtection(isReadyMadePage);
+
+  useEffect(() => {
+    setSearch(urlSearch);
+    setActiveCategory(urlCategory);
+    if (urlCategory !== "ready-made-designs") setReadyMadeCategory("all");
+  }, [urlCategory, urlSearch]);
 
   const visibleProducts = useMemo(() => {
     if (!products) return [];
@@ -73,9 +81,12 @@ export default function ShopPage() {
             src={readyMadeBannerImage}
             alt=""
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 h-full w-full object-contain object-right opacity-60 sm:opacity-80 lg:opacity-100"
+            className="pointer-events-none absolute right-0 top-0 h-[94%] w-full object-contain object-right opacity-60 sm:opacity-80 lg:opacity-100"
           />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-primary-950 via-primary-950/90 to-primary-950/10 sm:via-primary-950/75 lg:via-primary-950/55" />
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{ background: "linear-gradient(90deg, rgba(0,38,19,0.98) 0%, rgba(0,38,19,0.92) 26%, rgba(0,38,19,0.30) 43%, rgba(0,38,19,0) 60%)" }}
+          />
         </> : <>
           <div className="absolute -top-32 -right-24 w-80 h-80 rounded-full bg-primary-500/20 blur-3xl pointer-events-none" />
           <div className="absolute -bottom-40 left-1/4 w-96 h-96 rounded-full bg-accent-500/15 blur-3xl pointer-events-none" />
