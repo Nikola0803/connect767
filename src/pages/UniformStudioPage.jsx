@@ -1887,7 +1887,7 @@ export default function UniformStudioPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <button
                 type="button"
-                aria-label="Start Designing"
+                aria-label="Create Your Own Design"
                 onClick={() => selectTemplate(studioEntryTemplate, "soccer", "ai")}
                 className="group relative block min-h-[380px] w-full overflow-hidden rounded-[20px] border border-primary-300/80 bg-[#123126] text-left shadow-[0_18px_44px_rgba(0,74,45,.14)] transition duration-300 hover:-translate-y-0.5 hover:border-primary-400 hover:shadow-[0_24px_54px_rgba(0,74,45,.2)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 cursor-pointer"
               >
@@ -1912,12 +1912,12 @@ export default function UniformStudioPage() {
                 </span>
                 <span className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(4,18,11,.8)_0%,rgba(4,18,11,.48)_32%,rgba(4,18,11,.12)_76%)]" aria-hidden="true" />
                 <span className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white">
-                  <strong className="font-heading text-3xl font-semibold">Start Designing</strong>
+                  <strong className="font-heading text-3xl font-semibold">Create Your Own Design</strong>
                   <span className="mt-2 text-xs text-white/70 sm:text-sm">Choose a category to begin.</span>
                   <span className="mt-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-500 text-lg shadow-[0_10px_24px_rgba(0,0,0,.25)] transition group-hover:translate-x-1 group-hover:bg-primary-400"><i className="ri-arrow-right-line" /></span>
                 </span>
               </button>
-              <Link to="/shop?category=ready-made-designs" aria-label="Shop Ready-Made Designs" className="group relative flex min-h-[380px] flex-col overflow-hidden rounded-[20px] border border-primary-300/80 bg-[#fffdf8] text-left shadow-[0_18px_44px_rgba(0,74,45,.08)] transition duration-300 hover:-translate-y-0.5 hover:border-primary-400 hover:shadow-[0_24px_54px_rgba(0,74,45,.14)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200">
+              <Link to="/shop?category=ready-made-designs" aria-label="Shop Pre-Design Uniforms" className="group relative flex min-h-[380px] flex-col overflow-hidden rounded-[20px] border border-primary-300/80 bg-[#fffdf8] text-left shadow-[0_18px_44px_rgba(0,74,45,.08)] transition duration-300 hover:-translate-y-0.5 hover:border-primary-400 hover:shadow-[0_24px_54px_rgba(0,74,45,.14)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200">
                 <span className="relative block h-[188px] shrink-0 overflow-hidden bg-[#063021]" aria-hidden="true">
                   <img
                     data-testid="ready-made-cover-image"
@@ -1934,7 +1934,7 @@ export default function UniformStudioPage() {
                   <span className="absolute bottom-3 left-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 font-label text-[9px] font-bold uppercase tracking-[.13em] text-white backdrop-blur-sm sm:bottom-auto sm:left-5 sm:top-5"><i className="ri-shopping-bag-3-line text-sm" />Ready to order</span>
                 </span>
                 <span className="flex flex-1 flex-col items-start p-5 sm:p-6">
-                  <strong className="block font-heading text-[26px] font-semibold leading-tight sm:text-[28px]">Ready-Made Designs</strong>
+                  <strong className="block font-heading text-[26px] font-semibold leading-tight sm:text-[28px]">Pre-Design Uniforms</strong>
                   <span className="mt-2 block max-w-md text-[13px] leading-relaxed text-foreground-600">Choose a finished design, then add your team’s sizes and quantities.</span>
                   <span className="mt-4 inline-flex items-center gap-3 rounded-full bg-primary-700 px-4 py-2.5 text-xs font-bold text-white transition group-hover:bg-primary-600">Shop designs<i className="ri-arrow-right-line text-base transition group-hover:translate-x-0.5" aria-hidden="true" /></span>
                 </span>

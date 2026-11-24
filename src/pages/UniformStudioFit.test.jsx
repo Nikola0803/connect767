@@ -91,11 +91,11 @@ describe("required uniform fit selection", () => {
   it("keeps the existing AI Studio tile and sends ready-made designs to the shop", () => {
     render(<MemoryRouter initialEntries={["/uniforms"]}><CartProvider><UniformStudioPage /></CartProvider></MemoryRouter>);
 
-    const entry = screen.getByRole("button", { name: "Start Designing" });
+    const entry = screen.getByRole("button", { name: "Create Your Own Design" });
     expect(screen.getByTestId("uniform-entry-page")).toHaveClass("min-h-[100dvh]");
     expect(screen.queryByRole("link", { name: "Back to site" })).not.toBeInTheDocument();
     expect(entry).toBeVisible();
-    expect(screen.getByRole("link", { name: "Shop Ready-Made Designs" })).toHaveAttribute("href", "/shop?category=ready-made-designs");
+    expect(screen.getByRole("link", { name: "Shop Pre-Design Uniforms" })).toHaveAttribute("href", "/shop?category=ready-made-designs");
     expect(screen.queryByRole("button", { name: "Start from Scratch" })).not.toBeInTheDocument();
     const categoryImages = screen.getAllByTestId("studio-cover-category");
     expect(categoryImages).toHaveLength(6);
@@ -137,7 +137,7 @@ describe("required uniform fit selection", () => {
     render(<MemoryRouter initialEntries={["/uniforms?entry=gallery"]}><CartProvider><UniformStudioPage /></CartProvider></MemoryRouter>);
     expect(screen.getByTestId("uniform-entry-page")).toBeVisible();
     expect(screen.queryByRole("heading", { name: "Ready-Made Uniform Designs" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Shop Ready-Made Designs" })).toHaveAttribute("href", "/shop?category=ready-made-designs");
+    expect(screen.getByRole("link", { name: "Shop Pre-Design Uniforms" })).toHaveAttribute("href", "/shop?category=ready-made-designs");
   });
 
   it("shows a generated example in the AI workspace without production or watermark overlays", () => {
