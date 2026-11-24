@@ -29,7 +29,6 @@ import StudioAccountMenu from "../components/uniform-studio/StudioAccountMenu";
 import useStudioViewport from "../components/uniform-studio/useStudioViewport";
 import useDesignHistory from "../components/uniform-studio/useDesignHistory";
 import Header from "../components/Header";
-import { uniformSampleFor } from "../components/uniform-studio/uniformSamples";
 import AIUniformSample from "../components/uniform-studio/AIUniformSample";
 import UniformOrderAgreement, { UNIFORM_ORDER_TERMS_VERSION } from "../components/uniform-studio/UniformOrderAgreement";
 import "../components/uniform-studio/mobileStudio.css";
@@ -1890,20 +1889,20 @@ export default function UniformStudioPage() {
                 type="button"
                 aria-label="Start Designing"
                 onClick={() => selectTemplate(studioEntryTemplate, "soccer", "ai")}
-                className="group relative block min-h-[360px] w-full overflow-hidden rounded-[20px] border border-primary-300/80 bg-[#123126] text-left shadow-[0_18px_44px_rgba(0,74,45,.14)] transition duration-300 hover:-translate-y-0.5 hover:border-primary-400 hover:shadow-[0_24px_54px_rgba(0,74,45,.2)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 cursor-pointer"
+                className="group relative block min-h-[380px] w-full overflow-hidden rounded-[20px] border border-primary-300/80 bg-[#123126] text-left shadow-[0_18px_44px_rgba(0,74,45,.14)] transition duration-300 hover:-translate-y-0.5 hover:border-primary-400 hover:shadow-[0_24px_54px_rgba(0,74,45,.2)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 cursor-pointer"
               >
                 <span className="absolute inset-0 grid grid-cols-3 grid-rows-2" aria-hidden="true">
                   {studioCoverTemplates.map(({ sport }, index) => (
                     <span key={sport.slug} className="relative flex min-h-0 min-w-0 items-center justify-center overflow-hidden border border-white/[0.04] bg-[radial-gradient(circle_at_center,rgba(255,255,255,.08),transparent_70%)] p-3">
                       <img
                         data-testid="studio-cover-category"
-                        src={uniformSampleFor(sport.slug).thumbnail}
-                        width="240"
-                        height="240"
+                        src={`/uploads/studio-entry/${sport.slug}.webp`}
+                        width={sport.slug === "netball" ? 267 : 400}
+                        height="400"
                         alt=""
                         loading="lazy"
                         decoding="async"
-                        className="h-auto w-auto max-h-full max-w-full select-none object-contain opacity-30 grayscale invert contrast-125 mix-blend-screen drop-shadow-[-2px_-2px_2px_rgba(255,255,255,.15)] drop-shadow-[4px_5px_5px_rgba(0,0,0,.46)] transition duration-300 group-hover:scale-[1.02] group-hover:opacity-60"
+                        className="h-auto w-auto max-h-full max-w-full select-none object-contain opacity-80 drop-shadow-[0_8px_10px_rgba(0,0,0,.25)] transition duration-300 group-hover:scale-[1.02] group-hover:opacity-100"
                       />
                       <span data-testid="studio-cover-category-label" className={`absolute left-2 rounded-full border border-white/10 bg-black/20 px-2 py-1 font-label text-[7px] font-bold uppercase tracking-[0.12em] text-white/65 backdrop-blur-sm ${index < 3 ? "top-2" : "bottom-2"}`}>
                         {categoryDetails[sport.slug]?.title || sport.label}
@@ -1911,20 +1910,33 @@ export default function UniformStudioPage() {
                     </span>
                   ))}
                 </span>
-                <span className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,18,11,.12),rgba(4,18,11,.68))]" aria-hidden="true" />
+                <span className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(4,18,11,.8)_0%,rgba(4,18,11,.48)_32%,rgba(4,18,11,.12)_76%)]" aria-hidden="true" />
                 <span className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white">
                   <strong className="font-heading text-3xl font-semibold">Start Designing</strong>
                   <span className="mt-2 text-xs text-white/70 sm:text-sm">Choose a category to begin.</span>
                   <span className="mt-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-500 text-lg shadow-[0_10px_24px_rgba(0,0,0,.25)] transition group-hover:translate-x-1 group-hover:bg-primary-400"><i className="ri-arrow-right-line" /></span>
                 </span>
               </button>
-              <Link to="/shop?category=ready-made-designs" aria-label="Shop Ready-Made Designs" className="group relative flex min-h-[360px] flex-col overflow-hidden rounded-[24px] border-2 border-primary-500 bg-white p-7 text-left shadow-[0_18px_44px_rgba(69,48,30,.08)] transition hover:-translate-y-1 hover:shadow-[0_24px_54px_rgba(69,48,30,.14)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 md:p-9">
-                <span className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-primary-50 transition group-hover:scale-110" aria-hidden="true" />
-                <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-100 text-2xl text-primary-700"><i className="ri-shopping-bag-3-line" /></span>
-                <span className="relative flex flex-1 flex-col justify-end">
-                  <strong className="mt-5 block font-heading text-3xl font-semibold">Ready-Made Designs</strong>
-                  <span className="mt-2 block max-w-md text-sm leading-relaxed text-foreground-600">Shop finished uniform designs, select sizes and quantities, and check out securely without entering the Design Studio.</span>
-                  <span className="mt-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[.1em] text-primary-700">Shop Ready-Made Designs</span>
+              <Link to="/shop?category=ready-made-designs" aria-label="Shop Ready-Made Designs" className="group relative flex min-h-[380px] flex-col overflow-hidden rounded-[20px] border border-primary-300/80 bg-[#fffdf8] text-left shadow-[0_18px_44px_rgba(0,74,45,.08)] transition duration-300 hover:-translate-y-0.5 hover:border-primary-400 hover:shadow-[0_24px_54px_rgba(0,74,45,.14)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200">
+                <span className="relative block h-[188px] shrink-0 overflow-hidden bg-[#063021]" aria-hidden="true">
+                  <img
+                    data-testid="ready-made-cover-image"
+                    src="/uploads/studio-entry/ready-made-cover.webp"
+                    width="1440"
+                    height="481"
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    style={{ height: "100%" }}
+                    className="h-full w-full object-cover object-right transition duration-500 group-hover:scale-[1.025]"
+                  />
+                  <span className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,25,16,.3),transparent_55%)]" />
+                  <span className="absolute bottom-3 left-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 font-label text-[9px] font-bold uppercase tracking-[.13em] text-white backdrop-blur-sm sm:bottom-auto sm:left-5 sm:top-5"><i className="ri-shopping-bag-3-line text-sm" />Ready to order</span>
+                </span>
+                <span className="flex flex-1 flex-col items-start p-5 sm:p-6">
+                  <strong className="block font-heading text-[26px] font-semibold leading-tight sm:text-[28px]">Ready-Made Designs</strong>
+                  <span className="mt-2 block max-w-md text-[13px] leading-relaxed text-foreground-600">Choose a finished design, then add your team’s sizes and quantities.</span>
+                  <span className="mt-4 inline-flex items-center gap-3 rounded-full bg-primary-700 px-4 py-2.5 text-xs font-bold text-white transition group-hover:bg-primary-600">Shop designs<i className="ri-arrow-right-line text-base transition group-hover:translate-x-0.5" aria-hidden="true" /></span>
                 </span>
               </Link>
             </div>
