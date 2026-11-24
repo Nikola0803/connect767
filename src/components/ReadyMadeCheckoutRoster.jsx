@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import Button from "./ui/Button";
 import { Input, Select } from "./ui/FormField";
 import CollarAttachment from "./uniform-studio/CollarAttachment";
+import ReadyMadeArtworkFiles from "./ReadyMadeArtworkFiles";
+import { readyMadeArtworkIssue } from "../lib/readyMadeArtwork";
 
 const sizes = ["XS", "S", "M", "L", "XL", "2XL", "3XL"];
 const fitTypes = ["Men", "Women", "Youth"];
@@ -96,12 +98,14 @@ const emptyEntry = (productKey = "") => ({
   notes: "",
 });
 
-export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, extras, setExtras, onContinue }) {
+export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, extras, setExtras, artwork = [], setArtwork, artworkReady = true, artworkStorageError = "", onContinue }) {
   const readyMadeItems = useMemo(() => items.filter((item) => item.readyMade), [items]);
   const [entry, setEntry] = useState(() => emptyEntry(readyMadeItems[0]?.key));
   const [attempted, setAttempted] = useState(false);
+  const [artworkReading, setArtworkReading] = useState(false);
   const status = readyMadeRosterStatus(items, roster);
   const extrasStatus = readyMadeExtrasStatus(items, extras, roster);
+  const artworkError = readyMadeArtworkIssue(artwork, readyMadeItems);
 
   useEffect(() => {
     if (!extrasStatus.requiredSocks || extrasStatus.socksQuantity >= extrasStatus.requiredSocks) return;
@@ -123,7 +127,7 @@ export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, extr
 
   const continueToReview = () => {
     setAttempted(true);
-    if (status.valid && extrasStatus.fitValid && extrasStatus.socksValid && extrasStatus.insideCollarValid) onContinue();
+    if (status.valid && extrasStatus.fitValid && extrasStatus.socksValid && extrasStatus.insideCollarValid && artworkReady && !artworkReading && !artworkError) onContinue();
   };
 
   const updateSupporterRow = (index, field, value) => setExtras((current) => ({
@@ -198,6 +202,9 @@ export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, extr
         </div>
       </section>
 
+      <ReadyMadeArtworkFiles items={readyMadeItems} files={artwork} setFiles={setArtwork} ready={artworkReady} reading={artworkReading} setReading={setArtworkReading} storageError={artworkStorageError} />
+      {artworkError && <p role="alert" className="mt-2 text-xs font-semibold text-accent-800">{artworkError}</p>}
+
       <div className="mt-5 grid gap-3 rounded-xl border border-background-200 bg-white p-4 sm:grid-cols-2">
         {readyMadeItems.length > 1 && (
           <label className="sm:col-span-2 text-xs font-semibold text-foreground-700">Design
@@ -271,7 +278,7 @@ export default function ReadyMadeCheckoutRoster({ items, roster, setRoster, extr
       )}
 
       {attempted && (!status.valid || !extrasStatus.fitValid || !extrasStatus.socksValid || !extrasStatus.insideCollarValid) && <p role="alert" className="mt-3 rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-900">Complete the required fit, roster, production options and sock quantity shown above before continuing.</p>}
-      <Button type="button" variant="primary" size="lg" className="mt-5 w-full" onClick={continueToReview}>Continue to Review &amp; Checkout</Button>
+      <Button type="button" variant="primary" size="lg" className="mt-5 w-full" disabled={!artworkReady || artworkReading} onClick={continueToReview}>Continue to Review &amp; Checkout</Button>
     </section>
   );
 }

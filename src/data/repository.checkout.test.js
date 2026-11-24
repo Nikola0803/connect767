@@ -6,6 +6,7 @@ vi.mock("../lib/config", async (importOriginal) => ({
 }));
 
 import {
+  checkout,
   captureCartPaypalOrder,
   captureVendorProductPaypalOrder,
   confirmOrder,
@@ -51,6 +52,15 @@ describe("shop checkout payloads", () => {
         text: async () => JSON.stringify({ orderId: 99, clientSecret: "secret", paypalOrderId: "PAYPAL-1" }),
       }),
     );
+  });
+
+  it.each([["Stripe", createPaymentIntent], ["PayPal", createCartPaypalOrder], ["hosted checkout", checkout], ["local payment", createCartLocalDominicaOrder]])("keeps team and sponsor files in %s order requests", async (_name, createOrder) => {
+    const readyMadeArtwork = [
+      { name: "crest.png", kind: "team", src: "data:image/png;base64,AA==", notes: "Left chest" },
+      { name: "sponsor.pdf", kind: "sponsor", src: "data:application/pdf;base64,AA==", notes: "Upper back" },
+    ];
+    await createOrder(items, "buyer@example.com", shipping, { readyMadeArtwork });
+    expect(JSON.parse(fetch.mock.calls[0][1].body).readyMadeArtwork).toEqual(readyMadeArtwork);
   });
 
   it("sends the complete shipping address with Stripe orders", async () => {

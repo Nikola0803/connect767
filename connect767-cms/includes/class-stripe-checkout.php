@@ -137,6 +137,7 @@ class C767_Stripe_Checkout
         $key = self::publishable_key();
         return rest_ensure_response([
             'stripeEnabled' => (bool) $key,
+            'readyMadeArtwork' => class_exists('WooCommerce') && class_exists('C767_Ready_Made_Artwork'),
             'stripePublishableKey' => $key,
             'paypalEnabled' => class_exists('C767_PayPal_Checkout') && C767_PayPal_Checkout::is_enabled(),
             'paypalClientId' => class_exists('C767_PayPal_Checkout') ? C767_PayPal_Checkout::public_client_id() : '',
@@ -218,6 +219,8 @@ class C767_Stripe_Checkout
         $email = sanitize_email((string) $request->get_param('email'));
         $shipping = (array) $request->get_param('shipping');
         $order = C767_WooCommerce::build_pending_order($items, $email, $shipping, false, [
+            'readyMadeArtwork' => $request->get_param('readyMadeArtwork') ?? [],
+
             'readyMadeRoster' => (array) $request->get_param('readyMadeRoster'),
             'readyMadeExtras' => (array) $request->get_param('readyMadeExtras'),
             'readyMadeOrderContact' => (array) $request->get_param('readyMadeOrderContact'),
