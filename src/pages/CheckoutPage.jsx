@@ -253,7 +253,7 @@ export default function CheckoutPage() {
             <ul className="mt-2 list-disc space-y-1 pl-5 text-xs leading-relaxed">
               {minimumIssues.map((issue) => <li key={`${issue.category}-${issue.message}`}>{issue.message}</li>)}
             </ul>
-            <Button to="/shop?category=ready-made-designs" variant="secondary" className="mt-4">Return to Ready-Made Designs</Button>
+            <Button to="/shop?category=ready-made-designs" variant="secondary" className="mt-4">Return to Pre-Design Uniforms</Button>
           </div>
         )}
 
