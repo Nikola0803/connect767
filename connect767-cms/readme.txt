@@ -86,6 +86,12 @@ regular posts.
 
 == Changelog ==
 
+= 2.10.0 =
+
+* Added a Campaign Workspace that turns approved marketing strategies into assignable, measurable execution tasks.
+* Added campaign dates, ownership, status, planning budget caps, UTM link generation, progress tracking, manual tasks, and CSV export.
+* Preserved explicit administrator control: the workspace never publishes, sends outreach, creates ads, or spends money automatically.
+
 = 2.3.2 =
 
 * Sets the daily registered-user AI allowance to five prompts.

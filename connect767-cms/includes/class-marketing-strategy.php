@@ -491,6 +491,7 @@ class C767_Marketing_Strategy
                             <?php if ($row['status'] !== 'approved') : ?><button class="button button-primary" name="strategy_status" value="approved">Approve strategy</button><?php else : ?><button class="button" name="strategy_status" value="draft">Return to draft</button><?php endif; ?>
                             <button class="button" name="strategy_status" value="archived">Archive</button>
                         </form>
+                        <?php do_action('c767_marketing_strategy_actions', $row, $strategy); ?>
                     </article>
                 <?php endforeach; ?>
             </div>

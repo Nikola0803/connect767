@@ -79,3 +79,19 @@ AI provider. Visitor hashes, session hashes, user details, listing contacts,
 and credentials are excluded. If the provider is unavailable, the system saves
 a clearly labelled data-driven baseline instead of failing or fabricating a
 response. Generated plans remain drafts until an administrator approves them.
+
+## Campaign Workspace
+
+Connect767 CMS 2.10.0 adds a manual execution workspace for approved
+strategies. Select **Create campaign workspace** on an approved strategy to:
+
+- convert each evidence-based recommendation into an execution task;
+- assign task owners, channels, due dates, and progress states;
+- record campaign dates, an owner, notes, and a planning-only budget cap;
+- build a consistent UTM-tagged destination link;
+- add manual tasks and export the complete execution plan as CSV.
+
+A workspace never publishes content, sends messages, creates advertisements,
+or spends money. Its approved and active states are internal authorization and
+tracking records only. Administrators must still execute approved work through
+the relevant website, email provider, partner, or advertising platform.
