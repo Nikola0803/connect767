@@ -110,7 +110,13 @@ class C767_REST_Product_Quotes
             $user ? $user->user_email : 'Guest',
             admin_url('post.php?post=' . $post_id . '&action=edit')
         );
-        wp_mail($to, $subject, $body);
+        C767_Notifications::send_branded_mail(
+            $to,
+            $subject,
+            $body,
+            $email ? ['Reply-To: ' . $email] : [],
+            ['cta_url' => admin_url('post.php?post=' . $post_id . '&action=edit'), 'cta_label' => 'Review request']
+        );
 
         do_action('c767_product_quote_submitted', $post_id);
 
