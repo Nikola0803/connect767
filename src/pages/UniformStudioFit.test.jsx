@@ -91,7 +91,7 @@ describe("required uniform fit selection", () => {
   it("keeps the existing AI Studio tile and sends ready-made designs to the shop", () => {
     render(<MemoryRouter initialEntries={["/uniforms"]}><CartProvider><UniformStudioPage /></CartProvider></MemoryRouter>);
 
-    const entry = screen.getByRole("button", { name: "Create Your Own Design" });
+    const entry = screen.getByRole("button", { name: "Design Your Own Uniform" });
     expect(screen.getByTestId("uniform-entry-page")).toHaveClass("min-h-[100dvh]");
     expect(screen.queryByRole("link", { name: "Back to site" })).not.toBeInTheDocument();
     expect(entry).toBeVisible();

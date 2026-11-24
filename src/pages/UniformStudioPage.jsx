@@ -1887,7 +1887,7 @@ export default function UniformStudioPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <button
                 type="button"
-                aria-label="Create Your Own Design"
+                aria-label="Design Your Own Uniform"
                 onClick={() => selectTemplate(studioEntryTemplate, "soccer", "ai")}
                 className="group relative block min-h-[380px] w-full overflow-hidden rounded-[20px] border border-primary-300/80 bg-[#123126] text-left shadow-[0_18px_44px_rgba(0,74,45,.14)] transition duration-300 hover:-translate-y-0.5 hover:border-primary-400 hover:shadow-[0_24px_54px_rgba(0,74,45,.2)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-200 cursor-pointer"
               >
@@ -1912,7 +1912,7 @@ export default function UniformStudioPage() {
                 </span>
                 <span className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(4,18,11,.8)_0%,rgba(4,18,11,.48)_32%,rgba(4,18,11,.12)_76%)]" aria-hidden="true" />
                 <span className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white">
-                  <strong className="font-heading text-3xl font-semibold">Create Your Own Design</strong>
+                  <strong className="font-heading text-3xl font-semibold">Design Your Own Uniform</strong>
                   <span className="mt-2 text-xs text-white/70 sm:text-sm">Choose a category to begin.</span>
                   <span className="mt-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-500 text-lg shadow-[0_10px_24px_rgba(0,0,0,.25)] transition group-hover:translate-x-1 group-hover:bg-primary-400"><i className="ri-arrow-right-line" /></span>
                 </span>
