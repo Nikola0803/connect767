@@ -44,7 +44,7 @@ const navItems = [
 ];
 
 export default function Header({ showQuickNavigation = true }) {
-  const { pathname } = useLocation();
+  const { pathname, search: locationSearch } = useLocation();
   const navigate = useNavigate();
   const {
     isAuthenticated,
@@ -63,6 +63,8 @@ export default function Header({ showQuickNavigation = true }) {
   // all, so the fixed header stayed see-through the whole way down the
   // page with nothing behind the nav links once the hero scrolled away.
   const [scrolled, setScrolled] = useState(false);
+  const isReadyMadeShop = pathname === "/shop"
+    && new URLSearchParams(locationSearch).get("category") === "ready-made-designs";
   const transparent = pathname === "/" && !mobileOpen && !scrolled;
 
   useEffect(() => {
@@ -79,7 +81,7 @@ export default function Header({ showQuickNavigation = true }) {
   // Close the mobile menu whenever the route changes.
   useEffect(() => {
     setMobileOpen(false);
-  }, [pathname]);
+  }, [pathname, locationSearch]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -176,7 +178,7 @@ export default function Header({ showQuickNavigation = true }) {
               rel={item.opensNewWindow ? "noopener noreferrer" : undefined}
               className={({ isActive }) =>
                 `px-4 py-2 text-sm font-medium rounded-md transition-colors cursor-pointer whitespace-nowrap ${
-                  isActive ? navActive : navBase
+                  isActive && !(item.href === "/shop" && isReadyMadeShop) ? navActive : navBase
                 }`
               }
             >
@@ -319,9 +321,10 @@ export default function Header({ showQuickNavigation = true }) {
                 to={item.href}
                 target={item.opensNewWindow ? "_blank" : undefined}
                 rel={item.opensNewWindow ? "noopener noreferrer" : undefined}
+                onClick={() => setMobileOpen(false)}
                 className={({ isActive }) =>
                   `px-4 py-3 text-sm font-medium rounded-md cursor-pointer whitespace-nowrap ${
-                    isActive
+                    isActive && !(item.href === "/shop" && isReadyMadeShop)
                       ? "text-primary-700 bg-primary-50"
                       : "text-foreground-800 hover:bg-background-100"
                   }`
@@ -422,7 +425,8 @@ export default function Header({ showQuickNavigation = true }) {
           {mobileNavItems.map((item) => {
             const active = item.href === "/"
               ? pathname === "/"
-              : pathname === item.href || pathname.startsWith(`${item.href}/`);
+              : (pathname === item.href || pathname.startsWith(`${item.href}/`))
+                && !(item.href === "/shop" && isReadyMadeShop);
             return (
               <Link
                 key={item.href}

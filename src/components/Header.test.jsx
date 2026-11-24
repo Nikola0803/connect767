@@ -19,6 +19,14 @@ it("keeps five mobile destinations outside the blurred header and retains Saved 
   expect(screen.getByRole("navigation", { name: "Mobile quick navigation" })).toBeInTheDocument();
 });
 
+it("does not mark Shop active while the Ready-Made storefront is selected", () => {
+  render(<MemoryRouter initialEntries={["/shop?category=ready-made-designs"]}><CartProvider><Header /></CartProvider></MemoryRouter>);
+  const mainNavigation = screen.getByRole("navigation", { name: "Main navigation" });
+  expect(within(mainNavigation).getByRole("link", { name: "Shop" })).not.toHaveClass("bg-primary-50");
+  const quickNavigation = screen.getByRole("navigation", { name: "Mobile quick navigation" });
+  expect(within(quickNavigation).getByRole("link", { name: "Shop" })).not.toHaveAttribute("aria-current");
+});
+
 describe("AccountAvatar", () => {
   it("shows the signed-in user's saved profile photo with its crop", () => {
     render(
