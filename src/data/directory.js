@@ -53,10 +53,9 @@ export const priceOptions = [
 ];
 
 export const directorySortOptions = [
+  { value: "newest", label: "Newest" },
   { value: "rating", label: "Highest Rated" },
   { value: "reviews", label: "Most Reviews" },
-  { value: "newest", label: "Newest" },
-
   { value: "price-low", label: "Price: Low to High" },
   { value: "price-high", label: "Price: High to Low" },
 ];

@@ -38,16 +38,16 @@ export default function Studio() {
             <div className="flex flex-wrap items-center gap-3">
               <Link
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-md bg-accent-500 text-background-50 text-sm font-semibold hover:bg-accent-600 transition-colors cursor-pointer whitespace-nowrap"
-                to="/uniforms"
+                to="/shop?category=ready-made-designs"
               >
-                Open the studio
+                Pre-Design Uniforms
                 <i className="ri-arrow-right-line" />
               </Link>
               <Link
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-md border border-background-50/30 text-background-50 text-sm font-semibold hover:bg-background-50/10 transition-colors cursor-pointer whitespace-nowrap"
                 to="/uniforms?mode=scratch"
               >
-                Design from scratch
+                Design Your Own Uniform
               </Link>
             </div>
             <div className="mt-8 flex flex-wrap gap-2">
@@ -65,14 +65,14 @@ export default function Studio() {
           </div>
 
           <div className="lg:col-span-6 order-1 lg:order-2 relative">
-            <div className="relative rounded-3xl overflow-hidden bg-background-50/5 border border-background-50/10">
+            <div className="relative overflow-hidden rounded-3xl bg-[#d94d24]">
               <div className="w-full h-[340px] sm:h-[420px] lg:h-[520px]">
                 <img
                   alt="Emerald green and white number 10 uniform with the embossed Connect767 AI logo"
                   title="Green and white uniform preview — jersey, shorts and socks"
                   loading="lazy"
                   decoding="async"
-                  className="w-full h-full object-cover object-center scale-[1.02]"
+                  className="h-full w-full object-contain object-center"
                   src={uniformImage}
                 />
               </div>
