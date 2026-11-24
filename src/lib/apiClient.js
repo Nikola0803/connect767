@@ -1,4 +1,5 @@
 import { config } from "./config";
+import { cachedRequest, clearRequestCache } from "./requestCache";
 
 class ApiError extends Error {
   constructor(message, status, payload) {
@@ -26,15 +27,9 @@ export function clearInvalidSession(status, payload, token = getStoredToken()) {
   }
 }
 
-async function request(url, options = {}) {
-  const token = getStoredToken();
-  let designGuestToken = "";
-  try { designGuestToken = localStorage.getItem("c767_design_guest_token") || ""; } catch { /* optional design-session context */ }
+async function performRequest(url, options, token, designGuestToken) {
   const isFormData = options.body instanceof FormData;
   const headers = {
-    // Never set Content-Type for FormData — the browser must set it itself
-    // (multipart/form-data; boundary=...), which it can only do correctly
-    // if the header isn't already present.
     ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(designGuestToken ? { "X-C767-Guest-Token": designGuestToken } : {}),
@@ -55,15 +50,28 @@ async function request(url, options = {}) {
   }
 
   if (!res.ok) {
-    // An expired/revoked JWT must not leave the interface looking signed in.
-    // Only clear an existing session; expected 401s from a failed login have
-    // no stored token and therefore do not emit a misleading logout event.
     clearInvalidSession(res.status, payload, token);
     throw new ApiError(payload?.message || res.statusText, res.status, payload);
   }
   if (invalidJson) {
     throw new ApiError(payload.message, 502, payload);
   }
+  return payload;
+}
+
+async function request(url, options = {}) {
+  const token = getStoredToken();
+  let designGuestToken = "";
+  try { designGuestToken = localStorage.getItem("c767_design_guest_token") || ""; } catch { /* optional design-session context */ }
+  const method = String(options.method || "GET").toUpperCase();
+  const cacheable = method === "GET" && !token && !designGuestToken && options.cache !== "no-store";
+
+  if (cacheable) {
+    return cachedRequest(url, () => performRequest(url, options, token, designGuestToken));
+  }
+
+  const payload = await performRequest(url, options, token, designGuestToken);
+  if (method !== "GET") clearRequestCache();
   return payload;
 }
 

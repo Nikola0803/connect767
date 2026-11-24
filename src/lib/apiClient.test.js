@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { wpClient, customClient, getStoredToken, setStoredToken, getStoredUser, setStoredUser, ApiError } from "./apiClient";
+import { clearRequestCache } from "./requestCache";
 
 function jsonResponse(body, ok = true, status = 200) {
   return {
@@ -12,6 +13,7 @@ function jsonResponse(body, ok = true, status = 200) {
 
 beforeEach(() => {
   localStorage.clear();
+  clearRequestCache();
   vi.restoreAllMocks();
 });
 

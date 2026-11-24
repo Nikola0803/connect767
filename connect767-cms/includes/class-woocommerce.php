@@ -28,6 +28,8 @@ class C767_WooCommerce
     const READY_MADE_CATEGORY_SLUG = 'ready-made-designs';
     const READY_MADE_META = '_c767_ready_made';
     const UNIFORM_CATEGORY_META = '_c767_uniform_category';
+    const SHOP_CACHE_VERSION_OPTION = 'c767_shop_cache_version';
+    const SHOP_CACHE_TTL = 300;
 
     public static function init()
     {
@@ -39,6 +41,9 @@ class C767_WooCommerce
         add_action('product_cat_edit_form_fields', [__CLASS__, 'render_icon_field_edit']);
         add_action('created_product_cat', [__CLASS__, 'save_icon_field']);
         add_action('edited_product_cat', [__CLASS__, 'save_icon_field']);
+        add_action('created_product_cat', [__CLASS__, 'invalidate_shop_cache']);
+        add_action('edited_product_cat', [__CLASS__, 'invalidate_shop_cache']);
+        add_action('delete_product_cat', [__CLASS__, 'invalidate_shop_cache']);
 
         add_filter('woocommerce_rest_prepare_product_cat', [__CLASS__, 'inject_icon_into_rest'], 10, 3);
         add_filter('woocommerce_rest_prepare_product_object', [__CLASS__, 'inject_fallback_image'], 10, 3);
@@ -53,9 +58,40 @@ class C767_WooCommerce
 
         add_action('woocommerce_product_options_general_product_data', [__CLASS__, 'render_ready_made_product_fields']);
         add_action('woocommerce_process_product_meta', [__CLASS__, 'save_ready_made_product_fields']);
+        add_action('woocommerce_new_product', [__CLASS__, 'invalidate_shop_cache']);
+        add_action('woocommerce_update_product', [__CLASS__, 'invalidate_shop_cache']);
+        add_action('woocommerce_product_set_stock', [__CLASS__, 'invalidate_shop_cache']);
+        add_action('woocommerce_variation_set_stock', [__CLASS__, 'invalidate_shop_cache']);
+        add_action('woocommerce_product_set_stock_status', [__CLASS__, 'invalidate_shop_cache']);
+        add_action('before_delete_post', [__CLASS__, 'invalidate_deleted_product']);
         C767_Ready_Made_Artwork::init();
 
         add_action('rest_api_init', [__CLASS__, 'register_routes']);
+    }
+
+    public static function invalidate_shop_cache()
+    {
+        update_option(self::SHOP_CACHE_VERSION_OPTION, (string) microtime(true), false);
+    }
+
+    public static function invalidate_deleted_product($post_id)
+    {
+        if (get_post_type($post_id) === 'product' || get_post_type($post_id) === 'product_variation') {
+            self::invalidate_shop_cache();
+        }
+    }
+
+    private static function shop_cache_key($scope)
+    {
+        $version = (string) get_option(self::SHOP_CACHE_VERSION_OPTION, '1');
+        return 'c767_shop_' . md5($version . '|' . $scope);
+    }
+
+    private static function public_shop_response($payload)
+    {
+        $response = rest_ensure_response($payload);
+        $response->header('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
+        return $response;
     }
 
     public static function uniform_category_options()
@@ -258,6 +294,11 @@ class C767_WooCommerce
     public static function list_products(WP_REST_Request $request)
     {
         $slug = $request->get_param('slug');
+        $cache_key = self::shop_cache_key($slug ? 'product:' . sanitize_title($slug) : 'products');
+        $cached = get_transient($cache_key);
+        if ($cached !== false) {
+            return self::public_shop_response($cached);
+        }
 
         // wc_get_products() doesn't recognize a 'slug' query var — WC_Product_Query
         // only matches post_name via 'name', so passing 'slug' here was silently
@@ -273,7 +314,9 @@ class C767_WooCommerce
             $product_id = self::product_id_from_slug(sanitize_title($slug));
             $product = $product_id ? wc_get_product($product_id) : null;
             $products = ($product && $product->get_status() === 'publish') ? [$product] : [];
-            return rest_ensure_response(array_map([__CLASS__, 'format_product'], $products));
+            $payload = array_map([__CLASS__, 'format_product'], $products);
+            set_transient($cache_key, $payload, self::SHOP_CACHE_TTL);
+            return self::public_shop_response($payload);
         }
 
         // Preserve the manual order set in WordPress (Products > Sorting).
@@ -285,7 +328,9 @@ class C767_WooCommerce
             'orderby' => 'menu_order',
             'order' => 'ASC',
         ]);
-        return rest_ensure_response(array_map([__CLASS__, 'format_product'], $products));
+        $payload = array_map([__CLASS__, 'format_product'], $products);
+        set_transient($cache_key, $payload, self::SHOP_CACHE_TTL);
+        return self::public_shop_response($payload);
     }
 
     private static function format_product($product)
@@ -611,19 +656,27 @@ class C767_WooCommerce
 
     public static function list_categories()
     {
-        $terms = get_terms(['taxonomy' => 'product_cat', 'hide_empty' => false]);
-        if (is_wp_error($terms)) {
-            return rest_ensure_response([]);
+        $cache_key = self::shop_cache_key('categories');
+        $cached = get_transient($cache_key);
+        if ($cached !== false) {
+            return self::public_shop_response($cached);
         }
 
-        return rest_ensure_response(array_map(function ($term) {
+        $terms = get_terms(['taxonomy' => 'product_cat', 'hide_empty' => false]);
+        if (is_wp_error($terms)) {
+            return self::public_shop_response([]);
+        }
+
+        $payload = array_map(function ($term) {
             $icon = get_term_meta($term->term_id, 'c767_icon', true);
             return [
                 'slug' => $term->slug,
                 'name' => $term->name,
                 'acf' => ['icon' => $icon ?: 'ri-price-tag-3-line'],
             ];
-        }, $terms));
+        }, $terms);
+        set_transient($cache_key, $payload, self::SHOP_CACHE_TTL);
+        return self::public_shop_response($payload);
     }
 
     // ---------- Headless checkout ----------
