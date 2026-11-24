@@ -20,6 +20,8 @@ import PaypalButton from "../components/PaypalButton";
 import { readyMadeCartIssues } from "../lib/readyMadeMinimums";
 import { getStoredUser } from "../lib/apiClient";
 import ReadyMadeCheckoutRoster, { readyMadeExtrasStatus } from "../components/ReadyMadeCheckoutRoster";
+import useReadyMadeArtwork from "../hooks/useReadyMadeArtwork";
+import { readyMadeArtworkIssue } from "../lib/readyMadeArtwork";
 import { UNIFORM_SHIPPING_COUNTRIES, uniformShippingRate } from "../lib/uniformShipping";
 import { uniformAddressRegions, validateUniformShippingAddress } from "../lib/uniformAddress";
 
@@ -82,6 +84,8 @@ export default function CheckoutPage() {
   const minimumIssues = readyMadeCartIssues(items);
   const hasReadyMadeDesigns = items.some((item) => item.readyMade);
   const readyMadeItemKeys = items.filter((item) => item.readyMade).map((item) => item.key).sort().join("|");
+  const { files: readyMadeArtwork, setFiles: setReadyMadeArtwork, ready: artworkReady, storageError: artworkStorageError } = useReadyMadeArtwork(readyMadeItemKeys);
+  const artworkError = readyMadeArtworkIssue(readyMadeArtwork, items.filter((item) => item.readyMade));
   const accountRequired = hasReadyMadeDesigns && !getStoredUser();
   const extrasStatus = readyMadeExtrasStatus(items, readyMadeExtras, readyMadeRoster);
   const extrasTotal = extrasStatus.supporterTotal + extrasStatus.extraSocksTotal + extrasStatus.productionTotal;
@@ -95,6 +99,7 @@ export default function CheckoutPage() {
     readyMadeExtras: { ...readyMadeExtras, supporterJerseys: extrasStatus.supporterJerseys },
     readyMadeOrderContact: { enabled: useDifferentOrderContact, ...orderContact },
     readyMadeAdditionalDetails: additionalDetails,
+    readyMadeArtwork,
   } : {};
   const readyMadeAddressValidation = validateUniformShippingAddress(shipping);
   const addressRegions = uniformAddressRegions(shipping.country);
@@ -116,6 +121,14 @@ export default function CheckoutPage() {
     }
     if (minimumIssues.length) {
       setError(minimumIssues.map((issue) => issue.message).join(" "));
+      return false;
+    }
+    if (hasReadyMadeDesigns && (!artworkReady || artworkError)) {
+      setError(artworkError || "Please wait for your attached artwork to load.");
+      return false;
+    }
+    if (hasReadyMadeDesigns && readyMadeArtwork.length && config?.readyMadeArtwork !== true) {
+      setError("Checkout is not ready to accept artwork yet. Your files are kept in this tab; please try again shortly.");
       return false;
     }
     if (shippingComplete) return true;
@@ -210,7 +223,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="pt-16 md:pt-20">
-      <div className="w-full px-4 md:px-8 lg:px-12 py-10 max-w-2xl mx-auto">
+      <div className="w-full px-4 md:px-8 lg:px-12 pt-10 pb-[calc(7rem+env(safe-area-inset-bottom))] lg:pb-10 max-w-2xl mx-auto">
         <h1 className="font-heading text-3xl font-light text-foreground-950 mb-6">Checkout</h1>
 
         {hasReadyMadeDesigns && (
@@ -245,12 +258,13 @@ export default function CheckoutPage() {
         )}
 
         {hasReadyMadeDesigns && checkoutStep === "roster" && (
-          <ReadyMadeCheckoutRoster items={items} roster={readyMadeRoster} setRoster={setReadyMadeRoster} extras={readyMadeExtras} setExtras={setReadyMadeExtras} onContinue={() => setCheckoutStep("review")} />
+          <ReadyMadeCheckoutRoster items={items} roster={readyMadeRoster} setRoster={setReadyMadeRoster} extras={readyMadeExtras} setExtras={setReadyMadeExtras} artwork={readyMadeArtwork} setArtwork={setReadyMadeArtwork} artworkReady={artworkReady} artworkStorageError={artworkStorageError} onContinue={() => setCheckoutStep("review")} />
         )}
 
         {hasReadyMadeDesigns && checkoutStep === "review" && readyMadeRoster.length > 0 && (
           <div className="mb-6 rounded-xl border border-primary-200 bg-primary-50 p-4 text-sm">
             <div className="flex items-center justify-between gap-3"><div><p className="font-bold text-primary-950">Team Roster Confirmed</p><p className="mt-1 text-xs text-primary-800">{readyMadeRoster.length} roster row{readyMadeRoster.length === 1 ? "" : "s"}{extrasStatus.supporterQuantity ? ` · ${extrasStatus.supporterQuantity} supporter jerseys` : ""}{extrasStatus.requiredSocks ? ` · ${extrasStatus.socksQuantity} socks` : ""} saved with this order.</p></div><Button type="button" variant="secondary" size="sm" onClick={() => setCheckoutStep("roster")}>Edit Roster</Button></div>
+            {readyMadeArtwork.length > 0 && <div className="mt-3 border-t border-primary-200 pt-3"><strong className="text-xs text-primary-950">Team Logos &amp; Sponsors · {readyMadeArtwork.length} file{readyMadeArtwork.length === 1 ? "" : "s"}</strong><ul className="mt-2 space-y-2 text-xs text-primary-900">{readyMadeArtwork.map((file) => <li key={file.id} className="break-words"><span className="font-semibold">{file.kind === "sponsor" ? "Sponsor" : "Team logo"}: {file.name}</span>{file.notes && <span className="mt-0.5 block text-primary-800">{file.notes}</span>}</li>)}</ul></div>}
           </div>
         )}
 

@@ -53,6 +53,7 @@ class C767_WooCommerce
 
         add_action('woocommerce_product_options_general_product_data', [__CLASS__, 'render_ready_made_product_fields']);
         add_action('woocommerce_process_product_meta', [__CLASS__, 'save_ready_made_product_fields']);
+        C767_Ready_Made_Artwork::init();
 
         add_action('rest_api_init', [__CLASS__, 'register_routes']);
     }
@@ -718,6 +719,19 @@ class C767_WooCommerce
         }
 
         $ready_made_units = self::ready_made_unit_counts($order);
+        $artwork_designs = [];
+        foreach ($order->get_items('line_item') as $artwork_item) {
+            $artwork_product = $artwork_item->get_product();
+            if (self::is_ready_made_product($artwork_product)) {
+                $artwork_parent = $artwork_product->is_type('variation') ? wc_get_product($artwork_product->get_parent_id()) : $artwork_product;
+                if ($artwork_parent) $artwork_designs[$artwork_parent->get_slug()] = $artwork_parent->get_name();
+            }
+        }
+        $ready_made_artwork = C767_Ready_Made_Artwork::validate($order_context['readyMadeArtwork'] ?? [], $artwork_designs);
+        if (is_wp_error($ready_made_artwork)) {
+            $order->delete(true);
+            return $ready_made_artwork;
+        }
         $ready_made_extras = self::validate_ready_made_extras($ready_made_units, (array) ($order_context['readyMadeExtras'] ?? []), $roster);
         if (is_wp_error($ready_made_extras)) {
             $order->delete(true);
@@ -773,6 +787,7 @@ class C767_WooCommerce
         }
         if (!empty($ready_made_units)) {
             $collar_attachment = $ready_made_extras['inside_collar_attachment'];
+            C767_Ready_Made_Artwork::store($order, $ready_made_artwork);
             if ($collar_attachment) {
                 $order->update_meta_data('_c767_ready_made_collar_attachment', wp_json_encode($collar_attachment));
             }
@@ -1241,6 +1256,8 @@ class C767_WooCommerce
         $items = (array) $request->get_param('items');
         $shipping = (array) $request->get_param('shipping');
         $order = self::build_pending_order($items, $request->get_param('email'), $shipping, false, [
+            'readyMadeArtwork' => $request->get_param('readyMadeArtwork') ?? [],
+
             'readyMadeRoster' => (array) $request->get_param('readyMadeRoster'),
             'readyMadeExtras' => (array) $request->get_param('readyMadeExtras'),
             'readyMadeOrderContact' => (array) $request->get_param('readyMadeOrderContact'),
@@ -1278,6 +1295,8 @@ class C767_WooCommerce
             $shipping,
             true,
             [
+                'readyMadeArtwork' => $request->get_param('readyMadeArtwork') ?? [],
+
                 'readyMadeRoster' => (array) $request->get_param('readyMadeRoster'),
                 'readyMadeExtras' => (array) $request->get_param('readyMadeExtras'),
                 'readyMadeOrderContact' => (array) $request->get_param('readyMadeOrderContact'),
