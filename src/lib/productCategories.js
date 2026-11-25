@@ -22,10 +22,20 @@ export function productMatchesSearch(product, search) {
   const needle = String(search || "").trim().toLowerCase();
   if (!needle) return true;
 
+  const searchableText = [
+    product?.title,
+    product?.description,
+    product?.shortDescription,
+    product?.sku,
+    product?.uniformCategory,
+    product?.readyMade ? "pre-design uniforms pre-designed uniform ready-made designs" : "",
+  ].map((value) => String(value || "").toLowerCase());
+
   return (
-    String(product?.title || "").toLowerCase().includes(needle) ||
+    searchableText.some((value) => value.includes(needle)) ||
     productCategories(product).some((item) =>
-      String(item?.name || "").toLowerCase().includes(needle)
+      String(item?.name || "").toLowerCase().includes(needle) ||
+      String(item?.slug || "").toLowerCase().includes(needle)
     ) ||
     (product?.tags || []).some((tag) => String(tag).toLowerCase().includes(needle))
   );

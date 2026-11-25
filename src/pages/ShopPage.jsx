@@ -47,13 +47,17 @@ export default function ShopPage() {
 
   const visibleProducts = useMemo(() => {
     if (!products) return [];
+    const hasSearch = Boolean(search.trim());
+    const isCatalogSearch = !isReadyMadePage && activeCategory === "all" && hasSearch;
     let list = isReadyMadePage
       ? products.filter((product) => product.readyMade && (readyMadeCategory === "all" || product.uniformCategory === readyMadeCategory))
-      : products.filter((product) => !product.readyMade && (
-        activeCategory === "all" || productMatchesCategory(product, activeCategory)
-      ));
+      : products.filter((product) => (
+        // Keep pre-designed uniforms out of the ordinary shop grid, but let an
+        // intentional global shop search discover every matching product.
+        isCatalogSearch || !product.readyMade
+      ) && (activeCategory === "all" || productMatchesCategory(product, activeCategory)));
 
-    if (search) {
+    if (hasSearch) {
       list = list.filter((product) => productMatchesSearch(product, search));
     }
 

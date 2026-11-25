@@ -38,4 +38,30 @@ describe("ShopPage URL navigation", () => {
     expect(screen.queryByRole("link", { name: "Design Uniforms" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Open cart" })).not.toBeInTheDocument();
   });
+
+  it("includes matching pre-designed uniforms in a global shop search", async () => {
+    render(
+      <MemoryRouter initialEntries={["/shop?q=pre-design"]}>
+        <CartProvider>
+          <Routes><Route path="/shop" element={<ShopPage />} /></Routes>
+        </CartProvider>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("Ready Kit")).toBeInTheDocument();
+    expect(screen.queryByText("Shop Shirt")).not.toBeInTheDocument();
+  });
+
+  it("continues hiding pre-designed uniforms from the unsearched shop grid", async () => {
+    render(
+      <MemoryRouter initialEntries={["/shop"]}>
+        <CartProvider>
+          <Routes><Route path="/shop" element={<ShopPage />} /></Routes>
+        </CartProvider>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("Shop Shirt")).toBeInTheDocument();
+    expect(screen.queryByText("Ready Kit")).not.toBeInTheDocument();
+  });
 });
