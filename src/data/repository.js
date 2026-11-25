@@ -49,6 +49,7 @@ import {
   directoryListings as localListings,
   directoryCategories as localDirectoryCategories,
   canonicalDirectoryCategories,
+  canonicalHomeCategories,
 } from "./directory";
 import { listingDetails as localListingDetails } from "./listingDetails";
 import { productTypes as localProductTypes } from "./customizer";
@@ -564,7 +565,7 @@ export async function getHomeCategories() {
     // industries) happened to have the highest post counts, not the 7
     // top-level categories the homepage's "Trending" pills expect.
     const wp = await wpClient.get("/listing_category", {
-      per_page: 8,
+      per_page: 50,
       parent: 0,
       orderby: "count",
       order: "desc",
@@ -573,12 +574,16 @@ export async function getHomeCategories() {
     // "Browse by category" grid (both do `/listings${cat.href}`) — without
     // it every category link resolved to the literal string
     // "/listingsundefined" instead of "/listings?category=<slug>".
-    return wp.filter((t) => !industrySlugSet.has(t.slug)).map((t) => ({
-      name: decodeEntities(t.name),
-      count: `${t.count} listings`,
-      icon: t.acf?.icon,
-      href: `?category=${t.slug}`,
-    }));
+    return canonicalHomeCategories(
+      wp
+        .filter((t) => !industrySlugSet.has(t.slug))
+        .map((t) => ({
+          slug: t.slug,
+          label: decodeEntities(t.name),
+          count: t.count,
+          icon: t.acf?.icon,
+        })),
+    );
   }
   return localHomeCategories;
 }
