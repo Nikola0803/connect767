@@ -38,6 +38,35 @@ export function canonicalDirectoryCategories(wordPressCategories = []) {
   });
 }
 
+/**
+ * Build the homepage category tiles from the same canonical seven parent
+ * categories used by the directory filter. WordPress can retain legacy
+ * top-level terms with duplicate labels, so match by the supported slug and
+ * never expose an arbitrary same-name term.
+ */
+export function canonicalHomeCategories(wordPressCategories = []) {
+  const cmsTermsBySlug = new Map(
+    wordPressCategories.map((term) => [term.slug, term]),
+  );
+
+  return directoryCategories
+    .filter((category) => category.slug !== "all")
+    .map((category, canonicalIndex) => {
+      const cmsTerm = cmsTermsBySlug.get(category.slug);
+      const count = Math.max(0, Number(cmsTerm?.count) || 0);
+      return {
+        name: category.label,
+        count: `${count} ${count === 1 ? "listing" : "listings"}`,
+        icon: cmsTerm?.icon || category.icon,
+        href: `?category=${category.slug}`,
+        _count: count,
+        _canonicalIndex: canonicalIndex,
+      };
+    })
+    .sort((a, b) => b._count - a._count || a._canonicalIndex - b._canonicalIndex)
+    .map(({ _count, _canonicalIndex, ...category }) => category);
+}
+
 export const tierOptions = [
   { label: "All listing types", value: "all" },
   { label: "Classified", value: "Classified" },

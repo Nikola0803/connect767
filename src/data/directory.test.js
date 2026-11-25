@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canonicalDirectoryCategories } from "./directory";
+import { canonicalDirectoryCategories, canonicalHomeCategories } from "./directory";
 import { findCategory } from "./industries";
 
 describe("canonicalDirectoryCategories", () => {
@@ -33,5 +33,26 @@ describe("canonicalDirectoryCategories", () => {
       "fitness",
       "other",
     ]);
+  });
+});
+
+describe("canonicalHomeCategories", () => {
+  it("shows only the functional Eat & Drink tile and preserves its live count", () => {
+    const categories = canonicalHomeCategories([
+      { slug: "services", label: "Services", count: 16, icon: "ri-briefcase-fill" },
+      { slug: "eat-drink", label: "Eat & Drink", count: 9, icon: "ri-price-tag-3-line" },
+      { slug: "eat-and-drink", label: "Eat & Drink", count: 1, icon: "ri-restaurant-fill" },
+    ]);
+
+    expect(categories.filter((category) => category.name === "Eat & Drink")).toEqual([
+      {
+        name: "Eat & Drink",
+        count: "1 listing",
+        icon: "ri-restaurant-fill",
+        href: "?category=eat-and-drink",
+      },
+    ]);
+    expect(categories).toHaveLength(7);
+    expect(categories.some((category) => category.href === "?category=eat-drink")).toBe(false);
   });
 });
