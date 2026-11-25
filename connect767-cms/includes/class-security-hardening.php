@@ -12,6 +12,10 @@ class C767_Security_Hardening
     public static function init()
     {
         add_action('send_headers', [__CLASS__, 'security_headers']);
+        // Some WordPress/nginx stacks bypass or replace the normal frontend
+        // header phase for REST responses. Apply the same baseline immediately
+        // before REST output so the headless API is protected consistently.
+        add_filter('rest_pre_serve_request', [__CLASS__, 'rest_security_headers'], 20, 4);
         add_filter('xmlrpc_enabled', '__return_false');
         add_filter('the_generator', '__return_empty_string');
         add_filter('rest_endpoints', [__CLASS__, 'hide_public_user_routes']);
@@ -31,6 +35,12 @@ class C767_Security_Hardening
         header('Referrer-Policy: strict-origin-when-cross-origin');
         header('Permissions-Policy: camera=(), microphone=(), geolocation=(self)');
         header("Content-Security-Policy: frame-ancestors 'self'; object-src 'none'; base-uri 'self'");
+    }
+
+    public static function rest_security_headers($served)
+    {
+        self::security_headers();
+        return $served;
     }
 
     /** Author details are delivered through approved content, not an enumerable index. */

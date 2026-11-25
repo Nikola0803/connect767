@@ -624,12 +624,17 @@ class C767_Design_Studio_Security
         $manifest_files = [];
         $used_names = [];
         foreach ($files as $file) {
-            $path = trailingslashit(self::private_directory()) . basename($file['storage_name']);
-            if (!is_file($path)) continue;
-            $original = sanitize_file_name($file['original_name'] ?: ('connect767-design-' . $file['id'] . '.' . pathinfo($path, PATHINFO_EXTENSION)));
+            // Files may live on private disk or in the database fallback used
+            // by managed hosts that cannot write outside WordPress. Always go
+            // through the integrity-checking reader so both storage modes are
+            // included in paid production packages.
+            $bytes = self::read_private_source($file);
+            if (is_wp_error($bytes)) continue;
+            $extension = pathinfo((string) $file['storage_name'], PATHINFO_EXTENSION);
+            $original = sanitize_file_name($file['original_name'] ?: ('connect767-design-' . $file['id'] . ($extension ? '.' . $extension : '')));
             $folder = stripos($original, 'artwork') !== false ? 'artwork/' : (stripos($original, 'reference') !== false ? 'references/' : 'renders/');
             $archive_name = self::unique_archive_name($folder . $original, $used_names);
-            $zip->addFile($path, $archive_name);
+            $zip->addFromString($archive_name, $bytes);
             $manifest_files[] = [
                 'name' => $archive_name, 'type' => $file['file_type'], 'mimeType' => $file['mime_type'],
                 'bytes' => (int) $file['byte_size'], 'sha256' => $file['sha256'], 'createdAt' => $file['created_at'],
