@@ -354,6 +354,11 @@ export default async function handler(req, res) {
       return responseJson(res, 502, { error: "The AI service returned an unreadable design plan.", requestId });
     }
 
+    // Complete the reserved usage ledger entry after a successful provider
+    // response. Leaving it in "reserved" state would release the credit after
+    // the reservation timeout and let completed prompts escape daily limits.
+    await settleAIRequest(req, { requestId, successful: true, providerReference: data?.id || "" });
+
     return responseJson(res, 200, {
       plan: normalizeUniformPlan(plan, input),
       model,

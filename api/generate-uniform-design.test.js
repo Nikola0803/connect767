@@ -85,6 +85,7 @@ describe("AI full-uniform design endpoint", () => {
     vi.unstubAllGlobals();
     delete process.env.OPENAI_API_KEY;
     delete process.env.OPENAI_TEXT_MODEL;
+    delete process.env.C767_AI_SERVICE_SECRET;
   });
 
   it("validates the brief and constrains editor options", () => {
@@ -192,6 +193,32 @@ describe("AI full-uniform design endpoint", () => {
     expect(body.text.format).toMatchObject({ type: "json_schema", name: "uniform_design_plan", strict: true });
     expect(body.safety_identifier).toMatch(/^[a-f0-9]{64}$/);
     expect(options.headers.Authorization).toBe("Bearer test-only-key");
+  });
+
+  it("settles a successful prompt so its reserved AI credit remains counted", async () => {
+    process.env.C767_AI_SERVICE_SECRET = "shared-test-secret";
+    const fetchMock = vi.fn(async (url) => {
+      if (String(url).includes("/ai/reserve")) return { ok: true, status: 200, json: async () => ({ allowed: true, remaining: 2, limit: 3 }) };
+      if (String(url).includes("api.openai.com")) return {
+        ok: true,
+        status: 200,
+        json: async () => ({ id: "resp_success", output: [{ content: [{ type: "output_text", text: JSON.stringify(upstreamPlan) }] }] }),
+      };
+      if (String(url).includes("/ai/settle")) return { ok: true, status: 200, json: async () => ({ status: "completed" }) };
+      throw new Error(`Unexpected endpoint: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = response();
+    await handler(request("POST", validRequest), res);
+
+    expect(res.statusCode).toBe(200);
+    const settlement = fetchMock.mock.calls.find(([url]) => String(url).includes("/ai/settle"));
+    expect(settlement).toBeTruthy();
+    expect(JSON.parse(settlement[1].body)).toMatchObject({
+      successful: true,
+      providerReference: "resp_success",
+    });
   });
 
   it("normalizes editable text and artwork production elements", () => {

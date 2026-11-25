@@ -158,28 +158,124 @@ class C767_REST_Messages
     private static function store_attachments($message_id, $files)
     {
         if (!$files) return [];
-        require_once ABSPATH . 'wp-admin/includes/file.php';
-        require_once ABSPATH . 'wp-admin/includes/media.php';
-        require_once ABSPATH . 'wp-admin/includes/image.php';
+        $directory = self::private_attachment_directory();
+        if (is_wp_error($directory)) return $directory;
         $ids = [];
+        $paths = [];
         foreach ($files as $file) {
             $original_name = sanitize_file_name((string) $file['name']);
             $extension = strtolower((string) pathinfo($original_name, PATHINFO_EXTENSION));
-            // WordPress media URLs are normally public. Use a high-entropy
-            // stored filename so a private message attachment cannot be
-            // enumerated from the sender's original filename; the friendly
-            // original name is retained separately for the recipient UI.
-            $file['name'] = wp_generate_password(40, false, false) . '.' . $extension;
-            $attachment_id = media_handle_sideload($file, $message_id);
+            $checked = wp_check_filetype_and_ext((string) $file['tmp_name'], $original_name);
+            $mime_type = (string) ($checked['type'] ?? 'application/octet-stream');
+            $storage_name = wp_generate_password(48, false, false) . ($extension ? '.' . $extension : '');
+            $path = trailingslashit($directory) . $storage_name;
+
+            if (!move_uploaded_file((string) $file['tmp_name'], $path)) {
+                foreach ($paths as $stored_path) @unlink($stored_path);
+                foreach ($ids as $stored_id) wp_delete_post($stored_id, true);
+                return new WP_Error('c767_attachment_failed', 'An attachment could not be moved into private storage.', ['status' => 500]);
+            }
+            @chmod($path, 0640);
+
+            // Keep an attachment record for message metadata, but deliberately
+            // omit a public media URL. The bytes live outside the WordPress web
+            // root and are streamed only through the signed download route.
+            $attachment_id = wp_insert_post([
+                'post_type' => 'attachment',
+                'post_status' => 'private',
+                'post_parent' => (int) $message_id,
+                'post_title' => pathinfo($original_name, PATHINFO_FILENAME),
+                'post_mime_type' => $mime_type,
+                'guid' => '',
+            ], true);
             if (is_wp_error($attachment_id)) {
-                foreach ($ids as $stored_id) wp_delete_attachment($stored_id, true);
+                @unlink($path);
+                foreach ($paths as $stored_path) @unlink($stored_path);
+                foreach ($ids as $stored_id) wp_delete_post($stored_id, true);
                 return new WP_Error('c767_attachment_failed', 'An attachment could not be saved: ' . $attachment_id->get_error_message(), ['status' => 400]);
             }
             update_post_meta($attachment_id, '_c767_original_name', $original_name);
+            update_post_meta($attachment_id, '_c767_private_message_file', $storage_name);
+            update_post_meta($attachment_id, '_c767_private_message_size', (int) filesize($path));
+            update_post_meta($attachment_id, '_c767_private_message_sha256', hash_file('sha256', $path));
             $ids[] = (int) $attachment_id;
+            $paths[] = $path;
         }
         update_post_meta($message_id, 'attachment_ids', $ids);
         return $ids;
+    }
+
+    private static function private_attachment_directory()
+    {
+        $configured = defined('C767_PRIVATE_MESSAGE_DIR') ? (string) C767_PRIVATE_MESSAGE_DIR : '';
+        $directory = $configured !== ''
+            ? $configured
+            : dirname(ABSPATH) . DIRECTORY_SEPARATOR . 'connect767-private-messages';
+        if (!is_dir($directory) && !wp_mkdir_p($directory)) {
+            return new WP_Error('c767_private_message_storage', 'Private message storage is not writable.', ['status' => 500]);
+        }
+        if (!is_writable($directory)) {
+            return new WP_Error('c767_private_message_storage', 'Private message storage is not writable.', ['status' => 500]);
+        }
+        $directory_real = realpath($directory);
+        $wordpress_real = realpath(ABSPATH);
+        if ($directory_real && $wordpress_real) {
+            $directory_normalized = trailingslashit(wp_normalize_path($directory_real));
+            $wordpress_normalized = trailingslashit(wp_normalize_path($wordpress_real));
+            if (strpos($directory_normalized, $wordpress_normalized) === 0) {
+                return new WP_Error(
+                    'c767_private_message_storage_public',
+                    'Private message storage must be configured outside the public WordPress directory.',
+                    ['status' => 500]
+                );
+            }
+        }
+
+        // Defense in depth for installations that explicitly configure a
+        // directory beneath some other server document root. The configured
+        // path is never permitted inside the WordPress public directory.
+        $deny_files = [
+            '.htaccess' => "Require all denied\nDeny from all\n",
+            'web.config' => "<?xml version=\"1.0\" encoding=\"UTF-8\"?><configuration><system.webServer><security><authorization><remove users=\"*\" roles=\"\" verbs=\"\"/><add accessType=\"Deny\" users=\"*\"/></authorization></security></system.webServer></configuration>",
+            'index.php' => "<?php http_response_code(404); exit;\n",
+        ];
+        foreach ($deny_files as $name => $contents) {
+            $path = trailingslashit($directory) . $name;
+            if (!file_exists($path)) @file_put_contents($path, $contents, LOCK_EX);
+        }
+        return $directory;
+    }
+
+    private static function attachment_source($attachment_id)
+    {
+        $storage_name = (string) get_post_meta($attachment_id, '_c767_private_message_file', true);
+        if ($storage_name !== '') {
+            $directory = self::private_attachment_directory();
+            if (is_wp_error($directory)) return $directory;
+            $directory_real = realpath($directory);
+            $candidate = trailingslashit($directory) . basename($storage_name);
+            $file_real = realpath($candidate);
+            if (!$directory_real || !$file_real || !is_file($file_real)) {
+                return new WP_Error('c767_attachment_not_found', 'Attachment not found.', ['status' => 404]);
+            }
+            $prefix = rtrim($directory_real, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+            if (strpos($file_real, $prefix) !== 0) {
+                return new WP_Error('c767_attachment_not_found', 'Attachment not found.', ['status' => 404]);
+            }
+            $expected_hash = (string) get_post_meta($attachment_id, '_c767_private_message_sha256', true);
+            if ($expected_hash !== '' && !hash_equals($expected_hash, hash_file('sha256', $file_real))) {
+                return new WP_Error('c767_attachment_integrity', 'Attachment integrity verification failed.', ['status' => 409]);
+            }
+            return $file_real;
+        }
+
+        // Backward compatibility only: legacy message attachments were stored
+        // in WordPress media. New uploads never use this public location.
+        $legacy = get_attached_file($attachment_id);
+        $legacy_real = $legacy ? realpath($legacy) : false;
+        return $legacy_real && is_file($legacy_real)
+            ? $legacy_real
+            : new WP_Error('c767_attachment_not_found', 'Attachment not found.', ['status' => 404]);
     }
 
     private static function attachment_signature($attachment_id, $message_id, $expires)
@@ -202,8 +298,8 @@ class C767_REST_Messages
     {
         $ids = array_filter(array_map('absint', (array) get_post_meta($message_id, 'attachment_ids', true)));
         return array_values(array_filter(array_map(function ($attachment_id) use ($message_id) {
-            $file = get_attached_file($attachment_id);
-            if (!$file || !is_file($file)) return null;
+            $file = self::attachment_source($attachment_id);
+            if (is_wp_error($file)) return null;
             $mime_type = (string) get_post_mime_type($attachment_id);
             return [
                 'id' => $attachment_id,
@@ -238,11 +334,8 @@ class C767_REST_Messages
             return new WP_Error('c767_attachment_not_found', 'Attachment not found.', ['status' => 404]);
         }
 
-        $file = get_attached_file($attachment_id);
-        $real_file = $file ? realpath($file) : false;
-        if (!$real_file || !is_file($real_file)) {
-            return new WP_Error('c767_attachment_not_found', 'Attachment not found.', ['status' => 404]);
-        }
+        $real_file = self::attachment_source($attachment_id);
+        if (is_wp_error($real_file)) return $real_file;
 
         $mime_type = (string) get_post_mime_type($attachment_id);
         $name = get_post_meta($attachment_id, '_c767_original_name', true) ?: basename($real_file);

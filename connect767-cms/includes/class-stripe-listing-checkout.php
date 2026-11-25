@@ -178,8 +178,11 @@ class C767_Stripe_Listing_Checkout
         }
 
         if ($intent['status'] === 'succeeded') {
+            $was_paid = get_post_meta($listing_id, 'payment_status', true) === 'paid';
             update_post_meta($listing_id, 'payment_status', 'paid');
-            do_action('c767_listing_payment_confirmed', $listing_id);
+            if (!$was_paid) {
+                do_action('c767_listing_payment_confirmed', $listing_id);
+            }
             return rest_ensure_response(['status' => 'paid', 'listingId' => $listing_id]);
         }
 
@@ -264,8 +267,11 @@ class C767_Stripe_Listing_Checkout
         }
 
         if (($capture['status'] ?? '') === 'COMPLETED') {
+            $was_paid = get_post_meta($listing_id, 'payment_status', true) === 'paid';
             update_post_meta($listing_id, 'payment_status', 'paid');
-            do_action('c767_listing_payment_confirmed', $listing_id);
+            if (!$was_paid) {
+                do_action('c767_listing_payment_confirmed', $listing_id);
+            }
             return rest_ensure_response(['status' => 'paid', 'listingId' => $listing_id]);
         }
 
