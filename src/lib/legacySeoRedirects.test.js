@@ -52,8 +52,17 @@ describe("legacy SEO redirects", () => {
   });
 
   it("moves legacy WordPress resources to the CMS origin", () => {
+    expect(redirectFor("/wp-json/")?.destination).toBe(
+      "https://admin.connect767.com/wp-json/",
+    );
+    expect(redirectFor("/wp-json/:path*/")?.destination).toBe(
+      "https://admin.connect767.com/wp-json/:path*/",
+    );
     expect(redirectFor("/wp-json/:path*")?.destination).toBe(
       "https://admin.connect767.com/wp-json/:path*",
+    );
+    expect(redirectFor("/wp-content/:path*/")?.destination).toBe(
+      "https://admin.connect767.com/wp-content/:path*/",
     );
     expect(redirectFor("/wp-content/:path*")?.destination).toBe(
       "https://admin.connect767.com/wp-content/:path*",
