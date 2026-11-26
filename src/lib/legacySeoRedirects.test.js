@@ -71,9 +71,33 @@ describe("legacy SEO redirects", () => {
 
   it("keeps old listing feeds from becoming missing profile pages", () => {
     expect(redirectFor("/listing/:slug/feed")?.destination).toBe("/listings");
+    expect(redirectFor("/listing/:slug/feed/")?.destination).toBe("/listings");
     expect(redirectFor("/listing-category/:category/feed")?.destination).toBe(
       "/listings?category=:category",
     );
+    expect(redirectFor("/listing-category/:category/feed/")?.destination).toBe(
+      "/listings?category=:category",
+    );
+  });
+
+  it("handles trailing slashes before broad product and listing routes", () => {
+    const removedProductIndex = redirects.findIndex(
+      (redirect) => redirect.source === "/product/wicker-basket/",
+    );
+    const genericProductIndex = redirects.findIndex(
+      (redirect) => redirect.source === "/product/:slug/",
+    );
+    const removedListingIndex = redirects.findIndex(
+      (redirect) => redirect.source === "/listing/private-bedroom-in-manhattan/",
+    );
+    const genericListingIndex = redirects.findIndex(
+      (redirect) => redirect.source === "/listing/:slug/",
+    );
+
+    expect(removedProductIndex).toBeGreaterThanOrEqual(0);
+    expect(genericProductIndex).toBeGreaterThan(removedProductIndex);
+    expect(removedListingIndex).toBeGreaterThanOrEqual(0);
+    expect(genericListingIndex).toBeGreaterThan(removedListingIndex);
   });
 
   it("marks obsolete WooCommerce AJAX query URLs as noindex", () => {
