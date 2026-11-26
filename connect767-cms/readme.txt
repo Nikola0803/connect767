@@ -86,6 +86,11 @@ regular posts.
 
 == Changelog ==
 
+= 2.10.3 =
+
+* Added a reliable `robots.txt` response for the private `admin.` CMS origin.
+* Reinforced `noindex`, `nofollow`, and `noarchive` headers and disabled CMS-origin sitemaps without changing public-host installs.
+
 = 2.10.0 =
 
 * Added a Campaign Workspace that turns approved marketing strategies into assignable, measurable execution tasks.
