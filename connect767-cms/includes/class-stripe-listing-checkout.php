@@ -180,6 +180,10 @@ class C767_Stripe_Listing_Checkout
         if ($intent['status'] === 'succeeded') {
             $was_paid = get_post_meta($listing_id, 'payment_status', true) === 'paid';
             update_post_meta($listing_id, 'payment_status', 'paid');
+            if ($listing->post_status === 'draft') {
+                wp_update_post(['ID' => $listing_id, 'post_status' => 'pending']);
+                do_action('c767_listing_submitted', $listing_id, $listing->post_author, 'Classified');
+            }
             if (!$was_paid) {
                 do_action('c767_listing_payment_confirmed', $listing_id);
             }
@@ -269,6 +273,10 @@ class C767_Stripe_Listing_Checkout
         if (($capture['status'] ?? '') === 'COMPLETED') {
             $was_paid = get_post_meta($listing_id, 'payment_status', true) === 'paid';
             update_post_meta($listing_id, 'payment_status', 'paid');
+            if ($listing->post_status === 'draft') {
+                wp_update_post(['ID' => $listing_id, 'post_status' => 'pending']);
+                do_action('c767_listing_submitted', $listing_id, $listing->post_author, 'Classified');
+            }
             if (!$was_paid) {
                 do_action('c767_listing_payment_confirmed', $listing_id);
             }

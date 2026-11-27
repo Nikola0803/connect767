@@ -26,6 +26,28 @@ class C767_Listing_Review
         add_filter('bulk_actions-edit-listing', [__CLASS__, 'add_bulk_approve_action']);
         add_filter('handle_bulk_actions-edit-listing', [__CLASS__, 'handle_bulk_approve'], 10, 3);
         add_action('admin_notices', [__CLASS__, 'show_approval_notice']);
+        add_filter('wp_insert_post_data', [__CLASS__, 'block_unpaid_classified_publication'], 20, 2);
+    }
+
+    private static function classified_payment_is_complete($post_id)
+    {
+        return get_post_meta($post_id, 'tier', true) !== 'Classified'
+            || get_post_meta($post_id, 'payment_status', true) === 'paid';
+    }
+
+    /** Prevent every WordPress publication path from exposing an unpaid Classified listing. */
+    public static function block_unpaid_classified_publication($data, $postarr)
+    {
+        $post_id = absint($postarr['ID'] ?? 0);
+        if (
+            $post_id
+            && ($data['post_type'] ?? '') === 'listing'
+            && ($data['post_status'] ?? '') === 'publish'
+            && !self::classified_payment_is_complete($post_id)
+        ) {
+            $data['post_status'] = 'draft';
+        }
+        return $data;
     }
 
     /**
@@ -39,6 +61,7 @@ class C767_Listing_Review
             !$post
             || $post->post_type !== 'listing'
             || $post->post_status !== 'pending'
+            || !self::classified_payment_is_complete($post->ID)
             || !self::can_approve_listings()
             || !current_user_can('edit_post', $post->ID)
         ) {
@@ -70,6 +93,7 @@ class C767_Listing_Review
             || $post->post_type !== 'listing'
             || !self::can_approve_listings()
             || !current_user_can('edit_post', $post_id)
+            || !self::classified_payment_is_complete($post_id)
         ) {
             wp_die(esc_html__('You are not allowed to approve this listing.', 'connect767-cms'));
         }
@@ -120,6 +144,7 @@ class C767_Listing_Review
                 !$post
                 || $post->post_type !== 'listing'
                 || $post->post_status !== 'pending'
+                || !self::classified_payment_is_complete($post_id)
                 || !current_user_can('edit_post', $post_id)
             ) {
                 continue;
@@ -191,7 +216,7 @@ class C767_Listing_Review
         $post = get_post($post_id);
 
         if ($post && $post->post_type === 'listing') {
-            if ($decision === 'approve') {
+            if ($decision === 'approve' && self::classified_payment_is_complete($post_id)) {
                 wp_update_post(['ID' => $post_id, 'post_status' => 'publish']);
                 do_action('c767_listing_approved', $post_id);
             } elseif ($decision === 'reject') {

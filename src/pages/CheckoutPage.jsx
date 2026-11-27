@@ -11,6 +11,7 @@ import {
   createCartPaypalOrder,
   captureCartPaypalOrder,
   createCartLocalDominicaOrder,
+  createCartQuoteRequest,
 } from "../data/repository";
 import { isLiveApi } from "../lib/config";
 import Button from "../components/ui/Button";
@@ -58,6 +59,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState(null);
   const [fallingBack, setFallingBack] = useState(false);
   const [placingLocalOrder, setPlacingLocalOrder] = useState(false);
+  const [requestingQuote, setRequestingQuote] = useState(false);
   const [useDifferentOrderContact, setUseDifferentOrderContact] = useState(false);
   const [orderContact, setOrderContact] = useState(emptyOrderContact);
   const [additionalDetails, setAdditionalDetails] = useState("");
@@ -206,6 +208,20 @@ export default function CheckoutPage() {
     }
   };
 
+  const requestQuote = async () => {
+    if (!requireShipping()) return;
+    setRequestingQuote(true);
+    setError(null);
+    try {
+      const result = await createCartQuoteRequest(items, email, shipping, orderContext);
+      clearCart();
+      navigate(`/checkout/thank-you?order=${result.orderId}&payment=quote`);
+    } catch (err) {
+      setError(err.message || "Couldn't submit this quote request.");
+      setRequestingQuote(false);
+    }
+  };
+
   if (items.length === 0) {
     return (
       <div className="pt-16 md:pt-20 min-h-[60vh] flex items-center justify-center px-4 text-center">
@@ -264,7 +280,7 @@ export default function CheckoutPage() {
         {hasReadyMadeDesigns && checkoutStep === "review" && readyMadeRoster.length > 0 && (
           <div className="mb-6 rounded-xl border border-primary-200 bg-primary-50 p-4 text-sm">
             <div className="flex items-center justify-between gap-3"><div><p className="font-bold text-primary-950">Team Roster Confirmed</p><p className="mt-1 text-xs text-primary-800">{readyMadeRoster.length} roster row{readyMadeRoster.length === 1 ? "" : "s"}{extrasStatus.supporterQuantity ? ` · ${extrasStatus.supporterQuantity} supporter jerseys` : ""}{extrasStatus.requiredSocks ? ` · ${extrasStatus.socksQuantity} socks` : ""} saved with this order.</p></div><Button type="button" variant="secondary" size="sm" onClick={() => setCheckoutStep("roster")}>Edit Roster</Button></div>
-            {readyMadeArtwork.length > 0 && <div className="mt-3 border-t border-primary-200 pt-3"><strong className="text-xs text-primary-950">Team Logos &amp; Sponsors · {readyMadeArtwork.length} file{readyMadeArtwork.length === 1 ? "" : "s"}</strong><ul className="mt-2 space-y-2 text-xs text-primary-900">{readyMadeArtwork.map((file) => <li key={file.id} className="break-words"><span className="font-semibold">{file.kind === "sponsor" ? "Sponsor" : "Team logo"}: {file.name}</span>{file.notes && <span className="mt-0.5 block text-primary-800">{file.notes}</span>}</li>)}</ul></div>}
+            {readyMadeArtwork.length > 0 && <div className="mt-3 border-t border-primary-200 pt-3"><strong className="text-xs text-primary-950">Team Logo, Sponsors or Other Files · {readyMadeArtwork.length} file{readyMadeArtwork.length === 1 ? "" : "s"}</strong><ul className="mt-2 space-y-2 text-xs text-primary-900">{readyMadeArtwork.map((file) => <li key={file.id} className="break-words"><span className="font-semibold">{file.kind === "team" ? "Team Logo" : file.kind === "sponsor" ? "Sponsor" : "Other File"}: {file.name}</span>{file.notes && <span className="mt-0.5 block text-primary-800">{file.notes}</span>}</li>)}</ul></div>}
           </div>
         )}
 
@@ -489,6 +505,19 @@ export default function CheckoutPage() {
                 <p className="mt-2 text-center text-xs text-foreground-500 font-label">Payment instructions will be emailed after checkout. The order remains on hold until local payment is confirmed.</p>
               </div>
             )}
+
+            <div className="my-4 flex items-center gap-3 text-xs text-foreground-500 font-label">
+              <span className="h-px flex-1 bg-background-200" />or<span className="h-px flex-1 bg-background-200" />
+            </div>
+            <div className="rounded-xl border border-primary-200 bg-primary-50/50 p-4">
+              <div className="mb-3 flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-lg text-primary-700"><i className="ri-file-list-3-line" aria-hidden="true" /></span>
+                <span><strong className="block text-sm text-primary-950">Need approval before paying?</strong><span className="mt-0.5 block text-xs leading-relaxed text-foreground-600">Submit the complete order details for a formal quote. Payment and production will not begin yet.</span></span>
+              </div>
+              <Button type="button" variant="secondary" size="lg" className="w-full" onClick={requestQuote} disabled={!isLiveApi || requestingQuote || !shippingComplete}>
+                {requestingQuote ? "Submitting Quote Request…" : "Request Quote"}
+              </Button>
+            </div>
 
             {!config?.stripeEnabled && !config?.paypalEnabled && (
               <>

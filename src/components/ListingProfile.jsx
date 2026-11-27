@@ -977,6 +977,19 @@ export default function ListingProfile({ data, isPreview = false }) {
                     location always shows a map. */}
                 {(data.mapEmbedUrl || mapCoords || data.location) && (
                   <div className="rounded-2xl border border-background-200/70 overflow-hidden">
+                    {data.location && (
+                      <a
+                        aria-label={`Open ${data.location} in maps`}
+                        className="flex items-center gap-2 border-b border-background-200 bg-background-50 px-4 py-3 text-sm font-semibold text-primary-800 transition-colors hover:bg-primary-50 hover:text-primary-950"
+                        href={listingLocationMapUrl(data.location)}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        <i className="ri-map-pin-line text-base" aria-hidden="true" />
+                        <span className="min-w-0 flex-1 truncate">{data.location}</span>
+                        <i className="ri-arrow-right-up-line text-foreground-400" aria-hidden="true" />
+                      </a>
+                    )}
                     {data.mapEmbedUrl || !mapCoords ? (
                       <div className="h-56 w-full">
                         <iframe

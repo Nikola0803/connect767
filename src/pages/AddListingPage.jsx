@@ -91,14 +91,52 @@ export function listingLocationParts(value) {
 
 export const hasCompleteListingLocation = (value) => Boolean(listingLocationParts(value));
 
+export function listingLocationFields(value) {
+  const parts = String(value || "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length < 2) return { area: parts[0] || "", country: "" };
+  return {
+    area: parts.slice(0, -1).join(", "),
+    country: parts[parts.length - 1],
+  };
+}
+
+export function listingLocationValue(area, country) {
+  return [String(area || "").trim(), String(country || "").trim()].filter(Boolean).join(", ");
+}
+
+function normalizeListingLocationFields(form) {
+  const fields = listingLocationFormFields(form);
+  const area = String(fields.area || "").trim();
+  const country = String(fields.country || "").trim();
+  return {
+    ...form,
+    locationArea: area,
+    locationCountry: country,
+    location: listingLocationValue(area, country),
+  };
+}
+
+function listingLocationFormFields(form) {
+  const saved = listingLocationFields(form.location);
+  return {
+    area: Object.prototype.hasOwnProperty.call(form, "locationArea") ? form.locationArea : saved.area,
+    country: Object.prototype.hasOwnProperty.call(form, "locationCountry") ? form.locationCountry : saved.country,
+  };
+}
+
 export function missingBusinessRequiredFieldIds(form) {
+  const locationFields = listingLocationFormFields(form);
   return [
     !String(form.businessName || "").trim() && "businessName",
     !findIndustry(form.category) && "category",
     !form.priceTier && "priceTier",
     !hasValidRequiredYears(form.yearsExperience) && "yearsExperience",
     !String(form.description || "").trim() && "description",
-    !hasCompleteListingLocation(form.location) && "location",
+    !String(locationFields.area || "").trim() && "locationArea",
+    !String(locationFields.country || "").trim() && "locationCountry",
   ].filter(Boolean);
 }
 const hasValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
@@ -144,6 +182,8 @@ const initialForm = {
   description: "",
   tags: "",
   location: "",
+  locationArea: "",
+  locationCountry: "",
   education: "",
   degreeType: "",
   experienceLevel: "",
@@ -200,6 +240,8 @@ const demoForm = {
   tags: "farm-to-table, organic, local produce",
   amenities: "Delivery, Pickup",
   location: "Roseau, Saint George Parish, Dominica",
+  locationArea: "Roseau, Saint George Parish",
+  locationCountry: "Dominica",
   education: "Professional Certificate",
   degreeType: "Food Safety & Hospitality",
   yearsExperience: "25",
@@ -464,14 +506,14 @@ export default function AddListingPage() {
   const [step, setStep] = useState(previewStep >= 1 && previewStep <= 4 ? previewStep : 1);
   const [form, setForm] = useState(() => {
     const savedDraft = isOnboarding ? getListingOnboardingDraft() : null;
-    return {
+    return normalizeListingLocationFields({
       ...(previewStep ? demoForm : initialForm),
       ...(savedDraft || {}),
       tier:
         requestedTier === "free" || requestedTier === "classified"
           ? requestedTier
           : savedDraft?.tier || (previewStep ? demoForm.tier : initialForm.tier),
-    };
+    });
   });
   const [account, setAccount] = useState(() => ({
     name: previewStep ? "James Local Fruits" : "",
@@ -532,6 +574,7 @@ export default function AddListingPage() {
         const savedIndustry = savedIndustrySelection(data, ownedListings || []);
         const existingTier = data.badge === "Classified" ? "classified" : "free";
         setSavedTier(existingTier);
+        const savedLocation = listingLocationFields(data.location);
         setForm((f) => ({
           ...f,
           tier: existingTier,
@@ -542,6 +585,8 @@ export default function AddListingPage() {
           tags: (data.tags || []).join(", "),
           amenities: (data.amenities || []).join(", "),
           location: data.location || "",
+          locationArea: savedLocation.area,
+          locationCountry: savedLocation.country,
           education: data.education || "",
           degreeType: data.degreeType || "",
           experienceLevel: data.experienceLevel || "",
@@ -753,6 +798,18 @@ export default function AddListingPage() {
     setForm((f) => ({ ...f, [field]: e.target.value }));
   };
 
+  const updateListingLocation = (field) => (event) => {
+    noteListingStarted();
+    const value = event.target.value;
+    setForm((current) => {
+      const next = { ...current, [field]: value };
+      return {
+        ...next,
+        location: listingLocationValue(next.locationArea, next.locationCountry),
+      };
+    });
+  };
+
   const handleLogoPhotoChange = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -902,7 +959,9 @@ export default function AddListingPage() {
   const planIsMissing = showAccountRequiredErrors && !form.tier;
   const contactEmailIsInvalid = requiredAttentionStep === 3 && !hasValidEmail(form.email);
   const industryIsMissing = !findIndustry(form.category);
-  const locationIsIncomplete = !hasCompleteListingLocation(form.location);
+  const locationFields = listingLocationFormFields(form);
+  const locationAreaIsIncomplete = !String(locationFields.area || "").trim();
+  const locationCountryIsIncomplete = !String(locationFields.country || "").trim();
 
   if (isEditing && loadingExisting) {
     return <Spinner className="pt-16 md:pt-20 min-h-[60vh]" />;
@@ -1255,19 +1314,35 @@ export default function AddListingPage() {
                   />
                 </FormField>
                 <FormField
-                  label="Location"
-                  htmlFor="location"
+                  label="Country"
+                  htmlFor="locationCountry"
                   required
-                  hint="Required: City/State/Parish and Country"
-                  error={showBusinessRequiredErrors && locationIsIncomplete ? "Enter a city/state/parish and country." : ""}
+                  error={showBusinessRequiredErrors && locationCountryIsIncomplete ? "Enter a country." : ""}
                 >
                   <Input
-                    id="location"
-                    placeholder="e.g. Roseau, Dominica"
-                    value={form.location}
-                    onChange={update("location")}
-                    error={showBusinessRequiredErrors && locationIsIncomplete}
-                    aria-invalid={showBusinessRequiredErrors && locationIsIncomplete}
+                    id="locationCountry"
+                    placeholder="e.g. Dominica"
+                    value={form.locationCountry}
+                    onChange={updateListingLocation("locationCountry")}
+                    error={showBusinessRequiredErrors && locationCountryIsIncomplete}
+                    aria-invalid={showBusinessRequiredErrors && locationCountryIsIncomplete}
+                    required
+                  />
+                </FormField>
+                <FormField
+                  label="City, Parish or State"
+                  htmlFor="locationArea"
+                  required
+                  hint="Enter the city, parish or state that should appear on the listing and map."
+                  error={showBusinessRequiredErrors && locationAreaIsIncomplete ? "Enter a city, parish or state." : ""}
+                >
+                  <Input
+                    id="locationArea"
+                    placeholder="e.g. Roseau"
+                    value={form.locationArea}
+                    onChange={updateListingLocation("locationArea")}
+                    error={showBusinessRequiredErrors && locationAreaIsIncomplete}
+                    aria-invalid={showBusinessRequiredErrors && locationAreaIsIncomplete}
                     required
                   />
                 </FormField>

@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   contactEmailForNextStep,
   hasCompleteListingLocation,
+  listingLocationFields,
   listingLocationParts,
+  listingLocationValue,
   missingBusinessRequiredFieldIds,
   savedBookingSelection,
   savedIndustrySelection,
@@ -55,7 +57,8 @@ describe("missingBusinessRequiredFieldIds", () => {
       "priceTier",
       "yearsExperience",
       "description",
-      "location",
+      "locationArea",
+      "locationCountry",
     ]);
   });
 
@@ -72,7 +75,7 @@ describe("missingBusinessRequiredFieldIds", () => {
     ).toEqual([]);
   });
 
-  it("rejects a country-only or city-and-country location", () => {
+  it("rejects a country-only location and accepts an area with country", () => {
     const required = {
       businessName: "Island Accounting",
       category: "accounting-and-bookkeeping",
@@ -81,8 +84,24 @@ describe("missingBusinessRequiredFieldIds", () => {
       description: "Accounting services",
     };
 
-    expect(missingBusinessRequiredFieldIds({ ...required, location: "United States" })).toContain("location");
+    expect(missingBusinessRequiredFieldIds({ ...required, location: "United States" })).toContain("locationCountry");
     expect(missingBusinessRequiredFieldIds({ ...required, location: "Roseau, Dominica" })).not.toContain("location");
+  });
+
+  it("requires both structured location fields when the new form is used", () => {
+    const required = {
+      businessName: "Island Accounting",
+      category: "accounting-and-bookkeeping",
+      priceTier: "$$",
+      yearsExperience: "7",
+      description: "Accounting services",
+      location: "Dominica",
+      locationArea: "",
+      locationCountry: "Dominica",
+    };
+
+    expect(missingBusinessRequiredFieldIds(required)).toContain("locationArea");
+    expect(missingBusinessRequiredFieldIds({ ...required, locationArea: "Roseau" })).toEqual([]);
   });
 });
 
@@ -99,6 +118,16 @@ describe("listing location validation", () => {
       region: "Harris County, Texas",
       country: "United States",
     });
+  });
+
+  it("splits legacy locations into the two form fields and recombines them for storage", () => {
+    expect(listingLocationFields("Roseau, Saint George Parish, Dominica")).toEqual({
+      area: "Roseau, Saint George Parish",
+      country: "Dominica",
+    });
+    expect(listingLocationValue("Roseau, Saint George Parish", "Dominica")).toBe(
+      "Roseau, Saint George Parish, Dominica",
+    );
   });
 });
 

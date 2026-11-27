@@ -1,6 +1,6 @@
 export const ARTWORK_MAX_FILES = 10;
 export const ARTWORK_MAX_FILE_BYTES = 2 * 1024 * 1024;
-export const ARTWORK_MAX_TOTAL_BYTES = 3 * 1024 * 1024;
+export const ARTWORK_MAX_TOTAL_BYTES = 10 * 1024 * 1024;
 export const ARTWORK_TYPES = ["image/png", "image/jpeg", "image/webp", "application/pdf"];
 
 export function artworkType(file) {
@@ -9,10 +9,10 @@ export function artworkType(file) {
 }
 
 export function readyMadeArtworkIssue(files = [], items) {
-  if (!Array.isArray(files) || files.length > ARTWORK_MAX_FILES) return "Attach up to 10 team and sponsor files.";
+  if (!Array.isArray(files) || files.length > ARTWORK_MAX_FILES) return "Attach up to 10 files.";
   if (files.some((file) => !ARTWORK_TYPES.includes(artworkType(file)))) return "Choose PNG, JPG, WebP or PDF files.";
   if (files.some((file) => !Number.isFinite(file.size) || file.size <= 0 || file.size > ARTWORK_MAX_FILE_BYTES)) return "Each file must be non-empty and no larger than 2 MB.";
-  if (files.reduce((sum, file) => sum + file.size, 0) > ARTWORK_MAX_TOTAL_BYTES) return "Keep the combined team and sponsor files under 3 MB.";
+  if (files.reduce((sum, file) => sum + file.size, 0) > ARTWORK_MAX_TOTAL_BYTES) return "Keep all attachments at or below 10 MB combined.";
   if (items && files.some((file) => file.productSlug && !items.some((item) => item.slug === file.productSlug))) return "Choose a current design for each attached file, or select All designs.";
   return "";
 }
