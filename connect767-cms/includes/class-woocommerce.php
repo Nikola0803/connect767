@@ -278,6 +278,12 @@ class C767_WooCommerce
             'permission_callback' => '__return_true',
         ]);
 
+        register_rest_route(self::NAMESPACE_, '/checkout/quote', [
+            'methods' => 'POST',
+            'callback' => [__CLASS__, 'quote_request_checkout'],
+            'permission_callback' => '__return_true',
+        ]);
+
         register_rest_route(self::NAMESPACE_, '/shop/products', [
             'methods' => 'GET',
             'callback' => [__CLASS__, 'list_products'],
@@ -1374,6 +1380,53 @@ class C767_WooCommerce
         $order->set_payment_method_title('Pay Locally in Dominica');
         $order->set_customer_note($instructions);
         $order->update_meta_data('_c767_local_dominica_payment', 'yes');
+        $order->save();
+        $order->update_status('on-hold', $instructions, true);
+
+        do_action('c767_checkout_order_created', $order);
+
+        return rest_ensure_response([
+            'orderId' => $order->get_id(),
+            'status' => $order->get_status(),
+            'subtotal' => (float) $order->get_subtotal(),
+            'tax' => (float) $order->get_total_tax(),
+            'shipping' => (float) $order->get_shipping_total(),
+            'total' => (float) $order->get_total(),
+            'currency' => $order->get_currency(),
+            'instructions' => $instructions,
+        ]);
+    }
+
+    /** Save a complete Shop or Ready-Made checkout as an unpaid quote request. */
+    public static function quote_request_checkout(WP_REST_Request $request)
+    {
+        $limited = C767_Stripe_Checkout::check_public_rate_limit('shop-quote-request', 10, 600);
+        if (is_wp_error($limited)) {
+            return $limited;
+        }
+
+        $order = self::build_pending_order(
+            (array) $request->get_param('items'),
+            $request->get_param('email'),
+            (array) $request->get_param('shipping'),
+            false,
+            [
+                'readyMadeArtwork' => $request->get_param('readyMadeArtwork') ?? [],
+                'readyMadeRoster' => (array) $request->get_param('readyMadeRoster'),
+                'readyMadeExtras' => (array) $request->get_param('readyMadeExtras'),
+                'readyMadeOrderContact' => (array) $request->get_param('readyMadeOrderContact'),
+                'readyMadeAdditionalDetails' => sanitize_textarea_field((string) $request->get_param('readyMadeAdditionalDetails')),
+            ]
+        );
+        if (is_wp_error($order)) {
+            return $order;
+        }
+
+        $instructions = 'The customer requested a quote. Review the order details and contact the customer before requesting payment or starting production.';
+        $order->set_payment_method('c767_quote_request');
+        $order->set_payment_method_title('Quote Requested');
+        $order->set_customer_note($instructions);
+        $order->update_meta_data('_c767_quote_request', 'yes');
         $order->save();
         $order->update_status('on-hold', $instructions, true);
 

@@ -13,6 +13,7 @@ import {
   confirmVendorOrder,
   createCartPaypalOrder,
   createCartLocalDominicaOrder,
+  createCartQuoteRequest,
   createPaymentIntent,
   createUniformPaymentIntent,
   createUniformPaypalOrder,
@@ -54,7 +55,7 @@ describe("shop checkout payloads", () => {
     );
   });
 
-  it.each([["Stripe", createPaymentIntent], ["PayPal", createCartPaypalOrder], ["hosted checkout", checkout], ["local payment", createCartLocalDominicaOrder]])("keeps team and sponsor files in %s order requests", async (_name, createOrder) => {
+  it.each([["Stripe", createPaymentIntent], ["PayPal", createCartPaypalOrder], ["hosted checkout", checkout], ["local payment", createCartLocalDominicaOrder], ["quote request", createCartQuoteRequest]])("keeps attachments in %s order requests", async (_name, createOrder) => {
     const readyMadeArtwork = [
       { name: "crest.png", kind: "team", src: "data:image/png;base64,AA==", notes: "Left chest" },
       { name: "sponsor.pdf", kind: "sponsor", src: "data:application/pdf;base64,AA==", notes: "Upper back" },
@@ -95,6 +96,23 @@ describe("shop checkout payloads", () => {
       items: [{ slug: items[0].slug, qty: 2, variationId: 1280 }],
       email: "buyer@example.com",
       shipping: dominicaShipping,
+    });
+  });
+
+  it("creates a quote request with the same complete checkout context", async () => {
+    const orderContext = {
+      readyMadeRoster: [{ productKey: "home", name: "Team", quantity: 2 }],
+      readyMadeAdditionalDetails: "Please confirm the delivery date.",
+    };
+
+    await createCartQuoteRequest(items, "buyer@example.com", shipping, orderContext);
+
+    expect(fetch.mock.calls[0][0]).toContain("/checkout/quote");
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({
+      items: [{ slug: items[0].slug, qty: 2, variationId: 1280 }],
+      email: "buyer@example.com",
+      shipping,
+      ...orderContext,
     });
   });
 

@@ -32,6 +32,7 @@ $checks = 0;
 function check($condition, $message) { global $checks; if (!$condition) throw new RuntimeException($message); $checks++; }
 $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aOioAAAAASUVORK5CYII=');
 $team = ['name' => 'crest.png', 'kind' => 'team', 'src' => 'data:image/png;base64,' . base64_encode($png), 'size' => 1, 'productSlug' => 'home-kit', 'productTitle' => 'Forged title', 'notes' => '<b>Left chest</b>'];
+$other = ['name' => 'instructions.pdf', 'kind' => 'other', 'src' => 'data:application/pdf;base64,' . base64_encode('%PDF-1.4 instructions'), 'notes' => 'Production reference'];
 $sponsor = ['name' => 'sponsor.pdf', 'kind' => 'sponsor', 'src' => 'data:application/pdf;base64,' . base64_encode('%PDF-1.4 sponsor artwork'), 'notes' => 'Upper back'];
 $designs = ['home-kit' => 'Home Kit'];
 $files = C767_Ready_Made_Artwork::validate([$team, $sponsor], $designs);
@@ -52,9 +53,13 @@ foreach ([
     $result = C767_Ready_Made_Artwork::validate($case[0], $case[1]);
     check($result instanceof WP_Error && $result->code === $case[2], 'Invalid artwork accepted: ' . $case[2]);
 }
-$large = array_merge($sponsor, ['src' => 'data:application/pdf;base64,' . base64_encode('%PDF-' . str_repeat('x', 1600000))]);
+$large = array_merge($sponsor, ['src' => 'data:application/pdf;base64,' . base64_encode('%PDF-' . str_repeat('x', 1900000))]);
 $result = C767_Ready_Made_Artwork::validate([$large, $large], $designs);
-check($result instanceof WP_Error && $result->code === 'c767_artwork_size', 'Combined size limit bypassed.');
+check(!($result instanceof WP_Error), 'Valid combined attachment size was rejected.');
+$result = C767_Ready_Made_Artwork::validate([$large, $large, $large, $large, $large, $large], $designs);
+check($result instanceof WP_Error && $result->code === 'c767_artwork_size', 'Combined attachment size limit was bypassed.');
+$result = C767_Ready_Made_Artwork::validate([$other], $designs);
+check(!($result instanceof WP_Error) && $result[0]['kind'] === 'other', 'Other attachment type was rejected.');
 $order = new WC_Order(); $GLOBALS['test_order'] = $order;
 C767_Ready_Made_Artwork::store($order, $files);
 $saved = json_decode($order->meta[C767_Ready_Made_Artwork::META_KEY], true);

@@ -394,6 +394,15 @@ export async function createCartLocalDominicaOrder(items, email, shipping, order
   });
 }
 
+export async function createCartQuoteRequest(items, email, shipping, orderContext = {}) {
+  return customClient.post("/checkout/quote", {
+    items: items.map((item) => ({ slug: item.slug, qty: item.qty, variationId: item.variationId })),
+    email,
+    shipping,
+    ...orderContext,
+  });
+}
+
 // ---------- Directory (WordPress `listing` CPT) ----------
 
 export async function getListings({ search = "" } = {}) {

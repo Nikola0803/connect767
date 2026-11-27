@@ -6,7 +6,7 @@ class C767_Ready_Made_Artwork
 {
     const META_KEY = '_c767_ready_made_artwork';
     const MAX_FILES = 10;
-    const MAX_TOTAL_BYTES = 3145728;
+    const MAX_TOTAL_BYTES = 10485760;
 
     public static function init()
     {
@@ -17,7 +17,7 @@ class C767_Ready_Made_Artwork
     public static function validate($files, array $designs)
     {
         if (!is_array($files) || count($files) > self::MAX_FILES) {
-            return new WP_Error('c767_artwork_count', 'Attach up to 10 team and sponsor files.', ['status' => 400]);
+            return new WP_Error('c767_artwork_count', 'Attach up to 10 files.', ['status' => 400]);
         }
         if ($files && !$designs) return new WP_Error('c767_artwork_order', 'Artwork must accompany a ready-made uniform order.', ['status' => 400]);
         $clean = [];
@@ -27,9 +27,9 @@ class C767_Ready_Made_Artwork
             $file = C767_REST_Uniform_Quotes::sanitize_collar_attachment($row);
             if (!$file) return new WP_Error('c767_artwork_file', 'Upload valid PNG, JPG, WebP or PDF artwork, up to 2 MB per file.', ['status' => 400]);
             $total += $file['size'];
-            if ($total > self::MAX_TOTAL_BYTES) return new WP_Error('c767_artwork_size', 'Keep the combined team and sponsor files under 3 MB.', ['status' => 400]);
+            if ($total > self::MAX_TOTAL_BYTES) return new WP_Error('c767_artwork_size', 'Keep all attachments at or below 10 MB combined.', ['status' => 400]);
             $kind = (string) ($row['kind'] ?? 'team');
-            if (!in_array($kind, ['team', 'sponsor'], true)) return new WP_Error('c767_artwork_kind', 'Choose Team logo or Sponsor file for each attachment.', ['status' => 400]);
+            if (!in_array($kind, ['team', 'sponsor', 'other'], true)) return new WP_Error('c767_artwork_kind', 'Choose Team Logo, Sponsor or Other File for each attachment.', ['status' => 400]);
             $slug = sanitize_title((string) ($row['productSlug'] ?? ''));
             if ($slug !== '' && !isset($designs[$slug])) return new WP_Error('c767_artwork_design', 'An artwork file refers to a design that is not in this order.', ['status' => 400]);
             $clean[] = array_merge($file, [
@@ -46,13 +46,14 @@ class C767_Ready_Made_Artwork
     {
         if (!$files) return;
         $order->update_meta_data(self::META_KEY, wp_json_encode($files));
-        $order->update_meta_data('Team Logos & Sponsors', count($files) . ' artwork file(s) attached');
+        $order->update_meta_data('Team Logo, Sponsors or Other Files', count($files) . ' file(s) attached');
         $lines = array_map(function ($file) {
-            return ($file['kind'] === 'sponsor' ? 'Sponsor file' : 'Team logo') . ': ' . $file['name']
+            $label = $file['kind'] === 'team' ? 'Team Logo' : ($file['kind'] === 'sponsor' ? 'Sponsor' : 'Other File');
+            return $label . ': ' . $file['name']
                 . ' — ' . ($file['productTitle'] ?: 'All designs')
                 . ($file['notes'] !== '' ? ' — ' . $file['notes'] : '');
         }, $files);
-        $order->add_order_note("Team Logos & Sponsors:\n" . implode("\n", $lines), false);
+        $order->add_order_note("Team Logo, Sponsors or Other Files:\n" . implode("\n", $lines), false);
     }
 
     private static function files($order)
@@ -67,10 +68,12 @@ class C767_Ready_Made_Artwork
         if (!current_user_can('edit_shop_orders') && !current_user_can('manage_woocommerce')) return;
         $files = self::files($order);
         if (!$files) return;
-        echo '<div style="clear:both;margin-top:20px"><h3>Team Logos &amp; Sponsors</h3><ul>';
+        echo '<div style="clear:both;margin-top:20px"><h3>Team Logo, Sponsors or Other Files</h3><ul>';
         foreach ($files as $index => $file) {
             $url = wp_nonce_url(add_query_arg(['action' => 'c767_ready_made_artwork', 'order_id' => $order->get_id(), 'file' => $index], admin_url('admin-post.php')), 'c767_ready_made_artwork_' . $order->get_id());
-            echo '<li style="margin-bottom:12px"><strong>' . esc_html(($file['kind'] ?? '') === 'sponsor' ? 'Sponsor file' : 'Team logo') . '</strong>: <a href="' . esc_url($url) . '">' . esc_html($file['name'] ?? 'Artwork') . '</a>';
+            $kind = (string) ($file['kind'] ?? 'other');
+            $label = $kind === 'team' ? 'Team Logo' : ($kind === 'sponsor' ? 'Sponsor' : 'Other File');
+            echo '<li style="margin-bottom:12px"><strong>' . esc_html($label) . '</strong>: <a href="' . esc_url($url) . '">' . esc_html($file['name'] ?? 'Attachment') . '</a>';
             echo '<br><small>' . esc_html(($file['productTitle'] ?? '') ?: 'All designs') . '</small>';
             if (!empty($file['notes'])) echo '<br>' . nl2br(esc_html($file['notes']));
             echo '</li>';

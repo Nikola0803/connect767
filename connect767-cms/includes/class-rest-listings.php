@@ -416,6 +416,11 @@ class C767_REST_Listings
             'payment_status',
             $wants_classified ? ($already_paid ? 'paid' : 'unpaid') : 'n/a'
         );
+        if ($wants_classified && !$already_paid && $post->post_status !== 'draft') {
+            wp_update_post(['ID' => $post_id, 'post_status' => 'draft']);
+        } elseif (!$wants_classified && $post->post_status === 'draft') {
+            wp_update_post(['ID' => $post_id, 'post_status' => 'pending']);
+        }
 
         return rest_ensure_response([
             'id' => $post_id,
@@ -886,21 +891,23 @@ class C767_REST_Listings
                 return $part !== '';
             }
         ));
-        if (count($location_parts) < 3) {
+        if (count($location_parts) < 2) {
             return new WP_Error(
                 'c767_incomplete_location',
-                'Enter a city, county/state/parish, and country.',
+                'Enter a city, state or parish and a country.',
                 ['status' => 400]
             );
         }
         $location_city = $location_parts[0];
         $location_country = $location_parts[count($location_parts) - 1];
-        $location_region = implode(', ', array_slice($location_parts, 1, -1));
-        foreach ([$location_city, $location_region, $location_country] as $location_part) {
+        $location_region = count($location_parts) > 2
+            ? implode(', ', array_slice($location_parts, 1, -1))
+            : $location_city;
+        foreach ([$location_city, $location_country] as $location_part) {
             if (mb_strlen($location_part) < 2 || !preg_match('/[\p{L}]/u', $location_part)) {
                 return new WP_Error(
                     'c767_incomplete_location',
-                    'Enter a valid city, county/state/parish, and country.',
+                    'Enter a valid city, state or parish and a country.',
                     ['status' => 400]
                 );
             }
@@ -932,9 +939,11 @@ class C767_REST_Listings
         $location = $required['location'];
         $years_experience = $required['years_experience'];
 
+        $tier = $request->get_param('tier') === 'classified' ? 'Classified' : 'Free';
+        $post_status = $tier === 'Classified' ? 'draft' : 'pending';
         $post_id = wp_insert_post([
             'post_type' => 'listing',
-            'post_status' => 'pending',
+            'post_status' => $post_status,
             'post_title' => $business_name,
             'post_content' => $required['description'],
             'post_author' => $user->ID,
@@ -950,7 +959,6 @@ class C767_REST_Listings
             return $category_result;
         }
 
-        $tier = $request->get_param('tier') === 'classified' ? 'Classified' : 'Free';
         $meta = [
             'tier' => $tier,
             // Classified used to be recorded as a fully-formed paid tier
@@ -1014,12 +1022,16 @@ class C767_REST_Listings
         }
         self::sync_user_profile_photo($post_id, $user->ID);
 
-        do_action('c767_listing_submitted', $post_id, $user->ID, $tier);
+        if ($tier !== 'Classified') {
+            do_action('c767_listing_submitted', $post_id, $user->ID, $tier);
+        }
 
         return rest_ensure_response([
             'id' => $post_id,
-            'status' => 'pending',
-            'message' => 'Your listing was submitted and is awaiting review.',
+            'status' => $post_status,
+            'message' => $tier === 'Classified'
+                ? 'Your Classified listing is saved as a private draft until payment is verified.'
+                : 'Your listing was submitted and is awaiting review.',
         ]);
     }
 
