@@ -63,6 +63,20 @@ class C767_Ready_Made_Artwork
         return is_array($files) ? array_values($files) : [];
     }
 
+    /** Return only email-safe attachment metadata; never expose stored file bytes or data URLs. */
+    public static function order_file_summaries($order)
+    {
+        return array_map(function ($file) {
+            $kind = (string) ($file['kind'] ?? 'other');
+            return [
+                'name' => sanitize_file_name((string) ($file['name'] ?? 'Attachment')),
+                'kind' => in_array($kind, ['team', 'sponsor', 'other'], true) ? $kind : 'other',
+                'productTitle' => sanitize_text_field((string) ($file['productTitle'] ?? '')),
+                'notes' => mb_substr(sanitize_textarea_field((string) ($file['notes'] ?? '')), 0, 500),
+            ];
+        }, self::files($order));
+    }
+
     public static function render_order_files($order)
     {
         if (!current_user_can('edit_shop_orders') && !current_user_can('manage_woocommerce')) return;

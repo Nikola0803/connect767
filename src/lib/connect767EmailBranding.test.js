@@ -41,4 +41,24 @@ describe("Connect767 email branding", () => {
       ).toContain("C767_Notifications::send_branded_mail");
     }
   });
+
+  it("sends quote requests through a dedicated protected-file confirmation email", () => {
+    const commerce = fs.readFileSync(
+      path.join(cmsRoot, "includes/class-woocommerce.php"),
+      "utf8",
+    );
+    const artwork = fs.readFileSync(
+      path.join(cmsRoot, "includes/class-ready-made-artwork.php"),
+      "utf8",
+    );
+
+    expect(commerce).toContain("woocommerce_email_enabled_customer_on_hold_order");
+    expect(commerce).toContain("Quote requested &mdash; no payment taken");
+    expect(commerce).toContain("Files included with your request");
+    expect(commerce).toContain("View quote request");
+    expect(commerce).toContain("send_quote_request_confirmation");
+    expect(commerce).toContain("_c767_quote_email_sent");
+    expect(artwork).toContain("order_file_summaries");
+    expect(artwork).toContain("never expose stored file bytes or data URLs");
+  });
 });
