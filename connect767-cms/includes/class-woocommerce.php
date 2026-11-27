@@ -66,6 +66,8 @@ class C767_WooCommerce
         add_action('before_delete_post', [__CLASS__, 'invalidate_deleted_product']);
         C767_Ready_Made_Artwork::init();
 
+        add_filter('woocommerce_email_enabled_customer_on_hold_order', [__CLASS__, 'disable_standard_quote_on_hold_email'], 20, 2);
+
         add_action('rest_api_init', [__CLASS__, 'register_routes']);
     }
 
@@ -119,6 +121,146 @@ class C767_WooCommerce
         ];
         $category = sanitize_key((string) $category);
         return $minimums[$category] ?? 1;
+    }
+
+    /** Quote requests use a dedicated confirmation instead of WooCommerce's payment-on-hold wording. */
+    public static function disable_standard_quote_on_hold_email($enabled, $order)
+    {
+        return $order instanceof WC_Order && $order->get_meta('_c767_quote_request') === 'yes'
+            ? false
+            : $enabled;
+    }
+
+    private static function quote_request_reference(WC_Order $order)
+    {
+        return 'C767-Q-' . $order->get_order_number();
+    }
+
+    private static function quote_request_location(WC_Order $order)
+    {
+        $country_code = (string) $order->get_shipping_country();
+        $countries = function_exists('WC') && WC()->countries ? WC()->countries->get_countries() : [];
+        $parts = array_filter([
+            $order->get_shipping_city(),
+            $order->get_shipping_state(),
+            $countries[$country_code] ?? $country_code,
+        ]);
+        return implode(', ', array_unique($parts));
+    }
+
+    private static function quote_request_email_html(WC_Order $order)
+    {
+        $items = [];
+        $ready_made_quantity = 0;
+        foreach ($order->get_items('line_item') as $item) {
+            $quantity = max(1, (int) $item->get_quantity());
+            $items[] = esc_html($item->get_name()) . ' &times; ' . $quantity;
+            $product = $item->get_product();
+            if (self::is_ready_made_product($product)) {
+                $ready_made_quantity += $quantity;
+            }
+        }
+
+        $extras = json_decode((string) $order->get_meta('_c767_ready_made_extras'), true);
+        $extras = is_array($extras) ? $extras : [];
+        $files = C767_Ready_Made_Artwork::order_file_summaries($order);
+        $collar = json_decode((string) $order->get_meta('_c767_ready_made_collar_attachment'), true);
+        if (is_array($collar) && !empty($collar['name'])) {
+            $files[] = [
+                'name' => sanitize_file_name((string) $collar['name']),
+                'kind' => 'collar',
+                'productTitle' => '',
+                'notes' => 'Inside-collar logo or message artwork.',
+            ];
+        }
+
+        $summary_rows = [
+            ['Request number', self::quote_request_reference($order)],
+            ['Items', implode('<br>', $items)],
+        ];
+        if ($ready_made_quantity > 0) {
+            $summary_rows[] = ['Full uniforms', $ready_made_quantity . ' kit' . ($ready_made_quantity === 1 ? '' : 's')];
+        }
+        if (!empty($extras['supporter_quantity'])) {
+            $quantity = (int) $extras['supporter_quantity'];
+            $summary_rows[] = ['Supporter jerseys', $quantity . ' shirt' . ($quantity === 1 ? '' : 's')];
+        }
+        $fit_type = (string) $order->get_meta('Ready-Made Fit Type');
+        if ($fit_type !== '') {
+            $summary_rows[] = ['Fit type', esc_html($fit_type)];
+        }
+        $location = self::quote_request_location($order);
+        if ($location !== '') {
+            $summary_rows[] = ['Delivery', esc_html($location)];
+        }
+
+        $summary_html = '<table role="presentation" style="width:100%;margin:12px 0 0;border-collapse:collapse;border:1px solid #e7e1d7;font-size:14px;">';
+        foreach ($summary_rows as $row) {
+            $summary_html .= '<tr><td style="padding:11px 13px;border-bottom:1px solid #ece6dc;color:#68716c;vertical-align:top;">' . esc_html($row[0]) . '</td>'
+                . '<td style="padding:11px 13px;border-bottom:1px solid #ece6dc;font-weight:700;text-align:right;vertical-align:top;">' . wp_kses_post($row[1]) . '</td></tr>';
+        }
+        $summary_html .= '</table>';
+
+        $files_html = '';
+        if ($files) {
+            $files_html = '<h2 style="margin:26px 0 10px;color:#006a46;font-family:Arial,sans-serif;font-size:12px;letter-spacing:.13em;text-transform:uppercase;">Files included with your request &middot; ' . count($files) . '</h2>';
+            foreach ($files as $file) {
+                $kind = (string) ($file['kind'] ?? 'other');
+                $label = $kind === 'team' ? 'Team Logo' : ($kind === 'sponsor' ? 'Sponsor' : ($kind === 'collar' ? 'Inside-Collar File' : 'Other File'));
+                $detail = (string) ($file['notes'] ?? '');
+                if (!empty($file['productTitle'])) {
+                    $detail = (string) $file['productTitle'] . ($detail !== '' ? ' &middot; ' . $detail : '');
+                }
+                $files_html .= '<div style="margin:0 0 9px;padding:13px 14px;border:1px solid #e4ded2;border-radius:12px;background:#ffffff;">'
+                    . '<strong style="display:block;color:#172019;font-size:14px;">' . esc_html($file['name']) . '</strong>'
+                    . '<span style="display:block;margin-top:3px;color:#68716c;font-size:12px;line-height:1.45;">' . esc_html($label) . ($detail !== '' ? ' &middot; ' . wp_kses_post($detail) : '') . '</span></div>';
+            }
+            $files_html .= '<p style="margin:11px 0 0;color:#68716c;font-size:12px;line-height:1.55;">For security, uploaded files are not attached directly to this email. They remain protected in Connect767 and are available only to authorized staff reviewing your request.</p>';
+        }
+
+        return '<p style="margin:0 0 16px;">Thanks &mdash; your uniform quote request has been received. Our team will review the order details and the files you supplied, then contact you with pricing and the next steps.</p>'
+            . '<div style="margin:20px 0;padding:16px 18px;border:1px solid #b8dfcd;border-radius:14px;background:#eaf6f0;">'
+            . '<strong style="display:block;color:#00573b;font-size:14px;">Quote requested &mdash; no payment taken</strong>'
+            . '<span style="display:block;margin-top:3px;color:#3e5b4d;font-size:12px;line-height:1.45;">Production has not started. We will confirm the quote before requesting payment.</span></div>'
+            . '<h2 style="margin:26px 0 10px;color:#006a46;font-family:Arial,sans-serif;font-size:12px;letter-spacing:.13em;text-transform:uppercase;">Quote summary</h2>'
+            . $summary_html . $files_html
+            . '<div style="margin:24px 0 0;padding:15px 17px;border-left:3px solid #ef5a3c;background:#fbf4ea;color:#4c4b45;font-size:13px;line-height:1.6;">'
+            . '<strong>What happens next?</strong><br>Connect767 will verify the artwork, quantities, production options and shipping. You will receive the completed quote by email before any payment or production begins.</div>';
+    }
+
+    private static function send_quote_request_confirmation(WC_Order $order)
+    {
+        if ($order->get_meta('_c767_quote_email_sent') === 'yes') {
+            return true;
+        }
+        $recipient = sanitize_email((string) $order->get_billing_email());
+        if (!$recipient || !is_email($recipient)) {
+            return false;
+        }
+        $name = trim((string) $order->get_billing_first_name());
+        if ($name === '') {
+            $name = 'there';
+        }
+        $reference = self::quote_request_reference($order);
+        $sent = C767_Notifications::send_branded_mail(
+            $recipient,
+            'We received your Connect767 quote request — ' . $reference,
+            self::quote_request_email_html($order),
+            [],
+            [
+                'heading' => 'Hi ' . $name . ',',
+                'cta_url' => $order->get_view_order_url(),
+                'cta_label' => 'View quote request',
+                'preheader' => 'Quote requested — no payment taken. ' . $reference,
+                'html' => true,
+            ]
+        );
+        if ($sent) {
+            $order->update_meta_data('_c767_quote_email_sent', 'yes');
+            $order->add_order_note('Quote request confirmation emailed to ' . $recipient . '.', false);
+            $order->save();
+        }
+        return $sent;
     }
 
     public static function render_ready_made_product_fields()
@@ -1382,6 +1524,10 @@ class C767_WooCommerce
         $order->update_meta_data('_c767_local_dominica_payment', 'yes');
         $order->save();
         $order->update_status('on-hold', $instructions, true);
+
+        if (!self::send_quote_request_confirmation($order)) {
+            error_log('Connect767 quote request confirmation email could not be sent for order ' . $order->get_id() . '.');
+        }
 
         do_action('c767_checkout_order_created', $order);
 

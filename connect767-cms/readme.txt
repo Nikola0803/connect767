@@ -86,6 +86,11 @@ regular posts.
 
 == Changelog ==
 
+= 2.10.4 =
+
+* Added a dedicated customer email for quote requests with quote status, order summary, protected attachment names, file types, placement notes, secure order access, and clear next steps.
+* Prevented the standard WooCommerce on-hold payment message from being sent for quote requests while retaining administrator order notifications.
+
 = 2.10.3 =
 
 * Added a reliable `robots.txt` response for the private `admin.` CMS origin.
